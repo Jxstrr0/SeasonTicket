@@ -12,7 +12,7 @@ import type { SeasonHooks } from '../season';
 import { SEASON_TUNING } from '../data';
 import type { MatchResult, ScheduledMatch } from '../types';
 import { fairPrice, priceAdjustedShare, settleMatch, settleSeason, updateLadder, weeklyBooks } from './books';
-import { autoSignSponsor, ensureHeadCoach } from './club';
+import { autoSignSponsor, ensureHeadCoach, fitnessRehab } from './club';
 import { compactResult } from './compact';
 import { weeklyMarket } from './market';
 import { matchSelection } from './selection';
@@ -108,6 +108,7 @@ export function advanceCareer(career: Career): MatchResult[] {
   }
   // The live match, if any, belonged to this week; never carry it over.
   career.liveMatch = null;
+  fitnessRehab(career);
   weeklyMarket(career);
   if (checkLadder(career)) return results;
   career.weekIndex += 1;
