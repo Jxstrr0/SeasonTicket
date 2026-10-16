@@ -43,18 +43,18 @@ function neutralPhilosophy(): Philosophy {
   };
 }
 
-function staffWage(rating: number): number {
+export function staffWage(rating: number): number {
   const w = T.staff.wage;
   return Math.max(w.min, roundTo(logCurveAt(w.curve, rating), w.roundTo));
 }
 
-function drawStaffRating(rng: Rng, quality: number): number {
+export function drawStaffRating(rng: Rng, quality: number): number {
   const s = T.staff;
   const mean = s.ratingBase + (Math.min(1, Math.max(0, quality)) - 0.5) * s.ratingSpan;
   return clampRating(Math.round(rng.normal(mean, s.ratingSd)));
 }
 
-function generateStaffMember(rng: Rng, role: StaffRole, teamId: string, quality: number, ids: IdSource, names: NameSource): StaffMember {
+export function generateStaffMember(rng: Rng, role: StaffRole, teamId: string | null, quality: number, ids: IdSource, names: NameSource): StaffMember {
   const s = T.staff;
   const nationality = pickNationality(rng, s.domesticShare, foreignNations());
   const id = ids.next(STAFF_ID_PREFIX);

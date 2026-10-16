@@ -56,6 +56,10 @@ export interface SeasonHooks {
     headCoach: StaffMember | null,
     opts: { opponent: Team; homegrownMinimum?: number },
   ): TeamSelection;
+  /** Share of capacity for a match; defaults to attendanceShare (the career adds ticket prices). */
+  attendance?(rng: Rng, home: Team, away: Team, playoff: boolean): number;
+  /** Whether the AI head coach runs this club during matches; defaults to every club. */
+  aiControlled?(teamId: string): boolean;
 }
 
 export interface CreateSeasonOptions {
@@ -116,9 +120,9 @@ export function buildMatchSetup(state: SeasonState, match: ScheduledMatch, hooks
     home: pick(home, away, 'home-xi'),
     away: pick(away, home, 'away-xi'),
     playoff,
-    attendanceShare: attendanceShare(rng.child('attendance'), home, away, playoff),
+    attendanceShare: (hooks.attendance ?? attendanceShare)(rng.child('attendance'), home, away, playoff),
     weather: weatherFor(rng.child('weather'), match.week),
-    aiControlled: { home: true, away: true },
+    aiControlled: { home: hooks.aiControlled?.(home.id) ?? true, away: hooks.aiControlled?.(away.id) ?? true },
   };
 }
 
