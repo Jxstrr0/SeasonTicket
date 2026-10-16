@@ -17,7 +17,6 @@ export interface TierSettings {
   antialias: boolean;
   shadows: boolean;
   shadowMapSize: number;
-  softShadows: boolean;
   bloom: boolean;
   /** 0 trims decorative props and geometry segments, 2 keeps everything. */
   detail: number;

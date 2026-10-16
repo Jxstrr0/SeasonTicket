@@ -5,9 +5,9 @@
     "defaultPhone": "medium",
     "defaultDesktop": "high",
     "tiers": {
-      "low": { "label": "Low", "pixelRatio": 1, "antialias": false, "shadows": false, "shadowMapSize": 512, "softShadows": false, "bloom": false, "detail": 0, "crowdDensity": 0.25, "cityBlocks": 10 },
-      "medium": { "label": "Medium", "pixelRatio": 1.5, "antialias": true, "shadows": true, "shadowMapSize": 1024, "softShadows": false, "bloom": false, "detail": 1, "crowdDensity": 0.6, "cityBlocks": 22 },
-      "high": { "label": "High", "pixelRatio": 2, "antialias": true, "shadows": true, "shadowMapSize": 2048, "softShadows": true, "bloom": true, "detail": 2, "crowdDensity": 1, "cityBlocks": 40 }
+      "low": { "label": "Low", "pixelRatio": 1, "antialias": false, "shadows": false, "shadowMapSize": 512, "bloom": false, "detail": 0, "crowdDensity": 0.25, "cityBlocks": 10 },
+      "medium": { "label": "Medium", "pixelRatio": 1.5, "antialias": true, "shadows": true, "shadowMapSize": 1024, "bloom": false, "detail": 1, "crowdDensity": 0.6, "cityBlocks": 22 },
+      "high": { "label": "High", "pixelRatio": 2, "antialias": true, "shadows": true, "shadowMapSize": 2048, "bloom": true, "detail": 2, "crowdDensity": 1, "cityBlocks": 40 }
     }
   },
   "camera": {

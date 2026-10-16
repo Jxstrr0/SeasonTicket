@@ -43,7 +43,7 @@ import {
   type UpgradeId,
 } from '../../../sim/career';
 import { cls, each, esc } from '../../html';
-import { STADIUM_PICKS, type StadiumPick, type UiState } from '../../career/state';
+import { STADIUM_PICKS, type StadiumPick, type StadiumView, type UiState } from '../../career/state';
 import { renderCrest } from './crest';
 import { confirmButton } from './parts';
 
@@ -562,18 +562,39 @@ function renderPanel(career: Career, ui: UiState, stadium: Stadium): string {
   }
 }
 
+/** True when the Stadium tab can show the 3D ground on this device. */
+export function stadium3dAvailable(ui: UiState): boolean {
+  return ui.quality !== 'off' && !ui.stadium3dFailed;
+}
+
+const VIEW_LABELS: Record<StadiumView, string> = { model: '3D', plan: 'Plan' };
+
+function renderGround(career: Career, ui: UiState, stadium: Stadium): string {
+  const team = userTeam(career);
+  const can3d = stadium3dAvailable(ui);
+  const show3d = can3d && ui.stadiumView === 'model';
+  const toggle = can3d
+    ? `<div class="segmented st-views" role="group" aria-label="How to show the ground">${each(['model', 'plan'] as const, (v) =>
+        `<button type="button" class="${cls('seg', ui.stadiumView === v && 'on')}" data-action="stadium-view" data-view="${v}" aria-pressed="${ui.stadiumView === v}">${VIEW_LABELS[v]}</button>`)}</div>`
+    : '';
+  const ground = show3d
+    ? `<div class="st-slot" data-slot="stadium-3d"></div>
+       <p class="small muted st-hint">Swipe sideways to turn the ground, pinch to zoom, and slide two fingers up or down to tilt. Tap a stand to pick it.</p>`
+    : planSvg(career, stadium, ui.stadiumPick);
+  return `<section class="card">
+    <div class="st-head"><div class="card-title">${esc(team.stadiumName)}</div>${toggle}</div>
+    ${ground}
+    ${renderFacts(career, stadium)}
+  </section>`;
+}
+
 export function renderStadium(career: Career, ui: UiState): string {
   const stadium = career.stadiums[career.userTeamId];
-  const team = userTeam(career);
   const chips = `<div class="chip-row" role="group" aria-label="Part of the ground">${each(STADIUM_PICKS, (p) =>
     `<button type="button" class="${cls('chip', ui.stadiumPick === p && 'on')}" data-action="stadium-pick" data-part="${p}" aria-pressed="${ui.stadiumPick === p}">${esc(PICK_LABELS[p])}</button>`)}</div>`;
   return `<div class="club-grid stadium-grid">
     <div>
-      <section class="card">
-        <div class="card-title">${esc(team.stadiumName)}</div>
-        ${planSvg(career, stadium, ui.stadiumPick)}
-        ${renderFacts(career, stadium)}
-      </section>
+      ${renderGround(career, ui, stadium)}
       ${renderProjects(career, ui, stadium)}
     </div>
     <div>

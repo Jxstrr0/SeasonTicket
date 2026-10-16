@@ -63,6 +63,8 @@ import { renderGameOver, renderSaveCode } from '../views/career/saves';
 import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
 import type { HotspotId, OfficePick } from '../../render/office/types';
 import { OfficeHost } from './officeHost';
+import { StadiumHost } from './stadiumHost';
+import type { StadiumPart } from '../../render/stadium/types';
 import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, STADIUM_PICKS, initialUi, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState } from './state';
 
 type Result = { ok: boolean; message: string };
@@ -154,6 +156,9 @@ export class CareerApp {
   private readonly uiLayer: HTMLElement;
   private readonly officeLayer: HTMLElement;
   private readonly office: OfficeHost;
+  private readonly stadium: StadiumHost;
+  /** Set when a pick should also turn the 3D stadium's camera to face it. */
+  private stadiumFocus = false;
 
   constructor(private readonly root: HTMLElement) {
     const officeLayer = document.createElement('div');
@@ -167,6 +172,14 @@ export class CareerApp {
       (p) => this.onOfficePick(p),
       (text) => {
         this.ui.inOffice = false;
+        this.ui.flash = { kind: 'error', text };
+        this.render();
+      },
+    );
+    this.stadium = new StadiumHost(
+      (part) => this.onStadiumPick(part),
+      (text) => {
+        this.ui.stadium3dFailed = true;
         this.ui.flash = { kind: 'error', text };
         this.render();
       },
@@ -216,6 +229,21 @@ export class CareerApp {
   private render(): void {
     this.uiLayer.innerHTML = this.view();
     this.syncOffice();
+    this.syncStadium();
+  }
+
+  /** Moves the 3D stadium into the Stadium tab (if it is showing) and keeps it current. */
+  private syncStadium(): void {
+    const { ui } = this;
+    const focus = this.stadiumFocus;
+    this.stadiumFocus = false;
+    this.stadium.sync(this.uiLayer, this.career, ui.quality === 'off' ? null : ui.quality, ui.stadiumPick, focus);
+  }
+
+  /** A tap on the 3D stadium picks that part, like the chips do. */
+  private onStadiumPick(part: StadiumPart): void {
+    this.ui.stadiumPick = part;
+    this.render();
   }
 
   /** The tier the office runs at, or null when the plain menus are on. */
@@ -393,6 +421,8 @@ export class CareerApp {
         ui.quality = d.quality;
         storeQuality(d.quality);
         this.office.reset();
+        this.stadium.reset();
+        ui.stadium3dFailed = false;
         // Turning 3D on (or changing tier) shows the office straight away.
         ui.inOffice = d.quality !== 'off';
         return this.render();
@@ -549,7 +579,13 @@ export class CareerApp {
         if (d.id) this.flashResult(startQueuedNow(career, d.id));
         break;
       case 'stadium-pick':
-        if (STADIUM_PICKS.includes(d.part as StadiumPick)) ui.stadiumPick = d.part as StadiumPick;
+        if (STADIUM_PICKS.includes(d.part as StadiumPick)) {
+          ui.stadiumPick = d.part as StadiumPick;
+          this.stadiumFocus = true;
+        }
+        return this.render();
+      case 'stadium-view':
+        if (d.view === 'model' || d.view === 'plan') ui.stadiumView = d.view;
         return this.render();
       case 'stadium-look':
         if (d.key) this.flashResult(setStadiumLook(career, { [d.key]: d.value } as Partial<StadiumLook>));

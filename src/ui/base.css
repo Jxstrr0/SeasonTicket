@@ -845,3 +845,63 @@ body.office-mode .topbar { backdrop-filter: none; }
 .st-sub { margin-top: 14px; }
 .st-look .seg { flex: 0 1 auto; padding-inline: 14px; }
 .st-of { display:block; font-weight:400; }
+
+/* Stadium tab: the 3D ground */
+.st-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.st-head .card-title { margin: 0; }
+.st-views { flex-wrap: nowrap; }
+.st-views .seg { flex: 0 0 auto; min-width: 56px; padding-inline: 12px; }
+.st-slot { position: relative; }
+.st-hint { margin: 6px 0 8px; }
+.stadium-3d {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  max-height: 72vh;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #182339;
+}
+.stadium-stage { position: absolute; inset: 0; }
+.stadium-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+.stadium-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  color: var(--muted);
+  background: radial-gradient(600px 300px at 50% 30%, #23365f 0%, #182339 70%);
+}
+.stadium-loading[hidden] { display: none; }
+.stadium-loading p { margin: 0; }
+.stadium-tools {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+.stadium-tool {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(11, 16, 32, 0.72);
+  color: var(--text);
+  font-weight: 700;
+  pointer-events: auto;
+}
+.stadium-tool.square { padding: 0; font-size: 1.3rem; line-height: 1; }
+.stadium-tool[aria-pressed='true'] { background: var(--accent); color: #1a1400; border-color: transparent; }
+.stadium-tool:active { background: rgba(242, 193, 78, 0.9); color: #1a1406; }
