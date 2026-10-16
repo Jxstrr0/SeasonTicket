@@ -451,7 +451,7 @@ export function orderProject(career: Career, key: string, when: 'now' | 'summer'
   const queued = career.phase === 'season' && when === 'summer';
   startProject(career, career.userTeamId, option, queued);
   const what = projectLabel(option.kind, option.target, option.toLevel);
-  return ok(queued ? `${what}: paid ${money(option.cost)}. Work starts in the summer.` : `${what}: work starts now, ${option.weeks} weeks.`);
+  return ok(queued ? `${what}: paid ${money(option.cost)}. Work starts in the off-season.` : `${what}: work starts now, ${option.weeks} weeks.`);
 }
 
 /** A project waiting for the summer can be called off for a full refund. */

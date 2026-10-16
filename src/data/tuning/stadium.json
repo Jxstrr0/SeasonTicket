@@ -1,5 +1,5 @@
 {
-  "_about": "The stadium builder: four stands, four corners, roofs, boxes and club-wide upgrades. Read by src/sim/career/stadium.ts. Money in Valmeran dollars; weeks are calendar weeks (pre-season and season). Every club owns a stadium; AI clubs build over the summer when they sell out and can afford it.",
+  "_about": "The stadium builder: four stands, four corners, roofs, boxes and club-wide upgrades. Read by src/sim/career/stadium.ts. Money in Valmeran dollars; weeks are calendar weeks (pre-season and season). Every club owns a stadium; AI clubs build over the off-season when they sell out and can afford it.",
   "stands": {
     "_about": "Seats by stand level for a side stand (west, east). Ends (north, south) hold endScale of that. Level 0 is an open grass bank with standing room. Raising a level costs the seats it adds x costPerSeat for the new level, plus a flat fee, and takes weeks.",
     "levels": [
@@ -46,7 +46,7 @@
       "north": "North End",
       "south": "South End"
     },
-    "_aboutClosure": "Work on a stand during the season closes this share of its seats until it is done. Summer and pre-season work closes nothing (there are no home matches).",
+    "_aboutClosure": "Work on a stand during the season closes this share of its seats until it is done. Off-season and pre-season work closes nothing (there are no home matches).",
     "closedShare": 0.35,
     "roofClosedShare": 0.12,
     "conditionOnComplete": 0.04
@@ -127,21 +127,21 @@
     "upkeepPerBox": 4000
   },
   "upgrades": {
-    "_about": "Club-wide upgrades. cost[i] buys level i + 1 and weeks[i] is how long it takes. Effects by level are in each entry.",
+    "_about": "Club-wide upgrades. cost[i] buys level i + 1 and weeks[i] is how long it takes. Effects by level are in each entry. The catalogue and its payback times are set out in docs/DESIGN.md section 10.",
     "floodlights": {
       "name": "Floodlights",
       "about": "Brighter lights for evening TV slots. Adds TV money every season.",
       "cost": [
         900000,
-        1800000,
-        3200000
+        1500000,
+        2400000
       ],
       "weeks": [
         3,
         4,
         5
       ],
-      "tvPerLevel": 200000
+      "tvPerLevel": 250000
     },
     "videoBoard": {
       "name": "Video board",
@@ -149,7 +149,7 @@
       "cost": [
         700000,
         1500000,
-        3000000
+        2200000
       ],
       "weeks": [
         2,
@@ -193,7 +193,7 @@
       "about": "From a kiosk to a megastore. More merchandise money every season.",
       "cost": [
         500000,
-        1600000
+        1100000
       ],
       "weeks": [
         3,
@@ -236,12 +236,12 @@
     "videoBoardAttendance": 0.01
   },
   "projects": {
-    "_about": "At most maxActive projects at once. A project paid for during the season can start now (closing seats) or wait for the summer. The summer adds summerWeeks of building before pre-season.",
+    "_about": "At most maxActive projects at once. A project paid for during the season can start now (closing seats) or wait for the off-season. The off-season (the winter break) adds summerWeeks of building before pre-season.",
     "maxActive": 3,
     "summerWeeks": 8
   },
   "ai": {
-    "_about": "Each summer an AI club whose crowds averaged at least fullShare of capacity, and whose cash covers the project cashMultiple times over, adds to its smallest stand (or a corner). It refurbishes when condition drops below refurbishBelow.",
+    "_about": "Each off-season an AI club whose crowds averaged at least fullShare of capacity, and whose cash covers the project cashMultiple times over, adds to its smallest stand (or a corner). It refurbishes when condition drops below refurbishBelow.",
     "fullShare": 0.9,
     "cashMultiple": 2.5,
     "refurbishBelow": 0.4

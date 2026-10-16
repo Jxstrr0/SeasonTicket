@@ -6,6 +6,17 @@ A soccer club owner/GM management sim with a live, changeable-tactics match engi
 - Build brief for the AI pair-programmer: `CLAUDE.md`
 - Live build: https://jxstrr0.github.io/SeasonTicket/
 
+## Status
+
+- Built:
+  - Stage 1: league, match engine, season and playoffs.
+  - Stage 2: the owner/GM career in plain menus.
+  - Stage 3: the 3D HQ office.
+  - Stage 4: the stadium builder, in 3D on the Stadium tab and through the office window.
+- Next, Stage 4.5: a spatial match engine that simulates every player's position.
+  - Spec: `docs/STAGE_4_5_SPATIAL_ENGINE.md`.
+  - The design proposal goes into `docs/DESIGN.md` for review before any engine code is written.
+
 ## Develop
 
 ```

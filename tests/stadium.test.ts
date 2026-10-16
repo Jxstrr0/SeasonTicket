@@ -19,11 +19,12 @@ import {
   userTeam,
   type Career,
 } from '../src/sim/career';
-import { encodeSave, migrate } from '../src/game/save';
+import { decodeSave, encodeSave, migrate } from '../src/game/save';
 import { STADIUM_TUNING as S } from '../src/sim/data';
 import CLUBS from '../src/data/clubs.json';
 import { initialUi } from '../src/ui/career/state';
 import { renderStadium } from '../src/ui/views/career/stadium';
+import { buildStadiumSnapshot } from '../src/ui/career/stadiumSnapshot';
 
 function newCareer(teamId = 'crowncaster-city', seed = 5): Career {
   const career = createCareer({ seed, teamId, tier: 'easy', homegrownRule: false });
@@ -171,6 +172,27 @@ describe('stadium', () => {
     expect(career.books[career.userTeamId].cash).toBe(cash);
   });
 
+  it('keeps a built ground, its building work and its look through an exported save code', () => {
+    const career = newCareer();
+    const first = stadiumOptions(career).find((o) => o.kind === 'stand' && o.available)!;
+    orderProject(career, first.key);
+    for (let i = 0; i < first.weeks; i++) advanceCareer(career);
+    const second = stadiumOptions(career).find((o) => o.available && o.key !== first.key)!;
+    expect(orderProject(career, second.key).ok).toBe(true);
+    advanceCareer(career);
+    setStadiumLook(career, { seats: 'initials', mow: 'diagonal', roof: 'secondary' });
+    const before = buildStadiumSnapshot(career);
+    expect(before.works).toHaveLength(1);
+
+    const restored = decodeSave(encodeSave(career));
+    expect(restored.stadiums).toEqual(career.stadiums);
+    // The 3D ground is drawn from this snapshot, so the same snapshot means the same ground.
+    // (The crest's clip-path id is a page-wide counter, so it is left out of the comparison.)
+    const plain = (snap: typeof before) => ({ ...snap, crestSvg: snap.crestSvg?.replace(/crest-clip-\d+/g, 'crest-clip') });
+    expect(plain(buildStadiumSnapshot(restored))).toEqual(plain(before));
+    expect(fullCapacity(userStadium(restored))).toBe(fullCapacity(userStadium(career)));
+  });
+
   it('upgrades a version 1 save to a ground for every club', () => {
     const career = newCareer();
     const v1 = JSON.parse(JSON.stringify(career));
@@ -206,7 +228,7 @@ describe('stadium tab', () => {
     toKickoff(career);
     const ui = { ...initialUi(), screen: 'hub' as const, tab: 'stadium' as const, stadiumPick: 'east' as const };
     let html = renderStadium(career, ui);
-    expect(html).toContain('Pay now, build in summer');
+    expect(html).toContain('Pay now, build in the off-season');
     expect(html).toMatch(/data-action="order-project"[^>]*data-id="[^"|]+\|now"/);
     const option = stadiumOptions(career).find((o) => o.kind === 'stand' && o.target === 'east' && o.available)!;
     expect(orderProject(career, option.key, 'summer').ok).toBe(true);

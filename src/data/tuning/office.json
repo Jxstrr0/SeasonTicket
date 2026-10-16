@@ -25,6 +25,14 @@
     "damping": 0.88,
     "tapSlopPx": 10
   },
+  "window": {
+    "_about": "The club's stadium seen through the office window; it is the Stadium tab's model. crowdCap is the most fans drawn at High (scaled by crowdDensity). selfLit 0-1 is how brightly it glows at dusk (the model scales it by the floodlight level). cornerAngle turns the ground so the office looks in over a corner of the Main Stand (0 looks straight down the pitch). The window sill only lets the owner look about 14 degrees down, so the office is high (towerHeight, metres above the street) and the ground far enough away (stadiumDistance, metres) that a fully built bowl still shows its far stand and roofs.",
+    "towerHeight": 72,
+    "stadiumDistance": 330,
+    "crowdCap": 3000,
+    "selfLit": 0.85,
+    "cornerAngle": -38
+  },
   "growth": {
     "_about": "Office level from the club's record. A level is reached when every listed threshold is met. Level 1 adds a sofa and art, level 2 a parquet floor and a bigger TV, level 3 the full corner office.",
     "levels": [

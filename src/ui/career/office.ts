@@ -7,8 +7,8 @@ import { C, LADDER_NAMES, coachSelection, money, playerPayroll, userBooks, userF
 import { WORLD, formation as formationOf } from '../../sim/data';
 import officeTuning from '../../data/tuning/office.json';
 import type { OfficeSnapshot, OfficeTrophy, OfficeVisitorCall } from '../../render/office/types';
-import { renderCrest } from '../views/career/crest';
 import { careerWeekLabel, unreadCount } from '../views/career/hub';
+import { buildStadiumSnapshot, crestDocument } from './stadiumSnapshot';
 
 interface GrowthLevel {
   level: number;
@@ -79,13 +79,14 @@ export function buildOfficeSnapshot(career: Career): OfficeSnapshot {
   const { formation, slots } = selectionSlots(career);
   const last = career.lastUserMatch;
   const attendance = last && last.homeId === career.userTeamId ? last.attendanceShare : 0.6;
+  const crestSvg = crestDocument(career);
   return {
     clubName: team.name,
     shortName: team.shortName,
     abbr: team.abbr,
     primary: team.colors.primary,
     secondary: team.colors.secondary,
-    crestSvg: renderCrest(career.crest, 200).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '),
+    crestSvg,
     leagueName: WORLD.league.name,
     weekLabel: careerWeekLabel(career),
     cash: money(books.cash),
@@ -107,6 +108,7 @@ export function buildOfficeSnapshot(career: Career): OfficeSnapshot {
     level: officeLevel(career.history.length, trophies.filter((t) => t.kind !== 'runnerUp').length),
     attendance,
     stadiumName: team.stadiumName,
+    stadium: buildStadiumSnapshot(career, crestSvg),
     visitor: officeVisitor(career),
   };
 }

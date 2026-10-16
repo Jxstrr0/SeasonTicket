@@ -36,7 +36,7 @@ export interface StadiumWork {
   toLevel: number;
   /** 0-1 share of the work done. */
   progress: number;
-  /** Paid for, waiting for the summer. */
+  /** Paid for, waiting for the off-season. */
   queued: boolean;
 }
 

@@ -243,7 +243,7 @@ function fence(g: GeoBuilder, path: PathPoint[], d: number, height: number): voi
   }
 }
 
-/** A square of fence round a point (paid-for upgrade work waiting for the summer). */
+/** A square of fence round a point (paid-for upgrade work waiting for the off-season). */
 function fenceSquare(g: GeoBuilder, x: number, z: number, half: number): void {
   const c: [number, number][] = [
     [x - half, z - half],

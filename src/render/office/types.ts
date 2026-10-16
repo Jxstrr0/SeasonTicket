@@ -2,6 +2,7 @@
  * What the office needs to know about the club. The UI builds this plain
  * snapshot from the career; the 3D code never reads the sim directly.
  */
+import type { StadiumSnapshot } from '../stadium/types';
 
 export type HotspotId = 'laptop' | 'phone' | 'tv' | 'window' | 'whiteboard' | 'clipboard' | 'door' | 'cabinet';
 
@@ -59,6 +60,8 @@ export interface OfficeSnapshot {
   /** 0-1 share of seats sold at the last home match, for the crowd in the window. */
   attendance: number;
   stadiumName: string;
+  /** The ground seen through the window. */
+  stadium: StadiumSnapshot;
   visitor: OfficeVisitorCall | null;
 }
 
