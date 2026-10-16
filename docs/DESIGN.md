@@ -229,11 +229,38 @@ Decided during development (the owner can veto any of these):
 - Season weeks: 30 league rounds, a two-week break after round 15, three playoff weeks.
 
 Sim simplifications (documented here as the build brief requires):
-- Stoppage time is 1 to 6 minutes per half drawn by the sim, not computed from events.
+- Stoppage time is a base draw plus weights for goals, subs, cards, injuries and time-wasting, clamped to 1 to 6 minutes per half (0 to 2 per extra-time half). Wasted minutes are not added one for one.
 - Substitution windows are not enforced as three strict stoppages; the sim allows a sub at any dead ball and caps the count at five, including extra time (many real competitions allow a sixth in extra time).
 - In a shootout, a side with more players on the pitch does not reduce its kickers to match an opponent reduced by red cards.
 - No VAR or offside-line nuance; offside is an event outcome, not a positional check.
 - Transfer fees are paid in full from cash in the concept test.
+
+Match engine simplifications (Stage 1):
+- Possession belongs to one side per one-minute tick, and one move is resolved per tick. Passes are counted statistically, not as events.
+- Offside is a chance set by the defending side's line height. Penalties are a fixed share of fouls with no box geometry. Free kicks are a direct shot or a cross with no distance model.
+- No own goals, advantage rule, handball, dissent cards or cards for bench staff.
+- Time-wasting only works when ahead from minute 70: it costs the opponent the minute and carries a small booking chance.
+- Fatigue only goes down during a match, with no half-time recovery. An injured player with no subs left stays on at minimum energy.
+- A sent-off player's slot stays empty, with a 10% strength penalty per missing player. A spare keeper replaces a sent-off keeper by taking an outfielder's place.
+- Man-marking lowers the target's chance of shooting or creating (to 45%) and costs the marking side 2% midfield strength. No individual marker is assigned.
+- Counter-attacks only start from turnovers. Their chance depends on the counter tactic, the opponent's defensive line, the pace difference and pressing.
+- Shootout order is by set-piece and composure, with the keeper last. The first kicker is a coin flip.
+- Home advantage is a shot-rate boost (46%) scaled by attendance, plus small possession and card-leniency edges.
+- A side two or more goals up shoots 15% less per extra goal of lead (never below 60%).
+- Weather only applies multipliers (passing, xG, accuracy, fatigue, injuries, shot rate).
+- The AI coach sets its kickoff mentality from its own lean and the opponent's strength, chases late when behind, protects a lead from minute 78, eases off with a two-goal cushion from minute 60 and tightens after a red card.
+- Match ratings are a linear formula over the player's stats.
+
+Season simplifications (Stage 1):
+- Tiebreakers: points, goal difference, goals for, then head-to-head points across the whole tied group (applied once), then a seeded coin flip. Before any match the table is ordered by the coin flip.
+- Any red card is a one-match ban. Every fifth yellow of the season adds a one-match ban. Bans are served in the club's next match of any stage and carry over the break and into next season. A ban counts as served when the team plays.
+- Injuries count down once per calendar week, break weeks included, starting the week after the injury. A new injury on an injured player keeps the longer duration.
+- Condition: a player loses 0.12 per 90 minutes played and recovers half the gap to full each week. No training load, travel or fixture congestion.
+- Form is the last five match ratings.
+- Every playoff tie is a single match hosted by the higher seed, final included.
+- The season summary (top scorers, goals per match, result split) counts league matches only.
+- Each player has one fictional nationality. First and last names are picked independently. Clubs have a primary and a secondary colour only.
+- In Stage 1 the AI coach runs both sides of every match. Pre-season, the offseason, transfer windows and season rollover (aging, contracts, development) arrive in Stage 2.
 
 ---
 
