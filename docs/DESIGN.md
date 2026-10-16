@@ -37,7 +37,7 @@ You own a professional soccer club in the fictional nation of Valmere. You run t
   - **Iron Belt:** Stonegate, Fort Sterling.
   - **Highlands:** Silverpeak, Coldbrook, Northolt.
   - **Western Plains:** Prairie Junction, Grandview.
-- **Foreign players** come from other fictional nations (Esperia, Kaltland, Marrovia, Sundara, Ostenburg, Caravelle, Tessaly, Norrvik). These exist only as nationalities and name flavours for now.
+- **Foreign players** come from other fictional nations (Esperia, Kaltland, Marrovia, Sundara, Ostenburg, Caravelle, Vostria, Norrvik). These exist only as nationalities and name flavours for now.
 
 ### Season calendar
 Spring to late autumn. Pre-season in February and March, league play from April, playoffs in November. Weather follows: spring rain, summer heat, autumn wind, snow for the playoff rounds.
