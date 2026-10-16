@@ -27,7 +27,7 @@ const ROLE_HELP: Record<StaffRole, string> = {
   assistantCoach: 'Helps develop players over the off-season.',
   fitnessCoach: 'Gets injured players back sooner (rated 50 or better).',
   headScout: 'Narrows the rating ranges you see on other clubs’ players.',
-  academyDirector: 'Raises the quality of the youth intake each summer.',
+  academyDirector: 'Raises the quality of the youth intake each off-season.',
 };
 
 function renderTickets(career: Career): string {
@@ -101,7 +101,7 @@ function renderAcademy(career: Career, ui: UiState): string {
   return `<section class="card">
     <div class="card-title">Youth academy</div>
     <div class="level-pips" aria-label="Level ${level} of ${max}">${each(Array.from({ length: max }, (_, i) => i), (i) => `<span class="${cls('pip', i < level && 'on')}"></span>`)}</div>
-    <p class="small">Level ${level} of ${max}: about ${intake} prospects each summer. Upkeep ${esc(money(academyUpkeep(books)))} a season.</p>
+    <p class="small">Level ${level} of ${max}: about ${intake} prospects each off-season. Upkeep ${esc(money(academyUpkeep(books)))} a season.</p>
     ${upgrade}
   </section>`;
 }

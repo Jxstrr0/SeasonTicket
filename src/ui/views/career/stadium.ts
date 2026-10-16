@@ -255,7 +255,7 @@ function rowLines(r: Rect & { front: string }, level: number): string {
   return `<g stroke="rgba(0,0,0,0.28)" stroke-width="0.3">${out.join('')}</g>`;
 }
 
-/** Hatching over a structure being built (solid) or paid for and waiting for the summer (dashed outline). */
+/** Hatching over a structure being built (solid) or paid for and waiting for the off-season (dashed outline). */
 function worksSvg(r: Rect, state: 'active' | 'queued' | null): string {
   if (state === 'active') return rect(r, 'fill="url(#st-works)" stroke="#f2a33a" stroke-width="0.8"');
   if (state === 'queued') return rect(r, 'fill="none" stroke="#f2a33a" stroke-width="0.8" stroke-dasharray="2 1.5"');
@@ -384,7 +384,7 @@ function renderProjects(career: Career, ui: UiState, stadium: Stadium): string {
         const label = esc(projectLabel(p.kind, p.target, p.toLevel));
         if (p.queued) {
           const shut = seatsClosedBy(stadium, p.kind, p.target);
-          return `<li><div class="deal-row"><div><strong>${label}</strong><div class="small muted">Paid ${esc(money(p.cost))} · waits for the summer (${p.weeks} weeks)</div></div></div>
+          return `<li><div class="deal-row"><div><strong>${label}</strong><div class="small muted">Paid ${esc(money(p.cost))} · waits for the off-season (${p.weeks} weeks)</div></div></div>
             <div class="row-actions">${confirmButton(ui, 'start-project-now', p.id, shut > 0 ? `Start now (shuts ${seats(shut)} seats)` : 'Start now')}${confirmButton(ui, 'cancel-project', p.id, `Call off, refund ${money(p.cost)}`)}</div></li>`;
         }
         const shut = p.kind === 'stand' || p.kind === 'roof' || p.kind === 'boxes' ? closed[p.target as StandId] ?? 0 : 0;
@@ -408,7 +408,7 @@ function timingNote(career: Career, stadium: Stadium, o: StadiumOption): string 
   }
   if (career.phase === 'season') {
     return shut > 0
-      ? `Start now and ${seats(shut)} seats stay shut for ${o.weeks} weeks, or pay now and build in the summer.`
+      ? `Start now and ${seats(shut)} seats stay shut for ${o.weeks} weeks, or pay now and build in the off-season.`
       : 'No seats shut while this is built.';
   }
   return '';
@@ -419,7 +419,7 @@ function optionBuy(career: Career, ui: UiState, stadium: Stadium, o: StadiumOpti
   const shut = seatsClosedBy(stadium, o.kind, o.target);
   let buttons: string;
   if (career.phase === 'season') {
-    buttons = confirmButton(ui, 'order-project', `${o.key}|summer`, 'Pay now, build in summer', 'btn-primary') +
+    buttons = confirmButton(ui, 'order-project', `${o.key}|summer`, 'Pay now, build in the off-season', 'btn-primary') +
       confirmButton(ui, 'order-project', `${o.key}|now`, shut > 0 ? 'Start now' : 'Build now');
   } else if (career.phase === 'preseason') {
     buttons = confirmButton(ui, 'order-project', `${o.key}|now`, 'Build', 'btn-primary');
@@ -461,7 +461,7 @@ function renderStandPanel(career: Career, ui: UiState, stadium: Stadium, id: Sta
   const options = stadiumOptions(career).filter((o) => o.target === id);
   const work = stadium.projects.find((p) => p.target === id);
   const building = work
-    ? `${projectLabel(work.kind, work.target, work.toLevel)}: ${work.queued ? 'paid for, waiting for the summer' : `${work.weeksLeft} week${work.weeksLeft === 1 ? '' : 's'} left`}. One job at a time on each stand.`
+    ? `${projectLabel(work.kind, work.target, work.toLevel)}: ${work.queued ? 'paid for, waiting for the off-season' : `${work.weeksLeft} week${work.weeksLeft === 1 ? '' : 's'} left`}. One job at a time on each stand.`
     : '';
   return `<section class="card">
     <div class="card-title">${esc(standName(id))} · ${esc(standLevelName(s.level))}</div>

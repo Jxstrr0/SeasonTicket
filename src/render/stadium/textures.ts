@@ -484,7 +484,7 @@ export function pitchTexture(anisotropy: number): ScreenTexture {
   return new ScreenTexture(w, Math.round((w * GRASS.width) / GRASS.length), anisotropy);
 }
 
-/** Hoarding round paid-for work waiting for the summer. */
+/** Hoarding round paid-for work waiting for the off-season. */
 export function hoardingTexture(snap: Pick<StadiumSnapshot, 'primary' | 'secondary' | 'abbr'>, anisotropy: number): ScreenTexture {
   const s = new ScreenTexture(512, 32, anisotropy);
   const { ctx, w, h } = s;
@@ -496,7 +496,7 @@ export function hoardingTexture(snap: Pick<StadiumSnapshot, 'primary' | 'seconda
   ctx.font = `800 ${h * 0.5}px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`${snap.abbr} · BUILDING THIS SUMMER`, w / 2, h / 2 - 2);
+  ctx.fillText(`${snap.abbr} · BUILDING AFTER THE SEASON`, w / 2, h / 2 - 2);
   s.texture.wrapS = RepeatWrapping;
   s.done();
   return s;

@@ -55,7 +55,7 @@ export function renderReview(career: Career): string {
       </div>
     </section>
     <section class="card notice">
-      <p>The off-season runs contracts, retirements, player development, staff renewals and the youth intake, then the summer transfer window opens.</p>
+      <p>The off-season runs contracts, retirements, player development, staff renewals and the youth intake, then the pre-season transfer window opens.</p>
       <div class="row-actions">
         <button type="button" data-action="start-offseason">Start the off-season</button>
         <button type="button" class="btn-secondary" data-action="to-hub">Back to the office</button>

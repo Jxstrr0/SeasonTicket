@@ -162,6 +162,63 @@ Breaking loan conditions escalates step by step. Every step can be reversed by f
 - Every purchase appears physically, on match day and through the office window.
 - Attendance drives crowd density.
 
+**How a ground is built (Stage 4).** Every club owns a ground made of parts:
+- **Four stands:** the Main Stand and East Stand on the sides, and the North End and South End behind the goals. Each goes up one level at a time: grass bank, small stand, single tier, two tiers, three tiers. An end holds 70% of a side stand's seats.
+- **Four corners:** filled in once both neighbouring stands are big enough.
+- **A roof per stand:** part roof, then full roof. Covered seats draw slightly bigger crowds.
+- **Executive boxes:** up to two rows per stand. They earn hospitality money every home match.
+- **Six club-wide upgrades:** floodlights, video board, LED advertising, concourses, club shop and pitch.
+- **Refurbishment:** restores the ground's condition, which wears down every season.
+- **Free, instant branding:**
+  - Seat colours: club colours, mixed, or the club's initials picked out in the seats.
+  - The mowing pattern, the roof colour and the crest on the pitch.
+  - The stadium name, and the sponsors on the boards. Naming rights rename the ground and put the buyer's brand on the boards.
+
+Building takes time:
+- Each project takes weeks, and at most three run at once.
+- A project bought during the season can start now or wait for the off-season (the winter break between seasons).
+  - Starting now closes part of that stand until the work is done.
+  - The off-season adds eight building weeks before pre-season.
+- AI clubs that sell out and can afford it add to their smallest stand each off-season.
+
+Crowds:
+- Demand grows with fan mood and trophies, so a bigger stand only fills if the fans are there.
+- The 3D crowd follows the last home attendance.
+
+The Stadium tab shows the ground in 3D:
+- Swipe to turn, pinch to zoom, and tap a part to pick it.
+- Buttons switch the camera between Aerial, Main Stand, Behind goal and Overhead, and the ground between day and night.
+- Work in progress shows as scaffolding with cranes.
+- A Plan view (the flat diagram) is one tap away, and is the fallback when 3D is off.
+
+**Stadium catalogue and costs (proposed, waiting for the owner's confirmation).**
+- Money is in Valmeran dollars. The values live in `src/data/tuning/stadium.json`.
+- "Pays back" is a rough guide: the number of seasons the extra income takes to cover the cost.
+  - Big club: Crowncaster City, 48,400 seats.
+  - Small club: Prairie Junction, 13,600 seats.
+  - New seats are assumed 90% full at the fair ticket price.
+
+| Part | Cost per level | Weeks | What it does | Pays back (big / small) |
+| --- | --- | --- | --- | --- |
+| Side stand (Main, East) | 0.77M, 1.46M, 2.58M, 4.1M | 6, 8, 10, 12 | +2,000, +3,000, +4,000, +5,000 seats (2,000 to 16,000) | 2 to 5 / 4 to 8 seasons |
+| End stand (North, South) | 0.61M, 1.17M, 2.08M, 3.32M | 6, 8, 10, 12 | 70% of the side stand's seats (1,400 to 11,200) | 2 to 5 / 4 to 8 seasons |
+| Corner | 0.9M, 1.3M | 6, 8 | +1,500, then +1,700 seats. Needs both neighbours at single tier, then two tiers. | 4 to 5 / 6 to 8 seasons |
+| Roof (per stand) | 70 per seat + 0.2M, then 110 per seat + 0.35M | 4, 6 | Covers the back rows, then every seat. Up to +5% crowd when the whole ground is covered. | Comfort and noise more than money |
+| Boxes (per row) | 80k a box: 1.6M a side row (20 boxes), 0.96M an end row (12 boxes) | 5 | Hospitality money every home match, less 4k a season upkeep per box. Needs single tier, then two tiers for a second row. | 4 / 10 seasons |
+| Floodlights | 0.9M, 1.5M, 2.4M | 3, 4, 5 | +250k TV money a season per level | 4, 6, 10 seasons (everywhere) |
+| Video board | 0.7M, 1.5M, 2.2M | 2, 3, 4 | +6% sponsor money, happier fans and +1% crowd per level | 3, 7, 10 / 11, 23, 34 seasons |
+| LED advertising | 0.6M, 1.4M | 2, 3 | +8% sponsor money per level | 3, 8 / 9, 21 seasons |
+| Concourses | 0.8M, 1.7M, 3.2M | 4, 5, 6 | +$1 food and drink money per fan per level, and better condition | 1, 3, 5 / 5, 11, 21 seasons |
+| Club shop | 0.5M, 1.1M | 3, 5 | +12% merchandise money per level | 4, 8 / 10, 21 seasons |
+| Pitch | 0.4M, 1.1M, 2.0M | 2, 3, 3 | Drainage, hybrid grass, undersoil heating: +5 condition per level | Bigger crowds through condition |
+| Refurbishment | 28 per seat (at least 0.25M) | 4 | +25 condition (condition wears 3 points a season) | Keeps crowds up |
+
+In plain terms:
+- Seats pay for themselves in 2 to 5 seasons at a big club and 4 to 8 at a small one, but only if demand fills them.
+- Upgrades favour big clubs, because their effects scale with sponsor, merchandise and crowd money. A small club should build seats when it sells out and leave the video board for later.
+- Building everything costs about 85M, for about 67,000 seats and 128 boxes. The biggest club makes about 5M profit a season at the start, so a full ground is a ten-season-plus project.
+- Floodlights levels 2 and 3, video board level 3 and club shop level 2 were made cheaper so that no top level takes much more than ten seasons to pay back at a big club.
+
 ### Match Day (3D)
 - Broadcast-style cameras and an owner's-box view.
 - Weather and seasons (spring rain through to snowy playoffs).
@@ -298,16 +355,24 @@ HQ Office (Stage 3):
 - Visitors: the newest unread inbox message of certain kinds brings a visitor to the door (lender for the ladder, agent for bids and transfers, sponsor rep for finance, head coach for staff and youth news, reporter for match and season news). Tapping the visitor opens that message. Visitors walk in and stand; they do not sit yet.
 - Visitors are one base body with outfits painted on by colour regions in a shader, not separate clothing meshes.
 - The office grows with the club in four levels (see `src/data/tuning/office.json`): the office starts carpeted; a sofa and art after one season, a parquet floor and bigger TV after a trophy or three seasons, the full corner office after three seasons and two trophies. Trophies won fill the cabinet.
-- The window view is a placeholder stadium (simple stands, a pitch and a crowd whose density follows attendance) until the modular stadium arrives in Stage 4. The near stand is kept low so the pitch shows from the office height.
+- The window shows the club's real ground (the same 3D model as the Stadium tab, with a smaller crowd), so every purchase and branding change appears there. The office sits 72 m up and the ground 330 m away, so the pitch still shows over the window sill when the near stand is three tiers tall. Both values are in `src/data/tuning/office.json`.
 - The wall clock shows the device's real time, not the game calendar.
 - three.js and the office art only download the first time the office opens, so the plain menus stay light. The office art is about 5.6 MB (Meshopt geometry, KTX2 textures).
+
+Stadium (Stage 4):
+- Seat counts, boxes and money come from the sim. The 3D model draws the stands' shapes and a crowd whose density follows the last home attendance, capped at about 9,000 figures on the Stadium tab and 3,000 through the office window. It does not draw one figure per seat.
+- Building weeks are calendar weeks. Work started during the season closes 35% of that stand's seats (12% for a roof) until it is done. Off-season and pre-season work closes nothing, because there are no home matches.
+- Rebuilding a stand keeps its roof and boxes. Roof cost follows the stand's seats when it is ordered, so roofing before rebuilding is cheaper. Real clubs would pay again.
+- Naming rights rename the ground to the buyer's first word plus "Arena", and the old name returns when the deal ends.
+- AI clubs only add to their smallest stand or a corner, and refurbish. They do not buy roofs, boxes or upgrades after the start.
+- Every club starts with a ground built up to its listed capacity. Roofs, boxes and upgrades follow its finances, market and condition.
 
 ---
 
 ## 16. Open items (decide during development)
 
 - Starting cash, debt and squad quality per difficulty tier.
-- The stadium upgrade catalogue and costs.
+- The stadium upgrade catalogue and costs: proposed in section 10, waiting for the owner's confirmation.
 - Wage cap level, luxury-tax rates and the typical fee range for a star.
 - Youth intake size by academy level.
 - Which tactical presets ship for the concept test.

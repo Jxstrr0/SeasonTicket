@@ -134,7 +134,10 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
   ]);
   const props = buildProps(gltf, tier, anisotropy);
   const trophies = new TrophyCase(props.shelf, tier.detail);
-  const outside = buildOutside(tier, camera.position);
+  let dirty = true;
+  const outside = buildOutside(tier, camera.position, () => {
+    dirty = true;
+  });
   scene.add(room.root, props.root, trophies.root, outside.root);
 
   // Lighting: a warm ceiling spot over the desk, the desk lamp, a cool fill
@@ -163,7 +166,6 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
   scene.add(dusk, dusk.target);
 
   const castShadows = tier.shadows && tier.detail >= 1;
-  let dirty = true;
   const visitors = new Visitors(assets, room.doorPivot, castShadows, () => {
     dirty = true;
   });
