@@ -11,6 +11,7 @@ import matchTuningJson from '../data/tuning/match.json';
 import seasonTuningJson from '../data/tuning/season.json';
 import coachTuningJson from '../data/tuning/coach.json';
 import careerTuningJson from '../data/tuning/career.json';
+import stadiumTuningJson from '../data/tuning/stadium.json';
 import type { Formation, NationId, Position, TeamColors } from './types';
 
 export interface NationDef {
@@ -66,12 +67,14 @@ export const MATCH_TUNING = matchTuningJson;
 export const SEASON_TUNING = seasonTuningJson;
 export const COACH_TUNING = coachTuningJson;
 export const CAREER_TUNING = careerTuningJson;
+export const STADIUM_TUNING = stadiumTuningJson;
 
 export type PlayersTuning = typeof playersTuningJson;
 export type MatchTuning = typeof matchTuningJson;
 export type SeasonTuning = typeof seasonTuningJson;
 export type CoachTuning = typeof coachTuningJson;
 export type CareerTuning = typeof careerTuningJson;
+export type StadiumTuning = typeof stadiumTuningJson;
 
 export function formation(id: string): Formation {
   const f = FORMATIONS.find((x) => x.id === id);

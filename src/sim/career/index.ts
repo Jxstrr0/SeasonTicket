@@ -1,6 +1,7 @@
 export * from './types';
 export * from './util';
 export * from './books';
+export * from './stadium';
 export * from './market';
 export * from './club';
 export * from './selection';

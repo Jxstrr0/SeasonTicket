@@ -14,6 +14,7 @@ import { STAFF_ROLES } from '../types';
 import { ensureHeadCoach, makeSponsorOffers, refillStaffPool, staffInRole, tickNamingRights } from './club';
 import { endLoans, generateFreeAgent, movePlayer } from './market';
 import { repairSelection } from './selection';
+import { summerStadium } from './stadium';
 import type { Career, SeasonHistoryEntry } from './types';
 import { C, addInbox, careerRng, clamp, emptyLedger, ledgerTotals, playerName, squadOf, userBooks, userTeam } from './util';
 
@@ -39,6 +40,7 @@ export function continueToNextSeason(career: Career): void {
   refreshFreeAgentPool(career);
   refillStaffPool(career);
   recomputeSquadQuality(career);
+  summerStadium(career);
   startNewSeason(career);
 }
 

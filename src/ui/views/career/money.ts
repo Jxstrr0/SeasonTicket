@@ -36,6 +36,7 @@ const INCOME_LABELS: Record<IncomeKey, string> = {
   playerSales: 'Player sales',
   loanFees: 'Loan fees received',
   luxuryShare: 'Luxury tax share',
+  hospitality: 'Hospitality boxes',
 };
 
 const SPENDING_LABELS: Record<SpendingKey, string> = {

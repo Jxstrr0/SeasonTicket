@@ -1,0 +1,271 @@
+{
+  "_about": "The stadium builder: four stands, four corners, roofs, boxes and club-wide upgrades. Read by src/sim/career/stadium.ts. Money in Valmeran dollars; weeks are calendar weeks (pre-season and season). Every club owns a stadium; AI clubs build over the summer when they sell out and can afford it.",
+  "stands": {
+    "_about": "Seats by stand level for a side stand (west, east). Ends (north, south) hold endScale of that. Level 0 is an open grass bank with standing room. Raising a level costs the seats it adds x costPerSeat for the new level, plus a flat fee, and takes weeks.",
+    "levels": [
+      {
+        "name": "Grass bank",
+        "seats": 2000,
+        "costPerSeat": 0,
+        "flat": 0,
+        "weeks": 0
+      },
+      {
+        "name": "Small stand",
+        "seats": 4000,
+        "costPerSeat": 260,
+        "flat": 250000,
+        "weeks": 6
+      },
+      {
+        "name": "Single tier",
+        "seats": 7000,
+        "costPerSeat": 320,
+        "flat": 500000,
+        "weeks": 8
+      },
+      {
+        "name": "Two tiers",
+        "seats": 11000,
+        "costPerSeat": 420,
+        "flat": 900000,
+        "weeks": 10
+      },
+      {
+        "name": "Three tiers",
+        "seats": 16000,
+        "costPerSeat": 520,
+        "flat": 1500000,
+        "weeks": 12
+      }
+    ],
+    "endScale": 0.7,
+    "names": {
+      "west": "Main Stand",
+      "east": "East Stand",
+      "north": "North End",
+      "south": "South End"
+    },
+    "_aboutClosure": "Work on a stand during the season closes this share of its seats until it is done. Summer and pre-season work closes nothing (there are no home matches).",
+    "closedShare": 0.35,
+    "roofClosedShare": 0.12,
+    "conditionOnComplete": 0.04
+  },
+  "corners": {
+    "_about": "Corner infills join two stands. Level 1 needs both neighbours at stand level 2 or more; level 2 needs both at 3 or more.",
+    "levels": [
+      {
+        "name": "Open corner",
+        "seats": 0,
+        "cost": 0,
+        "weeks": 0,
+        "needsStands": 0
+      },
+      {
+        "name": "Corner infill",
+        "seats": 1500,
+        "cost": 900000,
+        "weeks": 6,
+        "needsStands": 2
+      },
+      {
+        "name": "Tall corner",
+        "seats": 3200,
+        "cost": 1300000,
+        "weeks": 8,
+        "needsStands": 3
+      }
+    ]
+  },
+  "roof": {
+    "_about": "Per stand: 0 none, 1 cover over the back rows, 2 full cantilever roof. Cost scales with the stand's seats. Covered seats raise attendance (attendanceBonus x covered share of all seats) and keep the noise in.",
+    "levels": [
+      {
+        "name": "No roof",
+        "cover": 0,
+        "costPerSeat": 0,
+        "flat": 0,
+        "weeks": 0
+      },
+      {
+        "name": "Part roof",
+        "cover": 0.5,
+        "costPerSeat": 70,
+        "flat": 200000,
+        "weeks": 4
+      },
+      {
+        "name": "Full roof",
+        "cover": 1,
+        "costPerSeat": 110,
+        "flat": 350000,
+        "weeks": 6
+      }
+    ],
+    "needsStand": 1,
+    "attendanceBonus": 0.05
+  },
+  "boxes": {
+    "_about": "Executive boxes in rows along a stand's back. A row needs the stand at level 2 or more (a second row at 3). Hospitality per home match = boxes x pricePerMatch x (0.5 + market) x occupancy; occupancy = base + perMarket x market + perMood x fan mood, clamped.",
+    "perRowSide": 20,
+    "perRowEnd": 12,
+    "maxRows": 2,
+    "rowNeedsStand": [
+      2,
+      3
+    ],
+    "costPerBox": 80000,
+    "weeks": 5,
+    "pricePerMatch": 1500,
+    "occupancy": {
+      "base": 0.25,
+      "perMarket": 0.35,
+      "perMood": 0.35,
+      "min": 0.2,
+      "max": 1
+    },
+    "upkeepPerBox": 4000
+  },
+  "upgrades": {
+    "_about": "Club-wide upgrades. cost[i] buys level i + 1 and weeks[i] is how long it takes. Effects by level are in each entry.",
+    "floodlights": {
+      "name": "Floodlights",
+      "about": "Brighter lights for evening TV slots. Adds TV money every season.",
+      "cost": [
+        900000,
+        1800000,
+        3200000
+      ],
+      "weeks": [
+        3,
+        4,
+        5
+      ],
+      "tvPerLevel": 200000
+    },
+    "videoBoard": {
+      "name": "Video board",
+      "about": "Replays and adverts. Lifts the shirt sponsor's value and keeps the fans happier.",
+      "cost": [
+        700000,
+        1500000,
+        3000000
+      ],
+      "weeks": [
+        2,
+        3,
+        4
+      ],
+      "sponsorPerLevel": 0.06,
+      "fanMoodPerLevel": 0.015
+    },
+    "signage": {
+      "name": "LED advertising",
+      "about": "Pitch-side and ring screens sell more advertising. Lifts sponsor money.",
+      "cost": [
+        600000,
+        1400000
+      ],
+      "weeks": [
+        2,
+        3
+      ],
+      "sponsorPerLevel": 0.08
+    },
+    "concourse": {
+      "name": "Concourses",
+      "about": "Wider walkways, more kiosks and bars. More money from food and drink per fan, and a better day out.",
+      "cost": [
+        800000,
+        1700000,
+        3200000
+      ],
+      "weeks": [
+        4,
+        5,
+        6
+      ],
+      "concessionsPerLevel": 1.0,
+      "conditionPerLevel": 0.04
+    },
+    "shop": {
+      "name": "Club shop",
+      "about": "From a kiosk to a megastore. More merchandise money every season.",
+      "cost": [
+        500000,
+        1600000
+      ],
+      "weeks": [
+        3,
+        5
+      ],
+      "merchandisePerLevel": 0.12
+    },
+    "pitch": {
+      "name": "Pitch",
+      "about": "Drainage, then a hybrid surface, then undersoil heating. A better pitch lifts the stadium's condition and draws bigger crowds.",
+      "cost": [
+        400000,
+        1100000,
+        2000000
+      ],
+      "weeks": [
+        2,
+        3,
+        3
+      ],
+      "conditionPerLevel": 0.05
+    }
+  },
+  "condition": {
+    "_about": "Stadium condition (0-1) feeds attendance. It wears down each season; a refurbishment costs perSeat x capacity and restores restore points, capped at max.",
+    "decayPerSeason": 0.03,
+    "refurbishPerSeat": 28,
+    "refurbishMinCost": 250000,
+    "refurbishWeeks": 4,
+    "restore": 0.25,
+    "max": 1
+  },
+  "demand": {
+    "_about": "How many people want to come, in seats. Starts at the club's original capacity, grows when fans are happy and the team wins, shrinks when they are not. Attendance share = engine share x demand / capacity (plus roof and board bonuses), clamped, so a bigger ground only fills if the demand is there.",
+    "moodGrowth": 0.22,
+    "moodPivot": 0.55,
+    "titleGrowth": 0.04,
+    "minOfStart": 0.6,
+    "maxOfStart": 3.0,
+    "videoBoardAttendance": 0.01
+  },
+  "projects": {
+    "_about": "At most maxActive projects at once. A project paid for during the season can start now (closing seats) or wait for the summer. The summer adds summerWeeks of building before pre-season.",
+    "maxActive": 3,
+    "summerWeeks": 8
+  },
+  "ai": {
+    "_about": "Each summer an AI club whose crowds averaged at least fullShare of capacity, and whose cash covers the project cashMultiple times over, adds to its smallest stand (or a corner). It refurbishes when condition drops below refurbishBelow.",
+    "fullShare": 0.9,
+    "cashMultiple": 2.5,
+    "refurbishBelow": 0.4
+  },
+  "look": {
+    "_about": "Free, instant branding choices. Seat schemes colour the seats; mow patterns cut the grass.",
+    "seatSchemes": [
+      "primary",
+      "secondary",
+      "mixed",
+      "initials"
+    ],
+    "mowPatterns": [
+      "stripes",
+      "wide",
+      "checks",
+      "diagonal",
+      "rings"
+    ],
+    "roofColours": [
+      "white",
+      "primary",
+      "secondary",
+      "grey"
+    ]
+  }
+}

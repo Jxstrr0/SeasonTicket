@@ -7,10 +7,11 @@ import { createSeason } from '../season';
 import type { TeamColors } from '../types';
 import { fairPrice, newDebt } from './books';
 import { makeSponsorOffers, refillStaffPool } from './club';
+import { createStadiums } from './stadium';
 import type { Career, ClubBooks, Crest, MatchMode, TierId } from './types';
 import { C, addInbox, clamp, emptyLedger, money, userTeam } from './util';
 
-export const CAREER_VERSION = 1;
+export const CAREER_VERSION = 2;
 
 export interface Branding {
   name: string;
@@ -67,6 +68,7 @@ export function createCareer(opts: NewCareerOptions): Career {
     weekIndex: 0,
     season,
     books: {},
+    stadiums: {},
     ladder: { level: 0, deadlineWeek: null, goodWeeks: 0, lastForcedSaleWeek: null },
     loansIn: [],
     incomingBids: [],
@@ -103,6 +105,7 @@ export function createCareer(opts: NewCareerOptions): Career {
     };
     career.books[t.id] = books;
   }
+  createStadiums(career);
   if (tier.debt > 0) career.books[team.id].debts.push(newDebt(career, C.lenders.startingLender, tier.debt));
 
   career.sponsorOffers = makeSponsorOffers(career);
