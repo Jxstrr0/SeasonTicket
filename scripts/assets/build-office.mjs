@@ -5,6 +5,7 @@
 // <source-dir> holds:
 //   ph/<id>/<id>.gltf        Poly Haven props (fetch-polyhaven.py)
 //   tex/<id>_{diff,nor,arm}.jpg Poly Haven surface textures (fetch-polyhaven.py)
+//   tex/<id>_{diff,nor,ao,rough}.jpg ambientCG surface textures (fetch-ambientcg.py)
 //   ubc/                     Quaternius "Universal Base Characters [Standard]" unzipped
 //   ual/                     Quaternius "Universal Animation Library [Standard]" unzipped
 //
@@ -13,7 +14,7 @@
 //   props.glb   every prop as a named root node, textures KTX2, geometry Meshopt
 //   people.glb  two base bodies and a few hairstyles, all on the same 65-bone rig
 //   anims.glb   only the clips the office uses, no mesh
-//   *.ktx2      floor, wall and wood-panel textures
+//   *.ktx2      carpet, parquet and wall textures
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -36,6 +37,8 @@ const PROPS = [
   'modern_coffee_table_01', 'hanging_picture_frame_02', 'clipboard',
   'modern_ceiling_lamp_01', 'football',
 ];
+/** ambientCG surface ids (fetch-ambientcg.py); the rest come from Poly Haven. */
+const AMBIENTCG = ['Carpet012'];
 const CLIPS = [
   'Idle_Loop', 'Idle_Talking_Loop', 'Walk_Formal_Loop', 'Walk_Loop', 'Interact',
   'Sitting_Enter', 'Sitting_Idle_Loop', 'Sitting_Talking_Loop', 'Sitting_Exit',
@@ -136,9 +139,24 @@ async function buildAnims() {
   cli('meshopt', a, join(OUT, 'anims.glb'), '--level', 'medium');
 }
 
+/** ambientCG ships AO and roughness separately: pack them as R = AO, G = rough, B = metal (0). */
+async function packArm(id) {
+  const dir = join(SRC, 'tex');
+  const ao = sharp(join(dir, `${id}_ao.jpg`)).greyscale();
+  const { width, height } = await ao.metadata();
+  const rough = await sharp(join(dir, `${id}_rough.jpg`)).greyscale().resize(width, height).raw().toBuffer();
+  const black = Buffer.alloc(width * height);
+  await ao
+    .joinChannel([rough, black], { raw: { width, height, channels: 1 } })
+    .toColourspace('srgb')
+    .jpeg({ quality: 92 })
+    .toFile(join(dir, `${id}_arm.jpg`));
+}
+
 /** Surface textures for the procedural room. Colour is sRGB ETC1S, normals UASTC. */
-function buildSurfaces() {
-  for (const id of ['herringbone_parquet', 'beige_wall_001', 'brown_planks_05']) {
+async function buildSurfaces() {
+  for (const id of AMBIENTCG) await packArm(id);
+  for (const id of ['herringbone_parquet', 'beige_wall_001', ...AMBIENTCG]) {
     for (const [map, args] of [
       ['diff', ['--encode', 'etc1s', '--qlevel', '160', '--assign_oetf', 'srgb']],
       ['arm', ['--encode', 'etc1s', '--qlevel', '128', '--assign_oetf', 'linear']],
@@ -156,7 +174,7 @@ try {
   if (!only || only === 'props') await buildProps();
   if (!only || only === 'people') await buildPeople();
   if (!only || only === 'anims') await buildAnims();
-  if (!only || only === 'surfaces') buildSurfaces();
+  if (!only || only === 'surfaces') await buildSurfaces();
 } finally {
   rmSync(TMP, { recursive: true, force: true });
 }

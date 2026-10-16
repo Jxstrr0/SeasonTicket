@@ -80,6 +80,9 @@ function box(w: number, h: number, d: number, mat: Material, x: number, y: numbe
   return m;
 }
 
+/** Metres per repeat of the office carpet (levels 0 and 1). */
+const CARPET_TILE = 1.2;
+
 export interface PbrSet {
   map: Texture;
   normalMap: Texture;
@@ -126,9 +129,9 @@ export interface Room {
 }
 
 export async function buildRoom(assets: Assets, tier: TierSettings, anisotropy: number): Promise<Room> {
-  const [wallSet, plankSet] = await Promise.all([
+  const [wallSet, carpetSet] = await Promise.all([
     loadPbr(assets, 'beige_wall_001', anisotropy),
-    loadPbr(assets, 'brown_planks_05', anisotropy),
+    loadPbr(assets, 'Carpet012', anisotropy),
   ]);
   const root = new Group();
   root.name = 'room';
@@ -136,10 +139,10 @@ export async function buildRoom(assets: Assets, tier: TierSettings, anisotropy: 
 
   const wallMat = pbrMaterial(wallSet, { metalness: 0, metalnessMap: null });
   wallMat.color.set('#f1ebe2');
-  const floorMat = pbrMaterial(plankSet, { metalness: 0, metalnessMap: null });
+  const floorMat = pbrMaterial(carpetSet, { metalness: 0, metalnessMap: null });
 
-  // Floor: one panel in world x/z.
-  const floor = new Mesh(panel(minX, maxX, -maxZ, -minZ, 2.2), floorMat);
+  // Floor: one panel in world x/z. Office carpet until level 2 lays parquet.
+  const floor = new Mesh(panel(minX, maxX, -maxZ, -minZ, CARPET_TILE), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   root.add(floor);
@@ -280,6 +283,8 @@ export async function buildRoom(assets: Assets, tier: TierSettings, anisotropy: 
         floor.geometry = panel(minX, maxX, -maxZ, -minZ, 1.6);
       } else if (floor.material !== floorMat) {
         floor.material = floorMat;
+        floor.geometry.dispose();
+        floor.geometry = panel(minX, maxX, -maxZ, -minZ, CARPET_TILE);
       }
     },
   };

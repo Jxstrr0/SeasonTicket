@@ -297,7 +297,7 @@ HQ Office (Stage 3):
 - If the 3D office cannot start, or the browser drops it three times, the game falls back to the plain menus and says so.
 - Visitors: the newest unread inbox message of certain kinds brings a visitor to the door (lender for the ladder, agent for bids and transfers, sponsor rep for finance, head coach for staff and youth news, reporter for match and season news). Tapping the visitor opens that message. Visitors walk in and stand; they do not sit yet.
 - Visitors are one base body with outfits painted on by colour regions in a shader, not separate clothing meshes.
-- The office grows with the club in four levels (see `src/data/tuning/office.json`): a sofa and art after one season, a parquet floor and bigger TV after a trophy or three seasons, the full corner office after three seasons and two trophies. Trophies won fill the cabinet.
+- The office grows with the club in four levels (see `src/data/tuning/office.json`): the office starts carpeted; a sofa and art after one season, a parquet floor and bigger TV after a trophy or three seasons, the full corner office after three seasons and two trophies. Trophies won fill the cabinet.
 - The window view is a placeholder stadium (simple stands, a pitch and a crowd whose density follows attendance) until the modular stadium arrives in Stage 4. The near stand is kept low so the pitch shows from the office height.
 - The wall clock shows the device's real time, not the game calendar.
 - three.js and the office art only download the first time the office opens, so the plain menus stay light. The office art is about 5.6 MB (Meshopt geometry, KTX2 textures).

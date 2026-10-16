@@ -16,7 +16,7 @@ MODELS = [
     'modern_coffee_table_01', 'hanging_picture_frame_02', 'clipboard',
     'modern_ceiling_lamp_01', 'football',
 ]
-TEXTURES = ['herringbone_parquet', 'beige_wall_001', 'brown_planks_05']
+TEXTURES = ['herringbone_parquet', 'beige_wall_001']
 MAPS = {'Diffuse': 'diff', 'nor_gl': 'nor', 'arm': 'arm'}
 
 
