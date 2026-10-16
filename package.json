@@ -1,0 +1,25 @@
+{
+  "name": "season-ticket",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Season Ticket: a soccer club owner/GM sim with a live tactics match engine, by Longlight Interactive.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "sim": "vitest run tests/season.test.ts"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.186.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}
