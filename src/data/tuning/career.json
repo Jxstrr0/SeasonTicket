@@ -1,0 +1,411 @@
+{
+  "_about": "Owner/GM career: calendar, money, contracts, transfers, staff, youth, fans and the lender ladder. Read by src/sim/career/*. Money is in Valmeran dollars per season unless a key says otherwise.",
+  "calendar": {
+    "_about": "A year is four pre-season weeks plus the 35 season weeks. Yearly money (wages, sponsors, TV, merchandise, operations) is paid in equal weekly slices; gate money is paid per home match; prizes and the luxury tax settle at season end.",
+    "preseasonWeeks": 4,
+    "weeksPerYear": 39,
+    "midSeasonWindow": [
+      16,
+      17,
+      18
+    ],
+    "freeAgentBlackout": [
+      33,
+      34,
+      35
+    ]
+  },
+  "tiers": {
+    "_about": "Difficulty comes from the club's market, not branding. Fortune is the owner's own money (finite; injections are permanent). Debt is a Harbourline Bank loan over five seasons.",
+    "order": [
+      "easy",
+      "normal",
+      "hard",
+      "veryHard"
+    ],
+    "easy": {
+      "label": "Easy",
+      "fortune": 20000000,
+      "cash": 6000000,
+      "debt": 0,
+      "clubs": [
+        "crowncaster-city",
+        "olympique-sainte-riviere",
+        "cindervale-ironworks",
+        "port-alder-athletic"
+      ]
+    },
+    "normal": {
+      "label": "Normal",
+      "fortune": 10000000,
+      "cash": 3000000,
+      "debt": 1000000,
+      "clubs": [
+        "lakehaven-united",
+        "inkwater-rovers",
+        "sunreach-sc",
+        "silverpeak-alpine"
+      ]
+    },
+    "hard": {
+      "label": "Hard",
+      "fortune": 5000000,
+      "cash": 1500000,
+      "debt": 2000000,
+      "clubs": [
+        "racing-val-delacroix",
+        "cape-fenwick-united",
+        "prairie-junction",
+        "wrenmoor-wanderers",
+        "lumenfell"
+      ]
+    },
+    "veryHard": {
+      "label": "Very hard",
+      "fortune": 2000000,
+      "cash": 500000,
+      "debt": 3000000,
+      "clubs": [
+        "saltwater-cove",
+        "fort-sterling",
+        "frostbeck-town"
+      ]
+    }
+  },
+  "owner": {
+    "fortuneGrowth": 0.03,
+    "minInjection": 100000
+  },
+  "aiClubs": {
+    "_about": "AI clubs keep books too. Starting cash scales with the club's finances rating.",
+    "cashBase": 500000,
+    "cashPerFinance": 6000000
+  },
+  "tickets": {
+    "_about": "Fair price = base + perMarket x market size. Attendance share = engine share x (fair / price)^elasticity, clamped. AI clubs charge the fair price.",
+    "fairBase": 5,
+    "fairPerMarket": 9,
+    "elasticity": 1.2,
+    "minPrice": 2,
+    "maxPrice": 120,
+    "minShare": 0.15,
+    "playoffPriceMultiplier": 1.5
+  },
+  "matchday": {
+    "concessionsPerHead": 2,
+    "costPerHead": 3
+  },
+  "merchandise": {
+    "_about": "Per season: base + perMarket x market^exponent x fan mood.",
+    "base": 200000,
+    "perMarket": 1500000,
+    "exponent": 1.5
+  },
+  "sponsors": {
+    "_about": "Shirt sponsor per season: base + perMarket x market^exponent, with a spread across offers. Offers arrive at the start of pre-season when no deal is running; an unchosen offer is signed automatically when the season starts.",
+    "base": 300000,
+    "perMarket": 2200000,
+    "exponent": 1.3,
+    "offers": 3,
+    "spread": 0.18,
+    "years": {
+      "min": 1,
+      "max": 3
+    },
+    "longDealDiscount": 0.06,
+    "brands": [
+      "Vellicor Telecom",
+      "Quorra Air",
+      "Halberd Motors",
+      "Tidewell Mutual",
+      "Ombrine Foods",
+      "Corvane Logistics",
+      "Pellinore Electric",
+      "Copperkettle Brewing",
+      "Marrowind Insurance",
+      "Bluefen Software",
+      "Gallowmere Energy",
+      "Stoatley Bakeries"
+    ]
+  },
+  "namingRights": {
+    "_about": "A one-off lump sum for renaming the stadium, sized from the market. Costs fan mood once.",
+    "perMarket": 6000000,
+    "base": 1000000,
+    "years": 5,
+    "fanMoodHit": 0.08
+  },
+  "income": {
+    "tv": 1000000,
+    "merit": [
+      600000,
+      520000,
+      460000,
+      400000,
+      350000,
+      300000,
+      260000,
+      220000,
+      180000,
+      150000,
+      120000,
+      90000,
+      60000,
+      40000,
+      20000,
+      0
+    ],
+    "playoffs": {
+      "quarterFinal": 150000,
+      "semiFinal": 300000,
+      "runnerUp": 500000,
+      "champion": 1000000,
+      "bye": 150000
+    }
+  },
+  "operations": {
+    "_about": "Running the club and the ground per season.",
+    "base": 900000,
+    "perSeat": 15
+  },
+  "wageCap": {
+    "_about": "Soft cap on player payroll (the average across the year). Every dollar over is taxed; repeat offenders pay the higher rate. The pot is shared equally by clubs under the cap.",
+    "cap": 6000000,
+    "taxRate": 0.5,
+    "repeatTaxRate": 1.0,
+    "repeatAfterSeasons": 1
+  },
+  "lenders": {
+    "_about": "Rates are yearly. Tallow & Finch also run the emergency overdraft.",
+    "list": [
+      {
+        "id": "harbourline",
+        "name": "Harbourline Bank",
+        "rate": 0.06,
+        "maxPerRevenue": 0.4,
+        "minCashCondition": 0,
+        "seasons": 5,
+        "needsClean": true
+      },
+      {
+        "id": "greyhollow",
+        "name": "Greyhollow Capital",
+        "rate": 0.12,
+        "maxPerRevenue": 0.7,
+        "minCashCondition": 250000,
+        "seasons": 3,
+        "needsClean": false
+      },
+      {
+        "id": "tallow",
+        "name": "Tallow & Finch Credit",
+        "rate": 0.2,
+        "maxPerRevenue": 1.0,
+        "minCashCondition": 500000,
+        "seasons": 2,
+        "needsClean": false
+      }
+    ],
+    "startingLender": "harbourline",
+    "overdraftLender": "tallow",
+    "overdraftRate": 0.25,
+    "minLoan": 250000
+  },
+  "ladder": {
+    "_about": "Trouble with lenders. Level 0 = fine. 1 warning letter, 2 lender-appointed CFO, 3 spending lock, 4 forced sales, 5 receivership (game over). An overdraft or a broken loan condition triggers it; good weeks bring it back down.",
+    "deadlineWeeks": 6,
+    "goodWeeksToRecover": 8,
+    "cfo": {
+      "maxFee": 1000000,
+      "maxWage": 300000
+    },
+    "lockMaxWage": 60000,
+    "forcedSaleEveryWeeks": 2,
+    "forcedSaleShare": 0.7,
+    "receivershipOverdraft": 4000000
+  },
+  "transfers": {
+    "_about": "Asking price = value x role factor x contract factor. Bids at or above asking are accepted, bids within counterShare get a counter at the midpoint, the rest are refused.",
+    "roleFactor": {
+      "starter": 1.4,
+      "rotation": 1.1,
+      "fringe": 0.9
+    },
+    "contractFactor": [
+      [
+        0,
+        0.5
+      ],
+      [
+        1,
+        0.8
+      ],
+      [
+        2,
+        1.0
+      ],
+      [
+        3,
+        1.1
+      ],
+      [
+        4,
+        1.2
+      ],
+      [
+        5,
+        1.25
+      ]
+    ],
+    "counterShare": 0.8,
+    "minSquad": 20,
+    "maxSquad": 28,
+    "minGoalkeepers": 2,
+    "wageDemand": {
+      "base": 1.0,
+      "moveBonus": 0.1,
+      "perStarRating": 0.004,
+      "ambitionPerTablePlace": 0.01
+    },
+    "contractYears": {
+      "min": 1,
+      "max": 5
+    },
+    "incomingBidsPerWeek": 0.35,
+    "incomingBidShare": {
+      "min": 0.85,
+      "max": 1.25
+    },
+    "bidExpiryWeeks": 2,
+    "aiDealsPerClubPerWeek": 0.25,
+    "aiFreeSigningShare": 0.4,
+    "aiMaxFeeShareOfCash": 0.6,
+    "offerToClubsShare": {
+      "min": 0.75,
+      "max": 1.05
+    },
+    "releaseCostShare": 0.5,
+    "renewalWindowYears": 1,
+    "minWage": 8000,
+    "userMinSquad": 18,
+    "emergencyFillTo": 16,
+    "_aboutEmergency": "If the user's squad drops below emergencyFillTo players (or two goalkeepers), the league tops it up with free agents on one-year minimum deals."
+  },
+  "loans": {
+    "_about": "Loans run to the end of the season. Fee is a share of value; the borrower pays a share of the wage.",
+    "feeShare": 0.08,
+    "wageShare": {
+      "min": 0.5,
+      "max": 1.0,
+      "default": 0.75
+    },
+    "maxLoansIn": 4
+  },
+  "scouting": {
+    "_about": "The uncertainty of an unknown player's rating shown as a range. Error = (100 - head scout rating) / divisor, rounded. Your own squad is always exact.",
+    "divisor": 10
+  },
+  "staff": {
+    "_about": "Coaching quality for development = head coach x weight + assistant x weight (0-1). Staff renew automatically when their deal ends.",
+    "headCoachWeight": 0.6,
+    "assistantWeight": 0.4,
+    "poolPerRole": 4,
+    "poolQuality": {
+      "min": 0.2,
+      "max": 0.95
+    },
+    "fireCostShare": 0.5,
+    "autoRenewYears": 2,
+    "fitnessRehabChance": 0.25,
+    "fitnessRehabFloor": 50
+  },
+  "youth": {
+    "_about": "Intake at the end of each season: domestic prospects aged 16-19. Academy levels 1-5.",
+    "intakeByLevel": [
+      3,
+      3,
+      4,
+      4,
+      5
+    ],
+    "qualityByLevel": [
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6
+    ],
+    "directorQualityWeight": 0.25,
+    "upgradeCost": [
+      500000,
+      1000000,
+      2000000,
+      4000000
+    ],
+    "upkeepByLevel": [
+      100000,
+      180000,
+      300000,
+      450000,
+      650000
+    ],
+    "age": {
+      "min": 16,
+      "max": 19
+    },
+    "contractYears": 3,
+    "potentialBonus": 4
+  },
+  "fans": {
+    "_about": "Fan mood moves with results and ticket prices and drifts back toward the club's baseline. pricePenaltyPerOverFair is taken per 10% the ticket price sits over the fair price, per home match.",
+    "win": 0.02,
+    "draw": 0.0,
+    "loss": -0.02,
+    "pricePenaltyPerOverFair": 0.02,
+    "drift": 0.05,
+    "title": 0.1,
+    "playoffTitle": 0.1,
+    "min": 0.05,
+    "max": 0.98
+  },
+  "aging": {
+    "_about": "Retirement chance rises each year from startAge; everyone retires at forcedAge.",
+    "startAge": 33,
+    "chanceAtStart": 0.15,
+    "chancePerYear": 0.2,
+    "forcedAge": 38,
+    "staffRetireAge": 70
+  },
+  "aiSquads": {
+    "_about": "AI clubs renew useful players and top up thin squads from free agents.",
+    "renewIfRank": 18,
+    "renewMaxAge": 32,
+    "targetSize": 24
+  },
+  "freeAgentPool": {
+    "target": 40,
+    "maxAge": 35
+  },
+  "squadQuality": {
+    "_about": "Each offseason a club's squad quality (used for crowds, sponsors and AI planning) is recomputed from the average overall of its best eleven: baseQuality + perPoint x (average - baseOverall), clamped.",
+    "baseOverall": 52,
+    "baseQuality": 0.33,
+    "perPoint": 0.02,
+    "min": 0.05,
+    "max": 0.99
+  },
+  "inbox": {
+    "max": 60
+  },
+  "results": {
+    "_about": "Finished seasons keep each match's score, team stats and goals/cards/injuries only, to keep saves small.",
+    "keepEventTypes": [
+      "goal",
+      "ownGoal",
+      "penaltyScored",
+      "redCard",
+      "secondYellow",
+      "injury"
+    ]
+  }
+}
