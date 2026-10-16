@@ -3,7 +3,7 @@
  * that reads the career for the office, so the render code never touches the
  * sim.
  */
-import { C, LADDER_NAMES, coachSelection, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
+import { C, LADDER_NAMES, coachSelection, lastHomeCrowd, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
 import { WORLD, formation as formationOf } from '../../sim/data';
 import officeTuning from '../../data/tuning/office.json';
 import type { OfficeSnapshot, OfficeTrophy, OfficeVisitorCall } from '../../render/office/types';
@@ -77,8 +77,7 @@ export function buildOfficeSnapshot(career: Career): OfficeSnapshot {
   const standings = career.season.standings;
   const trophies = officeTrophies(career);
   const { formation, slots } = selectionSlots(career);
-  const last = career.lastUserMatch;
-  const attendance = last && last.homeId === career.userTeamId ? last.attendanceShare : 0.6;
+  const attendance = lastHomeCrowd(career, career.userTeamId);
   const crestSvg = crestDocument(career);
   return {
     clubName: team.name,

@@ -199,7 +199,7 @@ export interface StadiumProject {
   weeks: number;
   weeksLeft: number;
   cost: number;
-  /** Paid for, waiting for the summer to start. */
+  /** Paid for, waiting for the off-season to start. */
   queued: boolean;
 }
 

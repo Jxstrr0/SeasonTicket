@@ -127,6 +127,7 @@ export function settleMatch(career: Career, match: ScheduledMatch, result: Match
   const playoff = match.stage !== 'league';
   const books = career.books[home.id];
   const crowd = Math.round(result.attendanceShare * home.stadiumCapacity);
+  result.crowd = crowd;
   earn(books, 'tickets', crowd * matchPrice(career, home.id, playoff));
   const stadium = career.stadiums[home.id];
   earn(books, 'concessions', crowd * (C.matchday.concessionsPerHead + concessionsBonus(stadium)));

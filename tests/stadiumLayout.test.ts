@@ -4,6 +4,7 @@ import {
   CORNER_NEIGHBOURS,
   cornerPath,
   cornerProfile,
+  crowdFigures,
   pathAt,
   pathLength,
   segNormal,
@@ -105,6 +106,17 @@ describe('stadium layout', () => {
       const front = pathAt(path, 0.5, 0);
       expect(Math.hypot(back.x - front.x, back.z - front.z)).toBeCloseTo(10, 6);
     }
+  });
+
+  it('thins the crowd with attendance even when the tier cap is lower than the seats', () => {
+    // A big ground at Medium: far more seats than the cap.
+    const full = crowdFigures(20000, 5400, 1);
+    expect(full).toBe(5400);
+    expect(crowdFigures(20000, 5400, 0.3) / full).toBeCloseTo(0.3, 6);
+    expect(crowdFigures(20000, 5400, 0.6)).toBeLessThan(crowdFigures(20000, 5400, 0.7));
+    // A small ground under the cap fills seat by seat.
+    expect(crowdFigures(2000, 5400, 0.5)).toBe(1000);
+    expect(crowdFigures(2000, 5400, 0)).toBe(0);
   });
 });
 

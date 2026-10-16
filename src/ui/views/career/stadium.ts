@@ -13,6 +13,7 @@ import {
   averageHomeCrowd,
   boxUpkeep,
   boxesPerRow,
+  capacityWhenBuilt,
   closedSeatsByStand,
   concessionsBonus,
   coveredShare,
@@ -273,10 +274,15 @@ function standSvg(career: Career, stadium: Stadium, id: StandId, picked: boolean
   const r = standRect(id, s.level);
   const look = stadium.look;
   const body = s.level === 0 ? rect(r, 'fill="#4a7c3f"') : rect(r, `fill="${seatFill(look, id === 'east' || id === 'west')}"`);
-  const initials = look.seats === 'initials' && s.level > 0 && (id === 'west' || id === 'east')
-    ? `<text x="${r.x + r.w / 2}" y="${r.y + r.h / 2 + 2}" text-anchor="middle" font-size="${Math.min(7, r.h * 0.6).toFixed(1)}" font-weight="800" fill="var(--seat-b)" letter-spacing="3">${esc(userTeam(career).abbr)}</text>`
+  const lettered = look.seats === 'initials' && s.level > 0 && (id === 'west' || id === 'east');
+  // With the club's initials in the seats, the name moves to the front rows and
+  // the letters to the back rows, so the two never sit on top of each other.
+  const toFront = id === 'west' ? 0.27 : 0.73;
+  const labelY = lettered ? r.y + r.h * toFront : r.y + r.h / 2;
+  const initials = lettered
+    ? `<text x="${r.x + r.w / 2}" y="${(r.y + r.h * (1 - toFront + (id === 'west' ? -0.05 : 0.05))).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.min(6, r.h * 0.36).toFixed(1)}" font-weight="800" fill="var(--seat-b)" letter-spacing="3">${esc(userTeam(career).abbr)}</text>`
     : '';
-  const label = `<text class="st-label" x="${r.x + r.w / 2}" y="${r.y + r.h / 2}" text-anchor="middle" dominant-baseline="middle"${id === 'north' || id === 'south' ? ` transform="rotate(${id === 'north' ? -90 : 90} ${r.x + r.w / 2} ${r.y + r.h / 2})"` : ''}>${esc(standName(id))}</text>`;
+  const label = `<text class="st-label" x="${r.x + r.w / 2}" y="${labelY}" text-anchor="middle" dominant-baseline="middle"${id === 'north' || id === 'south' ? ` transform="rotate(${id === 'north' ? -90 : 90} ${r.x + r.w / 2} ${r.y + r.h / 2})"` : ''}>${esc(standName(id))}</text>`;
   const outline = picked ? rect(r, 'fill="none" stroke="var(--accent)" stroke-width="1.2"') : '';
   return `<g data-action="stadium-pick" data-part="${id}" class="${cls('st-part', picked && 'on')}" role="button" aria-label="${esc(standName(id))}: ${esc(standLevelName(s.level))}">
     ${rect(standHit(id), 'fill="transparent"')}
@@ -354,20 +360,21 @@ function planSvg(career: Career, stadium: Stadium, pick: StadiumPick): string {
 function renderFacts(career: Career, stadium: Stadium): string {
   const team = userTeam(career);
   const full = fullCapacity(stadium);
+  const built = capacityWhenBuilt(stadium);
   const open = openCapacity(career, career.userTeamId);
   const crowd = averageHomeCrowd(career, career.userTeamId);
   const sizes = Object.values(career.stadiums).map(fullCapacity).sort((a, b) => b - a);
   const rank = sizes.indexOf(full) + 1;
   const ordinal = rank === 1 ? 'biggest' : `${rank}${rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'} biggest`;
-  return `<dl class="facts compact">
-      <div><dt>Seats</dt><dd>${seats(open)}${open < full ? `<span class="warn small st-of">of ${seats(full)} when work ends</span>` : ''}</dd></div>
+  return `<section class="card st-facts"><dl class="facts compact">
+      <div><dt>Seats</dt><dd>${seats(open)}${open < built ? `<span class="warn small st-of">of ${seats(built)} when work ends</span>` : ''}</dd></div>
       <div><dt>Demand</dt><dd>${seats(stadium.demand)}</dd></div>
       <div><dt>Avg crowd</dt><dd>${crowd > 0 ? pct(crowd) : '–'}</dd></div>
       <div><dt>Condition</dt><dd>${pct(team.stadiumCondition)}</dd></div>
       <div><dt>Under cover</dt><dd>${pct(coveredShare(stadium))}</dd></div>
       <div><dt>Boxes</dt><dd>${totalBoxes(stadium)}</dd></div>
     </dl>
-    <p class="muted small">The ${ordinal} ground in the league. Demand is how many people want a ticket: a bigger ground only fills if it grows, and it grows with happy fans and trophies.</p>`;
+    <p class="muted small">The ${ordinal} ground in the league. Demand is how many people want a ticket: a bigger ground only fills if it grows, and it grows with happy fans and trophies.</p></section>`;
 }
 
 function progressBar(done: number, total: number): string {
@@ -384,14 +391,16 @@ function renderProjects(career: Career, ui: UiState, stadium: Stadium): string {
         const label = esc(projectLabel(p.kind, p.target, p.toLevel));
         if (p.queued) {
           const shut = seatsClosedBy(stadium, p.kind, p.target);
+          // Only in the season is there a reason to start early; after it, the work starts with the off-season anyway.
+          const startNow = inSeason ? confirmButton(ui, 'start-project-now', p.id, shut > 0 ? `Start now (shuts ${seats(shut)} seats)` : 'Start now') : '';
           return `<li><div class="deal-row"><div><strong>${label}</strong><div class="small muted">Paid ${esc(money(p.cost))} · waits for the off-season (${p.weeks} weeks)</div></div></div>
-            <div class="row-actions">${confirmButton(ui, 'start-project-now', p.id, shut > 0 ? `Start now (shuts ${seats(shut)} seats)` : 'Start now')}${confirmButton(ui, 'cancel-project', p.id, `Call off, refund ${money(p.cost)}`)}</div></li>`;
+            <div class="row-actions">${startNow}${confirmButton(ui, 'cancel-project', p.id, `Call off, refund ${money(p.cost)}`)}</div></li>`;
         }
         const shut = p.kind === 'stand' || p.kind === 'roof' || p.kind === 'boxes' ? closed[p.target as StandId] ?? 0 : 0;
         return `<li><div class="deal-row"><div><strong>${label}</strong><div class="small muted">${p.weeksLeft} week${p.weeksLeft === 1 ? '' : 's'} left${shut > 0 ? ` · <span class="warn">${seats(shut)} seats shut</span>` : ''}</div></div></div>
           ${progressBar(p.weeks - p.weeksLeft, p.weeks)}</li>`;
       })}</ul>`
-    : '<p class="muted small">Nothing being built. Tap a part of the plan to see what it could become.</p>';
+    : '<p class="muted small">Nothing being built. Tap a stand, or pick a part above, to see what it could become.</p>';
   return `<section class="card"><div class="card-title">Building work</div>${body}<p class="muted small">${crews}.</p></section>`;
 }
 
@@ -584,7 +593,6 @@ function renderGround(career: Career, ui: UiState, stadium: Stadium): string {
   return `<section class="card">
     <div class="st-head"><div class="card-title">${esc(team.stadiumName)}</div>${toggle}</div>
     ${ground}
-    ${renderFacts(career, stadium)}
   </section>`;
 }
 
@@ -592,14 +600,18 @@ export function renderStadium(career: Career, ui: UiState): string {
   const stadium = career.stadiums[career.userTeamId];
   const chips = `<div class="chip-row" role="group" aria-label="Part of the ground">${each(STADIUM_PICKS, (p) =>
     `<button type="button" class="${cls('chip', ui.stadiumPick === p && 'on')}" data-action="stadium-pick" data-part="${p}" aria-pressed="${ui.stadiumPick === p}">${esc(PICK_LABELS[p])}</button>`)}</div>`;
-  return `<div class="club-grid stadium-grid">
-    <div>
-      ${renderGround(career, ui, stadium)}
+  // One column on a narrow screen: the ground, its key numbers, then the part
+  // you picked, then the building work. Two columns: the ground stays on screen
+  // on the left while everything else scrolls on the right.
+  return `<div class="stadium-grid">
+    <div class="st-main">${renderGround(career, ui, stadium)}</div>
+    <div class="st-side">
+      ${renderFacts(career, stadium)}
+      <div class="st-picked">
+        ${chips}
+        ${renderPanel(career, ui, stadium)}
+      </div>
       ${renderProjects(career, ui, stadium)}
-    </div>
-    <div>
-      ${chips}
-      ${renderPanel(career, ui, stadium)}
     </div>
   </div>`;
 }

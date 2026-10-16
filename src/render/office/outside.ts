@@ -106,7 +106,7 @@ export function buildOutside(tier: TierSettings, camera: Vector3, onDirty?: () =
   root.add(ground);
 
   // The stadium model has its pitch along x and the Main Stand on +z. Turn it
-  // so the office looks in over a corner, with the Main Stand nearest.
+  // so the office looks in over a corner, with the Main Stand on the far side.
   const stadium = buildStadiumModel(tier, {
     crowdCap: Math.round(WINDOW.crowdCap * tier.crowdDensity),
     selfLit: WINDOW.selfLit,
