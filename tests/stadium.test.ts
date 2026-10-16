@@ -214,6 +214,12 @@ describe('stadium tab', () => {
     expect(html).toContain('start-project-now');
     expect(html).toContain('cancel-project');
     expect(html).toContain('1 of 3 building crews booked');
-    for (const pick of ['corners', 'ground', 'look'] as const) expect(renderStadium(career, { ...ui, stadiumPick: pick })).toContain('st-plan');
+    for (const pick of ['corners', 'ground', 'look'] as const) {
+      // The 3D view is the default; the plan shows when chosen or when 3D is off.
+      expect(renderStadium(career, { ...ui, stadiumPick: pick })).toContain('data-slot="stadium-3d"');
+      expect(renderStadium(career, { ...ui, stadiumPick: pick, stadiumView: 'plan' })).toContain('st-plan');
+      expect(renderStadium(career, { ...ui, stadiumPick: pick, quality: 'off' })).toContain('st-plan');
+      expect(renderStadium(career, { ...ui, stadiumPick: pick, stadium3dFailed: true })).not.toContain('data-slot="stadium-3d"');
+    }
   });
 });

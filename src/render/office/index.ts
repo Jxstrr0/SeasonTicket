@@ -12,7 +12,6 @@ import {
   MathUtils,
   Object3D,
   PCFShadowMap,
-  PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
   PointLight,
@@ -87,7 +86,7 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = tier.shadows;
-  renderer.shadowMap.type = tier.softShadows ? PCFSoftShadowMap : PCFShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   const canvas = renderer.domElement;
   canvas.className = 'office-canvas';
   container.appendChild(canvas);

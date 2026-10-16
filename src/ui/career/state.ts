@@ -29,6 +29,8 @@ export type LivePanel = 'none' | 'subs' | 'tactics';
 /** The part of the ground picked on the Stadium tab. */
 export type StadiumPick = StandId | 'corners' | 'ground' | 'look';
 export const STADIUM_PICKS: readonly StadiumPick[] = ['west', 'east', 'north', 'south', 'corners', 'ground', 'look'];
+/** The Stadium tab shows the ground in 3D, or as a flat plan. */
+export type StadiumView = 'model' | 'plan';
 
 export interface BrandDraft {
   name: string;
@@ -103,6 +105,9 @@ export interface UiState {
   staffRole: StaffRole | null;
   inboxOpen: string | null;
   stadiumPick: StadiumPick;
+  stadiumView: StadiumView;
+  /** True once the 3D stadium failed on this device; the plan shows instead. */
+  stadium3dFailed: boolean;
   reportOpen: boolean;
   flash: Flash | null;
   menuOpen: boolean;
@@ -138,6 +143,8 @@ export function initialUi(): UiState {
     staffRole: null,
     inboxOpen: null,
     stadiumPick: 'west',
+    stadiumView: 'model',
+    stadium3dFailed: false,
     reportOpen: false,
     flash: null,
     menuOpen: false,

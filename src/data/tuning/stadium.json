@@ -267,5 +267,96 @@
       "secondary",
       "grey"
     ]
+  },
+  "view": {
+    "_about": "The 3D stadium on the Stadium tab (read by src/render/stadium/view.ts). Azimuth and elevation are degrees: azimuth 0 puts the camera on the Main Stand side, 90 behind the South End, 180 on the East Stand side, 270 behind the North End. Zoom 1 fits the whole ground; smaller is closer. A focus 'shift' moves the point the camera turns around from the centre spot towards the picked part (0 stays on the centre spot, 1 is the middle of the part). A focus with 'inside' true keeps the camera over the pitch (no further back than the opposite stand's front), so a big stand on the near side never hides the one you picked.",
+    "fov": 42,
+    "target": [
+      0,
+      4,
+      0
+    ],
+    "fitScale": 0.7,
+    "minElevation": 8,
+    "maxElevation": 84,
+    "minZoom": 0.26,
+    "maxZoom": 1.45,
+    "presets": [
+      {
+        "id": "aerial",
+        "label": "Aerial",
+        "azimuth": 135,
+        "elevation": 30,
+        "zoom": 1
+      },
+      {
+        "id": "main",
+        "label": "Main Stand",
+        "azimuth": 180,
+        "elevation": 20,
+        "zoom": 0.85
+      },
+      {
+        "id": "end",
+        "label": "Behind goal",
+        "azimuth": 90,
+        "elevation": 16,
+        "zoom": 0.85
+      },
+      {
+        "id": "top",
+        "label": "Overhead",
+        "azimuth": 180,
+        "elevation": 82,
+        "zoom": 1
+      }
+    ],
+    "focus": {
+      "west": {
+        "azimuth": 180,
+        "elevation": 28,
+        "zoom": 0.78,
+        "shift": 1,
+        "inside": true
+      },
+      "east": {
+        "azimuth": 0,
+        "elevation": 28,
+        "zoom": 0.78,
+        "shift": 1,
+        "inside": true
+      },
+      "north": {
+        "azimuth": 90,
+        "elevation": 28,
+        "zoom": 0.78,
+        "shift": 1,
+        "inside": true
+      },
+      "south": {
+        "azimuth": 270,
+        "elevation": 28,
+        "zoom": 0.78,
+        "shift": 1,
+        "inside": true
+      },
+      "corners": {
+        "azimuth": 135,
+        "elevation": 38,
+        "zoom": 0.95,
+        "shift": 0,
+        "inside": false
+      },
+      "ground": {
+        "azimuth": 160,
+        "elevation": 55,
+        "zoom": 0.9,
+        "shift": 0,
+        "inside": false
+      }
+    },
+    "crowdCap": 9000,
+    "daySelfLit": 0.12,
+    "nightSelfLit": 1
   }
 }
