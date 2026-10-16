@@ -1,0 +1,66 @@
+/**
+ * What the office needs to know about the club. The UI builds this plain
+ * snapshot from the career; the 3D code never reads the sim directly.
+ */
+
+export type HotspotId = 'laptop' | 'phone' | 'tv' | 'window' | 'whiteboard' | 'clipboard' | 'door' | 'cabinet';
+
+export interface OfficeTableRow {
+  pos: number;
+  abbr: string;
+  played: number;
+  points: number;
+  user: boolean;
+}
+
+export interface OfficeTrophy {
+  kind: 'cup' | 'shield' | 'runnerUp';
+  season: number;
+}
+
+export interface OfficeVisitorCall {
+  /** Inbox message id; tapping the visitor opens it. */
+  mailId: string;
+  role: string;
+  title: string;
+}
+
+export interface OfficeSlot {
+  x: number;
+  y: number;
+  label: string;
+  name: string;
+}
+
+export interface OfficeSnapshot {
+  clubName: string;
+  shortName: string;
+  abbr: string;
+  primary: string;
+  secondary: string;
+  /** The crest as an SVG document string, drawn onto canvases. */
+  crestSvg: string;
+  leagueName: string;
+  weekLabel: string;
+  cash: string;
+  cashNegative: boolean;
+  payroll: string;
+  wageCap: string;
+  ladderLabel: string | null;
+  table: OfficeTableRow[];
+  nextFixture: string | null;
+  formation: string;
+  slots: OfficeSlot[];
+  bids: number;
+  sponsorOffers: number;
+  unread: number;
+  trophies: OfficeTrophy[];
+  level: number;
+  /** 0-1 share of seats sold at the last home match, for the crowd in the window. */
+  attendance: number;
+  stadiumName: string;
+  visitor: OfficeVisitorCall | null;
+}
+
+/** What the office asks the menus to do. */
+export type OfficePick = { kind: 'hotspot'; id: HotspotId } | { kind: 'mail'; id: string };

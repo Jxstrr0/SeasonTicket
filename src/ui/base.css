@@ -513,6 +513,7 @@ label .field { color: var(--text); }
   left: max(12px, env(safe-area-inset-left));
   width: min(420px, calc(100vw - 24px));
   max-height: calc(100vh - 80px);
+  max-height: calc(100dvh - 80px);
   overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
@@ -750,3 +751,79 @@ label .field { color: var(--text); }
 :is(.home-grid, .club-grid, .money-grid, .review-grid, .live-grid, .lineup-grid) > .card + .card { margin-top: 0; }
 .pick-name { grid-column: 1; grid-row: 1; }
 .deal-list + .card-title { margin-top: 16px; }
+
+/* ------------------------------------------------------------ HQ Office */
+/* The 3D office fills the screen behind the hub frame (top bar and tabs). */
+#office-layer { position: fixed; inset: 0; z-index: 0; display: none; overflow: hidden; background: var(--bg); }
+#office-layer.on { display: block; }
+#ui-layer { position: relative; z-index: 1; }
+body.office-mode { overflow: hidden; overscroll-behavior: none; }
+body.office-mode #ui-layer { pointer-events: none; }
+body.office-mode #ui-layer > * { pointer-events: auto; }
+body.office-mode #ui-layer > .office-hud { pointer-events: none; }
+body.office-mode .topbar { backdrop-filter: none; }
+.office-hud { padding: 8px max(12px, env(safe-area-inset-left)); max-width: 640px; }
+.office-hud > * { pointer-events: auto; }
+.office-hud:empty { display: none; }
+.office-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.office-labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.office-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  will-change: transform;
+}
+.office-label[hidden] { display: none; }
+.office-label span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(242, 193, 78, 0.55);
+  background: rgba(11, 16, 32, 0.74);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.office-label:active span { background: rgba(242, 193, 78, 0.9); color: #1a1406; }
+.office-bubble span {
+  max-width: 15em;
+  white-space: normal;
+  text-align: center;
+  border-color: var(--accent);
+  background: rgba(242, 193, 78, 0.94);
+  color: #1a1406;
+}
+.office-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: var(--muted);
+  background: radial-gradient(900px 500px at 30% 20%, #1d2a5a 0%, var(--bg) 60%);
+}
+.office-loading[hidden] { display: none; }
+.office-loading p { margin: 0; }
+.office-loading-bar { width: min(260px, 60vw); height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+.office-loading-bar span { display: block; width: 4%; height: 100%; background: var(--accent); transition: width 0.2s linear; }

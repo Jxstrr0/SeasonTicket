@@ -278,6 +278,30 @@ Career simplifications (Stage 2):
   - **Coach:** play never stops.
 - In big-calls mode, a tactics change by the owner becomes the head coach's new game plan. The coach makes his usual adjustments (chasing, protecting, after a red card) from that plan instead of undoing it.
 
+HQ Office (Stage 3):
+- The desk is the menu. Tapping an object opens a Stage 2 screen:
+
+  | Object | Opens |
+  | --- | --- |
+  | Laptop | Money |
+  | Phone | Market |
+  | TV | League table |
+  | Whiteboard | Lineup |
+  | Clipboard | Squad |
+  | Window, trophy cabinet | Club |
+  | Door | Inbox |
+
+  The Office tab brings the room back. Every screen is still reachable through the tabs, so nothing depends on finding an object.
+- The laptop, TV and whiteboard show live data (cash, the table, the planned eleven) drawn onto canvas textures. The laptop's screen had no texture coordinates in the source model, so the game generates flat ones when it loads.
+- Graphics setting: Low, Medium, High or Off (plain menus). It is stored per device, not in the save, so a save code moved to a laptop gets High there. Default is Medium on phones, High on desktop. The tiers control pixel ratio, antialiasing, shadows, bloom (High only), prop detail, the crowd in the window view and the city blocks behind it.
+- If the 3D office cannot start, or the browser drops it three times, the game falls back to the plain menus and says so.
+- Visitors: the newest unread inbox message of certain kinds brings a visitor to the door (lender for the ladder, agent for bids and transfers, sponsor rep for finance, head coach for staff and youth news, reporter for match and season news). Tapping the visitor opens that message. Visitors walk in and stand; they do not sit yet.
+- Visitors are one base body with outfits painted on by colour regions in a shader, not separate clothing meshes.
+- The office grows with the club in four levels (see `src/data/tuning/office.json`): a sofa and art after one season, a parquet floor and bigger TV after a trophy or three seasons, the full corner office after three seasons and two trophies. Trophies won fill the cabinet.
+- The window view is a placeholder stadium (simple stands, a pitch and a crowd whose density follows attendance) until the modular stadium arrives in Stage 4. The near stand is kept low so the pitch shows from the office height.
+- The wall clock shows the device's real time, not the game calendar.
+- three.js and the office art only download the first time the office opens, so the plain menus stay light. The office art is about 5.6 MB (Meshopt geometry, KTX2 textures).
+
 ---
 
 ## 16. Open items (decide during development)

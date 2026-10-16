@@ -55,6 +55,9 @@ import { renderHub } from '../views/career/hub';
 import { renderLive } from '../views/career/live';
 import { renderReview } from '../views/career/review';
 import { renderGameOver, renderSaveCode } from '../views/career/saves';
+import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
+import type { HotspotId, OfficePick } from '../../render/office/types';
+import { OfficeHost } from './officeHost';
 import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, initialUi, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type UiState } from './state';
 
 type Result = { ok: boolean; message: string };
@@ -122,6 +125,18 @@ function userResultText(career: Career, results: readonly MatchResult[]): string
   return `${name(r.homeId)} ${r.homeScore}-${r.awayScore} ${name(r.awayId)}${pens}`;
 }
 
+/** Where each object in the office leads. */
+const HOTSPOT_TABS: Record<HotspotId, HubTab> = {
+  laptop: 'money',
+  phone: 'market',
+  tv: 'league',
+  window: 'club',
+  cabinet: 'club',
+  whiteboard: 'lineup',
+  clipboard: 'squad',
+  door: 'inbox',
+};
+
 export class CareerApp {
   private ui: UiState = initialUi();
   private career: Career | null = null;
@@ -130,10 +145,31 @@ export class CareerApp {
   private liveTimer: number | null = null;
   /** Set after one failed save so the warning shows once. */
   private saveWarned = false;
+  /** The 3D office sits behind the menus; the menus render into uiLayer. */
+  private readonly uiLayer: HTMLElement;
+  private readonly officeLayer: HTMLElement;
+  private readonly office: OfficeHost;
 
   constructor(private readonly root: HTMLElement) {
+    const officeLayer = document.createElement('div');
+    officeLayer.id = 'office-layer';
+    this.officeLayer = officeLayer;
+    this.uiLayer = document.createElement('div');
+    this.uiLayer.id = 'ui-layer';
+    root.replaceChildren(officeLayer, this.uiLayer);
+    this.office = new OfficeHost(
+      officeLayer,
+      (p) => this.onOfficePick(p),
+      (text) => {
+        this.ui.inOffice = false;
+        this.ui.flash = { kind: 'error', text };
+        this.render();
+      },
+    );
     this.loadStored();
     root.addEventListener('click', (e) => this.onClick(e));
+    // Turning the phone changes how tall the top bar is.
+    window.addEventListener('resize', () => this.syncOffice());
     root.addEventListener('submit', (e) => this.onSubmit(e));
     root.addEventListener('input', (e) => this.onDraft(e));
     root.addEventListener('change', (e) => this.onChange(e));
@@ -173,7 +209,39 @@ export class CareerApp {
   }
 
   private render(): void {
-    this.root.innerHTML = this.view();
+    this.uiLayer.innerHTML = this.view();
+    this.syncOffice();
+  }
+
+  /** The tier the office runs at, or null when the plain menus are on. */
+  private officeTier(): QualityTier | null {
+    const q = this.ui.quality;
+    return q === 'off' || this.office.failed ? null : q;
+  }
+
+  /** Where the hub lands: the office when 3D is on, else the Home tab. */
+  private goHome(): void {
+    this.ui.tab = 'home';
+    this.ui.inOffice = this.officeTier() !== null;
+  }
+
+  private syncOffice(): void {
+    const { ui, career } = this;
+    if (ui.inOffice && !this.officeTier()) ui.inOffice = false;
+    const on = !!career && ui.screen === 'hub' && ui.inOffice;
+    if (on) {
+      // The room starts below the top bar and tabs, so no label hides under them.
+      const tabs = this.uiLayer.querySelector('.career-tabs');
+      this.officeLayer.style.top = tabs ? `${Math.round(tabs.getBoundingClientRect().bottom)}px` : '0';
+    }
+    this.office.sync(on ? career : null, on ? this.officeTier() : null);
+  }
+
+  private onOfficePick(p: OfficePick): void {
+    if (!this.career || this.ui.screen !== 'hub') return;
+    this.ui.flash = null;
+    if (p.kind === 'mail') return this.openMail(p.id);
+    this.showTab(HOTSPOT_TABS[p.id]);
   }
 
   private view(): string {
@@ -268,7 +336,7 @@ export class CareerApp {
     switch (action) {
       case 'continue':
         if (!this.career) return;
-        ui.tab = 'home';
+        this.goHome();
         if (!this.followPhase()) this.show('hub');
         return;
       case 'new-career':
@@ -311,6 +379,18 @@ export class CareerApp {
       case 'menu':
         ui.menuOpen = !ui.menuOpen;
         return this.render();
+      case 'office':
+        ui.inOffice = this.officeTier() !== null;
+        ui.menuOpen = false;
+        return this.render();
+      case 'set-quality':
+        if (!isQualitySetting(d.quality)) return;
+        ui.quality = d.quality;
+        storeQuality(d.quality);
+        this.office.reset();
+        // Turning 3D on (or changing tier) shows the office straight away.
+        ui.inOffice = d.quality !== 'off';
+        return this.render();
       case 'set-mode':
         if (isMode(d.mode)) career.delegation.matchMode = d.mode;
         break;
@@ -331,11 +411,11 @@ export class CareerApp {
       case 'game-over':
         return this.show('gameOver');
       case 'to-hub':
-        ui.tab = 'home';
+        this.goHome();
         return this.show('hub');
       case 'start-offseason':
         continueToNextSeason(career);
-        ui.tab = 'home';
+        this.goHome();
         ui.resultsWeek = null;
         ui.flash = { kind: 'ok', text: `Season ${career.season.league.season} pre-season. The transfer window is open.` };
         this.save();
@@ -740,6 +820,7 @@ export class CareerApp {
     this.career = career;
     this.saveWarned = false;
     this.ui = { ...initialUi(), screen: 'hub', title: this.ui.title };
+    this.goHome();
     this.ui.title.error = null;
     this.ui.flash = { kind: 'ok', text: `Welcome to ${userTeam(career).name}. Pre-season starts now: the transfer window is open.` };
     this.save();
@@ -761,6 +842,7 @@ export class CareerApp {
     this.career = career;
     this.saveWarned = false;
     this.ui = { ...initialUi(), title: this.ui.title };
+    this.goHome();
     this.ui.title.error = null;
     this.ui.title.importText = '';
     this.ui.flash = { kind: 'ok', text: 'Save code loaded.' };
@@ -829,6 +911,7 @@ export class CareerApp {
     if (!HUB_TABS.some((t) => t.id === tab)) return;
     const ui = this.ui;
     ui.tab = tab as HubTab;
+    ui.inOffice = false;
     ui.squadPlayerId = null;
     ui.marketPlayerId = null;
     ui.openMatchId = null;
@@ -845,6 +928,7 @@ export class CareerApp {
     if (!career) return;
     const ui = this.ui;
     ui.inboxOpen = id || null;
+    ui.inOffice = false;
     const msg = id ? career.inbox.find((m) => m.id === id) : undefined;
     if (msg) msg.read = true;
     if (ui.tab !== 'inbox' && id) {
@@ -983,7 +1067,7 @@ export class CareerApp {
         if (line) this.ui.flash = { kind: 'ok', text: `Full time: ${line}` };
       }
     }
-    this.ui.tab = 'home';
+    this.goHome();
     this.ui.resultsWeek = null;
     this.save();
     if (!this.followPhase()) this.show('hub');

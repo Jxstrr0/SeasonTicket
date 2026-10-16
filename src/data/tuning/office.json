@@ -1,0 +1,62 @@
+{
+  "_about": "HQ Office (Stage 3). Quality tiers, the swipe camera, how the office grows with the club, who visits and what they wear. Read by src/render/quality.ts and src/render/office.",
+  "quality": {
+    "_about": "Per-device graphics tiers. pixelRatio caps devicePixelRatio. detail 0-2 trims decorative props and geometry segments (our level-of-detail switch). crowdDensity scales the crowd seen through the window. bloom turns on post-processing.",
+    "defaultPhone": "medium",
+    "defaultDesktop": "high",
+    "tiers": {
+      "low": { "label": "Low", "pixelRatio": 1, "antialias": false, "shadows": false, "shadowMapSize": 512, "softShadows": false, "bloom": false, "detail": 0, "crowdDensity": 0.25, "cityBlocks": 10 },
+      "medium": { "label": "Medium", "pixelRatio": 1.5, "antialias": true, "shadows": true, "shadowMapSize": 1024, "softShadows": false, "bloom": false, "detail": 1, "crowdDensity": 0.6, "cityBlocks": 22 },
+      "high": { "label": "High", "pixelRatio": 2, "antialias": true, "shadows": true, "shadowMapSize": 2048, "softShadows": true, "bloom": true, "detail": 2, "crowdDensity": 1, "cityBlocks": 40 }
+    }
+  },
+  "camera": {
+    "_about": "The owner stands behind the desk. Angles in degrees; yaw 0 looks across the desk at the door. fov is vertical; hfovMax keeps very wide screens (a phone on its side under the top bar) from looking fish-eyed.",
+    "position": [0, 1.42, 1.7],
+    "fov": 62,
+    "fovPortrait": 78,
+    "hfovMax": 96,
+    "startYaw": 0,
+    "startPitch": -12,
+    "yawLimit": 78,
+    "pitchMin": -40,
+    "pitchMax": 25,
+    "degreesPerPixel": 0.15,
+    "damping": 0.88,
+    "tapSlopPx": 10
+  },
+  "growth": {
+    "_about": "Office level from the club's record. A level is reached when every listed threshold is met. Level 1 adds a sofa and art, level 2 a parquet floor and a bigger TV, level 3 the full corner office.",
+    "levels": [
+      { "level": 1, "seasons": 1 },
+      { "level": 2, "seasons": 1, "trophies": 1 },
+      { "level": 2, "seasons": 3 },
+      { "level": 3, "seasons": 3, "trophies": 2 }
+    ]
+  },
+  "visitors": {
+    "_about": "The newest unread inbox message of a listed kind brings that visitor to the office. Outfits are colours for jacket, trousers, shirt and tie (null tie = open collar). 'club' means the club's primary colour.",
+    "byKind": {
+      "ladder": "lender",
+      "bid": "agent",
+      "transfer": "agent",
+      "finance": "sponsor",
+      "staff": "coach",
+      "youth": "coach",
+      "match": "reporter",
+      "season": "reporter"
+    },
+    "roles": {
+      "lender": { "label": "Lender", "walk": "Walk_Formal_Loop", "jackets": ["#1d2433", "#2b2f36", "#30343c"], "trousers": "#1b1e24", "shirt": "#e8ebef", "ties": ["#7a1f24", "#2a3d66"] },
+      "agent": { "label": "Agent", "walk": "Walk_Loop", "jackets": ["#5a1f2b", "#1f4d4a", "#4a3a6b", "#6b5a2a"], "trousers": "#202022", "shirt": "#111316", "ties": [null] },
+      "sponsor": { "label": "Sponsor rep", "walk": "Walk_Formal_Loop", "jackets": ["#2f4f7a", "#7a7f88", "#3b5d3a"], "trousers": "#2a2c30", "shirt": "#f2f2f2", "ties": [null, "#c58a2a"] },
+      "coach": { "label": "Head coach", "walk": "Walk_Loop", "jackets": ["club"], "trousers": "#1a1c20", "shirt": "club2", "ties": [null] },
+      "reporter": { "label": "Reporter", "walk": "Walk_Loop", "jackets": ["#8a7454", "#556070", "#6b4a3a"], "trousers": "#3a3f4a", "shirt": "#dfe3e8", "ties": [null] }
+    },
+    "skinTones": ["#f1d3bf", "#e3b597", "#c98f6b", "#a76f4c", "#7d4f33", "#5a3825"],
+    "hairColors": ["#1c1410", "#3a2618", "#6b4a2b", "#a07a4a", "#c9b08a", "#7a7a7a"],
+    "shoes": "#141414",
+    "walkSpeed": 1.15,
+    "turnSpeed": 6
+  }
+}
