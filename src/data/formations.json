@@ -1,0 +1,128 @@
+[
+  {
+    "id": "4-3-3",
+    "name": "4-3-3",
+    "defensiveBias": 0.45,
+    "slots": [
+      { "index": 0, "position": "GK", "x": 0.5, "y": 0.05, "label": "GK" },
+      { "index": 1, "position": "FB", "x": 0.15, "y": 0.26, "label": "LB" },
+      { "index": 2, "position": "CB", "x": 0.38, "y": 0.22, "label": "LCB" },
+      { "index": 3, "position": "CB", "x": 0.62, "y": 0.22, "label": "RCB" },
+      { "index": 4, "position": "FB", "x": 0.85, "y": 0.26, "label": "RB" },
+      { "index": 5, "position": "DM", "x": 0.5, "y": 0.42, "label": "CDM" },
+      { "index": 6, "position": "CM", "x": 0.3, "y": 0.55, "label": "LCM" },
+      { "index": 7, "position": "CM", "x": 0.7, "y": 0.55, "label": "RCM" },
+      { "index": 8, "position": "W", "x": 0.15, "y": 0.78, "label": "LW" },
+      { "index": 9, "position": "ST", "x": 0.5, "y": 0.86, "label": "ST" },
+      { "index": 10, "position": "W", "x": 0.85, "y": 0.78, "label": "RW" }
+    ]
+  },
+  {
+    "id": "4-4-2",
+    "name": "4-4-2",
+    "defensiveBias": 0.5,
+    "slots": [
+      { "index": 0, "position": "GK", "x": 0.5, "y": 0.05, "label": "GK" },
+      { "index": 1, "position": "FB", "x": 0.15, "y": 0.26, "label": "LB" },
+      { "index": 2, "position": "CB", "x": 0.38, "y": 0.22, "label": "LCB" },
+      { "index": 3, "position": "CB", "x": 0.62, "y": 0.22, "label": "RCB" },
+      { "index": 4, "position": "FB", "x": 0.85, "y": 0.26, "label": "RB" },
+      { "index": 5, "position": "W", "x": 0.15, "y": 0.55, "label": "LM" },
+      { "index": 6, "position": "CM", "x": 0.38, "y": 0.5, "label": "LCM" },
+      { "index": 7, "position": "CM", "x": 0.62, "y": 0.5, "label": "RCM" },
+      { "index": 8, "position": "W", "x": 0.85, "y": 0.55, "label": "RM" },
+      { "index": 9, "position": "ST", "x": 0.4, "y": 0.84, "label": "LST" },
+      { "index": 10, "position": "ST", "x": 0.6, "y": 0.84, "label": "RST" }
+    ]
+  },
+  {
+    "id": "4-2-3-1",
+    "name": "4-2-3-1",
+    "defensiveBias": 0.5,
+    "slots": [
+      { "index": 0, "position": "GK", "x": 0.5, "y": 0.05, "label": "GK" },
+      { "index": 1, "position": "FB", "x": 0.15, "y": 0.26, "label": "LB" },
+      { "index": 2, "position": "CB", "x": 0.38, "y": 0.22, "label": "LCB" },
+      { "index": 3, "position": "CB", "x": 0.62, "y": 0.22, "label": "RCB" },
+      { "index": 4, "position": "FB", "x": 0.85, "y": 0.26, "label": "RB" },
+      { "index": 5, "position": "DM", "x": 0.38, "y": 0.42, "label": "LDM" },
+      { "index": 6, "position": "DM", "x": 0.62, "y": 0.42, "label": "RDM" },
+      { "index": 7, "position": "W", "x": 0.15, "y": 0.68, "label": "LW" },
+      { "index": 8, "position": "AM", "x": 0.5, "y": 0.64, "label": "CAM" },
+      { "index": 9, "position": "W", "x": 0.85, "y": 0.68, "label": "RW" },
+      { "index": 10, "position": "ST", "x": 0.5, "y": 0.86, "label": "ST" }
+    ]
+  },
+  {
+    "id": "3-5-2",
+    "name": "3-5-2",
+    "defensiveBias": 0.5,
+    "slots": [
+      { "index": 0, "position": "GK", "x": 0.5, "y": 0.05, "label": "GK" },
+      { "index": 1, "position": "CB", "x": 0.3, "y": 0.22, "label": "LCB" },
+      { "index": 2, "position": "CB", "x": 0.5, "y": 0.2, "label": "CB" },
+      { "index": 3, "position": "CB", "x": 0.7, "y": 0.22, "label": "RCB" },
+      { "index": 4, "position": "FB", "x": 0.1, "y": 0.5, "label": "LWB" },
+      { "index": 5, "position": "DM", "x": 0.5, "y": 0.42, "label": "CDM" },
+      { "index": 6, "position": "CM", "x": 0.35, "y": 0.56, "label": "LCM" },
+      { "index": 7, "position": "CM", "x": 0.65, "y": 0.56, "label": "RCM" },
+      { "index": 8, "position": "FB", "x": 0.9, "y": 0.5, "label": "RWB" },
+      { "index": 9, "position": "ST", "x": 0.4, "y": 0.84, "label": "LST" },
+      { "index": 10, "position": "ST", "x": 0.6, "y": 0.84, "label": "RST" }
+    ]
+  },
+  {
+    "id": "5-3-2",
+    "name": "5-3-2",
+    "defensiveBias": 0.7,
+    "slots": [
+      { "index": 0, "position": "GK", "x": 0.5, "y": 0.05, "label": "GK" },
+      { "index": 1, "position": "FB", "x": 0.1, "y": 0.32, "label": "LWB" },
+      { "index": 2, "position": "CB", "x": 0.3, "y": 0.22, "label": "LCB" },
+      { "index": 3, "position": "CB", "x": 0.5, "y": 0.2, "label": "CB" },
+      { "index": 4, "position": "CB", "x": 0.7, "y": 0.22, "label": "RCB" },
+      { "index": 5, "position": "FB", "x": 0.9, "y": 0.32, "label": "RWB" },
+      { "index": 6, "position": "DM", "x": 0.5, "y": 0.44, "label": "CDM" },
+      { "index": 7, "position": "CM", "x": 0.3, "y": 0.56, "label": "LCM" },
+      { "index": 8, "position": "CM", "x": 0.7, "y": 0.56, "label": "RCM" },
+      { "index": 9, "position": "ST", "x": 0.4, "y": 0.84, "label": "LST" },
+      { "index": 10, "position": "ST", "x": 0.6, "y": 0.84, "label": "RST" }
+    ]
+  },
+  {
+    "id": "4-1-4-1",
+    "name": "4-1-4-1",
+    "defensiveBias": 0.6,
+    "slots": [
+      { "index": 0, "position": "GK", "x": 0.5, "y": 0.05, "label": "GK" },
+      { "index": 1, "position": "FB", "x": 0.15, "y": 0.26, "label": "LB" },
+      { "index": 2, "position": "CB", "x": 0.38, "y": 0.22, "label": "LCB" },
+      { "index": 3, "position": "CB", "x": 0.62, "y": 0.22, "label": "RCB" },
+      { "index": 4, "position": "FB", "x": 0.85, "y": 0.26, "label": "RB" },
+      { "index": 5, "position": "DM", "x": 0.5, "y": 0.4, "label": "CDM" },
+      { "index": 6, "position": "W", "x": 0.15, "y": 0.58, "label": "LM" },
+      { "index": 7, "position": "CM", "x": 0.38, "y": 0.55, "label": "LCM" },
+      { "index": 8, "position": "CM", "x": 0.62, "y": 0.55, "label": "RCM" },
+      { "index": 9, "position": "W", "x": 0.85, "y": 0.58, "label": "RM" },
+      { "index": 10, "position": "ST", "x": 0.5, "y": 0.86, "label": "ST" }
+    ]
+  },
+  {
+    "id": "3-4-3",
+    "name": "3-4-3",
+    "defensiveBias": 0.35,
+    "slots": [
+      { "index": 0, "position": "GK", "x": 0.5, "y": 0.05, "label": "GK" },
+      { "index": 1, "position": "CB", "x": 0.3, "y": 0.22, "label": "LCB" },
+      { "index": 2, "position": "CB", "x": 0.5, "y": 0.2, "label": "CB" },
+      { "index": 3, "position": "CB", "x": 0.7, "y": 0.22, "label": "RCB" },
+      { "index": 4, "position": "FB", "x": 0.1, "y": 0.52, "label": "LWB" },
+      { "index": 5, "position": "CM", "x": 0.38, "y": 0.5, "label": "LCM" },
+      { "index": 6, "position": "CM", "x": 0.62, "y": 0.5, "label": "RCM" },
+      { "index": 7, "position": "FB", "x": 0.9, "y": 0.52, "label": "RWB" },
+      { "index": 8, "position": "W", "x": 0.2, "y": 0.78, "label": "LW" },
+      { "index": 9, "position": "ST", "x": 0.5, "y": 0.86, "label": "ST" },
+      { "index": 10, "position": "W", "x": 0.8, "y": 0.78, "label": "RW" }
+    ]
+  }
+]

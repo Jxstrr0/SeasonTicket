@@ -1,0 +1,679 @@
+{
+  "_about": "Every constant the match engine uses. Dial-indexed arrays have five entries for dial values 1..5. Attribute-relative weights are applied as weight * (attribute - attributes.mid) / attributes.scale.",
+  "squad": {
+    "starters": 11,
+    "maxBench": 9,
+    "maxSubs": 5
+  },
+  "dials": {
+    "balanced": 3,
+    "min": 1,
+    "max": 5
+  },
+  "clock": {
+    "halfMinutes": 45,
+    "extraHalfMinutes": 15,
+    "shootoutMinute": 121,
+    "stoppage": {
+      "regulation": {
+        "min": 1,
+        "max": 6,
+        "base": 1.4,
+        "sd": 0.9
+      },
+      "extraTime": {
+        "min": 0,
+        "max": 2,
+        "base": 0.4,
+        "sd": 0.5
+      },
+      "perGoal": 0.35,
+      "perSubstitution": 0.3,
+      "perCard": 0.25,
+      "perInjury": 0.9,
+      "perTimeWastingSide": 0.6,
+      "timeWastingDialFrom": 3
+    }
+  },
+  "attributes": {
+    "scale": 99,
+    "mid": 60,
+    "fatiguePenalty": 0.35
+  },
+  "fatigue": {
+    "baseDrainPerMinute": 0.0056,
+    "staminaRelief": 0.45,
+    "workRateCost": 0.2,
+    "pressingCost": [
+      -0.2,
+      -0.1,
+      0,
+      0.18,
+      0.4
+    ],
+    "tempoCost": [
+      -0.2,
+      -0.1,
+      0,
+      0.15,
+      0.35
+    ],
+    "goalkeeperMultiplier": 0.3,
+    "minEnergy": 0.1,
+    "injuredEnergy": 0.15,
+    "minStartEnergy": 0.4
+  },
+  "units": {
+    "byPosition": {
+      "GK": "goalkeeper",
+      "CB": "defender",
+      "FB": "defender",
+      "DM": "midfielder",
+      "CM": "midfielder",
+      "AM": "attacker",
+      "W": "attacker",
+      "ST": "attacker"
+    }
+  },
+  "strength": {
+    "goalkeeper": {
+      "weights": {
+        "ref": 0.35,
+        "gkp": 0.3,
+        "han": 0.25,
+        "pos": 0.1
+      }
+    },
+    "defense": {
+      "weights": {
+        "tck": 0.25,
+        "mrk": 0.25,
+        "pos": 0.2,
+        "hea": 0.1,
+        "str": 0.1,
+        "pac": 0.1
+      },
+      "unitShare": {
+        "goalkeeper": 0,
+        "defender": 1,
+        "midfielder": 0.45,
+        "attacker": 0.1
+      }
+    },
+    "midfield": {
+      "weights": {
+        "pas": 0.25,
+        "vis": 0.15,
+        "wrk": 0.2,
+        "tck": 0.15,
+        "dri": 0.1,
+        "sta": 0.15
+      },
+      "unitShare": {
+        "goalkeeper": 0,
+        "defender": 0.3,
+        "midfielder": 1,
+        "attacker": 0.4
+      }
+    },
+    "attack": {
+      "weights": {
+        "fin": 0.25,
+        "dri": 0.15,
+        "pac": 0.15,
+        "pas": 0.15,
+        "vis": 0.15,
+        "cmp": 0.15
+      },
+      "unitShare": {
+        "goalkeeper": 0,
+        "defender": 0.1,
+        "midfielder": 0.45,
+        "attacker": 1
+      }
+    },
+    "outfieldInGoalFactor": 0.35,
+    "shortHandedPenalty": 0.1,
+    "formationBiasScale": 0.3,
+    "mentalityAttackStep": 0.06,
+    "mentalityDefenseStep": 0.05
+  },
+  "home": {
+    "possession": 0.04,
+    "shotRate": 0.12,
+    "cardLeniency": 0.9,
+    "attendanceFloor": 0.4
+  },
+  "possession": {
+    "midfieldSensitivity": 0.9,
+    "tempoStep": -0.02,
+    "directnessStep": -0.025,
+    "widthStep": -0.005,
+    "mentalityStep": 0.01,
+    "chasingBonusPerGoal": 0.025,
+    "chasingMax": 0.06,
+    "chasingFromMinute": 60,
+    "min": 0.2,
+    "max": 0.8
+  },
+  "move": {
+    "shot": {
+      "base": 0.165,
+      "strengthExponent": 1.4,
+      "mentalityFor": [
+        0.84,
+        0.92,
+        1,
+        1.08,
+        1.16
+      ],
+      "mentalityAgainst": [
+        0.88,
+        0.94,
+        1,
+        1.06,
+        1.12
+      ],
+      "tempo": [
+        0.9,
+        0.95,
+        1,
+        1.05,
+        1.1
+      ],
+      "directness": [
+        0.95,
+        0.98,
+        1,
+        1.03,
+        1.06
+      ],
+      "width": [
+        1.02,
+        1.01,
+        1,
+        0.99,
+        0.98
+      ]
+    },
+    "foul": {
+      "base": 0.2,
+      "pressing": [
+        0.8,
+        0.9,
+        1,
+        1.15,
+        1.3
+      ],
+      "aggressionWeight": 0.4
+    },
+    "corner": {
+      "base": 0.1,
+      "width": [
+        0.85,
+        0.92,
+        1,
+        1.1,
+        1.2
+      ],
+      "attackExponent": 0.7
+    },
+    "turnover": {
+      "base": 0.28,
+      "pressing": [
+        0.8,
+        0.9,
+        1,
+        1.15,
+        1.3
+      ],
+      "tempo": [
+        0.9,
+        0.95,
+        1,
+        1.06,
+        1.12
+      ],
+      "directness": [
+        0.9,
+        0.95,
+        1,
+        1.06,
+        1.12
+      ],
+      "width": [
+        1.06,
+        1.03,
+        1,
+        0.98,
+        0.96
+      ],
+      "midfieldExponent": 0.8
+    },
+    "offside": {
+      "base": 0.035,
+      "line": [
+        0.6,
+        0.8,
+        1,
+        1.3,
+        1.6
+      ]
+    },
+    "counter": {
+      "base": 0.1,
+      "withCounterTactic": 1.6,
+      "line": [
+        0.7,
+        0.85,
+        1,
+        1.25,
+        1.5
+      ],
+      "paceWeight": 0.6,
+      "xgBoostWithTactic": 1.2,
+      "highPressChance": [
+        0,
+        0,
+        0,
+        0.06,
+        0.12
+      ],
+      "max": 0.6,
+      "paceScale": 20
+    }
+  },
+  "shot": {
+    "xg": {
+      "openPlay": {
+        "mean": 0.1,
+        "sigma": 0.65,
+        "min": 0.02,
+        "max": 0.65
+      },
+      "counter": {
+        "mean": 0.16,
+        "sigma": 0.55,
+        "min": 0.04,
+        "max": 0.7
+      },
+      "setPiece": {
+        "mean": 0.08,
+        "sigma": 0.6,
+        "min": 0.02,
+        "max": 0.5
+      },
+      "penalty": {
+        "mean": 0.76,
+        "sigma": 0,
+        "min": 0.76,
+        "max": 0.76
+      }
+    },
+    "qualityXgWeight": 0.35,
+    "finishingWeight": 0.5,
+    "goalkeeperWeight": 0.45,
+    "blocked": {
+      "base": 0.24,
+      "defenseWeight": 0.4,
+      "min": 0.05,
+      "max": 0.6
+    },
+    "onTargetIfNotGoal": {
+      "base": 0.4,
+      "finishingWeight": 0.4,
+      "min": 0.1,
+      "max": 0.8
+    },
+    "widthXg": [
+      1.04,
+      1.02,
+      1,
+      0.98,
+      0.96
+    ],
+    "directnessXg": [
+      1.03,
+      1.015,
+      1,
+      0.985,
+      0.97
+    ],
+    "maxGoalChance": 0.95,
+    "minGoalChance": 0.005
+  },
+  "setPiece": {
+    "cornerChance": 0.3,
+    "freeKickDirectChance": 0.08,
+    "freeKickCrossChance": 0.16,
+    "penaltyShareOfFouls": 0.012,
+    "penaltySavedShareOfMisses": 0.6
+  },
+  "cards": {
+    "yellowPerFoul": 0.17,
+    "redPerFoul": 0.0035,
+    "aggressionWeight": 0.6,
+    "bookedFoulWeight": 0.4,
+    "bookedYellowMultiplier": 0.5,
+    "pressingYellow": [
+      0.9,
+      0.95,
+      1,
+      1.08,
+      1.16
+    ],
+    "timeWastingYellow": 0.02,
+    "penaltyFoulYellow": 0.6,
+    "penaltyFoulRed": 0.08
+  },
+  "injury": {
+    "perMinutePerSide": 0.0013,
+    "durabilityWeight": 0.8,
+    "fatigueWeight": 0.8,
+    "weeksWeights": [
+      [
+        1,
+        0.35
+      ],
+      [
+        2,
+        0.25
+      ],
+      [
+        3,
+        0.15
+      ],
+      [
+        4,
+        0.1
+      ],
+      [
+        6,
+        0.08
+      ],
+      [
+        8,
+        0.04
+      ],
+      [
+        12,
+        0.02
+      ],
+      [
+        20,
+        0.01
+      ]
+    ],
+    "minWeight": 0.05
+  },
+  "passing": {
+    "perPossessionTick": 9,
+    "tempo": [
+      0.85,
+      0.92,
+      1,
+      1.08,
+      1.16
+    ],
+    "directness": [
+      1.1,
+      1.05,
+      1,
+      0.9,
+      0.8
+    ],
+    "accuracyBase": 0.82,
+    "accuracySkillWeight": 0.15,
+    "accuracyDirectness": [
+      0.04,
+      0.02,
+      0,
+      -0.03,
+      -0.07
+    ],
+    "positionShare": {
+      "GK": 0.4,
+      "CB": 1.1,
+      "FB": 1,
+      "DM": 1.3,
+      "CM": 1.4,
+      "AM": 1.1,
+      "W": 0.9,
+      "ST": 0.6
+    },
+    "accuracyMin": 0.5,
+    "accuracyMax": 0.98
+  },
+  "timeWasting": {
+    "fromMinute": 70,
+    "deadTickChance": [
+      0,
+      0.05,
+      0.1,
+      0.16,
+      0.22
+    ],
+    "bookingChance": 0.03
+  },
+  "manMarking": {
+    "targetInvolvement": 0.55
+  },
+  "weather": {
+    "clear": {
+      "passAccuracy": 0,
+      "xg": 1,
+      "setPieceXg": 1,
+      "onTarget": 1,
+      "injury": 1,
+      "fatigue": 1,
+      "shotRate": 1
+    },
+    "rain": {
+      "passAccuracy": -0.04,
+      "xg": 1.03,
+      "setPieceXg": 1,
+      "onTarget": 1,
+      "injury": 1.1,
+      "fatigue": 1.05,
+      "shotRate": 1
+    },
+    "wind": {
+      "passAccuracy": -0.05,
+      "xg": 1,
+      "setPieceXg": 0.9,
+      "onTarget": 0.94,
+      "injury": 1,
+      "fatigue": 1,
+      "shotRate": 1
+    },
+    "heat": {
+      "passAccuracy": -0.01,
+      "xg": 1,
+      "setPieceXg": 1,
+      "onTarget": 1,
+      "injury": 1.05,
+      "fatigue": 1.25,
+      "shotRate": 0.97
+    },
+    "snow": {
+      "passAccuracy": -0.08,
+      "xg": 1.02,
+      "setPieceXg": 0.95,
+      "onTarget": 0.96,
+      "injury": 1.15,
+      "fatigue": 1.1,
+      "shotRate": 0.94
+    }
+  },
+  "involvement": {
+    "shooter": {
+      "openPlay": {
+        "GK": 0,
+        "CB": 0.2,
+        "FB": 0.4,
+        "DM": 0.4,
+        "CM": 1,
+        "AM": 2.2,
+        "W": 2.5,
+        "ST": 4.5
+      },
+      "counter": {
+        "GK": 0,
+        "CB": 0.1,
+        "FB": 0.5,
+        "DM": 0.3,
+        "CM": 0.8,
+        "AM": 2,
+        "W": 3,
+        "ST": 4
+      },
+      "setPiece": {
+        "GK": 0,
+        "CB": 2.5,
+        "FB": 0.8,
+        "DM": 1.5,
+        "CM": 1,
+        "AM": 0.8,
+        "W": 0.8,
+        "ST": 3
+      }
+    },
+    "creator": {
+      "GK": 0.05,
+      "CB": 0.3,
+      "FB": 1,
+      "DM": 0.8,
+      "CM": 1.6,
+      "AM": 2.5,
+      "W": 2.2,
+      "ST": 1
+    },
+    "fouler": {
+      "GK": 0.1,
+      "CB": 1.6,
+      "FB": 1.3,
+      "DM": 1.8,
+      "CM": 1.3,
+      "AM": 0.8,
+      "W": 0.7,
+      "ST": 0.7
+    },
+    "fouled": {
+      "GK": 0.05,
+      "CB": 0.4,
+      "FB": 0.8,
+      "DM": 0.8,
+      "CM": 1.2,
+      "AM": 1.6,
+      "W": 1.8,
+      "ST": 1.6
+    },
+    "tackler": {
+      "GK": 0,
+      "CB": 1.8,
+      "FB": 1.5,
+      "DM": 2,
+      "CM": 1.3,
+      "AM": 0.5,
+      "W": 0.5,
+      "ST": 0.3
+    },
+    "injured": {
+      "GK": 0.3,
+      "CB": 1,
+      "FB": 1,
+      "DM": 1,
+      "CM": 1,
+      "AM": 1,
+      "W": 1.1,
+      "ST": 1.1
+    },
+    "attributeWeights": {
+      "shooterOpenPlay": {
+        "fin": 0.5,
+        "pos": 0.3,
+        "dri": 0.2
+      },
+      "shooterCounter": {
+        "pac": 0.5,
+        "fin": 0.3,
+        "dri": 0.2
+      },
+      "shooterSetPiece": {
+        "hea": 0.5,
+        "str": 0.3,
+        "pos": 0.2
+      },
+      "creator": {
+        "pas": 0.4,
+        "vis": 0.4,
+        "crs": 0.2
+      },
+      "fouler": {
+        "agg": 0.7,
+        "tck": 0.3
+      },
+      "fouled": {
+        "dri": 0.6,
+        "pac": 0.4
+      },
+      "tackler": {
+        "tck": 0.6,
+        "mrk": 0.2,
+        "agg": 0.2
+      }
+    },
+    "assistChance": {
+      "openPlay": 0.8,
+      "counter": 0.75,
+      "setPiece": 0.9
+    }
+  },
+  "shootout": {
+    "kicksEach": 5,
+    "scoreBase": 0.76,
+    "takerWeight": 0.35,
+    "goalkeeperWeight": 0.3,
+    "savedShareOfMisses": 0.6,
+    "maxRounds": 50,
+    "minScore": 0.3,
+    "maxScore": 0.95,
+    "firstKickHomeChance": 0.5
+  },
+  "rating": {
+    "base": 6,
+    "goal": 1,
+    "assist": 0.6,
+    "xg": 0.4,
+    "keyPass": 0.15,
+    "shotOnTarget": 0.1,
+    "tackle": 0.12,
+    "save": 0.25,
+    "yellow": -0.4,
+    "red": -1.5,
+    "penaltySaved": 0.8,
+    "penaltyMissed": -0.5,
+    "concededByUnit": {
+      "goalkeeper": -0.3,
+      "defender": -0.2,
+      "midfielder": -0.08,
+      "attacker": 0
+    },
+    "cleanSheetByUnit": {
+      "goalkeeper": 0.6,
+      "defender": 0.4,
+      "midfielder": 0.1,
+      "attacker": 0
+    },
+    "cleanSheetMinMinutes": 60,
+    "win": 0.3,
+    "loss": -0.3,
+    "min": 1,
+    "max": 10,
+    "decimals": 1
+  },
+  "highlight": {
+    "chanceXg": 0.2,
+    "saveXg": 0.12
+  }
+}
