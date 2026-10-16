@@ -180,9 +180,9 @@ export interface TeamColors {
 
 export interface Team {
   id: string;
-  /** Formal name, e.g. "Kingsbridge City FC". */
+  /** Formal name, e.g. "Crowncaster City FC". */
   name: string;
-  /** Short name for tables, e.g. "Kingsbridge City". */
+  /** Short name for tables, e.g. "Crowncaster City". */
   shortName: string;
   /** Nickname, e.g. "the Monarchs". */
   nickname: string;

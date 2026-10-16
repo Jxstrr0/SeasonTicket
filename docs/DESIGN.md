@@ -30,13 +30,13 @@ You own a professional soccer club in the fictional nation of Valmere. You run t
 - **Valmere** is an invented northern, temperate republic with sea coasts, lakes, mountains and plains. It has no real-world counterpart. Its people are **Valmerans**. Currency: the Valmeran dollar ($).
 - Two cultural strands show up in names and places: an English-flavoured majority and a French-flavoured minority in the Rivière Valley. Everything is fictional.
 - **Regions** (used for rivalries, weather and travel flavour):
-  - **Capital District:** Kingsbridge.
+  - **Capital District:** Crowncaster.
   - **Eastern Shore:** Port Alder, Cape Fenwick, Saltwater Cove.
   - **Rivière Valley:** Sainte-Rivière, Val-Delacroix.
-  - **Lakelands:** Lakehaven, Westmere, Blackwater.
-  - **Iron Belt:** Stonegate, Fort Sterling.
-  - **Highlands:** Silverpeak, Coldbrook, Northolt.
-  - **Western Plains:** Prairie Junction, Grandview.
+  - **Lakelands:** Lakehaven, Wrenmoor, Inkwater.
+  - **Iron Belt:** Cindervale, Fort Sterling.
+  - **Highlands:** Silverpeak, Frostbeck, Lumenfell.
+  - **Western Plains:** Prairie Junction, Sunreach.
 - **Foreign players** come from other fictional nations (Esperia, Kaltland, Marrovia, Sundara, Ostenburg, Caravelle, Vostria, Norrvik). These exist only as nationalities and name flavours for now.
 
 ### Season calendar
@@ -53,22 +53,22 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 
 | Club | Nickname | City | Region |
 | --- | --- | --- | --- |
-| Kingsbridge City FC | the Monarchs | Kingsbridge | Capital District |
+| Crowncaster City FC | the Monarchs | Crowncaster | Capital District |
 | Port Alder Athletic | the Mariners | Port Alder | Eastern Shore |
 | Cape Fenwick United | the Gulls | Cape Fenwick | Eastern Shore |
 | Saltwater Cove FC | the Orcas | Saltwater Cove | Eastern Shore |
 | Olympique Sainte-Rivière | les Voyageurs | Sainte-Rivière | Rivière Valley |
 | Racing Val-Delacroix | les Rouges | Val-Delacroix | Rivière Valley |
 | Lakehaven United | the Loons | Lakehaven | Lakelands |
-| Westmere Wanderers | the Wranglers | Westmere | Lakelands |
-| Blackwater Rovers | the Wolves | Blackwater | Lakelands |
-| Stonegate Ironworks FC | the Ironsides | Stonegate | Iron Belt |
+| Wrenmoor Wanderers | the Wranglers | Wrenmoor | Lakelands |
+| Inkwater Rovers | the Wolves | Inkwater | Lakelands |
+| Cindervale Ironworks FC | the Ironsides | Cindervale | Iron Belt |
 | Fort Sterling FC | the Sentinels | Fort Sterling | Iron Belt |
 | Silverpeak Alpine | the Yeti | Silverpeak | Highlands |
-| Coldbrook Town | the Huskies | Coldbrook | Highlands |
-| Northolt FC | the Aurora | Northolt | Highlands |
+| Frostbeck Town | the Huskies | Frostbeck | Highlands |
+| Lumenfell FC | the Aurora | Lumenfell | Highlands |
 | Prairie Junction FC | the Threshers | Prairie Junction | Western Plains |
-| Grandview SC | the Grizzlies | Grandview | Western Plains |
+| Sunreach SC | the Grizzlies | Sunreach | Western Plains |
 
 ### Career start
 - Pick from clubs at different difficulty levels. Difficulty comes from what's under the hood (squad, staff, money, debt, stadium, market, fans), never from branding.
@@ -221,6 +221,7 @@ Decided by the owner on 2026-10-16:
 
 Decided during development (the owner can veto any of these):
 - The country is called **Valmere**; club names, nicknames and regions are as listed in section 4.
+- Seven club names that matched real places were replaced on 2026-10-16: Crowncaster, Wrenmoor, Inkwater, Cindervale, Frostbeck, Lumenfell and Sunreach.
 - Pre-season friendlies: 2, not simulated in the concept test.
 - Playoff hosting: the higher seed hosts every round, including the final. A neutral, rotating final venue is a candidate business feature later.
 - Homegrown minimum when the rule is on: 6 of the starting eleven.
