@@ -12,6 +12,7 @@ import { renderLineup } from './lineup';
 import { renderMarket } from './market';
 import { renderMoney } from './money';
 import { renderClub } from './club';
+import { renderStadium } from './stadium';
 import { renderInbox } from './inbox';
 import { renderLeague } from './league';
 
@@ -136,6 +137,8 @@ function renderTab(career: Career, ui: UiState): string {
       return renderMoney(career, ui);
     case 'club':
       return renderClub(career, ui);
+    case 'stadium':
+      return renderStadium(career, ui);
     case 'inbox':
       return renderInbox(career, ui);
     case 'league':

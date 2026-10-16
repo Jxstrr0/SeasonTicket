@@ -3,13 +3,13 @@
  * itself (src/sim/career) is the save, and this only remembers which screen,
  * tab and panel the owner is looking at.
  */
-import type { Crest, MatchMode, TierId } from '../../sim/career';
+import type { Crest, MatchMode, StandId, TierId } from '../../sim/career';
 import type { Position, StaffRole } from '../../sim/types';
 import { loadQuality, type QualitySetting } from '../../render/quality';
 
 export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode';
 
-export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'inbox' | 'league';
+export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'stadium' | 'inbox' | 'league';
 
 export const HUB_TABS: readonly { id: HubTab; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -18,6 +18,7 @@ export const HUB_TABS: readonly { id: HubTab; label: string }[] = [
   { id: 'market', label: 'Market' },
   { id: 'money', label: 'Money' },
   { id: 'club', label: 'Club' },
+  { id: 'stadium', label: 'Stadium' },
   { id: 'inbox', label: 'Inbox' },
   { id: 'league', label: 'League' },
 ];
@@ -25,6 +26,9 @@ export const HUB_TABS: readonly { id: HubTab; label: string }[] = [
 export type MarketView = 'scout' | 'free' | 'bids';
 export type LeagueTab = 'table' | 'results' | 'playoffs';
 export type LivePanel = 'none' | 'subs' | 'tactics';
+/** The part of the ground picked on the Stadium tab. */
+export type StadiumPick = StandId | 'corners' | 'ground' | 'look';
+export const STADIUM_PICKS: readonly StadiumPick[] = ['west', 'east', 'north', 'south', 'corners', 'ground', 'look'];
 
 export interface BrandDraft {
   name: string;
@@ -98,6 +102,7 @@ export interface UiState {
   showAllEvents: boolean;
   staffRole: StaffRole | null;
   inboxOpen: string | null;
+  stadiumPick: StadiumPick;
   reportOpen: boolean;
   flash: Flash | null;
   menuOpen: boolean;
@@ -132,6 +137,7 @@ export function initialUi(): UiState {
     showAllEvents: false,
     staffRole: null,
     inboxOpen: null,
+    stadiumPick: 'west',
     reportOpen: false,
     flash: null,
     menuOpen: false,

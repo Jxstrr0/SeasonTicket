@@ -827,3 +827,21 @@ body.office-mode .topbar { backdrop-filter: none; }
 .office-loading p { margin: 0; }
 .office-loading-bar { width: min(260px, 60vw); height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
 .office-loading-bar span { display: block; width: 4%; height: 100%; background: var(--accent); transition: width 0.2s linear; }
+
+/* Stadium tab */
+.st-plan { display: block; width: 100%; max-width: 440px; height: auto; margin: 4px auto 8px; touch-action: manipulation; user-select: none; }
+.st-part { cursor: pointer; }
+.st-part:focus { outline: none; }
+.st-part:active > rect:first-child { fill: rgba(242, 193, 78, 0.12); }
+.st-label { font-size: 4.2px; font-weight: 700; fill: rgba(255, 255, 255, 0.92); paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 0.9px; pointer-events: none; }
+.st-compass path { fill: var(--accent); }
+.st-compass text { font-size: 4.5px; font-weight: 800; fill: var(--muted); }
+.st-bar { height: 8px; margin-top: 8px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+.st-bar span { display: block; height: 100%; background: linear-gradient(90deg, #f2a33a, var(--accent)); }
+.st-price { text-align: right; font-variant-numeric: tabular-nums; }
+.st-option.off { opacity: 0.6; }
+.st-option p { margin: 6px 0 0; }
+.st-option .row-actions { margin-top: 8px; }
+.st-sub { margin-top: 14px; }
+.st-look .seg { flex: 0 1 auto; padding-inline: 14px; }
+.st-of { display:block; font-weight:400; }
