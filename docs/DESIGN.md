@@ -143,7 +143,7 @@ Breaking loan conditions escalates step by step. Every step can be reversed by f
 - **Tactical levers:** formation (4-4-2, 4-3-3, 4-2-3-1, 3-5-2, 5-3-2, 4-1-4-1, 3-4-3), mentality (five steps from very defensive to very attacking), pressing intensity, defensive line height, width, tempo, passing directness, counter-attack on/off, time-wasting, set-piece takers, man-marking a danger player.
 - **Optional "game plan + big calls" mode.** Set the plan before kickoff, then make only the key decisions when the head coach asks: chasing a goal late, protecting a lead, a sub after an injury or red card, a penalty taker.
 - **Pacing tools:** hand control to the head coach at any time; choose viewing speed (extended highlights, key moments, instant result).
-- **Highlights engine.** The sim plays the match minute by minute with tactics, fatigue, chances, goals, cards and subs. You watch key moments with a live match feed, rather than a continuous 90-minute simulation.
+- **Spatial match engine (Stage 4.5).** The sim plays the whole 90 minutes with all 22 players and the ball on the pitch, so tactics, fatigue, chances, goals, cards and subs come out of real positions. You still watch at the speed you choose (extended highlights, key moments, instant result), with a live match feed, and every highlight is a replay of the simulated positions. Until Stage 4.5 is finished, the Stage 1 engine still rolls one outcome a minute. The design is in section 17.
 - **Tactics overlay:** shape, pressing zones, expected goals and win probability, toggleable during the match.
 - **Match day audio:** crowd and stadium sound, with text commentary.
 
@@ -273,8 +273,11 @@ Decided by the owner on 2026-10-16:
 - The sport is soccer, with changeable tactics instead of play-calling.
 - One table of 16 clubs plus playoffs (not conferences, not promotion/relegation).
 - Transfer windows with fees and a soft wage cap with luxury tax (no draft).
-- Highlights match engine (not a continuous 90-minute simulation).
+- ~~Highlights match engine (not a continuous 90-minute simulation).~~ Reversed by the owner on 2026-10-16, see below.
 - A fictional country with no real-world tie.
+
+Reversed by the owner on 2026-10-16 (handoff from Stage 4 to Stage 4.5, kept in `docs/history/HANDOFF_STAGE_4_TO_4_5.md`):
+- The "highlights engine, not a continuous 90-minute simulation" call is replaced by a **spatial engine**: 22 players and the ball have positions on a 105 m by 68 m pitch for the whole match, tactics set the team's shape, and each player decides from his attributes. You still watch highlights at the speed you choose; the difference is that every highlight is a replay of simulated positions. The owner's match and every background match run on the same engine (background matches in a faster, coarser mode). Spec: `docs/STAGE_4_5_SPATIAL_ENGINE.md`. Design: section 17.
 
 Decided during development (the owner can veto any of these):
 - The country is called **Valmere**; club names, nicknames and regions are as listed in section 4.
@@ -293,7 +296,7 @@ Sim simplifications (documented here as the build brief requires):
 - No VAR or offside-line nuance; offside is an event outcome, not a positional check.
 - Transfer fees are paid in full from cash in the concept test.
 
-Match engine simplifications (Stage 1):
+Match engine simplifications (Stage 1). These belong to the per-minute engine that Stage 4.5 replaces. Each entry is deleted or rewritten as the spatial engine takes it over, and the spatial engine's own simplifications are listed in section 17.
 - Possession belongs to one side per one-minute tick, and one move is resolved per tick. Passes are counted statistically, not as events.
 - Offside is a chance set by the defending side's line height. Penalties are a fixed share of fouls with no box geometry. Free kicks are a direct shot or a cross with no distance model.
 - No own goals, advantage rule, handball, dissent cards or cards for bench staff.
@@ -373,7 +376,14 @@ Stadium (Stage 4):
 
 - Starting cash, debt and squad quality per difficulty tier.
 - The stadium upgrade catalogue and costs: proposed in section 10, waiting for the owner's confirmation.
+- The spatial match engine design (section 17): waiting for the owner's review.
 - Wage cap level, luxury-tax rates and the typical fee range for a star.
 - Youth intake size by academy level.
 - Which tactical presets ship for the concept test.
 - The exact owner's fortune per difficulty tier, and whether it grows over time.
+
+---
+
+## 17. Spatial match engine (Stage 4.5 design, proposed)
+
+Being written. The full proposal lands here for the owner's review before any engine code is written. The spec it answers is `docs/STAGE_4_5_SPATIAL_ENGINE.md`.
