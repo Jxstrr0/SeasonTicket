@@ -4,6 +4,7 @@
  * strengths per side (goalkeeper, defense, midfield, attack).
  */
 import { MATCH_TUNING } from '../data';
+import { powInt } from '../spatial/det';
 import type { AttributeKey, Dial, Formation, Player, Position } from '../types';
 import type { MatchContext, SideState } from './state';
 
@@ -110,7 +111,7 @@ export function sideStrength(side: SideState, formation: Formation, ctx: MatchCo
   const units = formation.slots.map((slot) => unitOnPitch(side, slot.index, formation, ctx));
   const present = side.onPitch.filter((id) => id !== '').length;
   const missing = formation.slots.length - present;
-  const shortHanded = Math.pow(1 - T.strength.shortHandedPenalty, missing);
+  const shortHanded = powInt(1 - T.strength.shortHandedPenalty, missing);
 
   const unitScore = (spec: { weights: object; unitShare: Record<Unit, number> }): number => {
     let total = 0;

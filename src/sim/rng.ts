@@ -2,6 +2,8 @@
  * Seeded random number generator (mulberry32). Every bit of randomness in the
  * sim goes through one of these so the same seed always produces the same game.
  */
+import { PI, detCos, detLog } from './spatial/det';
+
 export class Rng {
   private state: number;
 
@@ -44,6 +46,8 @@ export class Rng {
     return this.next() < p;
   }
 
+  // det:allow-begin. The old engine's normal() keeps the built-in maths so existing worlds
+  // do not change; the spatial engine must use normalDet() instead (tests check both).
   /** Normally distributed value (Box-Muller). */
   normal(mean = 0, sd = 1): number {
     let u = 0;
@@ -51,6 +55,20 @@ export class Rng {
     while (u === 0) u = this.next();
     while (v === 0) v = this.next();
     const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    return mean + z * sd;
+  }
+  // det:allow-end
+
+  /**
+   * Normally distributed value from deterministic maths only (see spatial/det.ts).
+   * The spatial engine uses this; `normal` stays as it is so existing worlds do not change.
+   */
+  normalDet(mean = 0, sd = 1): number {
+    let u = 0;
+    let v = 0;
+    while (u === 0) u = this.next();
+    while (v === 0) v = this.next();
+    const z = Math.sqrt(-2.0 * detLog(u)) * detCos(2.0 * PI * v);
     return mean + z * sd;
   }
 
