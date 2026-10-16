@@ -3,7 +3,7 @@
  * through the office window). Like the office snapshot, this is the only place
  * the stadium render code's data comes from the career.
  */
-import { C, closedSeatsByStand, standSeats, userBooks, userTeam, type Career } from '../../sim/career';
+import { C, closedSeatsByStand, lastHomeCrowd, standSeats, userBooks, userTeam, type Career } from '../../sim/career';
 import { STAND_IDS } from '../../sim/career/types';
 import type { StadiumSnapshot } from '../../render/stadium/types';
 import { renderCrest } from '../views/career/crest';
@@ -33,8 +33,7 @@ export function buildStadiumSnapshot(career: Career, crestSvg = crestDocument(ca
     const seats = standSeats(stadium, id);
     if (shut > 0 && seats > 0) closed[id] = Math.min(1, shut / seats);
   }
-  const last = career.lastUserMatch;
-  const attendance = last && last.homeId === career.userTeamId ? last.attendanceShare : 0.6;
+  const attendance = lastHomeCrowd(career, career.userTeamId);
   return {
     name: team.stadiumName,
     clubName: team.name,

@@ -5,6 +5,7 @@ import {
   advanceCareer,
   advanceToReview,
   cancelProject,
+  capacityWhenBuilt,
   continueToNextSeason,
   createCareer,
   fullCapacity,
@@ -68,9 +69,12 @@ describe('stadium', () => {
     expect(userTeam(career).stadiumCapacity).toBe(before);
     // The same structure can't take a second project.
     expect(stadiumOptions(career).find((o) => o.key === option.key)!.available).toBe(false);
+    // The seats it will add are counted as soon as work starts.
+    expect(capacityWhenBuilt(userStadium(career))).toBe(before + option.seatsAdded);
     for (let i = 0; i < option.weeks; i++) advanceCareer(career);
     expect(userStadium(career).projects).toHaveLength(0);
     expect(fullCapacity(userStadium(career))).toBe(before + option.seatsAdded);
+    expect(capacityWhenBuilt(userStadium(career))).toBe(before + option.seatsAdded);
     expect(career.inbox.some((m) => m.kind === 'stadium')).toBe(true);
   });
 

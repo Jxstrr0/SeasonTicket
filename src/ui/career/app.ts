@@ -228,6 +228,7 @@ export class CareerApp {
 
   private render(): void {
     this.uiLayer.innerHTML = this.view();
+    this.measureTopBar();
     this.syncOffice();
     this.syncStadium();
   }
@@ -240,10 +241,34 @@ export class CareerApp {
     this.stadium.sync(this.uiLayer, this.career, ui.quality === 'off' ? null : ui.quality, ui.stadiumPick, focus);
   }
 
+  /**
+   * The top bar's height changes with the screen and the club name. The
+   * stadium's sticky ground and the message toast sit just under it.
+   */
+  private measureTopBar(): void {
+    const bar = this.uiLayer.querySelector<HTMLElement>('.topbar');
+    if (bar) document.documentElement.style.setProperty('--bar-h', `${bar.offsetHeight}px`);
+  }
+
   /** A tap on the 3D stadium picks that part, like the chips do. */
   private onStadiumPick(part: StadiumPart): void {
     this.ui.stadiumPick = part;
     this.render();
+    this.revealPicked();
+  }
+
+  /**
+   * The options for the part you tapped sit below the ground (one column) or
+   * below its numbers (two columns), often off screen; bring them up so the tap
+   * visibly does something. In two columns the ground stays pinned meanwhile.
+   */
+  private revealPicked(): void {
+    const panel = this.uiLayer.querySelector<HTMLElement>('.st-picked');
+    if (!panel) return;
+    if (panel.getBoundingClientRect().top > window.innerHeight * 0.6) {
+      const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      panel.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    }
   }
 
   /** The tier the office runs at, or null when the plain menus are on. */

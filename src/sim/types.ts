@@ -398,6 +398,8 @@ export interface MatchResult {
   /** Player ids who received exactly one yellow card. */
   booked: string[];
   attendanceShare: number;
+  /** Head count on the day. Set when a career settles the match; missing from older saves and headless seasons. */
+  crowd?: number;
   weather: Weather;
 }
 

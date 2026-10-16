@@ -40,6 +40,7 @@ import {
   cornerPath,
   cornerProfile,
   cornerSteps,
+  crowdFigures,
   offset,
   pathAt,
   pathLength,
@@ -243,6 +244,24 @@ function fence(g: GeoBuilder, path: PathPoint[], d: number, height: number): voi
   }
 }
 
+/**
+ * A banner hung over a stand's front wall, facing the pitch, so work booked for
+ * the off-season shows from the pitch-side cameras as well as from behind.
+ */
+function frontBanner(g: GeoBuilder, path: PathPoint[]): void {
+  let run = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = offset(path[i], -0.08);
+    const b = offset(path[i + 1], -0.08);
+    const len = Math.hypot(b.x - a.x, b.z - a.z);
+    const nx = (path[i].nx + path[i + 1].nx) / 2;
+    const nz = (path[i].nz + path[i + 1].nz) / 2;
+    // As tall as the hoarding behind, so the lettering keeps its shape.
+    strip(g, [a.x, a.z], [b.x, b.z], 0.1, 2.5, [-nx, 0, -nz], run / 38, (run + len) / 38);
+    run += len;
+  }
+}
+
 /** A square of fence round a point (paid-for upgrade work waiting for the off-season). */
 function fenceSquare(g: GeoBuilder, x: number, z: number, half: number): void {
   const c: [number, number][] = [
@@ -308,7 +327,8 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
     }),
     screen: basic('#ffffff', { map: board.texture }),
     lamp: basic('#fff8e6'),
-    adsPaint: lambert('#ffffff', { map: ads.texture }),
+    // Painted boards pick up the floodlights at night (see applyLook).
+    adsPaint: lambert('#ffffff', { map: ads.texture, emissiveMap: ads.texture, emissive: '#ffffff', emissiveIntensity: 0 }),
     adsLed: basic('#ffffff', { map: ads.texture }),
     hoarding: lambert('#ffffff'),
     sign: basic('#ffffff'),
@@ -654,6 +674,7 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
         const back = Math.max(target.depth, now?.depth ?? 0);
         if (w.queued) {
           fence(B.get('hoarding'), path, back + 4, 2.4);
+          if (now) frontBanner(B.get('hoarding'), path);
         } else {
           scaffold(B.get('scaffold'), target, path, pathLength(path, target.depth * 0.6), w.progress);
           const q = pathAt(path, 0.5, back + 8);
@@ -678,6 +699,7 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
         const back = Math.max(now.depth, target.depth);
         if (w.queued) {
           fence(B.get('hoarding'), path, back + 4, 2.4);
+          frontBanner(B.get('hoarding'), path);
         } else {
           scaffold(B.get('scaffold'), target, path, length, w.progress);
           const t = i % 2 === 0 ? 0.3 : 0.7;
@@ -728,7 +750,7 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
     for (const a of areas) {
       for (const r of a.profile.rows) seats += seatsAlong(pathLength(a.path, (r.d0 + r.d1) / 2)) * (1 - a.closed);
     }
-    const want = Math.min(cap, seats * fill);
+    const want = crowdFigures(seats, cap, fill);
     const chance = want / Math.max(1, seats);
     const max = Math.ceil(want * 1.08) + 16;
     const bodies = new InstancedMesh(bodyGeo, crowdMat, max);
@@ -845,6 +867,7 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
     const fl = s.upgrades.floodlights;
     for (const b of bins) for (const m of b.glow) m.emissiveIntensity = lit * (0.2 + 0.12 * fl);
     M.pitch.emissiveIntensity = lit * (0.25 + 0.18 * fl);
+    M.adsPaint.emissiveIntensity = lit * (0.3 + 0.12 * fl);
     glowUniform.value = lit * (0.22 + 0.1 * fl);
     M.wall.color.set(s.primary).multiplyScalar(0.7);
     const fresh = new Color('#d4d6da');

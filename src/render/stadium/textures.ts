@@ -285,22 +285,36 @@ export function paintBoard(s: ScreenTexture, snap: Pick<StadiumSnapshot, 'crestS
     ctx.textBaseline = 'alphabetic';
     ctx.font = `900 ${h * 0.34}px ${FONT}`;
     ctx.fillText(snap.abbr, tx, h * 0.48);
-    ctx.font = `700 ${h * 0.11}px ${FONT}`;
     const maxW = w - tx - h * 0.1;
-    let name = snap.clubName.toUpperCase();
-    while (name.length > 1 && ctx.measureText(name).width > maxW) name = name.slice(0, -1);
-    ctx.fillText(name, tx, h * 0.66);
-    ctx.fillStyle = luma(snap.secondary) > 60 ? snap.secondary : '#cfd6e4';
-    ctx.font = `600 ${h * 0.085}px ${FONT}`;
-    let welcome = `Welcome to ${snap.name}`;
-    while (welcome.length > 1 && ctx.measureText(welcome).width > maxW) welcome = welcome.slice(0, -1);
-    ctx.fillText(welcome, tx, h * 0.8);
+    fitText(ctx, snap.clubName.toUpperCase(), tx, h * 0.66, maxW, 700, h * 0.11, h * 0.065);
+    // The second colour only if it reads on the dark board; otherwise a pale grey.
+    ctx.fillStyle = luma(snap.secondary) > 120 ? snap.secondary : '#cfd6e4';
+    fitText(ctx, `Welcome to ${snap.name}`, tx, h * 0.8, maxW, 600, h * 0.085, h * 0.055);
     s.done();
   };
   draw(null);
   return loadSvg(snap.crestSvg).then((img) => {
     if (img) draw(img);
   });
+}
+
+/**
+ * Draws one line of text at the current fill, shrinking the font from `size`
+ * towards `min` until it fits `maxW`; only past that is it cut short with "…".
+ */
+function fitText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, weight: number, size: number, min: number): void {
+  let px = size;
+  ctx.font = `${weight} ${px}px ${FONT}`;
+  while (px > min && ctx.measureText(text).width > maxW) {
+    px = Math.max(min, px - size * 0.05);
+    ctx.font = `${weight} ${px}px ${FONT}`;
+  }
+  let line = text;
+  if (ctx.measureText(line).width > maxW) {
+    while (line.length > 1 && ctx.measureText(`${line}…`).width > maxW) line = line.slice(0, -1);
+    line = `${line.trimEnd()}…`;
+  }
+  ctx.fillText(line, x, y);
 }
 
 /** Decodes an SVG string to an image, or null if it can't. */
@@ -422,10 +436,14 @@ export function paintPitch(s: ScreenTexture, p: PitchPaint, crest: HTMLImageElem
   }
 
   if (crest) {
+    // Turned half a turn so it reads the right way up from the East Stand side,
+    // where the Main Stand and Overhead cameras sit looking across.
     const size = 15 * m;
     ctx.save();
     ctx.globalAlpha = 0.5;
-    ctx.drawImage(crest, cx - size / 2, cy - size / 2, size, size);
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI);
+    ctx.drawImage(crest, -size / 2, -size / 2, size, size);
     ctx.restore();
   }
 

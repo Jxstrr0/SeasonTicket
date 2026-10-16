@@ -218,13 +218,14 @@
     }
   },
   "condition": {
-    "_about": "Stadium condition (0-1) feeds attendance. It wears down each season; a refurbishment costs perSeat x capacity and restores restore points, capped at max.",
+    "_about": "Stadium condition (0-1) feeds attendance. It wears down each season; a refurbishment costs perSeat x capacity and restores restore points, capped at max. Refurbishing is offered once condition is more than refurbishMargin below max.",
     "decayPerSeason": 0.03,
     "refurbishPerSeat": 28,
     "refurbishMinCost": 250000,
     "refurbishWeeks": 4,
     "restore": 0.25,
-    "max": 1
+    "max": 1,
+    "refurbishMargin": 0.05
   },
   "demand": {
     "_about": "How many people want to come, in seats. Starts at the club's original capacity, grows when fans are happy and the team wins, shrinks when they are not. Attendance share = engine share x demand / capacity (plus roof and board bonuses), clamped, so a bigger ground only fills if the demand is there.",
@@ -241,10 +242,28 @@
     "summerWeeks": 8
   },
   "ai": {
-    "_about": "Each off-season an AI club whose crowds averaged at least fullShare of capacity, and whose cash covers the project cashMultiple times over, adds to its smallest stand (or a corner). It refurbishes when condition drops below refurbishBelow.",
+    "_about": "Each off-season an AI club picks one project. If its condition is below refurbishBelow it refurbishes, when its cash covers the cost refurbishCashMultiple times over. Else, if its crowds averaged at least fullShare of capacity, it builds the stand or corner with the lowest cost per seat that its cash covers cashMultiple times over. Else it adds the cheapest roof its cash covers roofCashMultiple times over.",
     "fullShare": 0.9,
     "cashMultiple": 2.5,
-    "refurbishBelow": 0.4
+    "refurbishBelow": 0.4,
+    "refurbishCashMultiple": 1.5,
+    "roofCashMultiple": 5
+  },
+  "start": {
+    "_about": "The ground each club starts a career with (read by initialStadium). Stands go up one level at a time, lowest first, while the total stays within overshoot seats of the club's listed capacity. Then roofs, boxes and upgrades follow the club's finances (0-1): the Main Stand gets a full roof above mainFullRoof (or at three tiers or bigger), a back-rows roof otherwise; other single-tier-or-bigger stands get a full roof above bigFullRoof; small stands get a back-rows roof above smallRoof. The Main Stand gets a second row of boxes above mainSecondBoxes, the East Stand one row above eastBoxes. Each upgrade starts at level 1 above its threshold: floodlights, videoBoard and concourse on finances, shop on market size, pitch on stadium condition.",
+    "overshoot": 600,
+    "mainFullRoof": 0.45,
+    "bigFullRoof": 0.65,
+    "smallRoof": 0.5,
+    "mainSecondBoxes": 0.6,
+    "eastBoxes": 0.7,
+    "upgrades": {
+      "floodlights": 0.6,
+      "videoBoard": 0.5,
+      "concourse": 0.7,
+      "shop": 0.6,
+      "pitch": 0.6
+    }
   },
   "look": {
     "_about": "Free, instant branding choices. Seat schemes colour the seats; mow patterns cut the grass.",
@@ -269,7 +288,7 @@
     ]
   },
   "view": {
-    "_about": "The 3D stadium on the Stadium tab (read by src/render/stadium/view.ts). Azimuth and elevation are degrees: azimuth 0 puts the camera on the Main Stand side, 90 behind the South End, 180 on the East Stand side, 270 behind the North End. Zoom 1 fits the whole ground; smaller is closer. A focus 'shift' moves the point the camera turns around from the centre spot towards the picked part (0 stays on the centre spot, 1 is the middle of the part). A focus with 'inside' true keeps the camera over the pitch (no further back than the opposite stand's front), so a big stand on the near side never hides the one you picked.",
+    "_about": "The 3D stadium on the Stadium tab (read by src/render/stadium/view.ts). Azimuth and elevation are degrees: azimuth 0 puts the camera on the Main Stand side, 90 behind the South End, 180 on the East Stand side, 270 behind the North End. Zoom 1 fits the whole ground; smaller is closer. A focus 'shift' moves the point the camera turns around from the centre spot towards the picked part (0 stays on the centre spot, 1 is the middle of the part). A focus with 'inside' true keeps the camera over the pitch (no further back than the opposite stand's front), so a big stand on the near side never hides the one you picked. The crowd drawn is the share of seats filled at the club's last home match this season, or crowdFallback before there has been one.",
     "fov": 42,
     "target": [
       0,
@@ -356,6 +375,7 @@
       }
     },
     "crowdCap": 9000,
+    "crowdFallback": 0.6,
     "daySelfLit": 0.12,
     "nightSelfLit": 1
   }

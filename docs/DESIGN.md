@@ -179,7 +179,7 @@ Building takes time:
 - A project bought during the season can start now or wait for the off-season (the winter break between seasons).
   - Starting now closes part of that stand until the work is done.
   - The off-season adds eight building weeks before pre-season.
-- AI clubs that sell out and can afford it add to their smallest stand each off-season.
+- Each off-season an AI club refurbishes a tired ground, or adds seats if its crowds were near capacity (the stand or corner with the lowest cost per seat), or else adds a roof, when it can afford it.
 
 Crowds:
 - Demand grows with fan mood and trophies, so a bigger stand only fills if the fans are there.
@@ -348,7 +348,8 @@ HQ Office (Stage 3):
   | TV | League table |
   | Whiteboard | Lineup |
   | Clipboard | Squad |
-  | Window, trophy cabinet | Club |
+  | Window | Stadium |
+  | Trophy cabinet | Club |
   | Door | Inbox |
 
   The Office tab brings the room back. Every screen is still reachable through the tabs, so nothing depends on finding an object.
@@ -363,11 +364,12 @@ HQ Office (Stage 3):
 - three.js and the office art only download the first time the office opens, so the plain menus stay light. The office art is about 5.6 MB (Meshopt geometry, KTX2 textures).
 
 Stadium (Stage 4):
-- Seat counts, boxes and money come from the sim. The 3D model draws the stands' shapes and a crowd whose density follows the last home attendance, capped at about 9,000 figures on the Stadium tab and 3,000 through the office window. It does not draw one figure per seat.
+- Seat counts, boxes and money come from the sim. The 3D model draws the stands' shapes and a crowd that follows the last home attendance. It does not draw one figure per seat. A full house is drawn with a set number of figures (on High, 9,000 on the Stadium tab and 3,000 through the office window; Medium draws 60% of that and Low 25%), and a part-full ground draws that share of them.
 - Building weeks are calendar weeks. Work started during the season closes 35% of that stand's seats (12% for a roof) until it is done. Off-season and pre-season work closes nothing, because there are no home matches.
 - Rebuilding a stand keeps its roof and boxes. Roof cost follows the stand's seats when it is ordered, so roofing before rebuilding is cheaper. Real clubs would pay again.
 - Naming rights rename the ground to the buyer's first word plus "Arena", and the old name returns when the deal ends.
-- AI clubs only add to their smallest stand or a corner, and refurbish. They do not buy roofs, boxes or upgrades after the start.
+- Each off-season an AI club picks one project. It refurbishes a tired ground; else, if its crowds were near capacity, it builds the stand or corner with the lowest cost per seat; else it adds the cheapest roof. Each choice needs its cash to cover the cost a few times over (`ai` in `src/data/tuning/stadium.json`). AI clubs do not buy boxes or club-wide upgrades after the start.
+- Every club's starting ground (size, roofs, boxes, upgrades) is set from its finances and market by the thresholds in the `start` block of the same file.
 - Every club starts with a ground built up to its listed capacity. Roofs, boxes and upgrades follow its finances, market and condition.
 
 ---

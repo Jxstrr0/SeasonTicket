@@ -368,6 +368,16 @@ export function seatsAlong(length: number): number {
   return Math.max(1, Math.round(length / 0.5));
 }
 
+/**
+ * How many fans to draw. The cap (set by the quality tier) is how many a full
+ * house shows; attendance then thins that in proportion, so a half-full ground
+ * shows half as many figures as a sell-out at every tier.
+ */
+export function crowdFigures(seats: number, cap: number, fill: number): number {
+  const f = Math.max(0, Math.min(1, fill));
+  return f * Math.min(Math.max(0, cap), Math.max(0, seats));
+}
+
 /** Corner arcs get more pieces at higher detail. */
 export function cornerSteps(detail: number): number {
   return detail >= 2 ? 16 : detail >= 1 ? 10 : 6;

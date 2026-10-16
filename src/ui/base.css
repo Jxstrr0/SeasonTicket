@@ -542,6 +542,25 @@ label .field { color: var(--text); }
   border: 1px solid rgba(62, 207, 142, 0.4);
 }
 .flash-error { background: rgba(239, 91, 91, 0.14); border-color: rgba(239, 91, 91, 0.5); }
+/* On the tab pages the message floats just under the top bar, so it shows at
+   any scroll position and never pushes the page down. */
+.hub > .flash {
+  position: fixed;
+  z-index: 15;
+  top: calc(var(--bar-h, 58px) + 6px);
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  max-width: 640px;
+  margin: 0 auto;
+  background: rgba(20, 52, 44, 0.97);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+.hub > .flash.flash-error { background: rgba(64, 24, 30, 0.97); }
+.hub > .flash + * { margin-top: 0; }
+/* Good news fades after a few seconds so it never sits over the page; errors stay until dismissed. */
+.hub > .flash:not(.flash-error) { animation: flash-out 0.4s ease-in 5s forwards; }
+@keyframes flash-out { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .hub > .flash:not(.flash-error) { animation-duration: 0.01s; animation-delay: 6s; } }
 .flash .btn-icon { font-size: 1rem; flex: none; }
 
 .subtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
@@ -845,6 +864,22 @@ body.office-mode .topbar { backdrop-filter: none; }
 .st-sub { margin-top: 14px; }
 .st-look .seg { flex: 0 1 auto; padding-inline: 14px; }
 .st-of { display:block; font-weight:400; }
+
+/* Stadium tab layout. One column: ground, the picked part, building work.
+   Two columns (wide screens and landscape phones): the ground stays in view
+   on the left while the options scroll on the right. */
+.stadium-grid { display: grid; gap: 12px; align-items: start; }
+.stadium-grid > * { min-width: 0; }
+.st-side > * + * { margin-top: 12px; }
+.st-picked { scroll-margin-top: calc(var(--bar-h, 58px) + 8px); }
+.st-picked > .chip-row { margin-top: 0; }
+@media (min-width: 720px), (min-width: 560px) and (orientation: landscape) {
+  .stadium-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .st-main { position: sticky; top: calc(var(--bar-h, 58px) + 8px); }
+  /* The pinned card has to fit under the top bar, or it can't stay pinned. */
+  .st-main .stadium-3d { max-height: calc(100vh - var(--bar-h, 58px) - 150px); max-height: calc(100dvh - var(--bar-h, 58px) - 150px); min-height: 150px; }
+  .st-main .st-plan { max-height: calc(100dvh - var(--bar-h, 58px) - 90px); }
+}
 
 /* Stadium tab: the 3D ground */
 .st-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }

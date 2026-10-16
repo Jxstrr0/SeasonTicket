@@ -110,6 +110,20 @@ function activeProjects(stadium: Stadium): StadiumProject[] {
   return stadium.projects.filter((p) => !p.queued);
 }
 
+/** Every seat once the work under way now is finished (queued work not counted). */
+export function capacityWhenBuilt(stadium: Stadium): number {
+  let seats = fullCapacity(stadium);
+  for (const p of activeProjects(stadium)) {
+    if (p.kind === 'stand') {
+      const id = p.target as StandId;
+      seats += Math.max(0, standSeatsAt(id, p.toLevel) - standSeats(stadium, id));
+    } else if (p.kind === 'corner') {
+      seats += Math.max(0, cornerSeatsAt(p.toLevel) - cornerSeatsAt(stadium.corners[p.target as CornerId]));
+    }
+  }
+  return seats;
+}
+
 /** Seats a project shuts on its stand while it runs in the season. Corners and club-wide work shut none. */
 export function seatsClosedBy(stadium: Stadium, kind: ProjectKind, target: string): number {
   if (kind !== 'stand' && kind !== 'roof' && kind !== 'boxes') return 0;
@@ -235,7 +249,7 @@ function emptyStadium(demand: number): Stadium {
 export function initialStadium(team: Team): Stadium {
   const target = team.stadiumCapacity;
   const stadium = emptyStadium(target);
-  const overshoot = 600;
+  const T = S.start;
   type Move = { rank: number; apply: () => void; undo: () => void };
   for (;;) {
     const moves: Move[] = [];
@@ -253,7 +267,7 @@ export function initialStadium(team: Team): Stadium {
     let moved = false;
     for (const m of moves) {
       m.apply();
-      if (fullCapacity(stadium) <= target + overshoot) {
+      if (fullCapacity(stadium) <= target + T.overshoot) {
         moved = true;
         break;
       }
@@ -266,21 +280,21 @@ export function initialStadium(team: Team): Stadium {
   for (const id of STAND_IDS) {
     const s = stadium.stands[id];
     if (s.level < S.roof.needsStand) continue;
-    if (id === 'west') s.roof = f > 0.45 || s.level >= 3 ? 2 : 1;
-    else if (s.level >= 2) s.roof = f > 0.65 ? 2 : 1;
-    else s.roof = f > 0.5 ? 1 : 0;
+    if (id === 'west') s.roof = f > T.mainFullRoof || s.level >= 3 ? 2 : 1;
+    else if (s.level >= 2) s.roof = f > T.bigFullRoof ? 2 : 1;
+    else s.roof = f > T.smallRoof ? 1 : 0;
   }
   const west = stadium.stands.west;
-  if (west.level >= S.boxes.rowNeedsStand[0]) west.boxRows = f > 0.6 && west.level >= S.boxes.rowNeedsStand[1] ? 2 : 1;
+  if (west.level >= S.boxes.rowNeedsStand[0]) west.boxRows = f > T.mainSecondBoxes && west.level >= S.boxes.rowNeedsStand[1] ? 2 : 1;
   const east = stadium.stands.east;
-  if (east.level >= S.boxes.rowNeedsStand[1] && f > 0.7) east.boxRows = 1;
+  if (east.level >= S.boxes.rowNeedsStand[1] && f > T.eastBoxes) east.boxRows = 1;
 
   const u = stadium.upgrades;
-  u.floodlights = f > 0.6 ? 1 : 0;
-  u.videoBoard = f > 0.5 ? 1 : 0;
-  u.concourse = f > 0.7 ? 1 : 0;
-  u.shop = team.marketSize > 0.6 ? 1 : 0;
-  u.pitch = team.stadiumCondition > 0.6 ? 1 : 0;
+  u.floodlights = f > T.upgrades.floodlights ? 1 : 0;
+  u.videoBoard = f > T.upgrades.videoBoard ? 1 : 0;
+  u.concourse = f > T.upgrades.concourse ? 1 : 0;
+  u.shop = team.marketSize > T.upgrades.shop ? 1 : 0;
+  u.pitch = team.stadiumCondition > T.upgrades.pitch ? 1 : 0;
 
   const h = hashString(team.id);
   const L = S.look;
@@ -326,8 +340,9 @@ function cornerAllowed(stadium: Stadium, id: CornerId, level: number): boolean {
   return CORNER_STANDS[id].every((s) => stadium.stands[s].level >= need);
 }
 
-function busyWith(stadium: Stadium, target: string): boolean {
-  return stadium.projects.some((p) => p.target === target);
+/** The job already booked on this part, if any. */
+function busyWith(stadium: Stadium, target: string): StadiumProject | undefined {
+  return stadium.projects.find((p) => p.target === target);
 }
 
 function seatsText(n: number): string {
@@ -347,7 +362,8 @@ export function stadiumOptions(career: Career, teamId = career.userTeamId): Stad
   const out: StadiumOption[] = [];
   const add = (o: Omit<StadiumOption, 'key' | 'available' | 'reason'>, blocked: string | null) => {
     let reason = blocked;
-    if (!reason && busyWith(stadium, o.target)) reason = 'Work is already under way here.';
+    const booked = busyWith(stadium, o.target);
+    if (!reason && booked) reason = booked.queued ? 'Already booked here for the off-season.' : 'Work is already under way here.';
     if (!reason && activeOrQueued(stadium) >= S.projects.maxActive) reason = `The builders are busy: at most ${S.projects.maxActive} projects at once.`;
     if (!reason && teamId === career.userTeamId && career.ladder.level >= 3) reason = 'The spending lock forbids building.';
     if (!reason && books.cash < o.cost) reason = `Costs ${money(o.cost)}; you have ${money(Math.max(0, books.cash))}.`;
@@ -402,7 +418,7 @@ export function stadiumOptions(career: Career, teamId = career.userTeamId): Stad
     add({ kind: 'upgrade', target: id, toLevel: level + 1, title: `${def.name} level ${level + 1}`, detail: def.about, cost: def.cost[level], weeks: def.weeks[level], seatsAdded: 0, boxesAdded: 0 }, null);
   }
 
-  if (team.stadiumCondition < S.condition.max - 0.05) {
+  if (team.stadiumCondition < S.condition.max - S.condition.refurbishMargin) {
     add(
       { kind: 'refurbish', target: 'ground', toLevel: 1, title: 'Refurbish the ground', detail: `Condition +${Math.round(S.condition.restore * 100)}`, cost: refurbishCost(stadium), weeks: S.condition.refurbishWeeks, seatsAdded: 0, boxesAdded: 0 },
       null,
@@ -470,6 +486,7 @@ export function startQueuedNow(career: Career, projectId: string): Result {
   const stadium = career.stadiums[career.userTeamId];
   const project = stadium.projects.find((p) => p.id === projectId);
   if (!project || !project.queued) return fail('Nothing waiting to start.');
+  if (career.phase !== 'season') return fail('It starts with the off-season anyway.');
   project.queued = false;
   syncCapacity(career, career.userTeamId);
   return ok(`${projectLabel(project.kind, project.target, project.toLevel)}: work starts now.`);
@@ -559,6 +576,21 @@ export function weeklyStadium(career: Career): void {
 }
 
 /** The average share of seats filled at a club's home league matches this season. */
+/**
+ * Share of seats filled at the club's most recent home match this season, for
+ * drawing the crowd; before the first one, a typical crowd from tuning.
+ */
+export function lastHomeCrowd(career: Career, teamId: string): number {
+  let week = -1;
+  let share = S.view.crowdFallback;
+  for (const m of career.season.schedule.matches) {
+    if (m.homeId !== teamId || !m.result || m.week < week) continue;
+    week = m.week;
+    share = m.result.attendanceShare;
+  }
+  return share;
+}
+
 export function averageHomeCrowd(career: Career, teamId: string): number {
   let sum = 0;
   let n = 0;
@@ -586,7 +618,7 @@ function aiPlan(career: Career, team: Team): StadiumOption | null {
   const options = stadiumOptions(career, team.id).filter((o) => o.available);
   const affordable = (o: StadiumOption, times: number) => cash >= o.cost * times;
   if (team.stadiumCondition < A.refurbishBelow) {
-    const refurb = options.find((o) => o.kind === 'refurbish' && affordable(o, 1.5));
+    const refurb = options.find((o) => o.kind === 'refurbish' && affordable(o, A.refurbishCashMultiple));
     if (refurb) return refurb;
   }
   if (averageHomeCrowd(career, team.id) >= A.fullShare) {
@@ -595,7 +627,7 @@ function aiPlan(career: Career, team: Team): StadiumOption | null {
       .sort((a, b) => a.cost / a.seatsAdded - b.cost / b.seatsAdded)[0];
     if (build) return build;
   }
-  const roof = options.filter((o) => o.kind === 'roof' && affordable(o, A.cashMultiple * 2)).sort((a, b) => a.cost - b.cost)[0];
+  const roof = options.filter((o) => o.kind === 'roof' && affordable(o, A.roofCashMultiple)).sort((a, b) => a.cost - b.cost)[0];
   return roof ?? null;
 }
 

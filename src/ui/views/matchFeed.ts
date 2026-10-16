@@ -146,7 +146,8 @@ export function renderMatchFeed(league: League, match: ScheduledMatch, showAll: 
   const events = visibleEvents(result.events, showAll);
   const hidden = result.events.length - visibleEvents(result.events, false).length;
   const notes = resultNotes(result);
-  const crowd = thousands(result.attendanceShare * home.stadiumCapacity);
+  // Older saves didn't keep the head count: estimate it from today's seats.
+  const crowd = thousands(result.crowd ?? result.attendanceShare * home.stadiumCapacity);
   const context = [match.stage === 'league' ? `Round ${match.round}` : stageLabel(match.stage), `Week ${match.week}`, weatherLabel(result.weather), `Crowd ${crowd}`];
   return `
   <section class="card match-feed">
