@@ -16,6 +16,7 @@ import { autoSignSponsor, ensureHeadCoach, fitnessRehab } from './club';
 import { compactResult } from './compact';
 import { weeklyMarket } from './market';
 import { matchSelection } from './selection';
+import { stadiumAttendance, weeklyStadium } from './stadium';
 import type { Career } from './types';
 import { C, addInbox, userTeam } from './util';
 
@@ -33,7 +34,7 @@ export function careerHooks(career: Career, live = false): SeasonHooks {
     select: (rng, team, players, headCoach, opts) =>
       team.id === userId ? matchSelection(career, rng, opts.opponent) : pickSelection(rng, team, players, headCoach, opts),
     attendance: (rng, home, away, playoff) => {
-      const base = attendanceShare(rng, home, away, playoff);
+      const base = stadiumAttendance(career, home, attendanceShare(rng, home, away, playoff));
       if (home.id !== userId) return base;
       return priceAdjustedShare(base, career.books[userId].ticketPrice, fairPrice(home));
     },
@@ -86,6 +87,7 @@ export function advanceCareer(career: Career): MatchResult[] {
       autoSignSponsor(career);
       addInbox(career, 'season', 'Kick-off week', `The season starts now. ${userTeam(career).shortName} play this week.`);
     }
+    weeklyStadium(career);
     return [];
   }
 
@@ -118,6 +120,7 @@ export function advanceCareer(career: Career): MatchResult[] {
     const champion = state.championId ? state.league.teams.find((t) => t.id === state.championId) : null;
     addInbox(career, 'season', `Season ${state.league.season} is over`, `${champion ? `${champion.shortName} are champions.` : 'The season is over.'} Review the year, then start the off-season.`);
   }
+  weeklyStadium(career);
   return results;
 }
 

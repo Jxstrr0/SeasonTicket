@@ -7,7 +7,8 @@
  * that version up to the current one, so an old save is never thrown away.
  */
 import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
-import { CAREER_VERSION, type Career } from '../sim/career';
+import { CAREER_VERSION, fullCapacity, initialStadium, type Career, type Stadium } from '../sim/career';
+import type { Team } from '../sim/types';
 
 export const SAVE_PREFIX = 'ST1:';
 export const STORAGE_KEY = 'seasonticket.career';
@@ -18,7 +19,24 @@ export const STORAGE_KEY = 'seasonticket.career';
  * CAREER_VERSION goes up.
  */
 type Migration = (save: Record<string, unknown>) => Record<string, unknown>;
-const MIGRATIONS: Record<number, Migration> = {};
+const MIGRATIONS: Record<number, Migration> = {
+  /** Version 2 adds the stadium builder: every club gets a ground fitted to its old capacity, and hospitality money. */
+  1: (save) => {
+    const season = save.season as { league: { teams: Team[] } };
+    const stadiums: Record<string, Stadium> = {};
+    for (const team of season.league.teams) {
+      stadiums[team.id] = initialStadium(team);
+      team.stadiumCapacity = fullCapacity(stadiums[team.id]);
+    }
+    save.stadiums = stadiums;
+    type Ledger = { income: Record<string, number> };
+    for (const books of Object.values(save.books as Record<string, { ledger: Ledger; lastLedger: Ledger | null }>)) {
+      books.ledger.income.hospitality ??= 0;
+      if (books.lastLedger) books.lastLedger.income.hospitality ??= 0;
+    }
+    return save;
+  },
+};
 
 export class SaveError extends Error {}
 

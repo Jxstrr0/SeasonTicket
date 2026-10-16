@@ -11,7 +11,7 @@ export type TierId = 'easy' | 'normal' | 'hard' | 'veryHard';
 export type CareerPhase = 'preseason' | 'season' | 'review' | 'gameOver';
 export type MatchMode = 'full' | 'bigCalls' | 'coach';
 
-export const INCOME_KEYS = ['tickets', 'concessions', 'merchandise', 'sponsors', 'namingRights', 'tv', 'merit', 'playoffs', 'playerSales', 'loanFees', 'luxuryShare'] as const;
+export const INCOME_KEYS = ['tickets', 'concessions', 'merchandise', 'sponsors', 'namingRights', 'tv', 'merit', 'playoffs', 'playerSales', 'loanFees', 'luxuryShare', 'hospitality'] as const;
 export const SPENDING_KEYS = ['playerWages', 'staffWages', 'operations', 'matchday', 'transfers', 'loanFees', 'luxuryTax', 'interest', 'academy', 'severance', 'upgrades'] as const;
 export const FINANCING_KEYS = ['ownerInjection', 'borrowed', 'repaid'] as const;
 
@@ -134,7 +134,7 @@ export interface PlayerSeasonLine {
   reds: number;
 }
 
-export type InboxKind = 'info' | 'finance' | 'transfer' | 'bid' | 'staff' | 'youth' | 'ladder' | 'match' | 'season';
+export type InboxKind = 'info' | 'finance' | 'transfer' | 'bid' | 'staff' | 'youth' | 'ladder' | 'match' | 'season' | 'stadium';
 
 export interface InboxMessage {
   id: string;
@@ -160,6 +160,61 @@ export interface SeasonHistoryEntry {
   topScorer: { name: string; goals: number } | null;
 }
 
+export type StandId = 'north' | 'east' | 'south' | 'west';
+export type CornerId = 'ne' | 'se' | 'sw' | 'nw';
+export type UpgradeId = 'floodlights' | 'videoBoard' | 'signage' | 'concourse' | 'shop' | 'pitch';
+export type SeatScheme = 'primary' | 'secondary' | 'mixed' | 'initials';
+export type MowPattern = 'stripes' | 'wide' | 'checks' | 'diagonal' | 'rings';
+export type RoofColour = 'white' | 'primary' | 'secondary' | 'grey';
+
+export const STAND_IDS: readonly StandId[] = ['west', 'north', 'east', 'south'];
+export const CORNER_IDS: readonly CornerId[] = ['nw', 'ne', 'se', 'sw'];
+export const UPGRADE_IDS: readonly UpgradeId[] = ['floodlights', 'videoBoard', 'signage', 'concourse', 'shop', 'pitch'];
+
+export interface Stand {
+  /** 0 grass bank, 1 small stand, 2 single tier, 3 two tiers, 4 three tiers. */
+  level: number;
+  /** 0 none, 1 part roof, 2 full roof. */
+  roof: number;
+  /** Rows of executive boxes, 0 to 2. */
+  boxRows: number;
+}
+
+/** Free branding choices, applied instantly. */
+export interface StadiumLook {
+  seats: SeatScheme;
+  mow: MowPattern;
+  roof: RoofColour;
+}
+
+export type ProjectKind = 'stand' | 'roof' | 'boxes' | 'corner' | 'upgrade' | 'refurbish';
+
+export interface StadiumProject {
+  id: string;
+  kind: ProjectKind;
+  /** A stand, corner or upgrade id ('ground' for a refurbishment). */
+  target: string;
+  /** The level the work brings it to. */
+  toLevel: number;
+  weeks: number;
+  weeksLeft: number;
+  cost: number;
+  /** Paid for, waiting for the summer to start. */
+  queued: boolean;
+}
+
+export interface Stadium {
+  stands: Record<StandId, Stand>;
+  corners: Record<CornerId, number>;
+  upgrades: Record<UpgradeId, number>;
+  look: StadiumLook;
+  projects: StadiumProject[];
+  /** How many people want to come, in seats. */
+  demand: number;
+  /** Demand when the career began; growth is bounded relative to it. */
+  startDemand: number;
+}
+
 export interface Owner {
   /** Personal money left to put into the club. */
   fortune: number;
@@ -182,6 +237,8 @@ export interface Career {
   weekIndex: number;
   season: SeasonState;
   books: Record<string, ClubBooks>;
+  /** Every club's ground, by team id. */
+  stadiums: Record<string, Stadium>;
   ladder: LadderState;
   loansIn: LoanIn[];
   incomingBids: IncomingBid[];

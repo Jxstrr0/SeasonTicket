@@ -7,6 +7,7 @@
  */
 import { teamById } from '../league';
 import type { MatchResult, ScheduledMatch, Team } from '../types';
+import { boxUpkeep, concessionsBonus, hospitalityPerMatch, merchandiseMultiplier, sponsorMultiplier, tvBonus } from './stadium';
 import type { Career, ClubBooks, Debt } from './types';
 import { C, WEEKS_PER_YEAR, addInbox, clamp, earn, finance, ledgerTotals, money, nextId, roundMoney, spend, userBooks } from './util';
 
@@ -92,12 +93,13 @@ export function weeklyBooks(career: Career): void {
     const payroll = playerPayroll(career, team.id);
     spend(books, 'playerWages', payroll / WEEKS_PER_YEAR);
     spend(books, 'staffWages', staffPayroll(career, team.id) / WEEKS_PER_YEAR);
-    spend(books, 'operations', operationsCost(team) / WEEKS_PER_YEAR);
+    const stadium = career.stadiums[team.id];
+    spend(books, 'operations', (operationsCost(team) + boxUpkeep(stadium)) / WEEKS_PER_YEAR);
     spend(books, 'academy', academyUpkeep(books) / WEEKS_PER_YEAR);
-    earn(books, 'tv', C.income.tv / WEEKS_PER_YEAR);
+    earn(books, 'tv', (C.income.tv + tvBonus(stadium)) / WEEKS_PER_YEAR);
     const sponsor = team.id === career.userTeamId ? books.sponsor?.perSeason ?? 0 : sponsorValue(team);
-    earn(books, 'sponsors', sponsor / WEEKS_PER_YEAR);
-    earn(books, 'merchandise', merchandiseIncome(team) / WEEKS_PER_YEAR);
+    earn(books, 'sponsors', (sponsor * sponsorMultiplier(stadium)) / WEEKS_PER_YEAR);
+    earn(books, 'merchandise', (merchandiseIncome(team) * merchandiseMultiplier(stadium)) / WEEKS_PER_YEAR);
     books.payrollAccum += payroll;
     books.payrollWeeks += 1;
     serviceDebts(career, books);
@@ -126,7 +128,9 @@ export function settleMatch(career: Career, match: ScheduledMatch, result: Match
   const books = career.books[home.id];
   const crowd = Math.round(result.attendanceShare * home.stadiumCapacity);
   earn(books, 'tickets', crowd * matchPrice(career, home.id, playoff));
-  earn(books, 'concessions', crowd * C.matchday.concessionsPerHead);
+  const stadium = career.stadiums[home.id];
+  earn(books, 'concessions', crowd * (C.matchday.concessionsPerHead + concessionsBonus(stadium)));
+  earn(books, 'hospitality', hospitalityPerMatch(home, stadium) * (playoff ? C.tickets.playoffPriceMultiplier : 1));
   spend(books, 'matchday', crowd * C.matchday.costPerHead);
 
   const outcome = (teamId: string) => (result.winnerId === null ? 'draw' : result.winnerId === teamId ? 'win' : 'loss');
