@@ -1,0 +1,138 @@
+{
+  "ratingRange": { "min": 1, "max": 99 },
+
+  "squad": {
+    "template": { "GK": 3, "CB": 5, "FB": 4, "DM": 3, "CM": 4, "AM": 2, "W": 3, "ST": 2 },
+    "startersTemplate": { "GK": 1, "CB": 2, "FB": 2, "DM": 1, "CM": 2, "AM": 1, "W": 1, "ST": 1 },
+    "youthCount": { "min": 2, "max": 3 },
+    "domesticShare": 0.6,
+    "jersey": { "min": 1, "max": 99, "goalkeeper": 1 },
+    "minSize": 20,
+    "maxSize": 28
+  },
+
+  "ages": {
+    "starter": { "min": 21, "max": 34 },
+    "rotation": { "min": 19, "max": 36 },
+    "youth": { "min": 17, "max": 20 },
+    "any": { "min": 17, "max": 36 }
+  },
+
+  "generation": {
+    "qualitySpan": 48,
+    "tierShift": { "starter": 0, "rotation": -5, "youth": -7 },
+    "attributeSd": 7,
+    "playerSd": 3,
+    "ageCurve": [[16, -12], [18, -9], [20, -6], [22, -3], [24, -1], [26, 0], [30, 0], [32, -2], [34, -5], [36, -8]]
+  },
+
+  "potential": { "peakAge": 27, "perYearUnderPeak": 1.8, "noiseSd": 5 },
+
+  "secondaryPositions": {
+    "firstChance": 0.75,
+    "extraChance": 0.3,
+    "adjacency": {
+      "GK": [],
+      "CB": ["DM", "FB"],
+      "FB": ["W", "CB"],
+      "DM": ["CM", "CB"],
+      "CM": ["DM", "AM"],
+      "AM": ["W", "CM"],
+      "W": ["FB", "AM"],
+      "ST": ["W", "AM"]
+    }
+  },
+
+  "positionFit": {
+    "secondary": 0.92,
+    "table": {
+      "GK": { "GK": 1, "CB": 0.2, "FB": 0.2, "DM": 0.2, "CM": 0.2, "AM": 0.2, "W": 0.2, "ST": 0.2 },
+      "CB": { "GK": 0.2, "CB": 1, "FB": 0.8, "DM": 0.78, "CM": 0.6, "AM": 0.45, "W": 0.45, "ST": 0.5 },
+      "FB": { "GK": 0.2, "CB": 0.78, "FB": 1, "DM": 0.68, "CM": 0.65, "AM": 0.55, "W": 0.8, "ST": 0.45 },
+      "DM": { "GK": 0.2, "CB": 0.78, "FB": 0.68, "DM": 1, "CM": 0.85, "AM": 0.65, "W": 0.5, "ST": 0.45 },
+      "CM": { "GK": 0.2, "CB": 0.6, "FB": 0.62, "DM": 0.85, "CM": 1, "AM": 0.85, "W": 0.65, "ST": 0.55 },
+      "AM": { "GK": 0.2, "CB": 0.4, "FB": 0.5, "DM": 0.6, "CM": 0.85, "AM": 1, "W": 0.82, "ST": 0.75 },
+      "W": { "GK": 0.2, "CB": 0.4, "FB": 0.72, "DM": 0.45, "CM": 0.6, "AM": 0.82, "W": 1, "ST": 0.75 },
+      "ST": { "GK": 0.2, "CB": 0.45, "FB": 0.4, "DM": 0.4, "CM": 0.5, "AM": 0.75, "W": 0.75, "ST": 1 }
+    }
+  },
+
+  "overallWeights": {
+    "GK": { "ref": 20, "han": 18, "gkp": 18, "kck": 10, "cmp": 8, "pos": 6, "str": 4, "pas": 4, "sta": 2, "agg": 2, "dur": 2, "hea": 2, "pac": 2, "dri": 1, "vis": 1 },
+    "CB": { "tck": 14, "mrk": 14, "pos": 12, "hea": 12, "str": 10, "pac": 8, "cmp": 6, "pas": 6, "agg": 4, "sta": 4, "wrk": 4, "dri": 2, "vis": 2, "dur": 2 },
+    "FB": { "pac": 12, "sta": 10, "tck": 12, "mrk": 10, "crs": 10, "pos": 8, "wrk": 8, "dri": 7, "pas": 7, "str": 4, "cmp": 4, "hea": 3, "vis": 2, "agg": 2, "dur": 1 },
+    "DM": { "tck": 14, "pos": 12, "mrk": 10, "pas": 12, "wrk": 10, "sta": 8, "str": 8, "vis": 6, "cmp": 6, "hea": 4, "dri": 4, "agg": 3, "pac": 2, "dur": 1 },
+    "CM": { "pas": 16, "vis": 12, "sta": 10, "wrk": 10, "dri": 8, "pos": 8, "tck": 8, "cmp": 8, "fin": 4, "mrk": 4, "str": 4, "pac": 4, "crs": 2, "spk": 2 },
+    "AM": { "vis": 16, "pas": 14, "dri": 14, "fin": 10, "cmp": 8, "pac": 8, "spk": 6, "crs": 6, "pos": 5, "sta": 4, "wrk": 4, "str": 2, "tck": 2, "hea": 1 },
+    "W": { "pac": 16, "dri": 16, "crs": 12, "fin": 10, "pas": 8, "vis": 8, "sta": 6, "cmp": 6, "wrk": 5, "pos": 4, "spk": 3, "str": 2, "tck": 2, "hea": 2 },
+    "ST": { "fin": 20, "pos": 12, "cmp": 10, "hea": 10, "pac": 10, "str": 8, "dri": 8, "vis": 5, "pas": 5, "sta": 4, "wrk": 3, "spk": 2, "crs": 1, "agg": 2 }
+  },
+
+  "archetypes": {
+    "GK": { "pac": 42, "sta": 50, "str": 58, "dri": 30, "pas": 48, "vis": 40, "fin": 13, "hea": 40, "crs": 13, "spk": 23, "tck": 23, "mrk": 30, "pos": 56, "cmp": 60, "wrk": 50, "agg": 40, "ref": 66, "han": 66, "kck": 60, "gkp": 65, "dur": 60 },
+    "CB": { "pac": 54, "sta": 59, "str": 65, "dri": 42, "pas": 52, "vis": 42, "fin": 28, "hea": 65, "crs": 28, "spk": 28, "tck": 65, "mrk": 65, "pos": 64, "cmp": 56, "wrk": 58, "agg": 60, "ref": 10, "han": 10, "kck": 13, "gkp": 10, "dur": 60 },
+    "FB": { "pac": 65, "sta": 65, "str": 53, "dri": 56, "pas": 58, "vis": 48, "fin": 34, "hea": 50, "crs": 62, "spk": 38, "tck": 62, "mrk": 60, "pos": 60, "cmp": 54, "wrk": 65, "agg": 52, "ref": 10, "han": 10, "kck": 13, "gkp": 10, "dur": 60 },
+    "DM": { "pac": 53, "sta": 64, "str": 60, "dri": 50, "pas": 61, "vis": 53, "fin": 34, "hea": 55, "crs": 34, "spk": 40, "tck": 64, "mrk": 61, "pos": 64, "cmp": 59, "wrk": 64, "agg": 58, "ref": 10, "han": 10, "kck": 13, "gkp": 10, "dur": 60 },
+    "CM": { "pac": 55, "sta": 65, "str": 55, "dri": 60, "pas": 66, "vis": 64, "fin": 48, "hea": 48, "crs": 50, "spk": 50, "tck": 56, "mrk": 52, "pos": 60, "cmp": 60, "wrk": 64, "agg": 50, "ref": 10, "han": 10, "kck": 13, "gkp": 10, "dur": 60 },
+    "AM": { "pac": 59, "sta": 56, "str": 46, "dri": 65, "pas": 65, "vis": 67, "fin": 59, "hea": 39, "crs": 55, "spk": 59, "tck": 37, "mrk": 35, "pos": 51, "cmp": 61, "wrk": 53, "agg": 41, "ref": 10, "han": 10, "kck": 12, "gkp": 10, "dur": 57 },
+    "W": { "pac": 69, "sta": 60, "str": 48, "dri": 69, "pas": 59, "vis": 57, "fin": 59, "hea": 41, "crs": 65, "spk": 47, "tck": 39, "mrk": 37, "pos": 51, "cmp": 57, "wrk": 57, "agg": 43, "ref": 11, "han": 11, "kck": 14, "gkp": 11, "dur": 59 },
+    "ST": { "pac": 63, "sta": 57, "str": 61, "dri": 60, "pas": 52, "vis": 52, "fin": 68, "hea": 62, "crs": 36, "spk": 50, "tck": 30, "mrk": 32, "pos": 60, "cmp": 64, "wrk": 54, "agg": 52, "ref": 10, "han": 10, "kck": 13, "gkp": 10, "dur": 60 }
+  },
+
+  "contract": { "minYears": 1, "maxYears": 4 },
+
+  "wage": {
+    "curve": [[1, 8000], [30, 15000], [45, 30000], [55, 60000], [65, 120000], [75, 300000], [85, 800000], [92, 1600000], [99, 3000000]],
+    "roundTo": 1000,
+    "min": 8000
+  },
+
+  "value": {
+    "curve": [[1, 5000], [30, 8000], [40, 15000], [50, 40000], [60, 150000], [70, 550000], [80, 2000000], [90, 6500000], [99, 15000000]],
+    "ageMultiplier": [[17, 1.15], [21, 1.1], [24, 1.05], [27, 1.0], [30, 0.85], [33, 0.55], [36, 0.3], [40, 0.15]],
+    "potentialPremiumPerPoint": 0.03,
+    "gkMultiplier": 0.85,
+    "roundTo": 1000,
+    "min": 5000
+  },
+
+  "development": {
+    "gapRate": 0.3,
+    "growthAgeFactor": [[17, 1.0], [21, 0.9], [24, 0.6], [27, 0.35], [30, 0.15]],
+    "coachingFloor": 0.7,
+    "coachingSpan": 0.6,
+    "noiseSd": 1.2,
+    "spread": { "base": 0.35, "key": 1.0 },
+    "declineAge": 31,
+    "declinePerYear": 0.9,
+    "coachDeclineRelief": 0.35,
+    "physical": ["pac", "sta", "str"],
+    "physicalDeclineMultiplier": 1.6,
+    "mental": ["cmp", "vis", "pos", "spk"],
+    "mentalDeclineMultiplier": 0.4
+  },
+
+  "staff": {
+    "ratingBase": 60,
+    "ratingSpan": 40,
+    "ratingSd": 6,
+    "domesticShare": 0.8,
+    "age": { "min": 34, "max": 64 },
+    "contract": { "minYears": 1, "maxYears": 3 },
+    "wage": {
+      "curve": [[1, 20000], [30, 30000], [50, 80000], [70, 250000], [90, 900000], [99, 1500000]],
+      "roundTo": 1000,
+      "min": 20000
+    },
+    "headCoach": { "leanMean": 0.5, "leanSd": 0.2, "aggressionMean": 0.5, "aggressionSd": 0.2 },
+    "neutralLean": 0.5,
+    "neutralAggression": 0.5,
+    "neutralFormation": "4-4-2",
+    "formations": ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "5-3-2", "4-1-4-1", "3-4-3"]
+  },
+
+  "freeAgents": {
+    "quality": { "min": 0.2, "max": 0.5 },
+    "age": { "min": 18, "max": 34 }
+  }
+}

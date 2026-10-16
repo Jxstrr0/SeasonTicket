@@ -1,0 +1,156 @@
+{
+  "_about": "Commentary templates per match event type. Placeholders: {player}, {team}, {assist}, {minute}, {secondary}, {opponent}, {score}, {detail}. Several lines per type so the feed does not repeat itself.",
+  "kickoff": [
+    "{team} get us under way at {secondary}.",
+    "The referee blows and {team} kick off against {opponent}.",
+    "Kick-off. {team} versus {opponent}, and we are away."
+  ],
+  "chance": [
+    "{player} has a chance for {team} but cannot convert.",
+    "Half a chance for {player}. Nothing comes of it."
+  ],
+  "goal": [
+    "GOAL! {player} finishes for {team}. {score}.",
+    "{player} scores! {assist} with the pass, and {team} lead the celebrations. {score}.",
+    "It is in! {player} tucks it away and {team} have a goal. {score}.",
+    "{player} beats the keeper and {team} are on the board. {score}.",
+    "A cool finish from {player} and {team} score. {score}."
+  ],
+  "ownGoal": [
+    "Own goal! {player} turns it into his own net and {team} profit. {score}.",
+    "Disaster for {player}. It comes off him and in, and {team} score. {score}."
+  ],
+  "penaltyAwarded": [
+    "Penalty to {team}! {player} is brought down by {secondary}.",
+    "The referee points to the spot. {secondary} fouled {player} inside the area."
+  ],
+  "penaltyScored": [
+    "{player} sends the keeper the wrong way. Penalty scored for {team}. {score}.",
+    "{player} slots the penalty home. {score}.",
+    "No mistake from {player} from twelve yards. {score}."
+  ],
+  "penaltySaved": [
+    "Saved! {secondary} guesses right and keeps out {player}.",
+    "{player} hits it low but {secondary} gets down to save the penalty."
+  ],
+  "penaltyMissed": [
+    "{player} blazes the penalty over the bar.",
+    "Off the post! {player} cannot convert for {team}."
+  ],
+  "save": [
+    "{player} shoots and {secondary} pushes it away.",
+    "Fine save from {secondary} to deny {player}.",
+    "{player} tests the keeper and {secondary} holds on.",
+    "{secondary} is equal to a well-struck effort from {player}.",
+    "{assist} finds {player}, whose shot is turned behind by {secondary}."
+  ],
+  "corner": [
+    "Corner to {team}.",
+    "{team} win a corner. {player} will take it.",
+    "Deflected behind for a {team} corner."
+  ],
+  "freeKick": [
+    "Free kick to {team} in a promising position.",
+    "{team} have a free kick. {player} stands over it.",
+    "A chance from a set piece for {team}."
+  ],
+  "foul": [
+    "{player} fouls {secondary}. Free kick to {opponent}.",
+    "Late challenge from {player} on {secondary}.",
+    "{player} pulls back {secondary} and the referee spots it.",
+    "{secondary} is brought down by {player}."
+  ],
+  "yellowCard": [
+    "Yellow card for {player}.",
+    "{player} goes into the book for {team}.",
+    "The referee books {player}."
+  ],
+  "secondYellow": [
+    "A second yellow for {player}, and he is off! {team} are down to ten.",
+    "{player} is sent off after a second booking. {team} must reshuffle."
+  ],
+  "redCard": [
+    "Red card! {player} is sent off for {team}.",
+    "Straight red for {player}. {team} play on a man short."
+  ],
+  "injury": [
+    "{player} is down and needs treatment. That looks bad for {team}.",
+    "Injury worry for {team}: {player} cannot continue at full speed."
+  ],
+  "substitution": [
+    "Substitution for {team}: {secondary} replaces {player}.",
+    "{team} make a change. {player} off, {secondary} on.",
+    "{secondary} comes on for {player}."
+  ],
+  "offside": [
+    "{team} are caught offside.",
+    "The flag goes up against {team}.",
+    "Offside. {team} had broken clear but the linesman had it right."
+  ],
+  "tacticChange": [
+    "{team} change things: {detail}.",
+    "The {team} bench sends out new instructions: {detail}."
+  ],
+  "halfTime": [
+    "Half time. {score}.",
+    "The referee ends the first half. {score}."
+  ],
+  "fullTime": [
+    "Full time. {score}.",
+    "That is the end of the match. {score}."
+  ],
+  "extraTimeStart": [
+    "Level after ninety. We go to extra time.",
+    "Extra time begins with the score at {score}."
+  ],
+  "extraTimeHalf": [
+    "Half time in extra time. {score}.",
+    "The teams swap ends for the last fifteen minutes. {score}."
+  ],
+  "extraTimeEnd": [
+    "The end of extra time. {score}.",
+    "Extra time is over. {score}."
+  ],
+  "shootoutStart": [
+    "Still level. This will be settled by a penalty shootout.",
+    "A penalty shootout will decide it."
+  ],
+  "shootoutKick": [
+    "{player} {detail}. {score}.",
+    "{team}: {player} {detail}. {score}."
+  ],
+  "shootoutEnd": [
+    "{team} win the shootout {score}!",
+    "It is {team} who go through, winning the shootout {score}."
+  ],
+  "commentary": [
+    "{detail}"
+  ],
+  "chance:blocked": [
+    "{player} gets his shot away but it is blocked.",
+    "{player} shoots and a defender throws himself in the way.",
+    "Blocked! {player} could not find a way through for {team}.",
+    "{assist} tees up {player}, but the shot is charged down."
+  ],
+  "chance:offTarget": [
+    "{player} shoots from the edge of the box and it flies wide.",
+    "{player} has a sight of goal but drags it off target.",
+    "{assist} slips it through to {player}, who can only find the side netting.",
+    "{player} tries his luck from distance. Not far away.",
+    "{team} break and {player} snatches at the finish. Wide."
+  ],
+  "_labels": {
+    "mentality": [
+      "very defensive",
+      "defensive",
+      "balanced",
+      "attacking",
+      "very attacking"
+    ],
+    "shootoutKick": {
+      "scored": "scores",
+      "saved": "is denied by {secondary}",
+      "missed": "misses"
+    }
+  }
+}

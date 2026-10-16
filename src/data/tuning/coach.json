@@ -1,0 +1,58 @@
+{
+  "_about": "AI head coach thresholds: team selection before the match and decisions during it.",
+  "selection": {
+    "preferredFormationTolerance": 0.94,
+    "benchSize": 9,
+    "unitCover": ["defender", "midfielder", "attacker"],
+    "homegrownNation": "valmere",
+    "cornerTakerCrossingWeight": 0.5,
+    "penaltyTakerComposureWeight": 0.3
+  },
+  "positionFit": {
+    "same": 1,
+    "secondary": 0.92,
+    "fallback": 0.55,
+    "goalkeeperOutfield": 0.2,
+    "outfieldInGoal": 0.15,
+    "adjacent": {
+      "GK": {},
+      "CB": { "FB": 0.72, "DM": 0.78 },
+      "FB": { "CB": 0.72, "W": 0.7, "DM": 0.65 },
+      "DM": { "CB": 0.75, "CM": 0.85, "FB": 0.6 },
+      "CM": { "DM": 0.85, "AM": 0.82, "FB": 0.6, "W": 0.65 },
+      "AM": { "CM": 0.8, "W": 0.8, "ST": 0.75 },
+      "W": { "AM": 0.8, "ST": 0.75, "FB": 0.6, "CM": 0.6 },
+      "ST": { "AM": 0.75, "W": 0.75 }
+    }
+  },
+  "tactics": {
+    "dialThresholds": [0.2, 0.4, 0.6, 0.8],
+    "balancedDial": 3,
+    "counterAttackMinAggression": 0.55,
+    "counterAttackMaxAttackLean": 0.6,
+    "timeWastingCautiousLean": 0.3,
+    "timeWastingDialCautious": 2,
+    "timeWastingDialDefault": 1,
+    "manMarkMaxAggression": 0.4,
+    "widthLeanWeight": 0.5,
+    "directnessInverseLeanWeight": 1
+  },
+  "inMatch": {
+    "subWindow": { "from": 60, "to": 85 },
+    "fatigueThreshold": 0.62,
+    "softFatigueThreshold": 0.78,
+    "plannedSubChance": 0.07,
+    "bookedSubChance": 0.4,
+    "bookedSubFrom": 60,
+    "reserveSubsUntil": 80,
+    "reserveSubs": 1,
+    "maxSubsPerMinute": 1,
+    "minReplacementFit": 0.55,
+    "chase": { "from": 65, "mentalityStep": 1, "twoGoalsFrom": 60, "twoGoalsStep": 2, "impactSubFrom": 70, "impactSubChance": 0.12 },
+    "protect": { "from": 78, "mentalityStep": -1, "timeWasting": 4, "lineStep": -1, "counterAttack": true, "defensiveSubChance": 0.1 },
+    "redCard": {
+      "mentalityStep": -1,
+      "formationFallback": { "4-3-3": "4-1-4-1", "4-4-2": "4-1-4-1", "4-2-3-1": "4-1-4-1", "3-5-2": "5-3-2", "5-3-2": "5-3-2", "4-1-4-1": "4-1-4-1", "3-4-3": "5-3-2" }
+    }
+  }
+}
