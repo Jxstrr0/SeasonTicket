@@ -3,6 +3,7 @@
  * conceded while he was on and the result.
  */
 import { MATCH_TUNING } from '../data';
+import { powInt } from '../spatial/det';
 import type { Side } from '../types';
 import { otherSide, scoreOf, sideState, type MatchContext, type MatchState } from './state';
 import { unitOfPosition } from './strength';
@@ -50,6 +51,6 @@ function longestAppearance(state: MatchState): number {
 }
 
 function round(value: number): number {
-  const factor = Math.pow(10, R.decimals);
+  const factor = powInt(10, R.decimals);
   return Math.round(value * factor) / factor;
 }

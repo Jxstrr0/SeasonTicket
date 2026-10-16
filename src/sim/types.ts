@@ -123,7 +123,18 @@ export interface FormationSlot {
   y: number;
   /** Short label for UI, e.g. "LB", "RCM", "ST". */
   label: string;
+  /**
+   * Spatial engine spots inside the team block, as [u, v]: u 0 = back line .. 1 = front of
+   * the block, v 0 = left .. 1 = right (looking at the opponent goal). `def` is out of
+   * possession, `att` in possession. The goalkeeper's spots are ignored (he has his own rule).
+   */
+  def?: [number, number];
+  att?: [number, number];
+  /** Optional movement roles the engine reads in later steps. */
+  roles?: SlotRole[];
 }
+
+export type SlotRole = 'overlaps' | 'inverts' | 'dropsIn';
 
 export interface Formation {
   id: string; // e.g. "4-3-3"
