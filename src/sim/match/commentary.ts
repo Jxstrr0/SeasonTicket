@@ -35,8 +35,16 @@ function usableTemplates(templates: string[], params: CommentaryParams): string[
   return complete.length > 0 ? complete : templates;
 }
 
+/** Templates are fixed data, so each one is parsed once. */
+const placeholderCache = new Map<string, string[]>();
+
 function placeholders(template: string): string[] {
-  return Array.from(template.matchAll(/\{(\w+)\}/g), (m) => m[1]);
+  let keys = placeholderCache.get(template);
+  if (!keys) {
+    keys = Array.from(template.matchAll(/\{(\w+)\}/g), (m) => m[1]);
+    placeholderCache.set(template, keys);
+  }
+  return keys;
 }
 
 const LABELS = (commentaryJson as unknown as { _labels: { mentality: string[]; shootoutKick: Record<string, string> } })._labels;

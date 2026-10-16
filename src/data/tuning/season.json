@@ -1,1 +1,67 @@
-{}
+{
+  "_about": "Season calendar, standings, discipline carry-over, weather, attendance and between-match fitness. Read by src/sim/schedule.ts, standings.ts, playoffs.ts, season.ts and league.ts.",
+  "calendar": {
+    "_about": "Double round-robin: rounds 1-15 in weeks 1-15, a two-week break, rounds 16-30 in weeks 18-32, then three playoff weeks.",
+    "teams": 16,
+    "roundsPerHalf": 15,
+    "breakWeeks": [16, 17],
+    "playoffWeeks": { "quarterFinal": 33, "semiFinal": 34, "final": 35 }
+  },
+  "scheduleSearch": {
+    "_about": "Venue balancing search: no club plays more than maxVenueStreak home (or away) league matches in a row. Iterations and restarts only bound the search.",
+    "maxVenueStreak": 3,
+    "maxIterations": 20000,
+    "restarts": 20,
+    "roundSwapShare": 0.2
+  },
+  "points": { "win": 3, "draw": 1, "loss": 0 },
+  "tiebreakOrder": ["points", "goalDifference", "goalsFor", "headToHeadPoints", "seededCoinFlip"],
+  "formLength": 5,
+  "playoffs": {
+    "_about": "Top six qualify; seeds 1 and 2 skip the quarter-finals (3 v 6, 4 v 5). The higher seed hosts every match.",
+    "teams": 6,
+    "byes": 2
+  },
+  "discipline": {
+    "redCardSuspension": 1,
+    "yellowsPerSuspension": 5,
+    "yellowSuspensionMatches": 1
+  },
+  "injuries": {
+    "_about": "When false, an injury picked up this week starts counting down at the end of next week, so a one-week injury misses one match.",
+    "tickWeekOfInjury": false
+  },
+  "homegrownRule": false,
+  "homegrownMinimum": 6,
+  "freeAgentPoolSize": 40,
+  "summaryTopScorers": 10,
+  "weather": {
+    "_about": "Weather odds by calendar-week band. League play runs April to November; snow is kept for the playoff weeks.",
+    "bands": [
+      { "name": "spring", "fromWeek": 1, "toWeek": 9, "odds": { "clear": 0.5, "rain": 0.42, "wind": 0.08 } },
+      { "name": "summer", "fromWeek": 10, "toWeek": 21, "odds": { "clear": 0.6, "heat": 0.3, "rain": 0.1 } },
+      { "name": "autumn", "fromWeek": 22, "toWeek": 32, "odds": { "clear": 0.45, "wind": 0.35, "rain": 0.2 } },
+      { "name": "playoffs", "fromWeek": 33, "toWeek": 99, "odds": { "snow": 0.55, "clear": 0.25, "wind": 0.2 } }
+    ],
+    "fallback": "clear"
+  },
+  "attendance": {
+    "_about": "Share of capacity: base plus weighted home fan mood, market size, stadium condition and the visitors' squad quality, plus a playoff bonus and a little noise, clamped.",
+    "base": 0.22,
+    "fanMood": 0.3,
+    "marketSize": 0.18,
+    "stadiumCondition": 0.12,
+    "opponentQuality": 0.15,
+    "playoffBonus": 0.12,
+    "noiseSd": 0.03,
+    "min": 0.3,
+    "max": 1
+  },
+  "condition": {
+    "_about": "Players lose condition in proportion to minutes played and recover a share of the gap to full fitness every week (break weeks included).",
+    "lossPer90": 0.12,
+    "weeklyRecoveryShare": 0.5,
+    "min": 0,
+    "max": 1
+  }
+}

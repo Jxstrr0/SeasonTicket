@@ -51,6 +51,8 @@ export interface ClubSeed {
   fanMood: number;
   squadQuality: number;
   staffQuality: number;
+  /** One sentence of flavour for club selection. */
+  blurb?: string;
 }
 
 export const WORLD = worldJson as unknown as WorldDef;

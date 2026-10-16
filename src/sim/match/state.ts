@@ -14,6 +14,11 @@ import type {
   TeamMatchStats,
 } from '../types';
 
+/** How a shot came about; the engine counts each kind per side. */
+export type ChanceType = 'openPlay' | 'counter' | 'setPiece' | 'penalty';
+
+export const CHANCE_TYPES: readonly ChanceType[] = ['openPlay', 'counter', 'setPiece', 'penalty'];
+
 export type Period = 'firstHalf' | 'secondHalf' | 'etFirstHalf' | 'etSecondHalf' | 'shootout' | 'finished';
 
 export interface SideState {
@@ -28,6 +33,8 @@ export interface SideState {
   yellows: Record<string, number>;
   sentOff: string[];
   stats: TeamMatchStats;
+  /** Shots by how they came about (open play, counter, set piece, penalty). */
+  chances: Record<ChanceType, number>;
   playerStats: Record<string, PlayerMatchStats>;
   aiControlled: boolean;
 }
@@ -78,6 +85,10 @@ export function emptyTeamStats(): TeamMatchStats {
     saves: 0,
     tackles: 0,
   };
+}
+
+export function emptyChanceCounts(): Record<ChanceType, number> {
+  return { openPlay: 0, counter: 0, setPiece: 0, penalty: 0 };
 }
 
 export function emptyPlayerStats(playerId: string): PlayerMatchStats {

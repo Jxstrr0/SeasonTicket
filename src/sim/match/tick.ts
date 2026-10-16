@@ -9,6 +9,7 @@ import type { AttributeKey, Formation, Player, Position, Side } from '../types';
 import { emitEvent } from './events';
 import {
   ensurePlayerStats,
+  type ChanceType,
   goalMargin,
   otherSide,
   sideState,
@@ -31,7 +32,6 @@ import {
 
 const T = MATCH_TUNING;
 
-type ChanceType = 'openPlay' | 'counter' | 'setPiece' | 'penalty';
 type MoveOutcome = 'offside' | 'foul' | 'corner' | 'shot' | 'turnover' | 'nothing';
 type PositionWeights = Record<Position, number>;
 type AttributeWeights = Partial<Record<AttributeKey, number>>;
@@ -162,7 +162,8 @@ function drawOutcome(tick: Tick, attacking: Side): MoveOutcome {
     byDial(M.shot.directness, A.tactics.directness) *
     byDial(M.shot.width, A.tactics.width) *
     weather.shotRate *
-    homeShots;
+    homeShots *
+    cushionFactor(tick.state, attacking);
 
   const defenderAggression = unitAttribute(D, tick.formation[defending], tick.ctx, 'defender', 'agg');
   const pFoul = M.foul.base * byDial(M.foul.pressing, D.tactics.pressing) * (1 + M.foul.aggressionWeight * relative(defenderAggression));
@@ -190,6 +191,14 @@ function drawOutcome(tick: Tick, attacking: Side): MoveOutcome {
   };
   const outcomes: MoveOutcome[] = ['offside', 'foul', 'corner', 'shot', 'turnover', 'nothing'];
   return tick.rng.weighted(outcomes, (o) => weights[o]);
+}
+
+/** Players with a cushion ease off: each goal of lead beyond the first trims their own shot rate. */
+export function cushionFactor(state: MatchState, side: Side): number {
+  const C = T.scoreEffects;
+  const cushion = goalMargin(state, side) - C.cushionFrom + 1;
+  if (cushion <= 0) return 1;
+  return Math.max(C.minShotRate, 1 - C.shotRatePerGoal * cushion);
 }
 
 function resolveOffside(tick: Tick, attacking: Side): void {
@@ -251,7 +260,7 @@ function resolveFreeKick(tick: Tick, attacking: Side): void {
   }
   if (tick.rng.chance(T.setPiece.freeKickCrossChance)) {
     const taker = setPieceTaker(tick, attacking, 'freeKicks');
-    const target = pickPlayer(tick, attacking, T.involvement.shooter.setPiece as PositionWeights, T.involvement.attributeWeights.shooterSetPiece as AttributeWeights, taker ? [taker] : []);
+    const target = pickPlayer(tick, attacking, T.involvement.shooter.setPiece as PositionWeights, T.involvement.attributeWeights.shooterSetPiece as AttributeWeights, taker ? [taker] : [], markedDown(tick, attacking));
     if (taker === null || target === null) return;
     emitEvent(tick.state, tick.ctx, tick.rng, { type: 'freeKick', side: attacking, playerId: taker });
     takeShot(tick, attacking, 'setPiece', target, taker, 1);
@@ -264,16 +273,16 @@ function resolveCorner(tick: Tick, attacking: Side): void {
   A.stats.corners += 1;
   emitEvent(tick.state, tick.ctx, tick.rng, { type: 'corner', side: attacking, playerId: taker });
   if (taker === null || !tick.rng.chance(T.setPiece.cornerChance)) return;
-  const target = pickPlayer(tick, attacking, T.involvement.shooter.setPiece as PositionWeights, T.involvement.attributeWeights.shooterSetPiece as AttributeWeights, [taker]);
+  const target = pickPlayer(tick, attacking, T.involvement.shooter.setPiece as PositionWeights, T.involvement.attributeWeights.shooterSetPiece as AttributeWeights, [taker], markedDown(tick, attacking));
   if (target === null) return;
   takeShot(tick, attacking, 'setPiece', target, taker, 1);
 }
 
 function resolveOpenPlayShot(tick: Tick, attacking: Side): void {
-  const shooter = pickPlayer(tick, attacking, T.involvement.shooter.openPlay as PositionWeights, T.involvement.attributeWeights.shooterOpenPlay as AttributeWeights, []);
+  const shooter = pickPlayer(tick, attacking, T.involvement.shooter.openPlay as PositionWeights, T.involvement.attributeWeights.shooterOpenPlay as AttributeWeights, [], markedDown(tick, attacking));
   if (shooter === null) return;
   const creator = tick.rng.chance(T.involvement.assistChance.openPlay)
-    ? pickPlayer(tick, attacking, T.involvement.creator as PositionWeights, T.involvement.attributeWeights.creator as AttributeWeights, [shooter])
+    ? pickPlayer(tick, attacking, T.involvement.creator as PositionWeights, T.involvement.attributeWeights.creator as AttributeWeights, [shooter], markedDown(tick, attacking))
     : null;
   takeShot(tick, attacking, 'openPlay', shooter, creator, 1);
 }
@@ -295,10 +304,10 @@ function resolveTurnover(tick: Tick, attacking: Side): void {
   pCounter += byDial(C.highPressChance, D.tactics.pressing);
   if (!tick.rng.chance(Math.min(C.max, pCounter))) return;
 
-  const shooter = pickPlayer(tick, defending, T.involvement.shooter.counter as PositionWeights, T.involvement.attributeWeights.shooterCounter as AttributeWeights, []);
+  const shooter = pickPlayer(tick, defending, T.involvement.shooter.counter as PositionWeights, T.involvement.attributeWeights.shooterCounter as AttributeWeights, [], markedDown(tick, defending));
   if (shooter === null) return;
   const creator = tick.rng.chance(T.involvement.assistChance.counter)
-    ? pickPlayer(tick, defending, T.involvement.creator as PositionWeights, T.involvement.attributeWeights.creator as AttributeWeights, [shooter])
+    ? pickPlayer(tick, defending, T.involvement.creator as PositionWeights, T.involvement.attributeWeights.creator as AttributeWeights, [shooter], markedDown(tick, defending))
     : null;
   tick.state.possession = defending;
   takeShot(tick, defending, 'counter', shooter, creator, D.tactics.counterAttack ? C.xgBoostWithTactic : 1);
@@ -318,6 +327,7 @@ function takeShot(tick: Tick, side: Side, type: ChanceType, shooterId: string, c
 
   A.stats.shots += 1;
   A.stats.xg += xg;
+  A.chances[type] += 1;
   const shooterStats = ensurePlayerStats(A, shooterId);
   shooterStats.shots += 1;
   shooterStats.xg += xg;
@@ -329,7 +339,7 @@ function takeShot(tick: Tick, side: Side, type: ChanceType, shooterId: string, c
   const pGoal = clamp(xg * skill, T.shot.minGoalChance, T.shot.maxGoalChance);
 
   if (tick.rng.chance(pGoal)) {
-    scoreGoal(tick, side, shooterId, creatorId, xg, 'goal');
+    scoreGoal(tick, side, shooterId, creatorId, xg, 'goal', type);
     return;
   }
 
@@ -373,7 +383,7 @@ function shooterWeights(type: ChanceType): AttributeWeights {
   return W.shooterOpenPlay as AttributeWeights;
 }
 
-function scoreGoal(tick: Tick, side: Side, scorerId: string, creatorId: string | null, xg: number, type: 'goal' | 'penaltyScored'): void {
+function scoreGoal(tick: Tick, side: Side, scorerId: string, creatorId: string | null, xg: number, type: 'goal' | 'penaltyScored', chance: ChanceType): void {
   const A = sideState(tick.state, side);
   if (side === 'home') tick.state.homeScore += 1;
   else tick.state.awayScore += 1;
@@ -383,7 +393,8 @@ function scoreGoal(tick: Tick, side: Side, scorerId: string, creatorId: string |
   scorer.goals += 1;
   scorer.shotsOnTarget += 1;
   if (creatorId !== null) ensurePlayerStats(A, creatorId).assists += 1;
-  emitEvent(tick.state, tick.ctx, tick.rng, { type, side, playerId: scorerId, secondaryPlayerId: creatorId, xg, highlight: true });
+  const variant = chance === 'counter' ? 'counter' : undefined;
+  emitEvent(tick.state, tick.ctx, tick.rng, { type, side, playerId: scorerId, secondaryPlayerId: creatorId, xg, highlight: true, ...(variant ? { variant } : {}) });
 }
 
 function resolvePenalty(tick: Tick, side: Side): void {
@@ -397,6 +408,7 @@ function resolvePenalty(tick: Tick, side: Side): void {
   const xg = T.shot.xg.penalty.mean;
   A.stats.shots += 1;
   A.stats.xg += xg;
+  A.chances.penalty += 1;
   const takerStats = ensurePlayerStats(A, takerId);
   takerStats.shots += 1;
   takerStats.xg += xg;
@@ -405,7 +417,7 @@ function resolvePenalty(tick: Tick, side: Side): void {
   const technique = (effective(taker, energy, 'spk') + effective(taker, energy, 'cmp')) / 2;
   const skill = 1 + T.shot.finishingWeight * relative(technique) - T.shot.goalkeeperWeight * relative(goalkeeperQuality(D, tick.ctx));
   if (tick.rng.chance(clamp(xg * skill, T.shot.minGoalChance, T.shot.maxGoalChance))) {
-    scoreGoal(tick, side, takerId, null, xg, 'penaltyScored');
+    scoreGoal(tick, side, takerId, null, xg, 'penaltyScored', 'penalty');
     return;
   }
   if (tick.rng.chance(T.setPiece.penaltySavedShareOfMisses)) {
@@ -547,7 +559,7 @@ function playedPosition(tick: Tick, S: SideState, slotIndex: number): Position {
 
 /**
  * Picks an on-pitch player by position weight times attribute quality, with
- * man-marking and any caller adjustment applied. Null when nobody qualifies.
+ * any caller adjustment applied. Null when nobody qualifies.
  */
 function pickPlayer(
   tick: Tick,
@@ -558,19 +570,23 @@ function pickPlayer(
   adjust?: (id: string) => number,
 ): string | null {
   const S = sideState(tick.state, side);
-  const markedBy = sideState(tick.state, otherSide(side)).tactics.manMarkTarget;
   const candidates: { id: string; weight: number }[] = [];
   S.onPitch.forEach((id, index) => {
     if (id === '' || exclude.includes(id)) return;
     const player = tick.ctx.players[id];
     let weight = positionWeights[playedPosition(tick, S, index)];
     if (Object.keys(attributeWeights).length > 0) weight *= weightedAttributes(player, energyOf(S, id), attributeWeights) / T.attributes.scale;
-    if (markedBy === id) weight *= T.manMarking.targetInvolvement;
     if (adjust) weight *= adjust(id);
     candidates.push({ id, weight });
   });
   if (candidates.length === 0) return null;
   return tick.rng.weighted(candidates, (c) => c.weight).id;
+}
+
+/** Shooting and creating weight for the attacking side: the player the opponent man-marks gets fewer touches. */
+function markedDown(tick: Tick, side: Side): (id: string) => number {
+  const target = sideState(tick.state, otherSide(side)).tactics.manMarkTarget;
+  return (id) => (id === target ? T.manMarking.targetInvolvement : 1);
 }
 
 /** The nominated taker if he is on the pitch, else the best set-piece player available. */

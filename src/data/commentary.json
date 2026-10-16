@@ -126,6 +126,11 @@
   "commentary": [
     "{detail}"
   ],
+  "goal:counter": [
+    "GOAL on the break! {player} finishes off a lightning counter for {team}. {score}.",
+    "{team} break at speed and {player} scores. {assist} with the pass. {score}.",
+    "Straight down the other end and {player} punishes them. {score}."
+  ],
   "chance:blocked": [
     "{player} gets his shot away but it is blocked.",
     "{player} shoots and a defender throws himself in the way.",

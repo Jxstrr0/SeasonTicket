@@ -1,1 +1,34 @@
-{}
+{
+  "country": {
+    "id": "valmere",
+    "name": "Valmere",
+    "demonym": "Valmeran",
+    "currency": "Valmeran dollar",
+    "currencySymbol": "$"
+  },
+  "league": {
+    "name": "Kestrel Football League",
+    "abbr": "KFL",
+    "tableTrophy": "Valmere Shield",
+    "playoffTrophy": "Founders' Cup"
+  },
+  "regions": [
+    { "id": "capital-district", "name": "Capital District" },
+    { "id": "eastern-shore", "name": "Eastern Shore" },
+    { "id": "riviere-valley", "name": "Rivière Valley" },
+    { "id": "lakelands", "name": "Lakelands" },
+    { "id": "iron-belt", "name": "Iron Belt" },
+    { "id": "highlands", "name": "Highlands" },
+    { "id": "western-plains", "name": "Western Plains" }
+  ],
+  "nations": [
+    { "id": "esperia", "name": "Esperia", "demonym": "Esperian", "namePool": "esperia", "weight": 1.8 },
+    { "id": "kaltland", "name": "Kaltland", "demonym": "Kaltlander", "namePool": "kaltland", "weight": 1.4 },
+    { "id": "marrovia", "name": "Marrovia", "demonym": "Marrovian", "namePool": "marrovia", "weight": 1.2 },
+    { "id": "sundara", "name": "Sundara", "demonym": "Sundaran", "namePool": "sundara", "weight": 0.6 },
+    { "id": "ostenburg", "name": "Ostenburg", "demonym": "Ostenburger", "namePool": "ostenburg", "weight": 1.0 },
+    { "id": "caravelle", "name": "Caravelle", "demonym": "Caravellan", "namePool": "caravelle", "weight": 2.0 },
+    { "id": "vostria", "name": "Vostria", "demonym": "Vostrian", "namePool": "vostria", "weight": 0.8 },
+    { "id": "norrvik", "name": "Norrvik", "demonym": "Norrvikian", "namePool": "norrvik", "weight": 0.5 }
+  ]
+}
