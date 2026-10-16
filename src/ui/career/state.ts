@@ -5,6 +5,7 @@
  */
 import type { Crest, MatchMode, TierId } from '../../sim/career';
 import type { Position, StaffRole } from '../../sim/types';
+import { loadQuality, type QualitySetting } from '../../render/quality';
 
 export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode';
 
@@ -81,6 +82,10 @@ export interface UiState {
   title: { saved: SavedSummary | null; error: string | null; importText: string };
   draft: NewCareerDraft | null;
   tab: HubTab;
+  /** True while the hub shows the 3D office instead of a tab. */
+  inOffice: boolean;
+  /** Graphics setting for this device ('off' means plain menus, no office). */
+  quality: QualitySetting;
   squadPlayerId: string | null;
   lineupSlot: number | null;
   marketView: MarketView;
@@ -113,6 +118,8 @@ export function initialUi(): UiState {
     title: { saved: null, error: null, importText: '' },
     draft: null,
     tab: 'home',
+    inOffice: false,
+    quality: loadQuality(),
     squadPlayerId: null,
     lineupSlot: null,
     marketView: 'scout',

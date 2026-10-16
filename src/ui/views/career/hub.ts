@@ -3,6 +3,7 @@ import { C, LADDER_NAMES, money, transferWindowOpen, userBooks, userFixture, use
 import { cls, each, esc } from '../../html';
 import { weekLabel } from '../../model';
 import { HUB_TABS, type HubTab, type UiState } from '../../career/state';
+import { QUALITY_OPTIONS } from '../../../render/quality';
 import { MATCH_MODES } from './newCareer';
 import { renderCrest } from './crest';
 import { renderHome } from './home';
@@ -81,6 +82,11 @@ function renderMenu(career: Career, ui: UiState): string {
     <div class="segmented stack" role="group">
       ${each(MATCH_MODES, (m) => `<button type="button" class="${cls('seg', m.id === mode && 'on')}" data-action="set-mode" data-mode="${esc(m.id)}" aria-pressed="${m.id === mode}"><strong>${esc(m.label)}</strong><span class="small">${esc(m.hint)}</span></button>`)}
     </div>
+    <div class="card-title">Graphics</div>
+    <div class="segmented" role="group">
+      ${each(QUALITY_OPTIONS, (q) => `<button type="button" class="${cls('seg', q.id === ui.quality && 'on')}" data-action="set-quality" data-quality="${q.id}" aria-pressed="${q.id === ui.quality}">${esc(q.label)}</button>`)}
+    </div>
+    <p class="muted small">Low runs best on older phones. Off uses the plain menus with no 3D office.</p>
     <label class="check"><input type="checkbox" data-change="auto-lineup"${career.delegation.autoLineup ? ' checked' : ''}> Head coach picks the lineup each week</label>
     <div class="menu-row">
       <button type="button" class="btn-secondary" data-action="save-code">Save code</button>
@@ -106,8 +112,13 @@ function tabLabel(career: Career, id: HubTab, label: string): string {
 }
 
 function renderTabs(career: Career, ui: UiState): string {
+  const office =
+    ui.quality === 'off'
+      ? ''
+      : `<button type="button" class="${cls('tab', ui.inOffice && 'active')}" data-action="office" aria-current="${ui.inOffice ? 'page' : 'false'}">Office</button>`;
+  const on = (id: HubTab): boolean => !ui.inOffice && id === ui.tab;
   return `<nav class="tabs career-tabs" aria-label="Sections">
-    ${each(HUB_TABS, (t) => `<button type="button" class="${cls('tab', t.id === ui.tab && 'active')}" data-action="tab" data-tab="${t.id}" aria-current="${t.id === ui.tab ? 'page' : 'false'}">${tabLabel(career, t.id, t.label)}</button>`)}
+    ${office}${each(HUB_TABS, (t) => `<button type="button" class="${cls('tab', on(t.id) && 'active')}" data-action="tab" data-tab="${t.id}" aria-current="${on(t.id) ? 'page' : 'false'}">${tabLabel(career, t.id, t.label)}</button>`)}
   </nav>`;
 }
 
@@ -133,6 +144,13 @@ function renderTab(career: Career, ui: UiState): string {
 }
 
 export function renderHub(career: Career, ui: UiState): string {
+  // In the office the 3D room fills the screen behind the frame; the desk objects are the menu.
+  if (ui.inOffice) {
+    return `${renderTopBar(career, ui)}
+  ${renderMenu(career, ui)}
+  ${renderTabs(career, ui)}
+  <div class="office-hud">${renderFlash(ui)}</div>`;
+  }
   return `${renderTopBar(career, ui)}
   ${renderMenu(career, ui)}
   ${renderTabs(career, ui)}
