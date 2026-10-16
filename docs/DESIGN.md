@@ -81,24 +81,24 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 
 - 11 a side; standard pitch (105 m × 68 m).
 - 90 minutes in two halves plus stoppage time (1 to 6 minutes per half).
-- **Five substitutions** per team from a bench of nine, in three windows plus half-time.
+- **Five substitutions** per team from a bench of nine, made at any stoppage. The five include extra time; there is no extra substitute in extra time.
 - Yellow and red cards. Two yellows in a match is a red. A red card means playing a player short. Red: one-match suspension. Five accumulated yellows in a season: one-match suspension.
 - Offside, fouls, free kicks, penalties and corners exist as match events.
 - Injuries happen in matches and training, with weeks out.
 - **Fatigue** drains over a match (faster with high pressing and tempo) and recovers between matches.
 - Points: 3 for a win, 1 for a draw. Tiebreakers: goal difference, goals for, head-to-head points, then a seeded coin flip.
-- **Playoffs:** extra time (two 15-minute halves) then a penalty shootout.
+- **Playoffs:** extra time (two 15-minute halves) then a penalty shootout: five kicks each, then sudden death. Only players on the pitch at the end of extra time take kicks, so a sent-off player never does, and nobody kicks twice until every eligible team-mate has.
 - The league season: every club plays every other club home and away (**30 matches**).
 
 ---
 
 ## 6. Season structure
 
-- **Pre-season:** training camp, friendlies (2, not simulated in the concept test), the **summer transfer window** closes the week before round 1.
+- **Pre-season:** training camp, friendlies (2, not simulated in the concept test), the **pre-season transfer window** closes the week before round 1.
 - **Regular season:** 30 rounds, one per week, with a two-week **mid-season break** after round 15. The **mid-season transfer window** is open during the break and the week after it (3 weeks).
 - **Playoffs:** top 6 of the table. Seeds 1 and 2 skip the quarter-finals. Quarter-finals: 3 v 6 and 4 v 5. Semi-finals: seed 1 plays the lowest remaining seed, seed 2 plays the other. **Championship Final** for the Founders' Cup. The higher seed hosts every playoff match, including the final.
 - The table winner lifts **the Valmere Shield**; the playoff winner lifts **the Founders' Cup**. Both count as titles.
-- **Offseason:** awards, contract renewals, retirements, youth academy intake, free agency, the summer transfer window, training camp, and stadium construction.
+- **Offseason:** awards, contract renewals, retirements, youth academy intake, free agency, the opening of the pre-season transfer window, training camp, and stadium construction.
 
 ---
 
@@ -230,7 +230,8 @@ Decided during development (the owner can veto any of these):
 
 Sim simplifications (documented here as the build brief requires):
 - Stoppage time is 1 to 6 minutes per half drawn by the sim, not computed from events.
-- Substitution windows are not enforced as three strict stoppages; the sim allows a sub at any dead ball and caps the count at five.
+- Substitution windows are not enforced as three strict stoppages; the sim allows a sub at any dead ball and caps the count at five, including extra time (many real competitions allow a sixth in extra time).
+- In a shootout, a side with more players on the pitch does not reduce its kickers to match an opponent reduced by red cards.
 - No VAR or offside-line nuance; offside is an event outcome, not a positional check.
 - Transfer fees are paid in full from cash in the concept test.
 
@@ -243,3 +244,5 @@ Sim simplifications (documented here as the build brief requires):
 - Wage cap level, luxury-tax rates and the typical fee range for a star.
 - Youth intake size by academy level.
 - Which tactical presets ship for the concept test.
+- The owner's personal fortune: a finite starting amount per difficulty tier (and whether it grows), so cash injections cannot be unlimited.
+- The league abbreviation: "VNL" is also the abbreviation of a real international volleyball competition. Keep it, or pick another.
