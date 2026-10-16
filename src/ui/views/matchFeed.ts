@@ -59,16 +59,35 @@ function eventClass(event: MatchEvent): string {
   );
 }
 
-function renderEvent(league: League, event: MatchEvent): string {
+/** Trimmed results drop the commentary line; rebuild a short one from the event. */
+const FALLBACK_TEXT: Partial<Record<MatchEventType, string>> = {
+  goal: 'Goal',
+  ownGoal: 'Own goal',
+  penaltyScored: 'Penalty scored',
+  redCard: 'Red card',
+  secondYellow: 'Second yellow',
+  injury: 'Injury',
+  yellowCard: 'Yellow card',
+  substitution: 'Substitution',
+};
+
+export function eventText(league: League, event: MatchEvent): string {
+  if (event.text) return event.text;
+  const label = FALLBACK_TEXT[event.type] ?? '';
+  const who = playerSurname(league, event.playerId);
+  return who && label ? `${label}: ${who}` : label;
+}
+
+export function renderEvent(league: League, event: MatchEvent): string {
   const side = event.teamId ? kit(team(league, event.teamId)) : '<span class="kit kit-none" aria-hidden="true"></span>';
   return `<li class="${eventClass(event)}">
     <span class="ev-min">${esc(formatMinute(event))}</span>
     ${side}
-    <span class="ev-text">${esc(event.text)}</span>
+    <span class="ev-text">${esc(eventText(league, event))}</span>
   </li>`;
 }
 
-function scorerList(league: League, goals: GoalLine[], side: 'home' | 'away'): string {
+export function scorerList(league: League, goals: GoalLine[], side: 'home' | 'away'): string {
   const mine = goals.filter((g) => g.side === side);
   if (mine.length === 0) return '';
   return each(mine, (g) => {
@@ -78,14 +97,14 @@ function scorerList(league: League, goals: GoalLine[], side: 'home' | 'away'): s
   });
 }
 
-interface StatRow {
+export interface StatRow {
   label: string;
   home: number;
   away: number;
   show: (n: number) => string;
 }
 
-function statRows(home: TeamMatchStats, away: TeamMatchStats): StatRow[] {
+export function statRows(home: TeamMatchStats, away: TeamMatchStats): StatRow[] {
   const whole = (n: number) => String(n);
   return [
     { label: 'Possession', home: home.possession, away: away.possession, show: (n) => percent(n) },
@@ -99,7 +118,7 @@ function statRows(home: TeamMatchStats, away: TeamMatchStats): StatRow[] {
   ];
 }
 
-function renderStat(row: StatRow): string {
+export function renderStat(row: StatRow): string {
   const total = row.home + row.away;
   const share = total > 0 ? row.home / total : 0.5;
   return `<div class="stat">

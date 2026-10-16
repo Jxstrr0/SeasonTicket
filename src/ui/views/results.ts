@@ -33,9 +33,9 @@ export function renderResultRow(league: League, match: ScheduledMatch): string {
   </li>`;
 }
 
-export function renderResults(season: SeasonState, week: number | null): string {
+export function renderResults(season: SeasonState, week: number | null, emptyHint = 'Tap <strong>Sim week</strong> to play round 1.'): string {
   if (week === null) {
-    return `<section class="card"><p class="muted">No matches played yet. Tap <strong>Sim week</strong> to play round 1.</p></section>`;
+    return `<section class="card"><p class="muted">No matches played yet. ${emptyHint}</p></section>`;
   }
   const prev = neighbourWeek(season, week, -1);
   const next = neighbourWeek(season, week, 1);

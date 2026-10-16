@@ -1,0 +1,38 @@
+/** Career title screen: continue, start a new career, or paste a save code. */
+import { esc } from '../../html';
+import type { UiState } from '../../career/state';
+import { renderCrest } from './crest';
+
+export function renderCareerTitle(ui: UiState): string {
+  const { saved, error, importText } = ui.title;
+  const continueCard = saved
+    ? `<div class="card continue-card">
+        ${renderCrest(saved.crest, 56)}
+        <div class="continue-info">
+          <div class="card-title">${esc(saved.club)}</div>
+          <div class="muted small">Season ${esc(saved.season)}</div>
+        </div>
+        <button type="button" data-action="continue">Continue</button>
+      </div>`
+    : '';
+  return `<main class="shell title-screen">
+    <header class="masthead">
+      <h1>Season Ticket</h1>
+      <p class="tagline">Own the club. Hire the coach. Change the game from the touchline.</p>
+    </header>
+    ${error ? `<p class="error" role="alert">${esc(error)}</p>` : ''}
+    ${continueCard}
+    <div class="card">
+      <div class="card-title">New career</div>
+      <p class="muted small">Pick a club in the Kestrel Football League, make it yours, and keep it solvent.</p>
+      <button type="button" data-action="new-career">${saved ? 'Start a new career' : 'Start a career'}</button>
+      ${saved ? '<p class="muted small">Starting a new career replaces the saved one when you press Start.</p>' : ''}
+    </div>
+    <form class="card" data-form="import">
+      <label class="card-title" for="import-code">Load a save code</label>
+      <textarea id="import-code" name="code" class="field code-field" rows="3" placeholder="ST1:..." spellcheck="false" autocomplete="off">${esc(importText)}</textarea>
+      <button type="submit" class="btn-secondary">Load code</button>
+    </form>
+    <p class="center small"><a class="link" href="#sandbox">League sandbox (watch a season, no club)</a></p>
+  </main>`;
+}

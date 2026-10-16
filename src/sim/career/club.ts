@@ -222,6 +222,26 @@ export function refillStaffPool(career: Career): void {
   league.nextId = ids.current();
 }
 
+/**
+ * A good fitness coach speeds up injury recovery: each week, every injured
+ * player at a club whose fitness coach is rated at least the floor has a
+ * chance (scaled by the rating) to come back a week early.
+ */
+export function fitnessRehab(career: Career): void {
+  const league = career.season.league;
+  const S = C.staff;
+  const rng = careerRng(career, 'fitness-rehab');
+  for (const team of league.teams) {
+    const coach = staffInRole(career, team.id, 'fitnessCoach');
+    if (!coach || coach.rating < S.fitnessRehabFloor) continue;
+    const chance = S.fitnessRehabChance * (coach.rating / 100);
+    for (const id of team.playerIds) {
+      const p = league.players[id];
+      if (p && p.injuryWeeks > 0 && rng.chance(chance)) p.injuryWeeks -= 1;
+    }
+  }
+}
+
 /** A club must have a head coach before it can play; the best in the pool steps in if needed. */
 export function ensureHeadCoach(career: Career): void {
   if (staffInRole(career, career.userTeamId, 'headCoach')) return;
