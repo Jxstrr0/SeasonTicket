@@ -47,6 +47,8 @@ The owner of this repo is a beginner-plus coder who tests mostly on a phone. Exp
 
 ## Match engine spec for the sim
 
+> **Note:** the spatial engine built in Stage 4.5 (see `docs/STAGE_4_5_SPATIAL_ENGINE.md`) replaces the per-minute tick engine described below. The rules, outputs and believability targets here still apply; the "one-minute ticks" model is what changes.
+
 - 11 a side, 90 minutes plus stoppage time (1 to 6 minutes per half), five substitutions from a bench of nine.
 - Simulate in one-minute ticks. Each tick, the team in possession attempts a move; outcomes include nothing, a foul (free kick, possible card), a corner, a shot (with an expected-goals value and the players involved), or a turnover that may become a counter-attack.
 - Tactics change the numbers: formation, mentality, pressing, defensive line, width, tempo, passing directness, counter-attacks, time-wasting, set-piece takers, man-marking. Every tactic change takes effect at the next tick.
@@ -88,11 +90,23 @@ Work one stage at a time. Each stage ends with a playable build deployed to Page
 - Visible from the office window.
 - **Done when:** buying an upgrade changes the stadium you can see, and the change persists in saves.
 
+### Stage 4.5: Spatial match engine
+- Replace the Stage 1 statistical engine (one outcome rolled per minute, no player positions) with a spatial engine: 22 players and the ball have positions on a 105 m by 68 m pitch, tactics set the team's shape, and each player decides from his attributes.
+- One engine for the watched match and every background match, with a coarse mode for speed, running in a Web Worker. Matches replay from their seed and inputs, so no position frames go in saves.
+- The 2D top-down viewer (moved here from Stage 5) is built early and is the main tool for judging the engine.
+- Full spec, build steps, tests, performance budgets and "done when": `docs/STAGE_4_5_SPATIAL_ENGINE.md`. Start with its docs and design proposal, and stop for the owner's review before writing engine code.
+- **Hard gate:** do not start any Stage 5 work (3D players, match-day cameras, the 3D tactics overlay, match audio) until:
+  1. Stage 4 meets its "done when", and
+  2. Stage 4.5 meets its "done when" in `docs/STAGE_4_5_SPATIAL_ENGINE.md`, and
+  3. The owner has given his verdict on the new engine.
+
+  If a request seems to need Stage 5 work before then, say so and ask the owner first.
+
 ### Stage 5: Match Day viewer
 Build in three playable steps:
 1. Text match feed (exists from Stage 2).
-2. 2D top-down highlights driven by engine output.
-3. 3D semi-realistic highlights: rigged GLB players re-coloured per club, broadcast and owner's-box cameras, the tactics overlay, weather, crowd and stadium audio, text commentary.
+2. 2D top-down viewer (exists from Stage 4.5).
+3. 3D replay viewer: semi-realistic highlights replayed from the engine's position data, with rigged GLB players re-coloured per club, broadcast and owner's-box cameras, the tactics overlay, weather, crowd and stadium audio, text commentary.
 - **Done when:** a full match can be managed and watched in 3D on a phone at Medium quality.
 
 ### Stage 6: Events and story layer
