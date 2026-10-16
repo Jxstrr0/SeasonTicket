@@ -263,6 +263,21 @@ Season simplifications (Stage 1):
 - Each player has one fictional nationality. First and last names are picked independently. Clubs have a primary and a secondary colour only.
 - In Stage 1 the AI coach runs both sides of every match. Pre-season, the offseason, transfer windows and season rollover (aging, contracts, development) arrive in Stage 2.
 
+Career simplifications (Stage 2):
+- Transfer and loan fees are paid in full on signing: no instalments, add-ons or sell-on clauses.
+- Loans go one way only. The owner can loan players in until the end of the season and pays a chosen share of the wage; the parent club pays nothing for that player while he is away. Loaning your own players out is a later feature.
+- AI clubs never go bust. If an AI club's cash drops below zero at the end of a week, its owner tops it back up to zero. Only the owner's club faces the lender ladder.
+- If the owner's squad drops below 16 players or two goalkeepers, the league places free agents with the club on one-year minimum deals to fill it. The inbox says who.
+- Naming rights are sold for a lump sum paid up front, which fans dislike. The old stadium name returns when the deal runs out.
+- Players and staff only age at season rollover, not on birthdays during the season. Players who retire leave the game for good; they do not return as staff.
+- A good fitness coach (rating at or above a floor) gives each injured player a weekly chance, scaled by rating, to come back a week sooner.
+- To keep saves small, results are trimmed once their week is played. The timeline keeps only goals, red cards and injuries (without commentary), and only scorers, assisters and sent-off players keep a stat line. The owner's latest match is kept in full.
+- Match day has three modes:
+  - **Full control:** play stops only for the owner's injuries and red cards.
+  - **Game plan and big calls:** play also stops for goals, an opponent's red card, half-time, the 65th minute, extra time and penalties.
+  - **Coach:** play never stops.
+- In big-calls mode, a tactics change by the owner becomes the head coach's new game plan. The coach makes his usual adjustments (chasing, protecting, after a red card) from that plan instead of undoing it.
+
 ---
 
 ## 16. Open items (decide during development)
