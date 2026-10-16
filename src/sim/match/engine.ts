@@ -11,7 +11,7 @@ import { advanceClock, closePeriod, drawStoppage, periodOver, regulationJustEnde
 import { emitEvent } from './events';
 import { assignRatings } from './ratings';
 import { runShootout } from './shootout';
-import { emptyTeamStats, ensurePlayerStats, type MatchContext, type MatchState, type SideState } from './state';
+import { emptyChanceCounts, emptyTeamStats, ensurePlayerStats, type MatchContext, type MatchState, type SideState } from './state';
 import { playMinute } from './tick';
 
 const T = MATCH_TUNING;
@@ -162,6 +162,7 @@ function createSide(teamId: string, selection: TeamSelection, aiControlled: bool
     yellows: {},
     sentOff: [],
     stats: emptyTeamStats(),
+    chances: emptyChanceCounts(),
     playerStats: {},
     aiControlled,
   };

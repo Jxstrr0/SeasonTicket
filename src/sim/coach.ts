@@ -16,6 +16,8 @@ const DIALS = MATCH_TUNING.dials;
 
 export interface SelectionOptions {
   opponent?: Team;
+  /** Lookup for the opponent's players when `players` holds only this squad; defaults to `players`. */
+  opponentPlayers?: Record<string, Player>;
   homegrownMinimum?: number;
 }
 
@@ -23,6 +25,11 @@ export interface SelectionOptions {
 // Pre-match selection
 // ---------------------------------------------------------------------------
 
+/**
+ * The coach's eleven, bench and tactics for the next match. `players` must
+ * hold this squad (the league-wide lookup is fine); the opponent's danger man
+ * is looked up in `opts.opponentPlayers`, falling back to `players`.
+ */
 export function pickSelection(rng: Rng, team: Team, players: Record<string, Player>, headCoach: StaffMember | null, opts: SelectionOptions = {}): TeamSelection {
   const available = team.playerIds.filter((id) => isAvailable(players[id]));
   const candidates = FORMATIONS.map((formation) => {
@@ -35,7 +42,8 @@ export function pickSelection(rng: Rng, team: Team, players: Record<string, Play
   const chosen = preferred ?? rng.weighted(good, (c) => c.total);
 
   const bench = pickBench(available.filter((id) => !chosen.starters.includes(id)), players);
-  const tactics = coachTactics(headCoach, chosen.formation, chosen.starters, players, opts.opponent);
+  const opponent = opts.opponent ? { team: opts.opponent, players: opts.opponentPlayers ?? players } : undefined;
+  const tactics = coachTactics(headCoach, chosen.formation, chosen.starters, players, opponent);
   return { lineup: { starters: chosen.starters, bench }, tactics };
 }
 
@@ -128,7 +136,12 @@ function pickTakers(starters: string[], players: Record<string, Player>): Tactic
   };
 }
 
-function coachTactics(coach: StaffMember | null, formation: Formation, starters: string[], players: Record<string, Player>, opponent: Team | undefined): Tactics {
+interface OpponentView {
+  team: Team;
+  players: Record<string, Player>;
+}
+
+function coachTactics(coach: StaffMember | null, formation: Formation, starters: string[], players: Record<string, Player>, opponent: OpponentView | undefined): Tactics {
   const setPieceTakers = pickTakers(starters, players);
   const balanced = C.tactics.balancedDial as Dial;
   if (coach === null) {
@@ -151,7 +164,7 @@ function coachTactics(coach: StaffMember | null, formation: Formation, starters:
   const half = 0.5;
   return {
     formationId: formation.id,
-    mentality: dialFrom(lean),
+    mentality: dialFrom(lean + strengthGapLean(starters, players, opponent)),
     pressing: dialFrom(risk),
     defensiveLine: dialFrom((lean + risk) / 2),
     width: dialFrom(half + (lean - half) * C.tactics.widthLeanWeight),
@@ -160,8 +173,35 @@ function coachTactics(coach: StaffMember | null, formation: Formation, starters:
     counterAttack: risk >= C.tactics.counterAttackMinAggression && lean <= C.tactics.counterAttackMaxAttackLean,
     timeWasting: (lean <= C.tactics.timeWastingCautiousLean ? C.tactics.timeWastingDialCautious : C.tactics.timeWastingDialDefault) as Dial,
     setPieceTakers,
-    manMarkTarget: opponent && risk <= C.tactics.manMarkMaxAggression ? dangerMan(opponent, players) : null,
+    manMarkTarget: opponent && risk <= C.tactics.manMarkMaxAggression ? dangerMan(opponent.team, opponent.players) : null,
   };
+}
+
+/**
+ * How far the matchup pushes the coach's mentality: a favourite plays a little
+ * more on the front foot, an underdog sits a little deeper. Zero when the
+ * opponent's eleven cannot be looked up.
+ */
+function strengthGapLean(starters: string[], players: Record<string, Player>, opponent: OpponentView | undefined): number {
+  if (!opponent) return 0;
+  const ours = meanOverall(starters, players);
+  const theirs = meanOverall(opponent.team.selection.lineup.starters, opponent.players);
+  if (ours === null || theirs === null) return 0;
+  const T = C.tactics.strengthGap;
+  return Math.max(-T.maxLeanShift, Math.min(T.maxLeanShift, (ours - theirs) * T.leanPerOverall));
+}
+
+/** Mean overall of an eleven, or null when any of it is missing from the lookup. */
+function meanOverall(ids: string[], players: Record<string, Player>): number | null {
+  const present = ids.filter((id) => id !== '');
+  if (present.length === 0) return null;
+  let total = 0;
+  for (const id of present) {
+    const player = players[id];
+    if (!player) return null;
+    total += player.overall;
+  }
+  return total / present.length;
 }
 
 /** Maps a 0-1 philosophy value onto a five-step dial. */
@@ -236,14 +276,16 @@ function plannedSub(state: MatchState, ctx: MatchContext, S: SideState, formatio
   const minute = state.minute;
   const reserve = minute < I.reserveSubsUntil ? I.reserveSubs : 0;
   if (S.subsUsed + reserve >= SQUAD.maxSubs) return null;
-  if (minute < I.subWindow.from || minute > I.subWindow.to) return null;
+  const inExtraTime = state.period === 'etFirstHalf' || state.period === 'etSecondHalf';
+  const inWindow = minute >= I.subWindow.from && minute <= I.subWindow.to;
+  if (!inWindow && !(inExtraTime && I.subInExtraTime)) return null;
   const margin = goalMargin(state, side);
 
   const tired = mostTired(S, ctx, formation, (unit) => unit !== 'goalkeeper');
   if (tired !== null && energyOf(S, tired) < I.fatigueThreshold) return likeForLike(S, ctx, formation, tired);
 
   const booked = S.onPitch.find((id) => id !== '' && S.yellows[id] === 1 && ctx.players[id].position !== 'GK');
-  if (booked !== undefined && rng.chance(I.bookedSubChance)) return likeForLike(S, ctx, formation, booked);
+  if (booked !== undefined && minute >= I.bookedSubFrom && rng.chance(I.bookedSubChance)) return likeForLike(S, ctx, formation, booked);
 
   if (margin < 0 && minute >= I.chase.impactSubFrom && rng.chance(I.chase.impactSubChance)) {
     const outId = mostTired(S, ctx, formation, (unit) => unit === 'midfielder' || unit === 'defender');
@@ -316,7 +358,7 @@ function mostTired(S: SideState, ctx: MatchContext, formation: Formation, filter
   return best;
 }
 
-/** Mentality and shape relative to the kickoff plan: chase when behind, protect when ahead, tighten after a red. */
+/** Mentality and shape relative to the kickoff plan: chase when behind, ease off with a cushion, protect a late lead, tighten after a red. */
 function chooseTactics(state: MatchState, side: Side): MatchAction | null {
   const S = sideState(state, side);
   const base = (side === 'home' ? state.setup.home : state.setup.away).tactics;
@@ -334,11 +376,15 @@ function chooseTactics(state: MatchState, side: Side): MatchAction | null {
     if (margin <= -2 && minute >= I.chase.twoGoalsFrom) mentality += I.chase.twoGoalsStep;
     else if (minute >= I.chase.from) mentality += I.chase.mentalityStep;
     if (minute >= I.chase.from) timeWasting = DIALS.min;
-  } else if (margin > 0 && minute >= I.protect.from) {
-    mentality += I.protect.mentalityStep;
-    line += I.protect.lineStep;
-    timeWasting = I.protect.timeWasting;
-    counterAttack = I.protect.counterAttack;
+  } else if (margin > 0) {
+    // A cushion of two goals is managed, not extended: the side stops throwing bodies forward.
+    if (margin >= I.comfortable.margin && minute >= I.comfortable.from) mentality += I.comfortable.mentalityStep;
+    if (minute >= I.protect.from) {
+      mentality += I.protect.mentalityStep;
+      line += I.protect.lineStep;
+      timeWasting = I.protect.timeWasting;
+      counterAttack = I.protect.counterAttack;
+    }
   }
   const shortBy = S.sentOff.length - sideState(state, otherSide(side)).sentOff.length;
   if (shortBy > 0) {

@@ -135,19 +135,25 @@
     "outfieldInGoalFactor": 0.35,
     "shortHandedPenalty": 0.1,
     "formationBiasScale": 0.3,
-    "mentalityAttackStep": 0.06,
-    "mentalityDefenseStep": 0.05
+    "mentalityAttackStep": 0.04,
+    "mentalityDefenseStep": 0.035
   },
   "home": {
     "possession": 0.04,
-    "shotRate": 0.12,
+    "shotRate": 0.46,
     "cardLeniency": 0.9,
     "attendanceFloor": 0.4
   },
+  "scoreEffects": {
+    "_about": "A side leading by cushionFrom goals or more shoots less: shot rate times 1 - shotRatePerGoal per goal of lead from cushionFrom on, floored at minShotRate.",
+    "cushionFrom": 2,
+    "shotRatePerGoal": 0.15,
+    "minShotRate": 0.6
+  },
   "possession": {
-    "midfieldSensitivity": 0.9,
-    "tempoStep": -0.02,
-    "directnessStep": -0.025,
+    "midfieldSensitivity": 0.6,
+    "tempoStep": -0.015,
+    "directnessStep": -0.018,
     "widthStep": -0.005,
     "mentalityStep": 0.01,
     "chasingBonusPerGoal": 0.025,
@@ -158,28 +164,28 @@
   },
   "move": {
     "shot": {
-      "base": 0.165,
-      "strengthExponent": 1.4,
+      "base": 0.13,
+      "strengthExponent": 1.2,
       "mentalityFor": [
-        0.84,
-        0.92,
-        1,
-        1.08,
-        1.16
-      ],
-      "mentalityAgainst": [
         0.88,
         0.94,
         1,
         1.06,
         1.12
       ],
-      "tempo": [
-        0.9,
-        0.95,
+      "mentalityAgainst": [
+        0.92,
+        0.96,
         1,
-        1.05,
-        1.1
+        1.04,
+        1.08
+      ],
+      "tempo": [
+        0.93,
+        0.965,
+        1,
+        1.035,
+        1.07
       ],
       "directness": [
         0.95,
@@ -221,18 +227,18 @@
     "turnover": {
       "base": 0.28,
       "pressing": [
-        0.8,
-        0.9,
+        0.86,
+        0.93,
         1,
-        1.15,
-        1.3
+        1.1,
+        1.2
       ],
       "tempo": [
-        0.9,
-        0.95,
+        0.94,
+        0.97,
         1,
-        1.06,
-        1.12
+        1.04,
+        1.08
       ],
       "directness": [
         0.9,
@@ -261,14 +267,14 @@
       ]
     },
     "counter": {
-      "base": 0.1,
+      "base": 0.055,
       "withCounterTactic": 1.6,
       "line": [
-        0.7,
-        0.85,
+        0.8,
+        0.9,
         1,
-        1.25,
-        1.5
+        1.15,
+        1.3
       ],
       "paceWeight": 0.6,
       "xgBoostWithTactic": 1.2,
@@ -276,8 +282,8 @@
         0,
         0,
         0,
-        0.06,
-        0.12
+        0.03,
+        0.06
       ],
       "max": 0.6,
       "paceScale": 20
@@ -292,13 +298,13 @@
         "max": 0.65
       },
       "counter": {
-        "mean": 0.16,
+        "mean": 0.13,
         "sigma": 0.55,
         "min": 0.04,
         "max": 0.7
       },
       "setPiece": {
-        "mean": 0.08,
+        "mean": 0.085,
         "sigma": 0.6,
         "min": 0.02,
         "max": 0.5
@@ -346,11 +352,11 @@
     "cornerChance": 0.3,
     "freeKickDirectChance": 0.08,
     "freeKickCrossChance": 0.16,
-    "penaltyShareOfFouls": 0.012,
+    "penaltyShareOfFouls": 0.014,
     "penaltySavedShareOfMisses": 0.6
   },
   "cards": {
-    "yellowPerFoul": 0.17,
+    "yellowPerFoul": 0.195,
     "redPerFoul": 0.0035,
     "aggressionWeight": 0.6,
     "bookedFoulWeight": 0.4,
@@ -362,7 +368,6 @@
       1.08,
       1.16
     ],
-    "timeWastingYellow": 0.02,
     "penaltyFoulYellow": 0.6,
     "penaltyFoulRed": 0.08
   },
@@ -456,7 +461,8 @@
     "bookingChance": 0.03
   },
   "manMarking": {
-    "targetInvolvement": 0.55
+    "targetInvolvement": 0.45,
+    "markerMidfieldCost": 0.02
   },
   "weather": {
     "clear": {
@@ -515,7 +521,7 @@
         "CM": 1,
         "AM": 2.2,
         "W": 2.5,
-        "ST": 4.5
+        "ST": 5.2
       },
       "counter": {
         "GK": 0,
@@ -525,7 +531,7 @@
         "CM": 0.8,
         "AM": 2,
         "W": 3,
-        "ST": 4
+        "ST": 4.5
       },
       "setPiece": {
         "GK": 0,

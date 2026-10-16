@@ -36,15 +36,32 @@ export function effective(player: Player, energy: number, key: AttributeKey): nu
   return player.attributes[key] * fatigueFactor(energy);
 }
 
+interface WeightList {
+  entries: [AttributeKey, number][];
+  sum: number;
+}
+
+/** Weight tables come from the frozen tuning JSON, so each is flattened once; this runs thousands of times a match. */
+const weightLists = new WeakMap<AttributeWeights, WeightList>();
+
+function weightList(weights: AttributeWeights): WeightList {
+  let list = weightLists.get(weights);
+  if (!list) {
+    const entries = Object.entries(weights) as [AttributeKey, number][];
+    list = { entries, sum: entries.reduce((total, [, weight]) => total + weight, 0) };
+    weightLists.set(weights, list);
+  }
+  return list;
+}
+
 /** Weighted mean of a player's effective attributes, on the 1-99 scale. */
 export function weightedAttributes(player: Player, energy: number, weights: AttributeWeights): number {
+  const { entries, sum } = weightList(weights);
+  if (sum <= 0) return 0;
   let total = 0;
-  let weightSum = 0;
-  for (const [key, weight] of Object.entries(weights) as [AttributeKey, number][]) {
-    total += effective(player, energy, key) * weight;
-    weightSum += weight;
-  }
-  return weightSum > 0 ? total / weightSum : 0;
+  for (const [key, weight] of entries) total += player.attributes[key] * weight;
+  // Fatigue scales every attribute equally, so it can be applied once to the mean.
+  return (total / sum) * fatigueFactor(energy);
 }
 
 export function energyOf(side: SideState, playerId: string): number {
@@ -116,7 +133,7 @@ export function sideStrength(side: SideState, formation: Formation, ctx: MatchCo
   return {
     goalkeeper: goalkeeperQuality(side, ctx) * shortHanded,
     defense: unitScore(T.strength.defense) * defenseMultiplier * shortHanded,
-    midfield: unitScore(T.strength.midfield) * shortHanded,
+    midfield: unitScore(T.strength.midfield) * (side.tactics.manMarkTarget ? 1 - T.manMarking.markerMidfieldCost : 1) * shortHanded,
     attack: unitScore(T.strength.attack) * attackMultiplier * shortHanded,
     present,
   };

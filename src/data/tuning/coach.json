@@ -35,10 +35,12 @@
     "timeWastingDialDefault": 1,
     "manMarkMaxAggression": 0.4,
     "widthLeanWeight": 0.5,
-    "directnessInverseLeanWeight": 1
+    "directnessInverseLeanWeight": 1,
+    "strengthGap": { "_about": "Mentality lean added per point of mean-overall advantage over the opponent's eleven (negative for an underdog), capped either way.", "leanPerOverall": 0.012, "maxLeanShift": 0.25 }
   },
   "inMatch": {
     "subWindow": { "from": 60, "to": 85 },
+    "subInExtraTime": true,
     "fatigueThreshold": 0.62,
     "softFatigueThreshold": 0.78,
     "plannedSubChance": 0.07,
@@ -46,9 +48,9 @@
     "bookedSubFrom": 60,
     "reserveSubsUntil": 80,
     "reserveSubs": 1,
-    "maxSubsPerMinute": 1,
     "minReplacementFit": 0.55,
     "chase": { "from": 65, "mentalityStep": 1, "twoGoalsFrom": 60, "twoGoalsStep": 2, "impactSubFrom": 70, "impactSubChance": 0.12 },
+    "comfortable": { "margin": 2, "from": 60, "mentalityStep": -1 },
     "protect": { "from": 78, "mentalityStep": -1, "timeWasting": 4, "lineStep": -1, "counterAttack": true, "defensiveSubChance": 0.1 },
     "redCard": {
       "mentalityStep": -1,
