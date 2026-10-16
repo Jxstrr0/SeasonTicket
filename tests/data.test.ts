@@ -136,10 +136,10 @@ describe('names.json', () => {
 describe('clubs.json', () => {
   it('has the 16 design-doc clubs in order', () => {
     expect(CLUBS.map((c) => c.name)).toEqual([
-      'Kingsbridge City FC', 'Port Alder Athletic', 'Cape Fenwick United', 'Saltwater Cove FC',
-      'Olympique Sainte-Rivière', 'Racing Val-Delacroix', 'Lakehaven United', 'Westmere Wanderers',
-      'Blackwater Rovers', 'Stonegate Ironworks FC', 'Fort Sterling FC', 'Silverpeak Alpine',
-      'Coldbrook Town', 'Northolt FC', 'Prairie Junction FC', 'Grandview SC',
+      'Crowncaster City FC', 'Port Alder Athletic', 'Cape Fenwick United', 'Saltwater Cove FC',
+      'Olympique Sainte-Rivière', 'Racing Val-Delacroix', 'Lakehaven United', 'Wrenmoor Wanderers',
+      'Inkwater Rovers', 'Cindervale Ironworks FC', 'Fort Sterling FC', 'Silverpeak Alpine',
+      'Frostbeck Town', 'Lumenfell FC', 'Prairie Junction FC', 'Sunreach SC',
     ]);
   });
 

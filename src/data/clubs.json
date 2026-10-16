@@ -1,12 +1,12 @@
 [
   {
-    "id": "kingsbridge-city",
-    "name": "Kingsbridge City FC",
-    "shortName": "Kingsbridge",
+    "id": "crowncaster-city",
+    "name": "Crowncaster City FC",
+    "shortName": "Crowncaster",
     "nickname": "the Monarchs",
-    "city": "Kingsbridge",
+    "city": "Crowncaster",
     "region": "capital-district",
-    "abbr": "KBC",
+    "abbr": "CRC",
     "colors": {
       "primary": "#1b2a4a",
       "secondary": "#d4a017"
@@ -154,18 +154,18 @@
     "blurb": "A well-run lakeside club whose patient coaches turn steady players into very good ones."
   },
   {
-    "id": "westmere-wanderers",
-    "name": "Westmere Wanderers",
-    "shortName": "Westmere",
+    "id": "wrenmoor-wanderers",
+    "name": "Wrenmoor Wanderers",
+    "shortName": "Wrenmoor",
     "nickname": "the Wranglers",
-    "city": "Westmere",
+    "city": "Wrenmoor",
     "region": "lakelands",
-    "abbr": "WSW",
+    "abbr": "WRW",
     "colors": {
       "primary": "#e8730c",
       "secondary": "#1a1a1a"
     },
-    "stadiumName": "Westmere Common",
+    "stadiumName": "Wrenmoor Common",
     "stadiumCapacity": 14000,
     "marketSize": 0.4,
     "stadiumCondition": 0.44,
@@ -176,13 +176,13 @@
     "blurb": "Founded by travelling cattle drovers, still scrappy, still loud, still never quite sure where the money is."
   },
   {
-    "id": "blackwater-rovers",
-    "name": "Blackwater Rovers",
-    "shortName": "Blackwater",
+    "id": "inkwater-rovers",
+    "name": "Inkwater Rovers",
+    "shortName": "Inkwater",
     "nickname": "the Wolves",
-    "city": "Blackwater",
+    "city": "Inkwater",
     "region": "lakelands",
-    "abbr": "BWR",
+    "abbr": "IWR",
     "colors": {
       "primary": "#2f3e46",
       "secondary": "#f2a900"
@@ -198,13 +198,13 @@
     "blurb": "A hard-pressing side from an old mill town with a cramped, deafening ground."
   },
   {
-    "id": "stonegate-ironworks",
-    "name": "Stonegate Ironworks FC",
-    "shortName": "Stonegate",
+    "id": "cindervale-ironworks",
+    "name": "Cindervale Ironworks FC",
+    "shortName": "Cindervale",
     "nickname": "the Ironsides",
-    "city": "Stonegate",
+    "city": "Cindervale",
     "region": "iron-belt",
-    "abbr": "SGI",
+    "abbr": "CVI",
     "colors": {
       "primary": "#7a263a",
       "secondary": "#94bee9"
@@ -264,18 +264,18 @@
     "blurb": "Mountain overachievers who punch far above their tiny budget thanks to sharp coaching and thin air."
   },
   {
-    "id": "coldbrook-town",
-    "name": "Coldbrook Town",
-    "shortName": "Coldbrook",
+    "id": "frostbeck-town",
+    "name": "Frostbeck Town",
+    "shortName": "Frostbeck",
     "nickname": "the Huskies",
-    "city": "Coldbrook",
+    "city": "Frostbeck",
     "region": "highlands",
-    "abbr": "CBT",
+    "abbr": "FBT",
     "colors": {
       "primary": "#4b2e83",
       "secondary": "#e8e8e8"
     },
-    "stadiumName": "Brookside",
+    "stadiumName": "Beckside",
     "stadiumCapacity": 8000,
     "marketSize": 0.2,
     "stadiumCondition": 0.3,
@@ -286,13 +286,13 @@
     "blurb": "The league's perennial underdog: a frozen little ground, an empty bank account and nowhere to go but up."
   },
   {
-    "id": "northolt",
-    "name": "Northolt FC",
-    "shortName": "Northolt",
+    "id": "lumenfell",
+    "name": "Lumenfell FC",
+    "shortName": "Lumenfell",
     "nickname": "the Aurora",
-    "city": "Northolt",
+    "city": "Lumenfell",
     "region": "highlands",
-    "abbr": "NHT",
+    "abbr": "LMF",
     "colors": {
       "primary": "#0a7e5c",
       "secondary": "#6a3fa0"
@@ -330,18 +330,18 @@
     "blurb": "A railway-town club with honest, hard-working teams and a harvest-festival atmosphere on match days."
   },
   {
-    "id": "grandview-sc",
-    "name": "Grandview SC",
-    "shortName": "Grandview",
+    "id": "sunreach-sc",
+    "name": "Sunreach SC",
+    "shortName": "Sunreach",
     "nickname": "the Grizzlies",
-    "city": "Grandview",
+    "city": "Sunreach",
     "region": "western-plains",
-    "abbr": "GRV",
+    "abbr": "SRS",
     "colors": {
       "primary": "#8b1e1e",
       "secondary": "#111111"
     },
-    "stadiumName": "Grandview Bowl",
+    "stadiumName": "Sunreach Bowl",
     "stadiumCapacity": 23000,
     "marketSize": 0.52,
     "stadiumCondition": 0.72,

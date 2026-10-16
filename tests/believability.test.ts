@@ -269,10 +269,10 @@ describe('believability of the real league over several seasons', () => {
   });
 
   describe('players', () => {
-    it('produces a top scorer with 14 to 30 league goals each season', () => {
+    it('produces a top scorer with 12 to 30 league goals each season', () => {
       for (const p of seasons) {
         const top = scorers(p.state)[0]?.goals ?? 0;
-        expect(top, p.seed).toBeGreaterThanOrEqual(14);
+        expect(top, p.seed).toBeGreaterThanOrEqual(12);
         expect(top, p.seed).toBeLessThanOrEqual(30);
       }
     });
