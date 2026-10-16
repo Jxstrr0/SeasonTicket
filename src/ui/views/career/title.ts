@@ -34,5 +34,6 @@ export function renderCareerTitle(ui: UiState): string {
       <button type="submit" class="btn-secondary">Load code</button>
     </form>
     <p class="center small"><a class="link" href="#sandbox">League sandbox (watch a season, no club)</a></p>
+    <p class="center small"><a class="link" href="#engine-lab">Engine lab (preview of the new match engine)</a></p>
   </main>`;
 }

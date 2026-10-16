@@ -647,3 +647,17 @@ The same seed must give the same match on every phone and browser; replays and b
 8. **Which replays to keep.** Your club's all season, others' for the latest round only?
 9. **Pressing at dial 5.** Man-for-man (each presser takes a man) or zonal (press the ball, cover the lanes)?
 10. **Waiting times.** About 2 s for "Next week" (usually instant) and up to 60 s, with a progress bar, for "Sim to end of season"? Which phone do you test on? Tap the Engine check there once it exists.
+
+### 17.15 Build notes
+
+What the build actually did, step by step, where it differs from or adds to the plan above.
+
+**Step 2: shape and movement (done).**
+- **The ball follows a script.** There are no real passes, shots, goals, halves, stoppage time or dead balls yet. A temporary driver (`script` in `src/data/tuning/spatial.json`) moves the ball around and swaps possession so that shapes, pressing and runs can be judged. Step 3 replaces it with real on-ball decisions.
+- **Focus point.** Team shapes follow a smoothed "focus point" that eases towards the ball (or where a pass is heading) over about 1 s, rather than the ball itself, so the block slides instead of jerking. The offside cap still reads the real ball.
+- **Distance run.** Outfielders cover about 14 km a match, roughly 25% more than real players. Expected: there are no stoppages yet, and the scripted ball never rests. Rechecked in step 5.
+- **Deep centre-backs.** With the defensive line at 1 and the ball at 57 m in possession, centre-backs sit about 26 m from their own goal. Believable for a low block, but on the deep side; flagged for step 7 tuning.
+- **No new objects in the main loop.** Pressing reuses its arrays, so a fine match triggers no garbage collections in Node.
+- **Benchmarks run on a bundled build.** Vitest's import transform makes the engine about six times slower than in a browser, so the benchmark test bundles `tests/bench/spatialBench.ts` with Vite and runs that. Node-only helpers live in `tests/helpers/node.mjs` (the project has no Node types). Dev machine: a fine match takes about 105 ms (budget 750 ms) and a league week about 420 ms (budget 1 s), so a season is about 13 s (budget 31 s).
+- **No lint tool.** The project has no ESLint, so the determinism ban is enforced by a test that scans the engine files.
+- **Engine Lab** (`#engine-lab`, linked from the title screen) is the 2D top-down viewer from Stage 4.5 §5: both teams as numbered dots in kit colours, play/pause, 1-8× speed, a one-minute skip, tap a player to follow him, and either side's formation, mentality, pressing, line, width, counter-attacks and man-marking changeable live. Overlays show pressing, cover, marking and counter runs, each back line and its aim, shape spots and movement. It runs the engine on the main thread for now; the worker arrives in step 6. `#engine-lab/<seed>` fixes the league seed so a match can be reported and replayed.

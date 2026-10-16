@@ -1,0 +1,117 @@
+/* Engine Lab: 2D top-down viewer for the spatial match engine. Landscape first. */
+.lab {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow: hidden;
+}
+
+.lab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(11, 16, 32, 0.92);
+}
+.lab-back { display: inline-flex; align-items: center; justify-content: center; padding: 0; text-decoration: none; font-size: 1.6rem; line-height: 1; }
+.lab-score { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; font-weight: 700; }
+.lab-team { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.lab-clock { font-variant-numeric: tabular-nums; min-width: 4.2em; text-align: center; color: var(--accent); }
+.lab-play { font-size: 1rem; }
+.lab-speed { flex-wrap: nowrap; flex: none; }
+.lab-speed .seg { flex: 0 0 auto; min-width: var(--tap); padding: 8px 10px; }
+.lab-skip { flex: none; white-space: nowrap; padding-inline: 12px; }
+
+.lab-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  flex: none;
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+
+.lab-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(250px, 32vw, 340px);
+  min-height: 0;
+}
+.lab-pitch { position: relative; min-width: 0; min-height: 0; background: #1f5a2b; touch-action: manipulation; }
+.lab-pitch canvas { position: absolute; display: block; }
+
+.lab-panel {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 10px 12px 24px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lab-panel label:not(.check) { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: var(--muted); }
+.lab-panel .card { padding: 10px 12px; margin: 0; }
+.lab-panel p { margin: 0; }
+.lab-h { margin: 0 0 2px; font-size: 0.95rem; }
+.lab-rotate { display: none; }
+
+.lab-tabs .seg { display: inline-flex; align-items: center; justify-content: center; padding-inline: 8px; font-size: 0.9rem; }
+.lab-tactics { display: flex; flex-direction: column; gap: 10px; }
+.lab-dial-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; font-size: 0.9rem; }
+.lab-dial-seg { flex-wrap: nowrap; gap: 4px; }
+.lab-dial-seg .seg { flex: 1 1 0; min-width: 0; padding-inline: 0; }
+.lab-wide { width: 100%; }
+.lab-pending { min-height: 1.4em; }
+
+.lab-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+.lab-table th, .lab-table td { padding: 3px 4px; text-align: right; }
+.lab-table th[scope="row"] { text-align: left; white-space: nowrap; }
+.lab-table thead th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+.lab-readout .small { margin-top: 6px; }
+
+.lab-sel-name { font-weight: 700; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.lab-sel .small { margin-top: 4px; }
+
+.lab-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; }
+.lab-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 50%;
+  border: 2px solid var(--c);
+  vertical-align: -1px;
+}
+.lab-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lab-match { display: flex; flex-direction: column; gap: 8px; }
+.lab-match .row-actions { margin-top: 0; }
+
+/* Short landscape phones: tighten the bar so the pitch keeps its height. */
+@media (orientation: landscape) and (max-height: 430px) {
+  .lab-bar { padding: 2px 8px; gap: 6px; }
+  .lab-score { gap: 6px; font-size: 0.9rem; }
+  .lab-skip { padding-inline: 8px; }
+}
+
+/* Narrow landscape: drop the "+1 min" label width a little. */
+@media (max-width: 700px) and (orientation: landscape) {
+  .lab-main { grid-template-columns: minmax(0, 1fr) 240px; }
+  .lab-speed .seg { padding-inline: 6px; }
+}
+
+/* Portrait: pitch on top, panel below, and a nudge to turn the phone. */
+@media (orientation: portrait) {
+  .lab { height: auto; min-height: 100dvh; overflow: visible; }
+  .lab-bar { flex-wrap: wrap; position: sticky; top: 0; z-index: 2; }
+  .lab-score { flex-basis: 100%; order: -1; justify-content: center; }
+  .lab-main { grid-template-columns: 1fr; }
+  .lab-pitch { aspect-ratio: 111 / 74; }
+  .lab-panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .lab-rotate { display: block; }
+}
