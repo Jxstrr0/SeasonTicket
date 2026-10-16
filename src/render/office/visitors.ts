@@ -20,6 +20,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   Object3D,
+  PropertyBinding,
   Skeleton,
   Vector3,
   type AnimationAction,
@@ -27,6 +28,7 @@ import {
   type Material,
   type SkinnedMesh,
 } from 'three';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import officeTuning from '../../data/tuning/office.json';
 import type { Assets } from '../assets';
@@ -357,6 +359,7 @@ export class Visitors {
       this.assets.model('assets/office/anims.glb'),
     ]).then(([people, anims]) => {
       people.scene.updateMatrixWorld(true);
+      restoreBoneNames(people);
       const bodies = new Map<BodyKind, Template>();
       for (const kind of Object.keys(BODIES) as BodyKind[]) {
         const node = people.scene.getObjectByName(BODIES[kind].node);
@@ -467,6 +470,24 @@ export class Visitors {
     this.current = null;
     this.hitGeo.dispose();
   }
+}
+
+/**
+ * Every body and hair piece in people.glb carries its own copy of the same
+ * skeleton, so GLTFLoader renames the duplicate bones (Head, Head_1, ...).
+ * Hair is rebound and animations play by bone name, so put the file's names
+ * back. All skins share one joint order.
+ */
+function restoreBoneNames(gltf: GLTF): void {
+  const json = gltf.parser.json as { skins?: { joints: number[] }[]; nodes: { name?: string }[] };
+  const names = (json.skins?.[0]?.joints ?? []).map((j) => PropertyBinding.sanitizeNodeName(json.nodes[j]?.name ?? ''));
+  gltf.scene.traverse((o) => {
+    const m = o as SkinnedMesh;
+    if (!m.isSkinnedMesh || m.skeleton.bones.length !== names.length) return;
+    m.skeleton.bones.forEach((b, i) => {
+      if (names[i]) b.name = names[i];
+    });
+  });
 }
 
 function splitTrack(name: string): [string, string] {
