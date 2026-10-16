@@ -46,7 +46,7 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 
 ## 4. League
 
-- **The Valmere National League (VNL):** 16 fictional clubs in **one table**.
+- **The Kestrel Football League (KFL):** named for Valmere's national bird. 16 fictional clubs in **one table**.
 - Each club has a **market size**, **stadium condition**, **finances**, **fan mood**, and **squad/staff quality**. Together these set difficulty.
 
 ### Clubs
@@ -124,7 +124,7 @@ Tickets (pricing by section), concessions, parking, sponsorships and naming righ
 
 ### Money sources
 1. **Club revenue.**
-2. **Owner's personal fortune.** Cash injected into the club is permanent.
+2. **Owner's personal fortune.** A finite amount set by the difficulty tier, so cash injections cannot be unlimited. Cash injected into the club is permanent.
 3. **Loans.** Fast money with interest and conditions (for example, a minimum cash balance or a wage ceiling).
 
 ### The lender ladder (the fail state)
@@ -244,5 +244,4 @@ Sim simplifications (documented here as the build brief requires):
 - Wage cap level, luxury-tax rates and the typical fee range for a star.
 - Youth intake size by academy level.
 - Which tactical presets ship for the concept test.
-- The owner's personal fortune: a finite starting amount per difficulty tier (and whether it grows), so cash injections cannot be unlimited.
-- The league abbreviation: "VNL" is also the abbreviation of a real international volleyball competition. Keep it, or pick another.
+- The exact owner's fortune per difficulty tier, and whether it grows over time.
