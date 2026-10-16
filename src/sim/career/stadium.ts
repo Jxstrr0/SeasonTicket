@@ -110,15 +110,22 @@ function activeProjects(stadium: Stadium): StadiumProject[] {
   return stadium.projects.filter((p) => !p.queued);
 }
 
+/** Seats a project shuts on its stand while it runs in the season. Corners and club-wide work shut none. */
+export function seatsClosedBy(stadium: Stadium, kind: ProjectKind, target: string): number {
+  if (kind !== 'stand' && kind !== 'roof' && kind !== 'boxes') return 0;
+  const share = kind === 'roof' ? S.stands.roofClosedShare : S.stands.closedShare;
+  return Math.round((standSeats(stadium, target as StandId) * share) / 100) * 100;
+}
+
 /** Seats shut by work on a stand, by stand. Only during the season: there are no home matches otherwise. */
 export function closedSeatsByStand(stadium: Stadium, inSeason: boolean): Partial<Record<StandId, number>> {
   const out: Partial<Record<StandId, number>> = {};
   if (!inSeason) return out;
   for (const p of activeProjects(stadium)) {
-    if (p.kind !== 'stand' && p.kind !== 'roof' && p.kind !== 'boxes') continue;
+    const seats = seatsClosedBy(stadium, p.kind, p.target);
+    if (seats <= 0) continue;
     const id = p.target as StandId;
-    const share = p.kind === 'roof' ? S.stands.roofClosedShare : S.stands.closedShare;
-    out[id] = Math.max(out[id] ?? 0, Math.round((standSeats(stadium, id) * share) / 100) * 100);
+    out[id] = Math.max(out[id] ?? 0, seats);
   }
   return out;
 }

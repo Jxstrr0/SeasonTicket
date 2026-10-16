@@ -11,6 +11,7 @@ import {
   advanceCareer,
   bidForPlayer,
   borrow,
+  cancelProject,
   continueToNextSeason,
   createCareer,
   defaultCrest,
@@ -20,6 +21,7 @@ import {
   injectCash,
   loanIn,
   offerToClubs,
+  orderProject,
   rejectBid,
   releasePlayer,
   renewContract,
@@ -27,10 +29,12 @@ import {
   resetToCoach,
   sellNamingRights,
   setFormation,
+  setStadiumLook,
   setStarter,
   setTactics,
   setTicketPrice,
   signFreeAgent,
+  startQueuedNow,
   startUserMatch,
   toggleBench,
   upgradeAcademy,
@@ -40,6 +44,7 @@ import {
   type CrestPattern,
   type CrestShape,
   type MatchMode,
+  type StadiumLook,
   type TierId,
 } from '../../sim/career';
 import { CLUBS } from '../../sim/data';
@@ -58,7 +63,7 @@ import { renderGameOver, renderSaveCode } from '../views/career/saves';
 import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
 import type { HotspotId, OfficePick } from '../../render/office/types';
 import { OfficeHost } from './officeHost';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, initialUi, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type UiState } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, STADIUM_PICKS, initialUi, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -130,7 +135,7 @@ const HOTSPOT_TABS: Record<HotspotId, HubTab> = {
   laptop: 'money',
   phone: 'market',
   tv: 'league',
-  window: 'club',
+  window: 'stadium',
   cabinet: 'club',
   whiteboard: 'lineup',
   clipboard: 'squad',
@@ -530,6 +535,25 @@ export class CareerApp {
       case 'staff-role':
         ui.staffRole = STAFF_ROLES.includes(d.role as StaffRole) ? (d.role as StaffRole) : null;
         return this.render();
+
+      // Stadium
+      case 'order-project': {
+        const [key, when] = (d.id ?? '').split('|');
+        if (key) this.flashResult(orderProject(career, key, when === 'summer' ? 'summer' : 'now'));
+        break;
+      }
+      case 'cancel-project':
+        if (d.id) this.flashResult(cancelProject(career, d.id));
+        break;
+      case 'start-project-now':
+        if (d.id) this.flashResult(startQueuedNow(career, d.id));
+        break;
+      case 'stadium-pick':
+        if (STADIUM_PICKS.includes(d.part as StadiumPick)) ui.stadiumPick = d.part as StadiumPick;
+        return this.render();
+      case 'stadium-look':
+        if (d.key) this.flashResult(setStadiumLook(career, { [d.key]: d.value } as Partial<StadiumLook>));
+        break;
 
       // League
       case 'league-tab':

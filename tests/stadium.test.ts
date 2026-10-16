@@ -22,6 +22,8 @@ import {
 import { encodeSave, migrate } from '../src/game/save';
 import { STADIUM_TUNING as S } from '../src/sim/data';
 import CLUBS from '../src/data/clubs.json';
+import { initialUi } from '../src/ui/career/state';
+import { renderStadium } from '../src/ui/views/career/stadium';
 
 function newCareer(teamId = 'crowncaster-city', seed = 5): Career {
   const career = createCareer({ seed, teamId, tier: 'easy', homegrownRule: false });
@@ -196,4 +198,22 @@ describe('stadium', () => {
     expect(JSON.stringify(Object.entries(career.stadiums).filter(([id]) => id !== career.userTeamId))).not.toBe(start);
     for (const [id, ground] of Object.entries(career.stadiums)) expect(fullCapacity(ground)).toBeGreaterThanOrEqual(startSeats[id]);
   }, 60_000);
+});
+
+describe('stadium tab', () => {
+  it('offers summer or now in the season, and start-now or call-off for queued work', () => {
+    const career = newCareer();
+    toKickoff(career);
+    const ui = { ...initialUi(), screen: 'hub' as const, tab: 'stadium' as const, stadiumPick: 'east' as const };
+    let html = renderStadium(career, ui);
+    expect(html).toContain('Pay now, build in summer');
+    expect(html).toMatch(/data-action="order-project"[^>]*data-id="[^"|]+\|now"/);
+    const option = stadiumOptions(career).find((o) => o.kind === 'stand' && o.target === 'east' && o.available)!;
+    expect(orderProject(career, option.key, 'summer').ok).toBe(true);
+    html = renderStadium(career, ui);
+    expect(html).toContain('start-project-now');
+    expect(html).toContain('cancel-project');
+    expect(html).toContain('1 of 3 building crews booked');
+    for (const pick of ['corners', 'ground', 'look'] as const) expect(renderStadium(career, { ...ui, stadiumPick: pick })).toContain('st-plan');
+  });
 });
