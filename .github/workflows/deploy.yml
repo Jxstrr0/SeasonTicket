@@ -34,6 +34,19 @@ jobs:
         with:
           path: dist
 
+  # Whole spatial seasons checked against the believability bands (several minutes).
+  # Runs beside the build; a miss shows red here but does not hold back the deploy.
+  believability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:slow
+
   deploy:
     needs: build
     runs-on: ubuntu-latest

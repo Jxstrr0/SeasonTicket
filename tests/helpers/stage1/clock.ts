@@ -2,11 +2,11 @@
  * The match clock: which minute comes next, how much stoppage time the
  * referee adds, and what happens when a period ends.
  */
-import { MATCH_TUNING } from '../data';
-import type { Rng } from '../rng';
-import type { MatchEvent } from '../types';
-import { emitEvent } from './events';
-import type { MatchContext, MatchState, Period } from './state';
+import { MATCH_TUNING } from '../../../src/sim/data';
+import type { Rng } from '../../../src/sim/rng';
+import type { MatchEvent } from '../../../src/sim/types';
+import { emitEvent } from '../../../src/sim/match/events';
+import type { MatchContext, MatchState, Period } from '../../../src/sim/match/state';
 
 const T = MATCH_TUNING;
 

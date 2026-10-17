@@ -2,14 +2,14 @@
  * Penalty shootout: five kicks each, then sudden death. Runs as a single
  * engine step once extra time ends level.
  */
-import { MATCH_TUNING } from '../data';
-import type { Rng } from '../rng';
-import type { Side } from '../types';
-import { shootoutKickLabel } from './commentary';
-import { emitEvent, nameOf } from './events';
+import { MATCH_TUNING } from '../../../src/sim/data';
+import type { Rng } from '../../../src/sim/rng';
+import type { Side } from '../../../src/sim/types';
+import { shootoutKickLabel } from '../../../src/sim/match/commentary';
+import { emitEvent, nameOf } from '../../../src/sim/match/events';
 import { finish } from './clock';
-import { otherSide, sideState, type MatchContext, type MatchState } from './state';
-import { effective, energyOf, goalkeeperId, goalkeeperQuality, relative } from './strength';
+import { otherSide, sideState, type MatchContext, type MatchState } from '../../../src/sim/match/state';
+import { effective, energyOf, goalkeeperId, goalkeeperQuality, relative } from '../../../src/sim/match/strength';
 
 const T = MATCH_TUNING;
 const S = T.shootout;

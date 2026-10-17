@@ -3,7 +3,7 @@ import './helpers/quickCareer';
 import { C, advanceCareer, createCareer, startUserMatch, stepLiveMinute, type Career } from '../src/sim/career';
 import { liveTactics, userSide } from '../src/game/matchday';
 import { migrate } from '../src/game/save';
-import { simulateMatch } from '../src/sim/match/engine';
+import { simulateMatch } from './helpers/stage1/engine';
 import { createLeague } from '../src/sim/league';
 import { buildMatchSetup, createSeason, defaultHooks, matchContext, matchesForWeek } from '../src/sim/season';
 import { replayProblem, simulateSpatialMatch } from '../src/sim/spatial/bridge';

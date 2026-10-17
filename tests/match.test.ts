@@ -4,7 +4,8 @@
  * rules, plain-JSON state, and the direction of every tactical lever.
  */
 import { describe, expect, it } from 'vitest';
-import { applyAction, createMatch, finalizeMatch, isFinished, simulateMatch, stepMinute } from '../src/sim/match/engine';
+import { applyAction, createMatch, finalizeMatch, isFinished } from '../src/sim/match/engine';
+import { simulateMatch, stepMinute } from './helpers/stage1/engine';
 import type { MatchContext, MatchState, Period, SideState } from '../src/sim/match/state';
 import { effective, sideStrength, weightedAttributes } from '../src/sim/match/strength';
 import { formation } from '../src/sim/data';

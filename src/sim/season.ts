@@ -7,10 +7,10 @@
 import { SEASON_TUNING } from './data';
 import { pickSelection } from './coach';
 import { headCoachOf, homegrownMinimumFor, teamById } from './league';
-import { simulateMatch } from './match/engine';
 import type { MatchContext } from './match/state';
 import { advanceBracket, createBracket, scheduleFinal, scheduleQuarterFinals, scheduleSemiFinals, seedPlayoffs } from './playoffs';
 import { Rng, hashString } from './rng';
+import { simulateSpatialMatch } from './spatial/bridge';
 import { buildSchedule, lastLeagueWeek } from './schedule';
 import { computeStandings } from './standings';
 import type {
@@ -68,7 +68,7 @@ export interface CreateSeasonOptions {
 
 export function defaultHooks(): SeasonHooks {
   return {
-    simulate: (setup, ctx) => simulateMatch(setup, ctx),
+    simulate: (setup, ctx) => simulateSpatialMatch(setup, ctx, 'coarse'),
     select: (rng, team, players, headCoach, opts) => pickSelection(rng, team, players, headCoach, opts),
   };
 }

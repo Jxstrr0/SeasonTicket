@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import './helpers/quickCareer';
 import { C, advanceCareer, createCareer, setTicketPrice, startUserMatch, stepLiveMinute, userFixture, type Career } from '../src/sim/career';
-import { simulateMatch } from '../src/sim/match/engine';
+import { simulateMatch } from './helpers/stage1/engine';
 import type { MatchJob, MatchRunner } from '../src/game/matchRunner';
 import { WeekPlayer } from '../src/game/week';
 

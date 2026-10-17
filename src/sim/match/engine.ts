@@ -1,18 +1,16 @@
 /**
- * Public match engine API. A match is plain state advanced one minute at a
- * time, so the headless season and the live match screen share this code.
+ * The match state model every match is played into: line-ups checked and the
+ * state built, manager actions applied under the rules, and the finished state
+ * turned into the result the season records. The spatial engine
+ * (../spatial/bridge.ts) plays the football; this module keeps the score sheet.
  */
 import { MATCH_TUNING, formation as formationOf } from '../data';
 import { Rng } from '../rng';
 import type { MatchAction, MatchEvent, MatchResult, MatchSetup, Player, PlayerMatchStats, Side, TeamSelection } from '../types';
-import { inMatchDecisions } from '../coach';
 import { changeMentality, changeTactics, startEnergy, substitute } from './actions';
-import { advanceClock, closePeriod, drawStoppage, periodOver, regulationJustEnded } from './clock';
 import { emitEvent } from './events';
 import { assignRatings } from './ratings';
-import { runShootout } from './shootout';
 import { emptyChanceCounts, emptyTeamStats, ensurePlayerStats, type MatchContext, type MatchState, type SideState } from './state';
-import { playMinute } from './tick';
 
 const T = MATCH_TUNING;
 const SIDES: readonly Side[] = ['home', 'away'];
@@ -43,31 +41,6 @@ export function createMatch(setup: MatchSetup, ctx: MatchContext): MatchState {
   emitEvent(state, ctx, rng, { type: 'kickoff', side: 'home', params: { secondary: ctx.teams[setup.homeId].stadiumName } });
   state.rngState = rng.getState();
   return state;
-}
-
-/**
- * Plays the next minute (a stoppage minute, an extra-time minute or the whole
- * shootout count as one step). AI-managed sides decide first. Returns the
- * events this step produced; they are also appended to state.events.
- */
-export function stepMinute(state: MatchState, ctx: MatchContext): MatchEvent[] {
-  if (state.finished) return [];
-  const start = state.events.length;
-  if (state.period === 'shootout') {
-    withRng(state, (rng) => runShootout(state, ctx, rng));
-    return state.events.slice(start);
-  }
-  advanceClock(state);
-  for (const side of SIDES) {
-    if (!sideOf(state, side).aiControlled) continue;
-    for (const action of inMatchDecisions(state, ctx, side)) applyAction(state, ctx, action);
-  }
-  withRng(state, (rng) => {
-    playMinute(state, ctx, rng);
-    if (regulationJustEnded(state)) state.addedPlanned = drawStoppage(state, rng);
-    if (periodOver(state)) closePeriod(state, ctx, rng);
-  });
-  return state.events.slice(start);
 }
 
 /** Applies a manager action, throwing on anything the rules do not allow. */
@@ -125,23 +98,11 @@ export function finalizeMatch(state: MatchState, ctx: MatchContext): MatchResult
   };
 }
 
-export function simulateMatch(setup: MatchSetup, ctx: MatchContext): MatchResult {
-  const state = createMatch(setup, ctx);
-  const maxSteps = maxStepsPerMatch();
-  let steps = 0;
-  while (!isFinished(state)) {
-    stepMinute(state, ctx);
-    steps += 1;
-    if (steps > maxSteps) throw new Error(`Match ${setup.matchId} did not finish after ${maxSteps} steps`);
-  }
-  return finalizeMatch(state, ctx);
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function withRng(state: MatchState, work: (rng: Rng) => void): void {
+export function withRng(state: MatchState, work: (rng: Rng) => void): void {
   const rng = Rng.fromState(state.rngState);
   work(rng);
   state.rngState = rng.getState();
@@ -204,14 +165,6 @@ function bookedOnce(side: SideState): string[] {
   return Object.entries(side.yellows)
     .filter(([, count]) => count === 1)
     .map(([id]) => id);
-}
-
-function maxStepsPerMatch(): number {
-  const C = T.clock;
-  const regulation = C.halfMinutes * 2 + C.stoppage.regulation.max * 2;
-  const extra = C.extraHalfMinutes * 2 + C.stoppage.extraTime.max * 2;
-  // Regulation, extra time, the shootout step and a little slack.
-  return (regulation + extra) * 2 + 1;
 }
 
 export type { Player };

@@ -6,7 +6,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { SEASON_TUNING, WORLD } from '../src/sim/data';
 import { createLeague } from '../src/sim/league';
-import { advanceWeek, createSeason, runSeason, type SeasonState } from '../src/sim/season';
+import { advanceWeek, createSeason, defaultHooks, runSeason, type SeasonState } from '../src/sim/season';
 import type { MatchEvent } from '../src/sim/types';
 import { parseSeed, randomSeed } from '../src/ui/app';
 import { formatMinute, thousands } from '../src/ui/format';
@@ -19,6 +19,10 @@ import { renderSeason } from '../src/ui/views/season';
 import { renderSummary } from '../src/ui/views/summary';
 import { formDots, renderTable } from '../src/ui/views/table';
 import { renderTitle } from '../src/ui/views/title';
+import { simulateMatch } from './helpers/stage1/engine';
+
+// These pages only read results, so whole seasons play on the fast Stage 1 stand-in.
+const HOOKS = { ...defaultHooks(), simulate: simulateMatch };
 
 function viewOf(season: SeasonState, patch: Partial<SeasonView> = {}): SeasonView {
   return { season, seed: '4242', tab: 'table', resultsWeek: null, openMatchId: null, showAllEvents: false, running: false, error: null, ...patch };
@@ -42,10 +46,10 @@ let partial: SeasonState;
 const breakWeek = SEASON_TUNING.calendar.breakWeeks[0];
 
 beforeAll(() => {
-  full = runSeason(createSeason(createLeague(4242)));
+  full = runSeason(createSeason(createLeague(4242)), HOOKS);
   partial = createSeason(createLeague(4242));
   // Play up to and through the mid-season break.
-  while (partial.week <= breakWeek) advanceWeek(partial);
+  while (partial.week <= breakWeek) advanceWeek(partial, HOOKS);
 });
 
 describe('html helpers', () => {
@@ -102,7 +106,7 @@ describe('status and progress', () => {
     const labels: string[] = [];
     let last = 0;
     while (s.phase !== 'complete') {
-      advanceWeek(s);
+      advanceWeek(s, HOOKS);
       labels.push(statusLabel(s));
       const p = seasonProgress(s);
       expect(p).toBeGreaterThanOrEqual(last);
@@ -251,7 +255,7 @@ describe('playoffs', () => {
 
   it('shows the byes waiting once the quarter-finals are set', () => {
     const s = createSeason(createLeague(4242));
-    while (!s.bracket) advanceWeek(s);
+    while (!s.bracket) advanceWeek(s, HOOKS);
     const html = renderPlayoffs(s);
     expect(count(html, 'Quarter-final winner')).toBe(SEASON_TUNING.playoffs.byes);
     expect(html).toContain('To play');
@@ -283,7 +287,7 @@ describe('season screen', () => {
   });
 
   it('renders the same page for the same seed', () => {
-    const again = runSeason(createSeason(createLeague(4242)));
+    const again = runSeason(createSeason(createLeague(4242)), HOOKS);
     for (const tab of ['table', 'results', 'playoffs'] as const) {
       expect(renderSeason(viewOf(again, { tab }))).toBe(renderSeason(viewOf(full, { tab })));
     }

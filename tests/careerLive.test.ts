@@ -4,7 +4,8 @@ import { C, advanceCareer, createCareer, finishLive, liveOf, startUserMatch, ste
 import { decodeSave, encodeSave, migrate } from '../src/game/save';
 import { liveSubstitute, liveTactics, userSide, userSideState } from '../src/game/matchday';
 import { fingerprint } from '../src/sim/spatial/engine';
-import { createMatch, stepMinute } from '../src/sim/match/engine';
+import { createMatch } from '../src/sim/match/engine';
+import { stepMinute } from './helpers/stage1/engine';
 import { matchContext } from '../src/sim/season';
 
 function kickedOff(seed: number): Career {
