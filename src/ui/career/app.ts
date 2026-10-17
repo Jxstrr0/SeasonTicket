@@ -53,10 +53,13 @@ import type { MatchResult, Position, StaffRole, Tactics } from '../../sim/types'
 import { STAFF_ROLES } from '../../sim/types';
 import { coachInCharge, liveSubstitute, liveTactics, playToEnd, setCoachInCharge, stepLive } from '../../game/matchday';
 import { SaveError, decodeSave, encodeSave, loadCareer, saveCareer } from '../../game/save';
+import { createMatchRunner, type MatchRunner } from '../../game/matchRunner';
+import { WeekPlayer } from '../../game/week';
+import { renderWeekRun, weekRunCount } from '../views/career/weekRun';
 import { parseSeed, randomSeed } from '../app';
 import { renderCareerTitle } from '../views/career/title';
 import { MATCH_MODES, renderCrestPreview, renderNewCareer } from '../views/career/newCareer';
-import { renderHub } from '../views/career/hub';
+import { careerWeekLabel, renderHub } from '../views/career/hub';
 import { renderLive } from '../views/career/live';
 import { renderReview } from '../views/career/review';
 import { renderGameOver, renderSaveCode } from '../views/career/saves';
@@ -65,7 +68,7 @@ import type { HotspotId, OfficePick } from '../../render/office/types';
 import { OfficeHost } from './officeHost';
 import { StadiumHost } from './stadiumHost';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, STADIUM_PICKS, initialUi, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, STADIUM_PICKS, initialUi, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -159,6 +162,10 @@ export class CareerApp {
   private readonly stadium: StadiumHost;
   /** Set when a pick should also turn the 3D stadium's camera to face it. */
   private stadiumFocus = false;
+  private runner: MatchRunner | null = null;
+  /** Plays the weeks' matches in the background workers (17.8). */
+  private readonly weeks = new WeekPlayer(() => (this.runner ??= createMatchRunner(2)));
+  private warmTimer: number | null = null;
 
   constructor(private readonly root: HTMLElement) {
     const officeLayer = document.createElement('div');
@@ -218,7 +225,8 @@ export class CareerApp {
   }
 
   private save(): void {
-    if (!this.career) return;
+    // Half way through a week the career is not in a state to keep; it saves once settled.
+    if (!this.career || this.weeks.playing) return;
     const ok = saveCareer(this.career);
     if (!ok && !this.saveWarned) {
       this.saveWarned = true;
@@ -227,10 +235,21 @@ export class CareerApp {
   }
 
   private render(): void {
-    this.uiLayer.innerHTML = this.view();
+    this.uiLayer.innerHTML = this.view() + (this.ui.weekRun ? renderWeekRun(this.ui.weekRun) : '');
     this.measureTopBar();
     this.syncOffice();
     this.syncStadium();
+    this.scheduleWarm();
+  }
+
+  /** Once the screen is idle, start the coming week's matches in the workers. */
+  private scheduleWarm(): void {
+    const career = this.career;
+    if (!career || career.phase !== 'season' || this.weeks.playing || this.warmTimer !== null) return;
+    this.warmTimer = window.setTimeout(() => {
+      this.warmTimer = null;
+      if (this.career === career && !this.weeks.playing) this.weeks.warm(career);
+    }, 400);
   }
 
   /** Moves the 3D stadium into the Stadium tab (if it is showing) and keeps it current. */
@@ -252,6 +271,7 @@ export class CareerApp {
 
   /** A tap on the 3D stadium picks that part, like the chips do. */
   private onStadiumPick(part: StadiumPart): void {
+    if (this.weeks.playing) return;
     this.ui.stadiumPick = part;
     this.render();
     this.revealPicked();
@@ -296,7 +316,7 @@ export class CareerApp {
   }
 
   private onOfficePick(p: OfficePick): void {
-    if (!this.career || this.ui.screen !== 'hub') return;
+    if (!this.career || this.ui.screen !== 'hub' || this.weeks.playing) return;
     this.ui.flash = null;
     if (p.kind === 'mail') return this.openMail(p.id);
     this.showTab(HOTSPOT_TABS[p.id]);
@@ -370,6 +390,8 @@ export class CareerApp {
     if (!target || (target instanceof HTMLButtonElement && target.disabled)) return;
     const action = target.dataset.action ?? '';
     const d = target.dataset;
+    // While a week plays only "Stop" counts (it stops after this week).
+    if (this.weeks.playing && action !== 'stop-sim') return;
     if (d.confirm === '1') {
       const key = `${action}:${d.id ?? ''}`;
       if (this.ui.pendingConfirm !== key) {
@@ -460,11 +482,14 @@ export class CareerApp {
         ui.returnTo = ui.screen === 'saveCode' ? 'hub' : ui.screen;
         return this.show('saveCode');
       case 'next-week':
-        return this.nextWeek();
+        void this.nextWeek();
+        return;
       case 'sim-end':
-        return this.simToEnd();
+        void this.simToEnd();
+        return;
       case 'stop-sim':
         this.stopLoops();
+        if (ui.weekRun) ui.weekRun.toEnd = false;
         break;
       case 'review':
         return this.show('review');
@@ -688,7 +713,8 @@ export class CareerApp {
         ui.live.showAll = !ui.live.showAll;
         return this.render();
       case 'live-continue':
-        return this.liveContinue();
+        void this.liveContinue();
+        return;
       default:
         return;
     }
@@ -700,6 +726,7 @@ export class CareerApp {
     const form = e.target;
     if (!(form instanceof HTMLFormElement) || !form.dataset.form) return;
     e.preventDefault();
+    if (this.weeks.playing) return;
     this.ui.pendingConfirm = null;
     this.ui.flash = null;
     try {
@@ -763,7 +790,7 @@ export class CareerApp {
   private onChange(e: Event): void {
     const el = e.target;
     if (el instanceof HTMLElement && el.dataset.draft) return this.onDraft(e);
-    if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement)) return;
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement) || this.weeks.playing) return;
     const kind = el.dataset.change;
     const career = this.career;
     if (!kind || !career) return;
@@ -1026,23 +1053,50 @@ export class CareerApp {
     this.render();
   }
 
-  /** Plays one week. Returns the results, or null if the sim failed. */
-  private playWeek(): MatchResult[] | null {
+  /**
+   * Plays one week in the background workers, with "Playing the week..." over the screen.
+   * Returns the results, or null if the sim failed.
+   */
+  private async playWeek(toEnd = false): Promise<MatchResult[] | null> {
     const career = this.career;
-    if (!career) return null;
+    if (!career || this.weeks.playing) return null;
+    const run = { done: 0, total: 0, toEnd, label: careerWeekLabel(career) };
+    this.ui.weekRun = run;
+    // Week after week the card stays put (so "Stop" can be tapped) and only its text changes.
+    if (this.uiLayer.querySelector('.week-run')) this.showWeekProgress(run);
+    else this.render();
     try {
-      return advanceCareer(career);
+      return await this.weeks.playWeek(career, (done, total) => {
+        run.done = done;
+        run.total = total;
+        this.showWeekProgress(run);
+      });
     } catch (err) {
       this.ui.flash = { kind: 'error', text: `The sim stopped: ${errorText(err)}` };
       return null;
+    } finally {
+      if (this.ui.weekRun === run) this.ui.weekRun = null;
     }
   }
 
-  private nextWeek(): void {
+  /** Moves the bar without drawing the whole screen again. */
+  private showWeekProgress(run: WeekRun): void {
+    const el = this.uiLayer.querySelector<HTMLElement>('.week-run');
+    if (!el) return;
+    const bar = el.querySelector<HTMLElement>('.week-run-bar > span');
+    if (bar) bar.style.width = `${run.total ? Math.round((100 * run.done) / run.total) : 0}%`;
+    const count = el.querySelector<HTMLElement>('.week-run-count');
+    if (count) count.textContent = weekRunCount(run);
+    const label = el.querySelector<HTMLElement>('.week-run-label');
+    if (label) label.textContent = run.label;
+  }
+
+  private async nextWeek(): Promise<void> {
     const career = this.career;
-    if (!career || this.ui.simming) return;
-    const results = this.playWeek();
+    if (!career || this.ui.simming || this.weeks.playing) return;
     this.ui.live = { ...this.ui.live, running: false, panel: 'none', subOut: null, pause: null };
+    const results = await this.playWeek();
+    if (this.career !== career) return;
     if (results) {
       const line = userResultText(career, results);
       if (line) this.ui.flash = { kind: 'ok', text: line };
@@ -1052,26 +1106,21 @@ export class CareerApp {
     if (!this.followPhase()) this.render();
   }
 
-  /** One week per macrotask so the page repaints between weeks. */
-  private simToEnd(): void {
+  /** Week after week to the end of the season; "Stop" ends it after the week being played. */
+  private async simToEnd(): Promise<void> {
     const career = this.career;
-    if (!career || this.ui.simming || career.phase !== 'season') return;
+    if (!career || this.ui.simming || this.weeks.playing || career.phase !== 'season') return;
     const token = ++this.runToken;
     this.ui.simming = true;
-    this.render();
-    const step = (): void => {
-      if (token !== this.runToken || this.career !== career) return;
-      const results = this.playWeek();
+    while (token === this.runToken && this.career === career) {
+      const results = await this.playWeek(true);
+      if (this.career !== career) return;
       this.save();
-      if (!results || phaseOf(career) !== 'season') {
-        this.ui.simming = false;
-        if (!this.followPhase()) this.render();
-        return;
-      }
-      this.render();
-      window.setTimeout(step, 0);
-    };
-    window.setTimeout(step, 0);
+      if (!results || phaseOf(career) !== 'season') break;
+    }
+    if (this.career !== career) return;
+    this.ui.simming = false;
+    if (!this.followPhase()) this.render();
   }
 
   // -------------------------------------------------------------------------
@@ -1140,13 +1189,14 @@ export class CareerApp {
     this.stopLoops();
   }
 
-  private liveContinue(): void {
+  private async liveContinue(): Promise<void> {
     const career = this.career;
     if (!career) return;
     this.stopLoops();
     this.ui.live = { ...this.ui.live, panel: 'none', subOut: null, pause: null };
     if (career.liveMatch?.finished) {
-      const results = this.playWeek();
+      const results = await this.playWeek();
+      if (this.career !== career) return;
       if (results) {
         const line = userResultText(career, results);
         if (line) this.ui.flash = { kind: 'ok', text: `Full time: ${line}` };

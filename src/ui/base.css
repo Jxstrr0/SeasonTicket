@@ -940,3 +940,21 @@ body.office-mode .topbar { backdrop-filter: none; }
 .stadium-tool.square { padding: 0; font-size: 1.3rem; line-height: 1; }
 .stadium-tool[aria-pressed='true'] { background: var(--accent); color: #1a1400; border-color: transparent; }
 .stadium-tool:active { background: rgba(242, 193, 78, 0.9); color: #1a1406; }
+
+/* "Playing the week...": covers the screen and takes every tap until the week is settled. */
+.week-run {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 12, 18, 0.62);
+  pointer-events: auto;
+}
+.week-run-card { width: min(360px, 100%); display: grid; gap: 8px; text-align: center; }
+.week-run-title { margin: 0; font-weight: 700; font-size: 1.05rem; }
+.week-run-card p { margin: 0; }
+.week-run-bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.week-run-bar > span { display: block; height: 100%; background: var(--accent, #3fb68b); transition: width 0.2s ease; }
+.week-run-card button { min-height: 44px; justify-self: center; }
