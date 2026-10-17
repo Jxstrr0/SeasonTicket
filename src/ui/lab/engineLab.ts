@@ -11,9 +11,12 @@ import { createLeague } from '../../sim/league';
 import { createSpatial, markingPair, matchStats, queueTactics, stepSpatial, teamShapeInfo } from '../../sim/spatial/engine';
 import { spatialSetupFromLeague } from '../../sim/spatial/setup';
 import {
-  RESTART_CORNER, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_THROW_IN, type SpatialMatch,
+  RESTART_CORNER, RESTART_DROP, RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_PENALTY, RESTART_THROW_IN,
+  type SpatialMatch,
 } from '../../sim/spatial/state';
-import { ROLE, type GoalRecord, type Side, type SpatialMode, type SpatialSetup } from '../../sim/spatial/types';
+import {
+  ROLE, type GoalRecord, type Side, type SpatialEvent, type SpatialMode, type SpatialSetup,
+} from '../../sim/spatial/types';
 import type { Dial, League, Tactics } from '../../sim/types';
 import { parseSeed, randomSeed } from '../app';
 import { esc } from '../html';
@@ -29,6 +32,8 @@ const READOUT_MS = 250;
 const SKIP_MS = 60_000;
 /** How long the GOAL banner stays up, in real time (so it reads at any speed). */
 const BANNER_MS = 3000;
+/** The referee's list shows this many of the latest cards, penalties and injuries. */
+const EVENT_ROWS = 8;
 
 type DialKey = 'mentality' | 'pressing' | 'defensiveLine' | 'width';
 const DIALS: { key: DialKey; label: string; low: string; high: string }[] = [
@@ -41,7 +46,7 @@ const DIAL_VALUES: Dial[] = [1, 2, 3, 4, 5];
 
 const ROLE_NAMES = [
   'Holding shape', 'Goalkeeper', 'On the ball', 'Receiving', 'Pressing', 'Covering the press', 'Man-marking',
-  'Counter run', 'Tracking a runner', 'Run in behind', 'Attacking the box',
+  'Counter run', 'Tracking a runner', 'Run in behind', 'Attacking the box', 'In the wall',
 ];
 const ROLE_RING: Partial<Record<number, string>> = {
   [ROLE.PRESS]: '#ff5d5d',
@@ -57,6 +62,16 @@ const RESTART_NAMES: Partial<Record<number, string>> = {
   [RESTART_GOAL_KICK]: 'Goal kick',
   [RESTART_CORNER]: 'Corner',
   [RESTART_THROW_IN]: 'Throw-in',
+  [RESTART_FREE_KICK]: 'Free kick',
+  [RESTART_PENALTY]: 'Penalty',
+  [RESTART_DROP]: 'Dropped ball',
+};
+/** Referee moments worth listing (fouls, offsides and advantages are counted in the stats). */
+const EVENT_NAMES: Partial<Record<SpatialEvent['kind'], string>> = {
+  yellow: 'Yellow card',
+  red: 'Red card',
+  penalty: 'Penalty won',
+  injury: 'Injured',
 };
 const KEEPER_FILL = ['#ff9f1c', '#c77dff'];
 const GRASS = '#2f803d';
@@ -136,6 +151,8 @@ export class EngineLab {
   private lastReadout = 0;
   /** Goals already listed and bannered, and when the banner comes down (real time). */
   private goalsSeen = 0;
+  /** Referee events already looked at. */
+  private eventsSeen = 0;
   private bannerUntil = 0;
 
   private readonly canvas: HTMLCanvasElement;
@@ -186,6 +203,7 @@ export class EngineLab {
     this.pendingMs[1] = 0;
     this.selected = -1;
     this.goalsSeen = 0;
+    this.eventsSeen = 0;
     this.bannerUntil = 0;
     this.savePrev();
     this.renderBar();
@@ -193,6 +211,7 @@ export class EngineLab {
     this.renderTactics();
     this.renderMatchSection();
     this.renderGoals();
+    this.renderEvents();
     this.updateReadout();
     this.hideBanner();
   }
@@ -237,6 +256,7 @@ export class EngineLab {
       if (this.ended()) this.renderBar();
     }
     this.checkGoals(now);
+    this.checkEvents();
     if (this.bannerUntil && now >= this.bannerUntil) this.hideBanner();
     this.draw();
     if (now - this.lastReadout >= READOUT_MS) {
@@ -324,6 +344,7 @@ export class EngineLab {
     let best = -1;
     let bestD = reach * reach;
     for (let i = 0; i < 22; i++) {
+      if (!this.m.on[i]) continue;
       const dx = this.ix[i] - wx;
       const dy = this.iy[i] - wy;
       const d = dx * dx + dy * dy;
@@ -364,6 +385,7 @@ export class EngineLab {
       <section class="lab-readout card"></section>
       <section class="lab-stats card"></section>
       <section class="lab-goals-list card"></section>
+      <section class="lab-events card"></section>
       <section class="lab-overlays">
         <h3 class="lab-h">Show on the pitch</h3>
         ${overlay('roles', 'What players are doing (rings, key below)')}
@@ -382,7 +404,7 @@ export class EngineLab {
         </p>
       </section>
       <section class="lab-match"></section>
-      <p class="small muted">Engine step 4 of 7. Real shots, blocks, saves and goals, runs in behind and crosses. Corners and throw-ins are simple stand-ins, and there are no fouls, offsides, free kicks or cards until step 5. Tap a player to follow him.</p>
+      <p class="small muted">Engine step 5 of 7. The referee is in: fouls and advantage, offsides, free kicks with walls, penalties, corners, throw-ins, cards and injuries. Fatigue, substitutions and the AI coach come in step 6, and the numbers are tuned in step 7. Tap a player to follow him.</p>
     </aside>
   </div>
 </div>`;
@@ -512,8 +534,15 @@ export class EngineLab {
         ${statRow('On target', (t) => String(t.onTarget))}
         ${statRow('Blocked', (t) => String(t.blocked))}
         ${statRow('Expected goals', (t) => t.xg.toFixed(2))}
+        ${statRow('Crosses', (t) => String(t.crosses))}
         ${statRow('Corners', (t) => String(t.corners))}
         ${statRow('Throw-ins', (t) => String(t.throwIns))}
+        ${statRow('Fouls', (t) => String(t.fouls))}
+        ${statRow('Offsides', (t) => String(t.offsides))}
+        ${statRow('Free kicks won', (t) => String(t.freeKicks))}
+        ${statRow('Penalties (scored)', (t) => `${t.penalties} (${t.penGoals})`)}
+        ${statRow('Yellow cards', (t) => String(t.yellows))}
+        ${statRow('Red cards', (t) => String(t.reds))}
       </tbody></table>`;
 
     const pending = this.root.querySelector('.lab-pending');
@@ -523,23 +552,25 @@ export class EngineLab {
     }
 
     const sel = this.root.querySelector('.lab-sel') as HTMLElement;
+    if (this.selected >= 0 && !m.on[this.selected]) this.selected = -1;
     if (this.selected < 0) {
       sel.hidden = true;
     } else {
       const i = this.selected;
       const side = (i < 11 ? 0 : 1) as Side;
       const slot = i % 11;
-      const p = (side === 0 ? m.setup.home : m.setup.away).players[slot];
+      const p = (side === 0 ? m.setup.home : m.setup.away).players[m.who[i] % 11];
       const label = m.teams[side].formation.slots[slot]?.label ?? p.position;
+      const booked = m.rules.yellow[i] ? ' · booked' : '';
       const speed = Math.sqrt(m.vx[i] * m.vx[i] + m.vy[i] * m.vy[i]) * 3.6;
       sel.hidden = false;
       sel.innerHTML = `<p class="lab-sel-name"><span class="lab-dot" style="background:${i % 11 === 0 ? KEEPER_FILL[side] : this.kit[side].fill};border-color:${this.kit[side].edge}"></span>#${p.jersey} ${esc(p.name)} <span class="muted">${esc(label)}</span></p>
-        <p class="small">${ROLE_NAMES[m.role[i]] ?? 'Unknown'} · ${speed.toFixed(0)} km/h · ${(m.dist[i] / 1000).toFixed(2)} km run</p>
+        <p class="small">${ROLE_NAMES[m.role[i]] ?? 'Unknown'} · ${speed.toFixed(0)} km/h · ${(m.dist[i] / 1000).toFixed(2)} km run${booked}</p>
         <p class="small muted">Dashed line: where his shape wants him. Tap him again to stop following.</p>`;
     }
   }
 
-  /** A player's name from his global index. */
+  /** A player's name from his line-up index (as logs and events record him). */
   private playerName(i: number): string {
     const side = i < 11 ? this.m.setup.home : this.m.setup.away;
     return side.players[i % 11]?.name ?? '?';
@@ -558,6 +589,29 @@ export class EngineLab {
     const log = this.m.goalLog;
     const rows = log.map((g) => `<li><span class="lab-dot" style="background:${this.kit[g.side].fill};border-color:${this.kit[g.side].edge}"></span>${this.goalLine(g)}</li>`).join('');
     box.innerHTML = `<h3 class="lab-h">Goals</h3>${log.length ? `<ul class="lab-goal-rows">${rows}</ul>` : '<p class="small muted">No goals yet.</p>'}`;
+  }
+
+  private renderEvents(): void {
+    const box = this.root.querySelector('.lab-events') as HTMLElement;
+    const rows: string[] = [];
+    const ev = this.m.events;
+    for (let k = ev.length - 1; k >= 0 && rows.length < EVENT_ROWS; k--) {
+      const e = ev[k];
+      const name = EVENT_NAMES[e.kind];
+      if (!name) continue;
+      const what = e.note === 'second' ? 'Second yellow, sent off' : e.note === 'dogso' ? 'Red card (denied a goal)' : name;
+      rows.push(`<li><span class="lab-dot" style="background:${this.kit[e.side].fill};border-color:${this.kit[e.side].edge}"></span>${Math.floor(e.ms / 60_000) + 1}' ${esc(what)}: ${esc(this.playerName(e.player))}</li>`);
+    }
+    box.innerHTML = `<h3 class="lab-h">Referee</h3>${rows.length ? `<ul class="lab-goal-rows">${rows.join('')}</ul>` : '<p class="small muted">No cards, penalties or injuries yet.</p>'}<p class="small muted">Latest first.</p>`;
+  }
+
+  private checkEvents(): void {
+    const ev = this.m.events;
+    if (ev.length === this.eventsSeen) return;
+    let listed = false;
+    for (let k = this.eventsSeen; k < ev.length; k++) if (EVENT_NAMES[ev[k].kind]) listed = true;
+    this.eventsSeen = ev.length;
+    if (listed) this.renderEvents();
   }
 
   /** New goals since the last frame: list them and put the latest up in the banner. */
@@ -677,7 +731,7 @@ export class EngineLab {
     if (this.overlays.spots) {
       ctx.lineWidth = 1.5;
       for (let i = 0; i < 22; i++) {
-        if (i % 11 === 0) continue;
+        if (i % 11 === 0 || !m.on[i]) continue;
         ctx.strokeStyle = this.kit[i < 11 ? 0 : 1].line;
         ctx.globalAlpha = 0.7;
         ctx.beginPath(); ctx.arc(this.X(m.sx[i]), this.Y(m.sy[i]), r * 0.55, 0, Math.PI * 2); ctx.stroke();
@@ -702,6 +756,7 @@ export class EngineLab {
       ctx.strokeStyle = 'rgba(255,255,255,0.65)';
       ctx.lineWidth = 1.5;
       for (let i = 0; i < 22; i++) {
+        if (!m.on[i]) continue;
         ctx.beginPath();
         ctx.moveTo(this.X(this.ix[i]), this.Y(this.iy[i]));
         ctx.lineTo(this.X(this.ix[i] + m.vx[i]), this.Y(this.iy[i] + m.vy[i]));
@@ -725,6 +780,7 @@ export class EngineLab {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (let i = 0; i < 22; i++) {
+      if (!m.on[i]) continue;
       const side = i < 11 ? 0 : 1;
       const slot = i % 11;
       const kit = this.kit[side];
@@ -747,7 +803,7 @@ export class EngineLab {
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = slot === 0 ? '#10131f' : kit.text;
-      const p = (side === 0 ? m.setup.home : m.setup.away).players[slot];
+      const p = (side === 0 ? m.setup.home : m.setup.away).players[m.who[i] % 11];
       ctx.fillText(String(p.jersey), x, y + 0.5);
     }
 
@@ -795,7 +851,7 @@ export class EngineLab {
       let sum = 0;
       let n = 0;
       for (let s = 1; s < 11; s++) {
-        if (team.defU[s] !== 0) continue;
+        if (team.defU[s] !== 0 || !m.on[side * 11 + s]) continue;
         sum += this.ix[side * 11 + s];
         n++;
       }

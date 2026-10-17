@@ -1,11 +1,11 @@
 /**
- * Goals, the ball going out and restarts for the spatial engine (Stage 4.5 build step 4):
- * the goal line, kick-offs, goal kicks and corners, and the playback of a planned shot with
- * its block or save.
+ * Goals, the ball going out and restarts for the spatial engine (Stage 4.5 build steps 4 and
+ * 5): the goal line, kick-offs, goal kicks, corners, throw-ins, free kicks, penalties and
+ * dropped balls, and the playback of a planned shot with its block or save. Who takes each
+ * restart and the free-kick wall come from rules.ts.
  *
- * Corners and throw-ins are stand-ins until build step 5 brings set pieces: a corner taker
- * plays it like any other ball from the corner, usually a cross; a thrower can only pass, to
- * a team-mate within throwing range, and nobody can tackle him first.
+ * A restart's taker can only play the ball (no carrying, and only a direct free kick or a
+ * penalty can be a shot), and nobody can tackle him first.
  *
  * Same rules as the rest of the engine: random draws only through m.rng, and only + - * /,
  * Math.sqrt and the det.ts helpers.
@@ -14,12 +14,14 @@ import { SPATIAL_TUNING } from '../data';
 import { resetAttack } from './attack';
 import { detCos, detSin } from './det';
 import { control, startControl } from './onball';
+import { advantageAtDead, clearOffside, cornerHolding, pickTaker } from './rules';
 import { computeSpots, fillRing } from './shape';
 import { CROSS_GOAL, CROSS_NONE, CROSS_WOODWORK, classifyCross } from './shot';
 import {
   ATTRS, A_HAN, BALL_AIR, BALL_DEAD, BALL_HELD, BALL_ROLL, KICK_NONE, KICK_SHOT, LENGTH, N,
-  RESTART_CORNER, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_NONE, RESTART_THROW_IN, SHOT_VALUES, WIDTH,
-  clamp, depthOf, sideOf, type SpatialMatch,
+  RESTART_CORNER, RESTART_DROP, RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_NONE, RESTART_PENALTY,
+  RESTART_THROW_IN, SHOT_KIND_FREE_KICK, SHOT_KIND_PENALTY, SHOT_VALUES, SP_CORNER, SP_DIRECT, SP_GOAL_KICK, SP_INDIRECT,
+  SP_NONE, SP_PENALTY, SP_THROW, WIDTH, clamp, depthOf, sideOf, type SpatialMatch,
 } from './state';
 import type { Side } from './types';
 
@@ -49,28 +51,12 @@ function wakeAll(m: SpatialMatch): void {
   for (let i = 0; i < N; i++) m.nextThink[i] = m.clockMs;
 }
 
-/** The corner taker for `side`: the named one if he is on the pitch, else the outfielder nearest the spot. */
-function cornerTaker(m: SpatialMatch, side: Side, x: number, y: number): number {
-  const players = side === 0 ? m.setup.home.players : m.setup.away.players;
-  const id = m.teams[side].tactics.setPieceTakers.corners;
-  if (id) for (let s = 1; s < 11; s++) if (players[s].id === id) return side * 11 + s;
-  return nearestOutfielder(m, side, x, y);
-}
-
-/** The outfielder of `side` nearest (x, y). */
-function nearestOutfielder(m: SpatialMatch, side: Side, x: number, y: number): number {
-  let best = side * 11 + 1, bd2 = Infinity;
-  for (let s = 1; s < 11; s++) {
-    const i = side * 11 + s;
-    const dx = m.px[i] - x, dy = m.py[i] - y;
-    const d2 = dx * dx + dy * dy;
-    if (d2 < bd2) { bd2 = d2; best = i; }
-  }
-  return best;
-}
-
-/** The ball is out of play: `kind` restart to `side` at (x, y) after `delayMs`. */
+/**
+ * The ball is out of play: `kind` restart to `side` at (x, y) after `delayMs`. (If advantage
+ * was being played for the other side, they get their free kick instead.)
+ */
 export function goDead(m: SpatialMatch, kind: number, side: Side, delayMs: number, x: number, y: number): void {
+  if (advantageAtDead(m, kind, side)) return;
   const b = m.ball;
   const ob = m.onball;
   const now = m.clockMs;
@@ -91,9 +77,11 @@ export function goDead(m: SpatialMatch, kind: number, side: Side, delayMs: numbe
   m.placeAt = now + RS.placeMs;
   m.restartX = x;
   m.restartY = y;
-  m.restartTaker = kind === RESTART_GOAL_KICK ? side * 11
-    : kind === RESTART_CORNER ? cornerTaker(m, side, x, y)
-    : kind === RESTART_THROW_IN ? nearestOutfielder(m, side, x, y) : -1;
+  m.restartTaker = pickTaker(m, kind, side, x, y);
+  m.rules.nWall = 0;
+  ob.setPiece = SP_NONE;
+  ob.inHands = false;
+  clearOffside(m);
   if (m.poss !== side) { m.poss = side; m.possChanged = true; }
   for (const t of m.teams) { t.counterUntil = 0; t.counterPressUntil = 0; }
   resetAttack(m);
@@ -116,18 +104,19 @@ export function kickoff(m: SpatialMatch, side: Side): void {
   // Two passes: the in-possession offside cap depends on where the opponents stand.
   for (let pass = 0; pass < 2; pass++) {
     for (const team of m.teams) { fillRing(m, team); computeSpots(m, team); }
-    for (let i = 0; i < N; i++) { m.px[i] = m.sx[i]; m.py[i] = m.sy[i]; }
+    for (let i = 0; i < N; i++) if (m.on[i]) { m.px[i] = m.sx[i]; m.py[i] = m.sy[i]; }
   }
   const limit = T.kickoff.ownHalf;
   for (let i = 0; i < N; i++) {
+    if (!m.on[i]) continue;
     const s = sideOf(i);
     if (depthOf(s, m.px[i]) > limit) m.px[i] = depthOf(s, limit);
     if (s !== side) keepOff(m, i, 52.5, 34, RS.keepAway);
   }
   // The most advanced player of the kicking side takes it.
   const team = m.teams[side];
-  let best = 1;
-  for (let s = 2; s < 11; s++) if (team.attU[s] > team.attU[best]) best = s;
+  let best = -1;
+  for (let s = 1; s < 11; s++) if (m.on[side * 11 + s] && (best < 0 || team.attU[s] > team.attU[best])) best = s;
   const kicker = side * 11 + best;
   const dir = side === 0 ? 1 : -1;
   m.px[kicker] = 52.5 - dir * B.dribbleAhead;
@@ -143,6 +132,8 @@ export function kickoff(m: SpatialMatch, side: Side): void {
     m.nextThink[i] = m.clockMs;
   }
   for (const t of m.teams) fillRing(m, t);
+  clearOffside(m);
+  m.rules.nWall = 0;
   ob.passTarget = -1;
   ob.passKind = KICK_NONE;
   ob.passCross = false;
@@ -173,33 +164,55 @@ export function restartStep(m: SpatialMatch): void {
   if (now >= m.placeAt) { b.x = m.restartX; b.y = m.restartY; b.z = 0; }
   if (now < m.restartAt) return;
   const side = m.restartSide;
-  if (m.restartKind === RESTART_KICKOFF) { kickoff(m, side); return; }
-  const k = m.restartTaker;
+  const kind = m.restartKind;
+  if (kind === RESTART_KICKOFF) { kickoff(m, side); return; }
+  b.x = m.restartX; b.y = m.restartY; b.z = 0;
+  let k = m.restartTaker;
+  if (k < 0 || !m.on[k]) k = m.restartTaker = pickTaker(m, kind, side, b.x, b.y);
   const ob = m.onball;
+  const R = m.rules;
   const o = (1 - side) * 11;
-  if (m.restartKind === RESTART_GOAL_KICK) {
+  const own = side === 0 ? 1 : -1;
+  if (kind === RESTART_GOAL_KICK || (kind === RESTART_FREE_KICK && k === side * 11)) {
     // Opponents out of the box.
     for (let j = o; j < o + 11; j++) {
+      if (!m.on[j]) continue;
       const off = m.py[j] < GC ? GC - m.py[j] : m.py[j] - GC;
       if (depthOf(side, m.px[j]) < PT.boxDepth + 1 && off < PT.boxHalfWidth + 1) m.px[j] = depthOf(side, PT.boxDepth + 1);
     }
+  } else if (kind === RESTART_PENALTY) {
+    // Everybody but the taker and the keeper out of the box and the arc; the keeper on his line.
+    const lim = LENGTH - PT.boxDepth - 1;
+    for (let j = 0; j < N; j++) {
+      if (!m.on[j] || j === k) continue;
+      if (j === o) { m.px[j] = depthOf(side, LENGTH - 0.3); m.py[j] = GC; continue; }
+      if (depthOf(side, m.px[j]) > lim) m.px[j] = depthOf(side, lim);
+      keepOff(m, j, b.x, b.y, T.penalty.arc);
+    }
   } else {
-    const r = m.restartKind === RESTART_THROW_IN ? RS.throwKeep : RS.keepAway;
-    for (let j = o; j < o + 11; j++) keepOff(m, j, b.x, b.y, r);
+    const r = kind === RESTART_THROW_IN ? RS.throwKeep : kind === RESTART_DROP ? T.injury.dropKeep : RS.keepAway;
+    for (let j = o; j < o + 11; j++) if (m.on[j]) keepOff(m, j, b.x, b.y, r);
+    // The wall is set.
+    for (let q = 0; q < R.nWall; q++) {
+      const j = R.wall[q];
+      m.px[j] = R.wallX[q]; m.py[j] = R.wallY[q];
+      m.vx[j] = 0; m.vy[j] = 0;
+    }
   }
-  // The taker steps up to it from behind (from the corner flag for a corner, from the
-  // touchline for a throw-in, with the ball just in front of him).
-  const thrown = m.restartKind === RESTART_THROW_IN;
-  if (m.restartKind === RESTART_GOAL_KICK) {
-    m.px[k] = clamp(b.x - (side === 0 ? 1 : -1) * B.dribbleAhead, 0, LENGTH);
-    m.py[k] = b.y;
-  } else if (thrown) {
+  // Holding in the box at a corner.
+  if (kind === RESTART_CORNER && cornerHolding(m, side)) return;
+  // The taker steps up to it (from the corner flag for a corner, from the touchline for a
+  // throw-in, from behind for the rest, with the ball just in front of him).
+  if (kind === RESTART_THROW_IN) {
     m.px[k] = b.x;
     m.py[k] = b.y;
     b.y += b.y < GC ? B.dribbleAhead : -B.dribbleAhead;
-  } else {
+  } else if (kind === RESTART_CORNER) {
     m.px[k] = clamp(b.x + (b.x > 52.5 ? 1 : -1) * B.dribbleAhead, 0, LENGTH);
     m.py[k] = clamp(b.y + (b.y < GC ? -1 : 1) * B.dribbleAhead, 0, WIDTH);
+  } else {
+    m.px[k] = clamp(b.x - own * B.dribbleAhead, 0, LENGTH);
+    m.py[k] = b.y;
   }
   m.vx[k] = 0; m.vy[k] = 0;
   m.restartKind = RESTART_NONE;
@@ -207,7 +220,11 @@ export function restartStep(m: SpatialMatch): void {
   ob.lastKick = k;
   control(m, k);
   ob.holdUntil = now;
-  ob.throwIn = thrown;
+  ob.setPiece = kind === RESTART_THROW_IN ? SP_THROW
+    : kind === RESTART_CORNER ? SP_CORNER
+    : kind === RESTART_GOAL_KICK ? SP_GOAL_KICK
+    : kind === RESTART_PENALTY ? SP_PENALTY
+    : kind === RESTART_FREE_KICK && !R.indirect ? SP_DIRECT : SP_INDIRECT;
 }
 
 // ---------------------------------------------------------------------------
@@ -294,20 +311,25 @@ export function lineCross(m: SpatialMatch, xa: number, ya: number, za: number): 
 function scoreGoal(m: SpatialMatch, side: Side): void {
   const ob = m.onball;
   m.score[side]++;
+  const R = m.rules;
   const shooter = ob.shooter;
   if (shooter >= 0 && sideOf(shooter) === side) {
-    m.goalLog.push({ ms: m.clockMs, side, scorer: shooter, assist: ob.shotAssist, xg: ob.shotXg, ownGoal: false, header: ob.shotHeader });
+    if (R.shotKind === SHOT_KIND_PENALTY) R.penGoals[side]++;
+    else if (R.shotKind === SHOT_KIND_FREE_KICK) R.fkGoals[side]++;
+    const a = ob.shotAssist;
+    m.goalLog.push({ ms: m.clockMs, side, scorer: m.who[shooter], assist: a >= 0 ? m.who[a] : -1, xg: ob.shotXg, ownGoal: false, header: ob.shotHeader });
     return;
   }
   const k = ob.lastKick;
   if (k >= 0 && sideOf(k) !== side) {
-    m.goalLog.push({ ms: m.clockMs, side, scorer: k, assist: -1, xg: 0, ownGoal: true, header: false });
+    m.goalLog.push({ ms: m.clockMs, side, scorer: m.who[k], assist: -1, xg: 0, ownGoal: true, header: false });
     return;
   }
   // Bundled in without a shot: count it as one, on target.
   ob.shots[side]++;
   ob.onTarget[side]++;
-  m.goalLog.push({ ms: m.clockMs, side, scorer: k, assist: ob.lastRecv === k ? ob.lastRecvFrom : -1, xg: 0, ownGoal: false, header: false });
+  const a = ob.lastRecv === k ? ob.lastRecvFrom : -1;
+  m.goalLog.push({ ms: m.clockMs, side, scorer: k >= 0 ? m.who[k] : -1, assist: a >= 0 ? m.who[a] : -1, xg: 0, ownGoal: false, header: false });
 }
 
 // ---------------------------------------------------------------------------
@@ -402,6 +424,7 @@ function save(m: SpatialMatch, j: number): void {
   if (m.rng.chance(hold)) {
     ob.passKind = KICK_NONE;
     control(m, j);
+    ob.inHands = true;
     return;
   }
   const attackers = (1 - side) as Side;

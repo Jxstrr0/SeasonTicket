@@ -5,12 +5,13 @@
  */
 import { SPATIAL_TUNING } from '../data';
 import { trackWeight } from './press';
-import { LENGTH, N, WIDTH, type SpatialMatch } from './state';
+import { LENGTH, N, WIDTH, depthOf, type SpatialMatch } from './state';
 import { ROLE } from './types';
 
 const MV = SPATIAL_TUNING.move;
 const GD = MV.gaitDistance;
 const GS = MV.gaitSpeed;
+const KP = SPATIAL_TUNING.keeper;
 const SEP = MV.separation;
 const SEP2 = SEP * SEP;
 
@@ -23,6 +24,7 @@ export function movePlayers(m: SpatialMatch): void {
   const dt = m.stepS;
   const owner = m.ball.owner;
   for (let i = 0; i < N; i++) {
+    if (!m.on[i]) continue;
     const dx = m.tx[i] - m.px[i];
     const dy = m.ty[i] - m.py[i];
     const d = Math.sqrt(dx * dx + dy * dy);
@@ -33,6 +35,8 @@ export function movePlayers(m: SpatialMatch): void {
     else if (d < GD[2]) cap = GS[2];
     else if (d < GD[3]) cap = GS[3];
     else cap = m.top[i];
+    // A keeper sets himself quickly when the ball is near his goal.
+    if (i % 11 === 0 && cap < KP.setSpeed && depthOf(i < 11 ? 0 : 1, m.ball.x) < KP.setWithin) cap = KP.setSpeed;
     // A tracking defender keeps up with his runner.
     if (m.role[i] === ROLE.TRACK) {
       const side = i < 11 ? 0 : 1;
@@ -87,6 +91,7 @@ export function movePlayers(m: SpatialMatch): void {
   }
   separate(m);
   for (let i = 0; i < N; i++) {
+    if (!m.on[i]) continue;
     if (m.px[i] < 0) { m.px[i] = 0; if (m.vx[i] < 0) m.vx[i] = 0; }
     else if (m.px[i] > LENGTH) { m.px[i] = LENGTH; if (m.vx[i] > 0) m.vx[i] = 0; }
     if (m.py[i] < 0) { m.py[i] = 0; if (m.vy[i] < 0) m.vy[i] = 0; }
@@ -117,6 +122,7 @@ function separate(m: SpatialMatch): void {
     for (let b = a + 1; b < N; b++) {
       if (xs[b] - xs[a] >= SEP) break;
       let i = ord[a], j = ord[b];
+      if (!m.on[i] || !m.on[j]) continue;
       if (i > j) { const t = i; i = j; j = t; }
       const dx = px[j] - px[i];
       const dy = py[j] - py[i];

@@ -1,6 +1,6 @@
 {
   "_doc": "Spatial match engine starting values (docs/DESIGN.md section 17, appendix docs/history/STAGE_4_5_SKETCH_NOTES.md). Distances in metres, speeds in m/s, times in seconds unless the key ends in Ms. Five-value arrays are indexed by dial 1..5.",
-  "engineRev": 6,
+  "engineRev": 8,
   "pitch": {
     "length": 105,
     "width": 68,
@@ -82,7 +82,10 @@
     "nearMin": 1,
     "nearMax": 3,
     "nearBallDepth": 25,
-    "claimReach": 1.5
+    "claimReach": 1.5,
+    "_doc": "With the ball within setWithin m of his goal line, a keeper moves to his spot at up to setSpeed m/s whatever the distance (he shuffles across to set himself rather than walking).",
+    "setWithin": 30,
+    "setSpeed": 5
   },
   "press": {
     "startZone": [35, 45, 55, 70, 999],
@@ -574,6 +577,8 @@
     "duelMul": 1.3,
     "looseSpeed": [2, 5],
     "looseSpread": 0.6,
+    "deflectKeep": [0.3, 0.7],
+    "deflectSpread": 1.1,
     "headSpeed": [4, 8],
     "headLift": 3,
     "retouchMs": 300,
@@ -592,6 +597,7 @@
     "angles": [0, 40, -40, 80, -80]
   },
   "tackle": {
+    "_doc": "A defender within reach m of the ball tries a tackle at rate per second (frontRate when he is in front of the carrier, times pressMul for a presser and boxMul in his own box), and wins it with base plus perFive per 5 points of tackling over the carrier's dribbling, within min and max. A win is clean (winControl) or pokes the ball loose at looseSpeed m/s, turned by up to pokeSpread radians from the way he faces; within lineWithin m of a touchline, or of his own goal line more than postClear m outside a post, he knocks it out with lineOut. A beaten tackler waits cooldown s and keeps beatenKeep of his speed.",
     "reach": 1.6,
     "rate": 0.2,
     "frontRate": 0.8,
@@ -607,7 +613,10 @@
     "cooldown": 1.5,
     "beatenKeep": 0.3,
     "fastEvade": 4,
-    "pokeSpread": 0.8
+    "pokeSpread": 0.8,
+    "lineWithin": 6,
+    "lineOut": 0.6,
+    "postClear": 3
   },
   "duel": {
     "base": 0.5,
@@ -656,12 +665,12 @@
     "highZ": 1.9,
     "headZ": 0.4,
     "postInset": [0.5, 2],
-    "errBase": 0.065,
+    "errBase": 0.08,
     "errFin": 0.12,
     "errPress0": 0.6,
     "errPressure": 1.25,
     "pressureWithin": 3,
-    "errHeader": 1.6,
+    "errHeader": 2,
     "errVertical": 0.7,
     "maxSamples": 40,
     "blockHeight": 1.9,
@@ -701,7 +710,7 @@
     "rushCorridor": 4
   },
   "restart": {
-    "_doc": "Dead-ball waits in ms. Corners and throw-ins are stand-ins until build step 5: the nearest attacker plays on from the corner flag, opponents 9.15 m away; the nearest player throws to a team-mate within throwRange m, opponents throwKeep m away.",
+    "_doc": "Dead-ball waits in ms. Opponents stand keepAway m from a corner or free kick and throwKeep m from a throw-in; a thrower can only throw, to a team-mate within throwRange m. Throw-ins go to the full-back on that side in our half (the wide player in theirs) if he is within throwerWithin m, else the nearest outfielder.",
     "kickoffMs": 55000,
     "goalKickMs": 25000,
     "cornerMs": 32000,
@@ -713,7 +722,9 @@
     "throwInMs": 12000,
     "throwKeep": 2,
     "throwRange": 25,
-    "throwOut": 0.3
+    "throwOut": 0.3,
+    "throwerWithin": 25,
+    "throwerU": 0.4
   },
   "run": {
     "_doc": "Runs in behind: a player on the shoulder of the last line goes when the carrier is free and facing forward. rate is starts per second at work rate 99 (wrkBase of that at 0).",
@@ -737,7 +748,7 @@
     "zones": [[99, 3], [98.5, -3], [94, 0], [91, 8], [84, 0]]
   },
   "cross": {
-    "_doc": "Crosses are lofted passes at a flatter angle (deg), aimed to land beyond the box runner so he meets it at head height (headZ on the way down).",
+    "_doc": "Crosses are lofted passes at a flatter angle (deg), aimed to land beyond the box runner so he meets it at head height (headZ on the way down). Box runners time their runs: when the cross is struck each is already going at runStart of his top speed towards his zone. A defender in his own box heads it away, or behind (headOutChance) towards the goal line headOutWide m outside a post. A defender within blockWithin m of the line of the cross and no more than blockAhead m in front of the crosser blocks it with block (less the further off the line he is): it comes back off him at blockSpeed times the cross speed, turned by blockSpread radians, often over a line. An attacker in the box who does not go for goal knocks it down: off his head at knockSpeed m/s and knockLift m/s up, turned up to knockSpread radians either way from the goal, and he is back on his feet knockOutMs ms later.",
     "fromDepth": 70,
     "wideWithin": 20,
     "minLen": 8,
@@ -745,7 +756,138 @@
     "headZ": 1.9,
     "valueMul": 0.5,
     "landBeyond": 2.5,
+    "runStart": 0.6,
     "headClearSpeed": [8, 14],
-    "headClearLift": [3, 6]
+    "headClearLift": [3, 6],
+    "headOutChance": 0.25,
+    "headOutWide": [4, 16],
+    "headOutSpeed": [7, 11],
+    "block": 0.45,
+    "blockWithin": 1.5,
+    "blockAhead": 4,
+    "blockSpread": 0.9,
+    "blockSpeed": [0.25, 0.5],
+    "blockLift": [0, 4],
+    "knockSpeed": [2, 6],
+    "knockLift": [0.5, 2.5],
+    "knockSpread": 1.4,
+    "knockOutMs": 900
+  },
+  "touch": {
+    "_doc": "Clearing into touch: under pressure in his own third and within wideWithin m of a touchline, a defender may put it out on purpose (chance), aiming forward m up the line and out m beyond it.",
+    "depth": 35,
+    "wideWithin": 20,
+    "chance": 0.4,
+    "forward": [10, 30],
+    "out": 4
+  },
+  "offside": {
+    "_doc": "A passer reads the offside line with an error of readError m (sd) at vision 50, none at 99. Players in an offside position when a team-mate plays the ball are offside if they touch it before an opponent plays it.",
+    "readError": 2.5
+  },
+  "foul": {
+    "_doc": "Chance a challenge is a foul. Tackles: front (standing) or from the side or behind, times aggression (aggBase + aggGain * agg / 99), times 1 + skillPer10 per 10 points of the carrier's dribbling over the tackler's tackling, times byThird by where it happens (the fouler's defensive, middle and attacking third: most fouls are in midfield), less in the tackler's own box and when he is booked. Loose-ball duels and aerial challenges have their own rates; aerialAttacker is the share of aerial fouls that are the attacker's (a push). At a corner, holding is called with cornerHold, the attacker's foul with cornerHoldAttacker. keepBall: after a foul on the carrier he still has it, so advantage can be played.",
+    "front": 0.072,
+    "behind": 0.19,
+    "aggBase": 0.7,
+    "aggGain": 0.6,
+    "skillPer10": 0.08,
+    "skillMin": 0.6,
+    "skillMax": 1.6,
+    "byThird": [0.45, 1.5, 1.3],
+    "ownBox": 0.05,
+    "booked": 0.5,
+    "duel": 0.05,
+    "aerial": 0.05,
+    "aerialWithin": 1.5,
+    "aerialAttacker": 0.6,
+    "cornerHold": 0.015,
+    "cornerHoldAttacker": 0.7,
+    "keepBall": 0.4
+  },
+  "advantage": {
+    "_doc": "Played when the fouled side keeps the ball where its threat is at least threat; the free kick comes back if it loses the ball within seconds.",
+    "threat": 0.02,
+    "seconds": 3
+  },
+  "card": {
+    "_doc": "Chance of a yellow for an ordinary foul (front or from behind) and a tactical one (a foul from behind that stops a counter or a carrier going forward at least promisingDepth m up in his frame), times booked for a player already on a yellow (referees go easier on a second). Denying an obvious goal-scoring chance (the fouled player within dogsoWithin m of goal, going forward, and no defender but the keeper goal-side of him) is a red with dogsoRed, or a yellow and a penalty in the box. straightRed is the chance any foul is violent.",
+    "front": 0.08,
+    "behind": 0.15,
+    "tactical": 0.5,
+    "booked": 0.4,
+    "promisingDepth": 76,
+    "dogsoWithin": 30,
+    "dogsoRed": 0.85,
+    "straightRed": 0.004
+  },
+  "freeKick": {
+    "_doc": "Free kicks within namedWithin m of goal are set pieces: the named taker, a wall of 9.15 m when within wallWithin m (wall players by distance, 2 when wider than wallWide m off centre), and a direct shot when within shootWithin m if its xG reaches shootXg. Direct free-kick xG: the curve (xgDist, xgVal) times (spkBase + spk / 100) times the share of the goal he sees. A shot hits the wall with wallHit less wallHitSpk at set pieces 99; otherwise the wall is beaten and the keeper reacts keeperReact s late. Shot error: err + errSpk * (1 - spk / 99) radians.",
+    "quickMs": 14000,
+    "setMs": 38000,
+    "namedWithin": 35,
+    "wallWithin": 35,
+    "wallWide": 18,
+    "wallSize": [[22, 5], [25, 4], [30, 3], [35, 2]],
+    "wallGap": 0.6,
+    "wallDist": 9.15,
+    "shootWithin": 30,
+    "shootXg": 0.07,
+    "crossWithin": 40,
+    "xgDist": [18, 20, 22, 25, 28, 30, 35],
+    "xgVal": [0.08, 0.08, 0.07, 0.06, 0.05, 0.04, 0.025],
+    "spkBase": 0.4,
+    "wallHit": 0.4,
+    "wallHitSpk": 0.2,
+    "keeperReact": 0.25,
+    "err": 0.06,
+    "errSpk": 0.09,
+    "highShare": 0.7,
+    "speed": [22, 28]
+  },
+  "penalty": {
+    "_doc": "From the spot 11 m out, everyone else out of the box and the arc. The taker picks a corner (inset m in from the post, high with highShare) and misses it by err + errSpk * (1 - skill / 99) radians, skill being set pieces and composure. The keeper guesses a side with guess (stays up otherwise), leaning lean m that way, and reacts reactAdd s later than to an open-play shot (he has to wait for the kick).",
+    "delayMs": 50000,
+    "spot": 11,
+    "arc": 9.15,
+    "inset": [0.35, 1.6],
+    "highShare": 0.3,
+    "err": 0.02,
+    "errSpk": 0.05,
+    "guess": 0.85,
+    "lean": 1.2,
+    "xg": 0.76,
+    "reactAdd": 0.4,
+    "speed": [22, 28]
+  },
+  "corner": {
+    "_doc": "Attackers up for a corner by mentality, best headers first, into zones (depth, across from the goal centre towards the ball's side).",
+    "count": [4, 4, 5, 5, 6],
+    "zones": [[98.5, -3], [99.5, 3], [97, 0], [94, 0], [95.5, -8], [88, 3]]
+  },
+  "injury": {
+    "_doc": "Chance a challenge injures someone: perChallenge times (durBase - durability / 99), times foulMul for a foul; the fouled player or the loser of the duel with victim, otherwise the other. Play stops for stopMs and the side with the ball restarts unopposed (dropKeep m). A hurt player stays on at speed of his top speed.",
+    "perChallenge": 0.0008,
+    "durBase": 1.5,
+    "foulMul": 2,
+    "victim": 0.7,
+    "stopMs": 45000,
+    "dropMs": 8000,
+    "dropKeep": 4,
+    "speed": 0.7
+  },
+  "ownGoal": {
+    "_doc": "A defender who meets a cross or a low ball within within m of his own goal may turn it towards his own goal (chance, more with low composure: times (cmpBase - cmp / 99)), at speed times the ball's speed; the keeper reacts react s late.",
+    "within": 12,
+    "chance": 0.2,
+    "cmpBase": 1.5,
+    "speed": [0.6, 0.9],
+    "spread": 0.5,
+    "react": 0.15
+  },
+  "sentOff": {
+    "_doc": "Where a sent-off player waits, off the pitch: across from the touchline, spaced along it from halfway.",
+    "across": -4,
+    "spacing": 1.5
   }
 }

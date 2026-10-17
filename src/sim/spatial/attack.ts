@@ -9,7 +9,7 @@
 import { SPATIAL_TUNING } from '../data';
 import { currentOffCap, secondLastOpponent } from './shape';
 import {
-  A_WRK, ATTRS, BALL_AIR, BALL_DEAD, BALL_HELD, N, RESTART_CORNER, WIDTH,
+  A_HEA, A_STR, A_WRK, ATTRS, BALL_AIR, BALL_DEAD, BALL_HELD, LENGTH, N, RESTART_CORNER, RESTART_FREE_KICK, WIDTH,
   acrossOf, depthOf, sideOf, type AttackState, type SpatialMatch,
 } from './state';
 import type { Side } from './types';
@@ -17,6 +17,7 @@ import type { Side } from './types';
 const T = SPATIAL_TUNING;
 const RN = T.run;
 const BX = T.box;
+const CO = T.corner;
 const GC = T.pitch.goalCentreAcross;
 const ZONES = BX.zones.length;
 
@@ -29,6 +30,7 @@ export function createAttack(): AttackState {
     boxSlot: new Int8Array(N).fill(-1),
     boxOn: new Uint8Array(2),
     boxSign: new Float64Array(2),
+    boxCorner: new Uint8Array(2),
   };
 }
 
@@ -41,6 +43,8 @@ export function resetAttack(m: SpatialMatch): void {
   }
   at.boxOn[0] = 0;
   at.boxOn[1] = 0;
+  at.boxCorner[0] = 0;
+  at.boxCorner[1] = 0;
 }
 
 /** Wide in the final third, where the ball goes into the box from. */
@@ -54,7 +58,7 @@ export function boxPoint(m: SpatialMatch, i: number, out: Float64Array): boolean
   const z = m.attack.boxSlot[i];
   if (z < 0) return false;
   const side = sideOf(i);
-  const zone = BX.zones[z];
+  const zone = (m.attack.boxCorner[side] ? CO.zones : BX.zones)[z];
   out[0] = depthOf(side, zone[0]);
   out[1] = acrossOf(side, GC + m.attack.boxSign[side] * zone[1]);
   return true;
@@ -63,7 +67,12 @@ export function boxPoint(m: SpatialMatch, i: number, out: Float64Array): boolean
 /** Whether box filling should be on for `side` right now. */
 function boxWanted(m: SpatialMatch, side: Side): boolean {
   const b = m.ball;
-  if (b.state === BALL_DEAD) return m.restartKind === RESTART_CORNER && m.restartSide === side;
+  if (b.state === BALL_DEAD) {
+    if (m.restartSide !== side) return false;
+    if (m.restartKind === RESTART_CORNER) return true;
+    // A free kick near enough to put into the box.
+    return m.restartKind === RESTART_FREE_KICK && depthOf(side, m.restartX) >= LENGTH - T.freeKick.crossWithin;
+  }
   if (b.state === BALL_HELD) return b.owner >= 0 && sideOf(b.owner) === side && wideFinalThird(side, b.x, b.y);
   const ob = m.onball;
   return b.state === BALL_AIR && ob.passCross && ob.passSide === side;
@@ -76,6 +85,7 @@ function updateBox(m: SpatialMatch, side: Side): void {
   if (!want) {
     if (at.boxOn[side]) {
       at.boxOn[side] = 0;
+      at.boxCorner[side] = 0;
       for (let i = o; i < o + 11; i++) if (at.boxSlot[i] >= 0) { at.boxSlot[i] = -1; m.nextThink[i] = m.clockMs; }
     }
     return;
@@ -86,6 +96,7 @@ function updateBox(m: SpatialMatch, side: Side): void {
   const by = b.state === BALL_DEAD ? m.restartY : b.y;
   at.boxSign[side] = acrossOf(side, by) < GC ? -1 : 1;
   const team = m.teams[side];
+  if (b.state === BALL_DEAD && m.restartKind === RESTART_CORNER) { cornerBox(m, side); return; }
   const n = Math.min(ZONES, BX.count[team.tactics.mentality - 1]);
   // Each zone in turn goes to the nearest outfielder not already given one, leaving the ball
   // carrier, the taker and the players who stay behind the ball.
@@ -96,10 +107,33 @@ function updateBox(m: SpatialMatch, side: Side): void {
     let best = -1, bd2 = Infinity;
     for (let s = 1; s < 11; s++) {
       const i = o + s;
-      if (team.isBehind[s] || at.boxSlot[i] >= 0 || i === b.owner || i === m.restartTaker) continue;
+      if (!m.on[i] || team.isBehind[s] || at.boxSlot[i] >= 0 || i === b.owner || i === m.restartTaker) continue;
       const dx = m.px[i] - zx, dy = m.py[i] - zy;
       const d2 = dx * dx + dy * dy;
       if (d2 < bd2) { bd2 = d2; best = i; }
+    }
+    if (best < 0) break;
+    at.boxSlot[best] = z;
+    at.runUntil[best] = 0;
+    m.nextThink[best] = m.clockMs;
+  }
+}
+
+/** A corner: the best in the air go up, into the corner zones in turn (best header first). */
+function cornerBox(m: SpatialMatch, side: Side): void {
+  const at = m.attack;
+  const o = side * 11;
+  const team = m.teams[side];
+  const att = m.onball.attr;
+  at.boxCorner[side] = 1;
+  const n = Math.min(CO.zones.length, CO.count[team.tactics.mentality - 1]);
+  for (let z = 0; z < n; z++) {
+    let best = -1, bv = -Infinity;
+    for (let s = 1; s < 11; s++) {
+      const i = o + s;
+      if (!m.on[i] || at.boxSlot[i] >= 0 || i === m.restartTaker) continue;
+      const v = att[i * ATTRS + A_HEA] + att[i * ATTRS + A_STR] / 2;
+      if (v > bv) { bv = v; best = i; }
     }
     if (best < 0) break;
     at.boxSlot[best] = z;
@@ -128,7 +162,7 @@ function updateRuns(m: SpatialMatch, side: Side): void {
   const att = ob.attr;
   for (let s = 1; s < 11 && running < RN.maxRunners; s++) {
     const i = o + s;
-    if (i === c || team.isBehind[s] || at.boxSlot[i] >= 0 || now < at.runUntil[i] || now < at.runNext[i]) continue;
+    if (i === c || !m.on[i] || team.isBehind[s] || at.boxSlot[i] >= 0 || now < at.runUntil[i] || now < at.runNext[i]) continue;
     const d = depthOf(side, m.px[i]);
     if (d < cap - RN.shoulder || d < bd + RN.aheadOfBall) continue;
     const wrk = att[i * ATTRS + A_WRK] / 99;

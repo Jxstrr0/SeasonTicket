@@ -66,13 +66,18 @@ export const ROLE = {
   RUN: 9,
   /** Filling a zone in the box for a cross. */
   BOX: 10,
+  /** Standing in the wall for a free kick. */
+  WALL: 11,
 } as const;
 export type Role = (typeof ROLE)[keyof typeof ROLE];
 
 /** How a shot ended, settled when it was struck. */
 export type ShotOutcome = 'goal' | 'saved' | 'blocked' | 'off' | 'post';
 
-/** One shot. Players are global indices (side * 11 + slot); x, y is where it was struck. */
+/**
+ * One shot. Players are line-up indices (side * 11 + place in the line-up, SpatialMatch.who);
+ * x, y is where it was struck.
+ */
 export interface ShotRecord {
   ms: number;
   side: Side;
@@ -82,9 +87,11 @@ export interface ShotRecord {
   xg: number;
   header: boolean;
   outcome: ShotOutcome;
+  /** A direct free kick or a penalty. */
+  setPiece?: 'freeKick' | 'penalty';
 }
 
-/** One goal, credited to `side`. An own goal's scorer is the defender who put it in. */
+/** One goal, credited to `side` (players as in ShotRecord). An own goal's scorer is the defender who put it in. */
 export interface GoalRecord {
   ms: number;
   side: Side;
@@ -94,6 +101,24 @@ export interface GoalRecord {
   xg: number;
   ownGoal: boolean;
   header: boolean;
+}
+
+export type SpatialEventKind = 'foul' | 'advantage' | 'yellow' | 'red' | 'offside' | 'penalty' | 'injury';
+
+/**
+ * A moment the referee was involved: `player` is who committed it (the fouler, the booked or
+ * sent-off player, the man caught offside, the injured player) as in ShotRecord, `side` is
+ * his side, and x, y is where it happened.
+ */
+export interface SpatialEvent {
+  ms: number;
+  kind: SpatialEventKind;
+  side: Side;
+  player: number;
+  x: number;
+  y: number;
+  /** A yellow that was his second, so also a red; a foul in the box; a red for denying a goal. */
+  note?: 'second' | 'box' | 'dogso';
 }
 
 /** Values per frame: 22 players (x, y) then the ball (x, y, z), all in centimetres. */
