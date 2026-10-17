@@ -50,3 +50,15 @@ export function side(prefix: string, t: Tactics = tactics(), value = 65): Spatia
 export function setup(home: Partial<Tactics> = {}, away: Partial<Tactics> = {}): SpatialSetup {
   return { home: side('home', tactics(home)), away: side('away', tactics(away)) };
 }
+
+/** A side with nine substitutes (ids `${prefix}-b0` .. `-b8`): a keeper and eight outfielders. */
+export function sideWithBench(prefix: string, t: Tactics = tactics(), value = 65): SpatialSide {
+  const s = side(prefix, t, value);
+  const BENCH: Position[] = ['GK', 'FB', 'CB', 'DM', 'CM', 'CM', 'W', 'ST', 'W'];
+  s.bench = BENCH.map((position, b) => ({ id: `${prefix}-b${b}`, name: `${prefix}b${b}`, jersey: 12 + b, position, attributes: attrs(value) }));
+  return s;
+}
+
+export function setupWithBench(home: Partial<Tactics> = {}, away: Partial<Tactics> = {}, extraTime = false): SpatialSetup {
+  return { home: sideWithBench('home', tactics(home)), away: sideWithBench('away', tactics(away)), extraTime };
+}

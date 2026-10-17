@@ -1,13 +1,16 @@
 /**
  * Engine Lab: a 2D top-down view of the spatial match engine (Stage 4.5). It is the
  * owner's tool for judging the engine: watch both shapes, change either side's tactics
- * while the match runs and see the change land, and see every shot and goal. The engine runs on the main thread here;
- * it moves into a Web Worker in step 6. This file only reads engine state and queues
- * tactics: no match rules live here.
+ * while the match runs and see the change land, and see every shot and goal. The watched match
+ * runs on the main thread; "Play a league week in the background" checks the worker pool
+ * (src/game/matchRunner.ts) against this thread. This file only reads engine state and
+ * queues tactics: no match rules live here.
  */
 import './lab.css';
 import { FORMATIONS } from '../../sim/data';
+import { createInThreadRunner, createMatchRunner, fingerprintOf, resultFingerprint, type MatchJob, type MatchRunner } from '../../game/matchRunner';
 import { createLeague } from '../../sim/league';
+import { buildMatchSetup, createSeason, defaultHooks, matchContext, matchesForWeek } from '../../sim/season';
 import { createSpatial, markingPair, matchStats, queueTactics, spatialFinished, stepSpatial, teamShapeInfo } from '../../sim/spatial/engine';
 import { clockLabel, matchTime } from '../../sim/spatial/systems';
 import { spatialSetupFromLeague } from '../../sim/spatial/setup';
@@ -155,6 +158,10 @@ export class EngineLab {
   /** Referee events already looked at. */
   private eventsSeen = 0;
   private bannerUntil = 0;
+  /** The background-week check (see playWeek). */
+  private runner: MatchRunner | null = null;
+  private weekBusy = false;
+  private weekHtml = '';
 
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
@@ -300,6 +307,8 @@ export class EngineLab {
       this.applyTactics(this.side);
     } else if (act === 'restart') {
       this.newMatch();
+    } else if (act === 'week') {
+      void this.playWeek();
     } else if (act === 'swap') {
       [this.homeId, this.awayId] = [this.awayId, this.homeId];
       this.newMatch();
@@ -489,7 +498,51 @@ export class EngineLab {
         <button type="button" class="btn-secondary" data-act="restart">Kick off again</button>
         <button type="button" class="btn-secondary" data-act="swap">Swap ends</button>
       </div>
-      <p class="small muted">League seed ${esc(this.leagueSeed)}, match ${this.matchNo}. Quote these if something looks wrong.</p>`;
+      <p class="small muted">League seed ${esc(this.leagueSeed)}, match ${this.matchNo}. Quote these if something looks wrong.</p>
+      <h3 class="lab-h">Background matches</h3>
+      <p class="small muted">Plays this league's first week (8 coarse matches, AI coaches on both sides) in two background workers, then again on this screen, and checks the results are identical.</p>
+      <button type="button" class="btn-secondary lab-wide" data-act="week"${this.weekBusy ? ' disabled' : ''}>Play a league week in the background</button>
+      <div class="small lab-week" aria-live="polite">${this.weekHtml}</div>`;
+  }
+
+  /** The week check: the worker pool against this thread, timed, with fingerprints compared. */
+  private async playWeek(): Promise<void> {
+    if (this.weekBusy) return;
+    this.weekBusy = true;
+    const show = (html: string) => {
+      this.weekHtml = html;
+      const box = this.root.querySelector('.lab-week');
+      if (box) box.innerHTML = html;
+      const btn = this.root.querySelector<HTMLButtonElement>('[data-act="week"]');
+      if (btn) btn.disabled = this.weekBusy;
+    };
+    try {
+      const league = structuredClone(this.league);
+      const season = createSeason(league);
+      const ctx = matchContext(league);
+      const jobs: MatchJob[] = matchesForWeek(season, 1).map((match) => ({ setup: buildMatchSetup(season, match, defaultHooks()), ctx }));
+      this.runner ??= createMatchRunner(2);
+      show(`Playing ${jobs.length} matches in the background...`);
+      let t0 = performance.now();
+      const bg = await this.runner.run(jobs, (done, total) => show(`Playing in the background: ${done} of ${total}...`));
+      const bgMs = performance.now() - t0;
+      const where = this.runner.kind === 'worker' ? 'on two background workers' : 'on this screen (background workers are not available here)';
+      show(`Background done in ${(bgMs / 1000).toFixed(2)} s. Now playing them again on this screen...`);
+      t0 = performance.now();
+      const here = await createInThreadRunner().run(jobs, (done, total) => show(`Playing on this screen: ${done} of ${total}...`));
+      const hereMs = performance.now() - t0;
+      const a = bg.map(resultFingerprint), b = here.map(resultFingerprint);
+      const same = a.every((f, k) => f === b[k]);
+      const name = (id: string) => esc(league.teams.find((t) => t.id === id)?.abbr ?? id);
+      const scores = bg.map((r) => `${name(r.homeId)} ${r.homeScore}-${r.awayScore} ${name(r.awayId)}`).join(' · ');
+      this.weekBusy = false;
+      show(`<p><strong>${same ? 'Results match ✓' : 'Results differ ✗'}</strong> (week code ${fingerprintOf(a)}${same ? '' : ` vs ${fingerprintOf(b)}`})</p>
+        <p>${jobs.length} matches in ${(bgMs / 1000).toFixed(2)} s ${where}; ${(hereMs / 1000).toFixed(2)} s on this screen, one at a time.</p>
+        <p class="muted">${scores}</p>`);
+    } catch (e) {
+      this.weekBusy = false;
+      show(`Could not play the week: ${esc(e instanceof Error ? e.message : String(e))}`);
+    }
   }
 
   private updateReadout(): void {
