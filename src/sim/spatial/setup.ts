@@ -60,7 +60,9 @@ export function spatialSetupFromMatch(setup: MatchSetup, players: Record<string,
   const home = teams[setup.homeId];
   const away = teams[setup.awayId];
   if (!home || !away) throw new Error('Unknown team');
-  const out: SpatialSetup = { home: sideFrom(players, home, setup.home), away: sideFrom(players, away, setup.away), weather: setup.weather };
+  const out: SpatialSetup = {
+    home: sideFrom(players, home, setup.home), away: sideFrom(players, away, setup.away), weather: setup.weather, crowd: setup.attendanceShare,
+  };
   if (setup.playoff) out.extraTime = true;
   return out;
 }

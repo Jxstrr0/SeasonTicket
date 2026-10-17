@@ -41,6 +41,8 @@ export interface SpatialSetup {
   /** A cup tie: level after 90 minutes goes to extra time, then penalties. */
   extraTime?: boolean;
   weather?: Weather;
+  /** Share of the home ground's seats filled (0..1), for home advantage; none if left out. */
+  crowd?: number;
 }
 
 /**

@@ -701,7 +701,7 @@
   },
   "keeperSave": {
     "_doc": "The keeper reaches reach0 standing, plus diveV m/s once he has reacted (reactBase less reactRef at reflexes 99), for up to diveT s. Height above standHigh counts as extra distance. Save chance is 0.5 + margin / soft, capped at max.",
-    "reach0": 1.45,
+    "reach0": 1.52,
     "standHigh": 1.0,
     "diveV": 5,
     "diveT": 0.4,
@@ -813,8 +813,8 @@
   },
   "foul": {
     "_doc": "Chance a challenge is a foul. Tackles: front (standing) or from the side or behind, times aggression (aggBase + aggGain * agg / 99), times 1 + skillPer10 per 10 points of the carrier's dribbling over the tackler's tackling, times byThird by where it happens (the fouler's defensive, middle and attacking third: most fouls are in midfield), less in the tackler's own box and when he is booked. Loose-ball duels and aerial challenges have their own rates; aerialAttacker is the share of aerial fouls that are the attacker's (a push). At a corner, holding is called with cornerHold, the attacker's foul with cornerHoldAttacker. keepBall: after a foul on the carrier he still has it, so advantage can be played.",
-    "front": 0.072,
-    "behind": 0.19,
+    "front": 0.081,
+    "behind": 0.213,
     "aggBase": 0.7,
     "aggGain": 0.6,
     "skillPer10": 0.08,
@@ -823,7 +823,7 @@
     "byThird": [0.45, 1.5, 1.3],
     "ownBox": 0.05,
     "booked": 0.5,
-    "duel": 0.05,
+    "duel": 0.056,
     "aerial": 0.05,
     "aerialWithin": 1.5,
     "aerialAttacker": 0.6,
@@ -838,8 +838,8 @@
   },
   "card": {
     "_doc": "Chance of a yellow for an ordinary foul (front or from behind) and a tactical one (a foul from behind that stops a counter or a carrier going forward at least promisingDepth m up in his frame), times booked for a player already on a yellow (referees go easier on a second). Denying an obvious goal-scoring chance (the fouled player within dogsoWithin m of goal, going forward, and no defender but the keeper goal-side of him) is a red with dogsoRed, or a yellow and a penalty in the box. straightRed is the chance any foul is violent.",
-    "front": 0.07,
-    "behind": 0.13,
+    "front": 0.075,
+    "behind": 0.14,
     "tactical": 0.4,
     "booked": 0.2,
     "promisingDepth": 76,
@@ -941,5 +941,17 @@
     "_doc": "By the time-wasting dial (1..5): seconds a side adds to each of its own restarts (not kick-offs or penalties), all of it added on as stoppage, and the chance the taker is booked for it.",
     "addS": [0, 2, 4, 7, 10],
     "booking": [0, 0, 0, 0.015, 0.03]
+  },
+  "skillSpread": {
+    "_doc": "How much of the gap between players shows on the day: every attribute the engine reads is pivot + keep x (rating - pivot), before home advantage. At keep 1 a 25-point gap between squads decides too many matches (a 30-round table from 85 points to 13, draws about 20%); real leagues run from about 70 to 20 with 25% draws.",
+    "pivot": 65,
+    "keep": 0.8
+  },
+  "home": {
+    "_doc": "Home advantage, scaled by the crowd: crowd = attendanceFloor + (1 - attendanceFloor) x the share of seats filled (a match set up with no crowd, like the Engine Lab's, has none). The home side's technical and mental attributes get attrPoints x crowd extra points (pace, strength, stamina, aggression and durability do not change), and the referee leans its way: a home player's challenge is a foul foulLean times as often, and his foul a yellow cardLean times as often, at a full ground (1 - (1 - lean) x crowd).",
+    "attendanceFloor": 0.4,
+    "attrPoints": 3,
+    "foulLean": 0.9,
+    "cardLean": 0.9
   }
 }

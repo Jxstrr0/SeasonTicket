@@ -15,10 +15,10 @@ import {
   matchStats, queueTactics, replayFrames, runSeconds, spatialRecord, stepSpatial, teamShapeInfo,
   type SideStats,
 } from '../src/sim/spatial/engine';
-import { FOUL_FRONT, foul, offsideCall, offsideNow, played } from '../src/sim/spatial/rules';
+import { FOUL_FRONT, foul, foulChance, offsideCall, offsideNow, played } from '../src/sim/spatial/rules';
 import { inAttackBox, xgFrom } from '../src/sim/spatial/shot';
 import {
-  BALL_DEAD, BALL_HELD, KICK_CLEAR, KICK_PASS, LENGTH, N, RESTART_CORNER, RESTART_FREE_KICK, RESTART_KICKOFF,
+  ATTRS, A_FIN, A_PAC, BALL_DEAD, BALL_HELD, KICK_CLEAR, KICK_PASS, LENGTH, N, RESTART_CORNER, RESTART_FREE_KICK, RESTART_KICKOFF,
   RESTART_NONE, RESTART_PENALTY, RESTART_THROW_IN, SP_CORNER, SP_GOAL_KICK, SP_NONE, SP_THROW, WIDTH, depthOf, idOf,
   sideOf, type SpatialMatch,
 } from '../src/sim/spatial/state';
@@ -26,6 +26,17 @@ import { FRAME_VALUES, ROLE, type Side, type SpatialMode, type SpatialSetup, typ
 import type { Dial, Tactics } from '../src/sim/types';
 import { listSources, readSource } from './helpers/node.mjs';
 import { setup, side, tactics } from './helpers/spatialFixtures';
+
+/**
+ * Run with every rating as it is (skillSpread.keep 1). Tests of how an attribute drives play
+ * use it, so the share of a gap that shows on the day (tested on its own) does not blur them.
+ */
+function fullSpread<R>(work: () => R): R {
+  const SS = SPATIAL_TUNING.skillSpread;
+  const keep = SS.keep;
+  SS.keep = 1;
+  try { return work(); } finally { SS.keep = keep; }
+}
 
 function relErr(a: number, b: number): number {
   return Math.abs(a - b) / Math.max(1e-300, Math.abs(b));
@@ -420,7 +431,7 @@ describe('spatial passing and possession', () => {
 
   it('the better side keeps more of the ball and completes more passes', () => {
     const s = { home: side('home', tactics(), 70), away: side('away', tactics(), 60) };
-    const [strong, weak, each] = season(s, 'strength', 'coarse', 3);
+    const [strong, weak, each] = fullSpread(() => season(s, 'strength', 'coarse', 3));
     expect(strong.possession).toBeGreaterThan(weak.possession);
     expect(completion(strong)).toBeGreaterThan(completion(weak) + 0.01);
     for (const st of each) {
@@ -540,8 +551,8 @@ describe('spatial attacking and shooting', () => {
   // 24 matches each: with goals this rare, fewer are not enough to tell the effect from luck.
   it('good finishers score more of their chances than poor ones', () => {
     const away = side('away', tactics());
-    const good = attacking({ home: finishing(side('home', tactics()), 88), away }, 'finish', 'coarse', 24, [0]);
-    const poor = attacking({ home: finishing(side('home', tactics()), 38), away }, 'finish', 'coarse', 24, [0]);
+    const good = fullSpread(() => attacking({ home: finishing(side('home', tactics()), 88), away }, 'finish', 'coarse', 24, [0]));
+    const poor = fullSpread(() => attacking({ home: finishing(side('home', tactics()), 38), away }, 'finish', 'coarse', 24, [0]));
     // Real finishers beat their xG by a few tenths at most; over 24 matches the gap is about 0.3.
     expect(good.openGoals / good.openXg).toBeGreaterThan(poor.openGoals / poor.openXg + 0.2);
     expect(good.onTarget / good.shots).toBeGreaterThan(poor.onTarget / poor.shots);
@@ -549,11 +560,43 @@ describe('spatial attacking and shooting', () => {
 
   it('a good keeper saves more than a poor one', () => {
     const home = side('home', tactics());
-    const good = attacking({ home, away: keeper(side('away', tactics()), 88) }, 'keeper', 'coarse', 24, [0]);
-    const poor = attacking({ home, away: keeper(side('away', tactics()), 38) }, 'keeper', 'coarse', 24, [0]);
+    const good = fullSpread(() => attacking({ home, away: keeper(side('away', tactics()), 88) }, 'keeper', 'coarse', 24, [0]));
+    const poor = fullSpread(() => attacking({ home, away: keeper(side('away', tactics()), 38) }, 'keeper', 'coarse', 24, [0]));
     expect(good.goals / good.onTarget).toBeLessThan(poor.goals / poor.onTarget - 0.05);
     expect(good.goals).toBeLessThan(poor.goals);
   }, 60_000);
+});
+
+describe('spatial skill spread and home advantage', () => {
+  const SS = SPATIAL_TUNING.skillSpread;
+  const H = SPATIAL_TUNING.home;
+  const rated = (v: number): SpatialSetup => ({ home: side('home', tactics(), v), away: side('away', tactics(), v) });
+
+  it('pulls every rating part of the way towards the pivot, the same for both sides with no crowd', () => {
+    const m = createSpatial(rated(90), 'spread', 'coarse');
+    const want = SS.pivot + SS.keep * (90 - SS.pivot);
+    for (const i of [3, 14]) {
+      expect(m.baseAttr[i * ATTRS + A_FIN]).toBeCloseTo(want, 9);
+      expect(m.baseAttr[i * ATTRS + A_PAC]).toBeCloseTo(want, 9);
+    }
+    const low = createSpatial(rated(40), 'spread', 'coarse');
+    expect(low.baseAttr[3 * ATTRS + A_FIN]).toBeCloseTo(SS.pivot + SS.keep * (40 - SS.pivot), 9);
+  });
+
+  it("a home crowd lifts the home side's skills (not pace) and leans the referee its way", () => {
+    const full = createSpatial({ ...rated(70), crowd: 1 }, 'home', 'coarse');
+    const none = createSpatial(rated(70), 'home', 'coarse');
+    const base = SS.pivot + SS.keep * (70 - SS.pivot);
+    expect(full.baseAttr[3 * ATTRS + A_FIN]).toBeCloseTo(base + H.attrPoints, 9);
+    expect(full.baseAttr[3 * ATTRS + A_PAC]).toBeCloseTo(base, 9);
+    expect(full.baseAttr[14 * ATTRS + A_FIN]).toBeCloseTo(base, 9);
+    // An empty ground still gives the floor's share.
+    const empty = createSpatial({ ...rated(70), crowd: 0 }, 'home', 'coarse');
+    expect(empty.baseAttr[3 * ATTRS + A_FIN]).toBeCloseTo(base + H.attrPoints * H.attendanceFloor, 9);
+    // The same challenge by a home player is called less often with a full ground.
+    expect(foulChance(full, 3, 14, 0.1, false)).toBeCloseTo(foulChance(none, 3, 14, 0.1, false) * H.foulLean, 9);
+    expect(foulChance(full, 14, 3, 0.1, false)).toBeCloseTo(foulChance(none, 14, 3, 0.1, false), 9);
+  });
 });
 
 describe('spatial restarts', () => {

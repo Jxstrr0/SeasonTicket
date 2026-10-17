@@ -309,6 +309,8 @@ export interface SpatialMatch {
   setup: SpatialSetup;
   stepMs: number;
   stepS: number;
+  /** How much of the home advantage the crowd gives today (0 with no crowd, 1 at a full ground). */
+  crowd: number;
   /** Ball flight substep in seconds (the step split evenly). */
   subH: number;
   subN: number;
