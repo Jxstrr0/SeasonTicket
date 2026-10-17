@@ -7,7 +7,7 @@ import type { Crest, MatchMode, StandId, TierId } from '../../sim/career';
 import type { Position, StaffRole } from '../../sim/types';
 import { loadQuality, type QualitySetting } from '../../render/quality';
 
-export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode';
+export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay';
 
 export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'stadium' | 'inbox' | 'league';
 
@@ -73,6 +73,36 @@ export interface LiveView {
   subOut: string | null;
   pause: string | null;
   showAll: boolean;
+  /** The 2D pitch is showing; play then runs second by second instead of a minute at a time. */
+  pitch: boolean;
+  /** Match seconds per real second on the 2D pitch. */
+  pitchSpeed: number;
+}
+
+export const PITCH_SPEEDS: readonly { x: number; label: string }[] = [
+  { x: 2, label: '2x' },
+  { x: 4, label: '4x' },
+  { x: 8, label: '8x' },
+  { x: 16, label: '16x' },
+];
+
+/** Whether the owner watches on the 2D pitch: kept per device, like the quality setting. */
+const PITCH_KEY = 'seasonticket.livePitch';
+
+export function loadLivePitch(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(PITCH_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+export function storeLivePitch(on: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(PITCH_KEY, on ? 'on' : 'off');
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
 }
 
 export const LIVE_SPEEDS: readonly { ms: number; label: string }[] = [
@@ -109,6 +139,8 @@ export interface UiState {
   /** True once the 3D stadium failed on this device; the plan shows instead. */
   stadium3dFailed: boolean;
   reportOpen: boolean;
+  /** The match the 2D replay shows (screen 'replay'). */
+  replayId: string | null;
   flash: Flash | null;
   menuOpen: boolean;
   /** An action waiting for a second tap, such as "release:p123". */
@@ -158,12 +190,13 @@ export function initialUi(): UiState {
     stadiumView: 'model',
     stadium3dFailed: false,
     reportOpen: false,
+    replayId: null,
     flash: null,
     menuOpen: false,
     pendingConfirm: null,
     simming: false,
     weekRun: null,
-    live: { running: false, speed: 350, panel: 'none', subOut: null, pause: null, showAll: false },
+    live: { running: false, speed: 350, panel: 'none', subOut: null, pause: null, showAll: false, pitch: loadLivePitch(), pitchSpeed: 8 },
     saveCode: '',
   };
 }

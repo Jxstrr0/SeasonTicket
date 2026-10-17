@@ -222,11 +222,15 @@ export interface Owner {
   injected: number;
 }
 
-/** One change the owner made during the live match, after `step` minutes had been played. */
+/**
+ * One change the owner made during the live match, after `step` minutes and then `frame`
+ * engine steps of the next minute had been played (the 2D view plays frame by frame; the
+ * text feed a minute at a time, so its changes have no frame).
+ */
 export type LiveEntry =
-  | { step: number; type: 'action'; action: MatchAction }
-  | { step: number; type: 'plan'; side: Side; tactics: Tactics }
-  | { step: number; type: 'control'; side: Side; ai: boolean };
+  | { step: number; frame?: number; type: 'action'; action: MatchAction }
+  | { step: number; frame?: number; type: 'plan'; side: Side; tactics: Tactics }
+  | { step: number; frame?: number; type: 'control'; side: Side; ai: boolean };
 
 /**
  * The user's live match as the engine can replay it: the setup at kick-off (or, for a match
@@ -243,6 +247,8 @@ export interface LiveRecord {
   /** The base state came from the spatial engine (its minute is the one being played). */
   baseSpatial: boolean;
   steps: number;
+  /** Engine steps played into the minute after `steps` (the 2D view stops mid-minute). */
+  frames?: number;
   log: LiveEntry[];
 }
 

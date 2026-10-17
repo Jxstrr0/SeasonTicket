@@ -38,6 +38,7 @@ import {
   startUserMatch,
   toggleBench,
   upgradeAcademy,
+  liveOf,
   userTeam,
   type Career,
   type CrestIcon,
@@ -51,7 +52,8 @@ import { CLUBS } from '../../sim/data';
 import { seedNumber } from '../../sim/league';
 import type { MatchResult, Position, StaffRole, Tactics } from '../../sim/types';
 import { STAFF_ROLES } from '../../sim/types';
-import { coachInCharge, liveSubstitute, liveTactics, playToEnd, setCoachInCharge, stepLive } from '../../game/matchday';
+import { coachInCharge, liveSubstitute, liveTactics, playToEnd, setCoachInCharge, stepLive, stepLiveView } from '../../game/matchday';
+import { LiveHost } from './liveHost';
 import { SaveError, decodeSave, encodeSave, loadCareer, saveCareer } from '../../game/save';
 import { createMatchRunner, type MatchRunner } from '../../game/matchRunner';
 import { WeekPlayer } from '../../game/week';
@@ -61,20 +63,25 @@ import { renderCareerTitle } from '../views/career/title';
 import { MATCH_MODES, renderCrestPreview, renderNewCareer } from '../views/career/newCareer';
 import { careerWeekLabel, renderHub } from '../views/career/hub';
 import { renderLive } from '../views/career/live';
+import { renderReplayScreen } from '../views/career/replay';
+import { replayOf } from '../views/career/home';
 import { renderReview } from '../views/career/review';
 import { renderGameOver, renderSaveCode } from '../views/career/saves';
 import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
 import type { HotspotId, OfficePick } from '../../render/office/types';
 import { OfficeHost } from './officeHost';
 import { StadiumHost } from './stadiumHost';
+import { ReplayHost } from './replayHost';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, STADIUM_PICKS, initialUi, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeLivePitch, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
 const MARKET_VIEWS: readonly MarketView[] = ['scout', 'free', 'bids'];
 const LEAGUE_TABS: readonly LeagueTab[] = ['table', 'results', 'playoffs'];
 const LIVE_PANELS: readonly LivePanel[] = ['none', 'subs', 'tactics'];
+/** A long gap between screen frames (tab hidden, phone locked) never plays the match on. */
+const PITCH_MAX_FRAME_S = 0.1;
 const POSITIONS: readonly Position[] = ['GK', 'CB', 'FB', 'DM', 'CM', 'AM', 'W', 'ST'];
 const DIAL_KEYS = ['mentality', 'pressing', 'defensiveLine', 'width', 'tempo', 'directness', 'timeWasting'] as const;
 const TAKER_KEYS = ['penalties', 'freeKicks', 'corners'] as const;
@@ -153,6 +160,8 @@ export class CareerApp {
   /** Bumped to stop a running sim or live loop. */
   private runToken = 0;
   private liveTimer: number | null = null;
+  private liveRaf = 0;
+  private readonly pitch = new LiveHost();
   /** Set after one failed save so the warning shows once. */
   private saveWarned = false;
   /** The 3D office sits behind the menus; the menus render into uiLayer. */
@@ -160,6 +169,7 @@ export class CareerApp {
   private readonly officeLayer: HTMLElement;
   private readonly office: OfficeHost;
   private readonly stadium: StadiumHost;
+  private readonly replay = new ReplayHost();
   /** Set when a pick should also turn the 3D stadium's camera to face it. */
   private stadiumFocus = false;
   private runner: MatchRunner | null = null;
@@ -239,7 +249,30 @@ export class CareerApp {
     this.measureTopBar();
     this.syncOffice();
     this.syncStadium();
+    this.syncReplay();
+    this.syncPitch();
     this.scheduleWarm();
+  }
+
+  /** Moves the live match's 2D pitch into the live screen (if it is showing). */
+  private syncPitch(): void {
+    const { ui, career } = this;
+    let m = null;
+    if (career?.liveMatch && ui.screen === 'live' && ui.live.pitch) {
+      try {
+        m = liveOf(career)?.m ?? null;
+      } catch {
+        m = null;
+      }
+    }
+    this.pitch.sync(this.uiLayer, m);
+  }
+
+  /** Moves the 2D replay into its screen (if it is showing), or stops it. */
+  private syncReplay(): void {
+    const { ui, career } = this;
+    const replay = career && ui.screen === 'replay' && ui.replayId ? replayOf(career, ui.replayId) : null;
+    this.replay.sync(this.uiLayer, replay);
   }
 
   /** Once the screen is idle, start the coming week's matches in the workers. */
@@ -338,6 +371,7 @@ export class CareerApp {
     }
     if (!career) return renderCareerTitle(ui);
     if (ui.screen === 'live') return renderLive(career, ui);
+    if (ui.screen === 'replay') return renderReplayScreen(career, ui);
     if (ui.screen === 'review') return renderReview(career);
     return renderHub(career, ui);
   }
@@ -379,6 +413,8 @@ export class CareerApp {
       window.clearTimeout(this.liveTimer);
       this.liveTimer = null;
     }
+    cancelAnimationFrame(this.liveRaf);
+    this.liveRaf = 0;
   }
 
   // -------------------------------------------------------------------------
@@ -657,6 +693,13 @@ export class CareerApp {
         ui.showAllEvents = false;
         this.render();
         return window.scrollTo(0, 0);
+      case 'watch-2d':
+        if (!d.id || !replayOf(career, d.id)) return;
+        ui.replayId = d.id;
+        return this.show('replay');
+      case 'close-replay':
+        ui.replayId = null;
+        return this.show('hub');
       case 'close-match':
         if (ui.tab === 'home') ui.reportOpen = false;
         else ui.openMatchId = null;
@@ -677,6 +720,21 @@ export class CareerApp {
         const ms = Number(d.ms);
         if (LIVE_SPEEDS.some((s) => s.ms === ms)) ui.live.speed = ms;
         return this.render();
+      }
+      case 'live-pitch-speed': {
+        const x = Number(d.x);
+        if (PITCH_SPEEDS.some((s) => s.x === x)) ui.live.pitchSpeed = x;
+        return this.render();
+      }
+      case 'live-pitch': {
+        const running = ui.live.running;
+        this.livePause();
+        ui.live.pitch = !ui.live.pitch;
+        storeLivePitch(ui.live.pitch);
+        this.save();
+        this.render();
+        if (running) this.livePlay();
+        return;
       }
       case 'live-coach':
         setCoachInCharge(career, !coachInCharge(career));
@@ -1159,6 +1217,7 @@ export class CareerApp {
     live.panel = 'none';
     live.subOut = null;
     this.render();
+    if (live.pitch) return this.livePitchLoop(career, token);
     const tick = (): void => {
       this.liveTimer = null;
       if (token !== this.runToken || this.career !== career || this.ui.screen !== 'live') return;
@@ -1182,6 +1241,54 @@ export class CareerApp {
       this.liveTimer = window.setTimeout(tick, live.speed);
     };
     this.liveTimer = window.setTimeout(tick, live.speed);
+  }
+
+  /**
+   * Play on the 2D pitch: each screen frame plays as many engine steps as the speed asks
+   * (a long gap, like a locked phone, never jumps the match on), and redraws. The rest of
+   * the screen is rebuilt once a minute, when the minute's events come in.
+   */
+  private livePitchLoop(career: Career, token: number): void {
+    const live = this.ui.live;
+    let last = 0;
+    const frame = (now: number): void => {
+      this.liveRaf = 0;
+      if (token !== this.runToken || this.career !== career || this.ui.screen !== 'live') return;
+      const engine = liveOf(career);
+      if (!engine) return;
+      const dt = last ? Math.min((now - last) / 1000, PITCH_MAX_FRAME_S) : 0;
+      last = now;
+      const target = this.pitch.at + dt * 1000 * live.pitchSpeed;
+      let minute = false;
+      let pause: string | null = null;
+      try {
+        while (engine.m.clockMs < target && !engine.state.finished) {
+          this.pitch.beforeStep();
+          const step = stepLiveView(career);
+          if (step) {
+            minute = true;
+            pause = step.pause;
+            break;
+          }
+        }
+      } catch (err) {
+        live.running = false;
+        this.ui.flash = { kind: 'error', text: `The match stopped: ${errorText(err)}` };
+        this.save();
+        return this.render();
+      }
+      this.pitch.show(target, now);
+      const finished = !career.liveMatch || career.liveMatch.finished;
+      if (pause || finished) {
+        live.running = false;
+        live.pause = finished ? null : pause;
+        this.save();
+        return this.render();
+      }
+      if (minute) this.render();
+      this.liveRaf = requestAnimationFrame(frame);
+    };
+    this.liveRaf = requestAnimationFrame(frame);
   }
 
   private livePause(): void {

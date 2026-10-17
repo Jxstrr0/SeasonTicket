@@ -1,6 +1,7 @@
 /**
- * The live match: score and clock, play/pause and speed, the pause banner
- * for big moments, and the subs and tactics panels. Everything here reads
+ * The live match: score and clock, the 2D pitch (src/ui/career/liveHost.ts
+ * fills its slot), play/pause and speed, the pause banner for big moments,
+ * and the subs and tactics panels. Everything here reads
  * career.liveMatch; the owner's changes go through src/game/matchday.ts.
  */
 import type { Career } from '../../../sim/career';
@@ -10,7 +11,7 @@ import type { Player } from '../../../sim/types';
 import { coachInCharge, injuredOnPitch, userSide } from '../../../game/matchday';
 import { clubLabel, kit, team, weatherLabel } from '../../format';
 import { cls, each, esc } from '../../html';
-import { LIVE_SPEEDS, type UiState } from '../../career/state';
+import { LIVE_SPEEDS, PITCH_SPEEDS, type UiState } from '../../career/state';
 import { renderEvent, renderStat, statRows, visibleEvents } from '../matchFeed';
 import { renderFormationPicker, renderTacticsPanel } from './lineup';
 import { confirmButton } from './parts';
@@ -75,12 +76,14 @@ function renderControls(career: Career, ui: UiState, state: MatchState): string 
   const pause = live.pause
     ? `<div class="pause-banner" role="status"><strong>${esc(live.pause)}</strong><span class="muted small">Make a change or play on.</span></div>`
     : '';
+  const speeds = live.pitch
+    ? each(PITCH_SPEEDS, (s) => `<button type="button" class="${cls('seg', s.x === live.pitchSpeed && 'on')}" data-action="live-pitch-speed" data-x="${s.x}" aria-pressed="${s.x === live.pitchSpeed}">${esc(s.label)}</button>`)
+    : each(LIVE_SPEEDS, (s) => `<button type="button" class="${cls('seg', s.ms === live.speed && 'on')}" data-action="live-speed" data-ms="${s.ms}" aria-pressed="${s.ms === live.speed}">${esc(s.label)}</button>`);
   return `${pause}
   <div class="live-controls">
     <button type="button" class="play-btn" data-action="${live.running ? 'live-pause' : 'live-play'}">${live.running ? 'Pause' : 'Play'}</button>
-    <div class="segmented" role="group" aria-label="Speed">
-      ${each(LIVE_SPEEDS, (s) => `<button type="button" class="${cls('seg', s.ms === live.speed && 'on')}" data-action="live-speed" data-ms="${s.ms}" aria-pressed="${s.ms === live.speed}">${esc(s.label)}</button>`)}
-    </div>
+    <div class="segmented" role="group" aria-label="Speed">${speeds}</div>
+    <button type="button" class="${cls('btn-secondary', live.pitch && 'on')}" data-action="live-pitch" aria-pressed="${live.pitch}">2D pitch</button>
     ${coachToggle}
     ${confirmButton(ui, 'live-skip', 'end', 'Skip to the end')}
     <button type="button" class="btn-secondary" data-action="live-leave">Office</button>
@@ -122,13 +125,13 @@ function renderSubs(career: Career, ui: UiState, S: SideState): string {
   </section>`;
 }
 
-function renderLiveTactics(career: Career, state: MatchState, S: SideState): string {
+function renderLiveTactics(career: Career, ui: UiState, state: MatchState, S: SideState): string {
   const opp = userSide(career, state) === 'home' ? state.away : state.home;
   return `<section class="card">
     <div class="card-title">Formation</div>
     ${renderFormationPicker(S.tactics.formationId, false)}
     ${renderTacticsPanel(S.tactics, { disabled: false, takers: players(career, S.onPitch), opponents: players(career, opp.onPitch) })}
-    <p class="muted small">Changes take effect from the next minute.</p>
+    <p class="muted small">${ui.live.pitch ? 'Changes take effect as soon as play restarts: watch the shape move on the pitch.' : 'Changes take effect from the next minute.'}</p>
   </section>`;
 }
 
@@ -155,17 +158,28 @@ export function renderLive(career: Career, ui: UiState): string {
   }
   const S = userSide(career, state) === 'home' ? state.home : state.away;
   const panel = state.finished ? 'none' : ui.live.panel;
-  return `<main class="shell live">
-    ${renderScoreboard(career, state)}
-    ${renderControls(career, ui, state)}
+  const rest = `${renderControls(career, ui, state)}
     ${state.finished ? '' : renderPanelTabs(ui, state, S)}
     <div class="live-grid">
       <div>
         ${panel === 'subs' ? renderSubs(career, ui, S) : ''}
-        ${panel === 'tactics' ? renderLiveTactics(career, state, S) : ''}
+        ${panel === 'tactics' ? renderLiveTactics(career, ui, state, S) : ''}
         ${renderStats(state)}
       </div>
       <div>${renderEvents(career, ui, state)}</div>
+    </div>`;
+  if (!ui.live.pitch) {
+    return `<main class="shell live">
+    ${renderScoreboard(career, state)}
+    ${rest}
+  </main>`;
+  }
+  // Landscape: the pitch fills the left, everything else scrolls on the right.
+  return `<main class="shell live has-pitch">
+    <div class="lp-col">
+      ${renderScoreboard(career, state)}
+      <div data-slot="live-2d"></div>
     </div>
+    <div class="lp-rest">${rest}</div>
   </main>`;
 }

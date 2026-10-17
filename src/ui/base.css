@@ -958,3 +958,55 @@ body.office-mode .topbar { backdrop-filter: none; }
 .week-run-bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 .week-run-bar > span { display: block; height: 100%; background: var(--accent, #3fb68b); transition: width 0.2s ease; }
 .week-run-card button { min-height: 44px; justify-self: center; }
+
+/* 2D match replay (src/ui/career/replayHost.ts) */
+.kit-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid transparent; flex: none; vertical-align: -2px; }
+.replay-screen { max-width: none; padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+.replay { display: grid; gap: 8px 12px; grid-template-columns: minmax(0, 1fr); }
+.rp-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rp-score { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; font-variant-numeric: tabular-nums; }
+.rp-score strong { font-size: 1.3rem; white-space: nowrap; }
+.rp-score > span:not(.kit-dot) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-clock { min-width: 4.5em; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.rp-pitch { position: relative; aspect-ratio: 111 / 74; min-width: 0; min-height: 0; background: #1f5a2b; border-radius: 10px; overflow: hidden; touch-action: manipulation; }
+.rp-pitch canvas { position: absolute; display: block; }
+.rp-status { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 86%; padding: 10px 16px; border-radius: 10px; background: rgba(11, 16, 32, 0.85); text-align: center; }
+.rp-banner { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); padding: 8px 16px; border-radius: 10px; background: rgba(11, 16, 32, 0.88); border: 2px solid var(--c, #fff); text-align: center; pointer-events: none; }
+.rp-banner strong { color: var(--accent); letter-spacing: 0.04em; }
+.rp-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rp-side .live-controls .segmented { flex: 1 1 100%; }
+.rp-side .live-controls .seg { flex: 1 1 0; min-width: 0; padding: 8px 4px; }
+.rp-jumps .btn-secondary { flex: 1 1 auto; }
+.rp-seek-label { display: flex; flex-direction: column; gap: 2px; }
+.rp-seek { width: 100%; height: var(--tap); margin: 0; accent-color: var(--accent); }
+.rp-moment-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.rp-moment-list .pick { display: flex; gap: 8px; text-align: left; min-height: var(--tap); }
+/* Landscape phone: the pitch fills the height on the left, the controls scroll on the right. */
+@media (orientation: landscape) and (min-width: 560px) {
+  .replay { grid-template-columns: minmax(0, 1fr) minmax(230px, 32%); grid-template-rows: auto minmax(0, 1fr); height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .rp-top { grid-column: 1 / -1; }
+  .rp-pitch { aspect-ratio: auto; height: 100%; }
+  .rp-side { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+}
+
+/* The live match on the 2D pitch (src/ui/career/liveHost.ts) */
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.live.has-pitch { max-width: none; }
+.lp-col > * + *, .lp-rest > * + * { margin-top: 8px; }
+.live-pitch { position: relative; aspect-ratio: 111 / 74; min-width: 0; background: #1f5a2b; border-radius: 10px; overflow: hidden; touch-action: manipulation; }
+.live-pitch canvas { position: absolute; display: block; }
+.lp-clock { position: absolute; left: 8px; top: 6px; padding: 2px 8px; border-radius: 6px; background: rgba(11, 16, 32, 0.7); font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
+.lp-clock:empty { display: none; }
+.has-pitch .scoreboard { padding: 6px 12px; }
+.has-pitch .sb-score { font-size: 1.5rem; }
+/* Landscape phone: the score and pitch fill the height on the left, the rest scrolls on the right. */
+@media (orientation: landscape) and (min-width: 560px) {
+  .live.has-pitch { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 36%); gap: 12px; align-items: start; padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .live.has-pitch > * + * { margin-top: 0; }
+  .lp-col { position: sticky; top: max(8px, env(safe-area-inset-top)); display: flex; flex-direction: column; height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .lp-col .live-pitch { flex: 1 1 auto; min-height: 0; aspect-ratio: auto; }
+  .lp-col .scoreboard .sb-meta { display: none; }
+  .has-pitch .live-grid { grid-template-columns: 1fr; }
+  .has-pitch .live-controls .segmented { flex: 1 1 100%; }
+  .has-pitch .live-controls .seg { flex: 1 1 0; min-width: 0; padding: 8px 4px; }
+}

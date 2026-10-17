@@ -11,7 +11,7 @@ import {
   userTeam,
   type Career,
 } from '../../../sim/career';
-import type { ScheduledMatch } from '../../../sim/types';
+import type { MatchReplay, ScheduledMatch } from '../../../sim/types';
 import { clubLabel, kit, stageLabel, team } from '../../format';
 import { each, esc } from '../../html';
 import { findMatch } from '../../model';
@@ -91,6 +91,11 @@ function renderAlerts(career: Career): string {
   </section>`;
 }
 
+/** The stored replay of a match, if it has one (the club's this season, others' latest round). */
+export function replayOf(career: Career, matchId: string): MatchReplay | null {
+  return career.replays.club[matchId] ?? career.replays.round[matchId] ?? null;
+}
+
 export function lastMatchFixture(career: Career): ScheduledMatch | null {
   const r = career.lastUserMatch;
   if (!r) return null;
@@ -103,7 +108,8 @@ function renderLastMatch(career: Career, ui: UiState): string {
   const match = lastMatchFixture(career);
   if (!match || !match.result) return '';
   const league = career.season.league;
-  if (ui.reportOpen) return renderMatchFeed(league, match, ui.showAllEvents);
+  const watch = !!replayOf(career, match.id);
+  if (ui.reportOpen) return renderMatchFeed(league, match, ui.showAllEvents, watch);
   const r = match.result;
   const home = team(league, r.homeId);
   const away = team(league, r.awayId);
@@ -118,7 +124,10 @@ function renderLastMatch(career: Career, ui: UiState): string {
     <div class="card-title">Last match · ${verdict}</div>
     <p class="last-score">${clubLabel(home)} <strong>${r.homeScore}-${r.awayScore}</strong> ${clubLabel(away)}</p>
     ${notes.length ? `<p class="muted small">${esc(notes.join(' · '))}</p>` : ''}
-    <button type="button" class="btn-secondary" data-action="open-report">Match report</button>
+    <div class="button-row">
+      <button type="button" class="btn-secondary" data-action="open-report">Match report</button>
+      ${watch ? `<button type="button" class="btn-secondary" data-action="watch-2d" data-id="${esc(match.id)}">Watch in 2D</button>` : ''}
+    </div>
   </section>`;
 }
 
