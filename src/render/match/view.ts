@@ -35,13 +35,13 @@ import { Assets } from '../assets';
 import { QUALITY_TIERS, type QualityTier } from '../quality';
 import { buildStadiumModel } from '../stadium/model';
 import { buildSurroundings, skyTexture } from '../stadium/scenery';
+import { MatchCamera, type CameraKey } from './cameras';
 import { Squads, loadPlayerTemplates } from './players';
 import type { MatchFrame3D, MatchScene3D } from './types';
 
 export type { MatchFrame3D, MatchScene3D, KitColours } from './types';
+export { CAMERA_PRESETS, type CameraKey } from './cameras';
 
-const CAM = tuning.camera;
-const DEG = Math.PI / 180;
 const HALF_X = 52.5;
 const HALF_Z = 34;
 /** A jump in match time bigger than this (a seek) puts everyone straight in place. */
@@ -68,8 +68,10 @@ export interface MatchViewStats {
 }
 
 export interface MatchViewHandle {
-  /** The match as it should look now. */
-  frame(f: MatchFrame3D): void;
+  /** The match as it should look now. `cut` puts everyone straight in place (a replay starting). */
+  frame(f: MatchFrame3D, cut?: boolean): void;
+  /** Cuts to camera `key`; `end` (-1 or 1) holds the behind-the-goal camera at that end. */
+  setCamera(key: CameraKey, end?: number): void;
   setNight(night: boolean): void;
   pause(): void;
   resume(): void;
@@ -147,6 +149,7 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   scene.background = daySky;
   scene.fog = new Fog('#d5e3ef', 650, 1500);
   const camera = new PerspectiveCamera(30, 1, 1, 3000);
+  const cam = new MatchCamera(camera, opts.scene.ground);
 
   const sky = new HemisphereLight('#dce8ff', '#5b5340', 1.5);
   const sun = new DirectionalLight('#fff1dc', 2.4);
@@ -222,16 +225,6 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       if (!disposed) opts.onError?.(err);
     });
 
-  // The camera: `aim` is the point it looks at, eased towards the ball.
-  const aim = new Vector3(0, 0, 0);
-  const aimGoal = new Vector3(0, 0, 0);
-  const look = new Vector3();
-  const placeCamera = (): void => {
-    camera.position.set(aim.x * CAM.follow, CAM.height, CAM.z);
-    look.set(aim.x, 0, aim.z * CAM.lookZ);
-    camera.lookAt(look);
-  };
-
   let latest: MatchFrame3D | null = null;
   let fresh = false;
   let lastMs = -1;
@@ -294,19 +287,14 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
     blobs.setMatrixAt(22, blobM.compose(blobP.set(bx, 0.045, bz), blobQ, blobS.set(bs, 1, bs)));
     blobs.instanceMatrix.needsUpdate = true;
 
-    aimGoal.set(MathUtils.clamp(bx, -CAM.maxX, CAM.maxX), 0, bz);
-    if (snap) aim.copy(aimGoal);
+    cam.follow(bx, bz, snap);
   };
 
   const resize = (): void => {
     const w = Math.max(1, container.clientWidth);
     const h = Math.max(1, container.clientHeight);
     renderer.setSize(w, h);
-    camera.aspect = w / h;
-    // Keep the same width of pitch in view on any screen shape.
-    const vfov = 2 * Math.atan(Math.tan((CAM.hfov * DEG) / 2) / camera.aspect);
-    camera.fov = MathUtils.clamp(vfov / DEG, CAM.minVfov, CAM.maxVfov);
-    camera.updateProjectionMatrix();
+    cam.resize(w / h);
     dirty = true;
   };
   const ro = new ResizeObserver(resize);
@@ -359,16 +347,11 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       fresh = false;
       dirty = true;
     }
-    let easing = false;
-    if (aim.distanceToSquared(aimGoal) > 1e-4) {
-      aim.lerp(aimGoal, 1 - Math.exp(-dt * CAM.damping));
-      easing = true;
-    }
+    const easing = cam.tick(dt);
     const boards = model.tick(dt) && sinceBoards >= 1 / 30;
     if (!dirty && !easing && !boards) return;
     dirty = false;
     sinceBoards = 0;
-    placeCamera();
     renderer.render(scene, camera);
     frames += 1;
     if (t - fpsFrom >= 1000) {
@@ -380,15 +363,20 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   raf = requestAnimationFrame(loop);
 
   return {
-    frame(f) {
-      if (lastMs >= 0) {
+    frame(f, cut = false) {
+      if (cut) snapNext = true;
+      else if (lastMs >= 0) {
         const gap = f.matchMs - lastMs;
         if (gap < 0 || gap > SNAP_MS) snapNext = true;
         else animDt = Math.min(MAX_ANIM_S, animDt + gap / 1000);
       } else snapNext = true;
-      if (f.matchMs !== lastMs || !latest) fresh = true;
+      if (f.matchMs !== lastMs || !latest || cut) fresh = true;
       lastMs = f.matchMs;
       latest = f;
+    },
+    setCamera(key, end = 0) {
+      cam.set(key, end);
+      dirty = true;
     },
     setNight(value) {
       if (value === night) return;

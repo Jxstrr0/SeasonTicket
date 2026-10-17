@@ -12,6 +12,13 @@
     "lookZ": 0.65,
     "damping": 2.2
   },
+  "cameras": {
+    "_about": "Stage 5.3: the other cameras. Each keeps hfov degrees of view across the screen (the vertical view clamped to minVfov-maxVfov), with near the closest it draws and damping how quickly it catches the ball. box: the owner's seat in the main stand's box row (eye above the box floor, behindGlass back from the glass), turning to follow the ball (turn and lookZ are shares of the ball's x and z). goal: high behind the goal, back from the goal line, height up; it swaps ends once the ball is swapAt into the other half, slides followZ of the ball's z and always looks at least minAhead in front of its own goal line. overhead: high over the pitch for watching the shape, following follow of the ball's x. side: a low camera on the near touchline that only the replays use; it zooms to keep about span metres of the play across the screen (never narrower than minHfov degrees, never wider than hfov), so play on the far side is not tiny, and slides back along the touchline towards halfway to stay at least minDist from play near it.",
+    "box": { "hfov": 62, "minVfov": 26, "maxVfov": 70, "near": 0.3, "damping": 1.6, "eye": 1.6, "behindGlass": 0.15, "turn": 0.9, "lookZ": 0.4 },
+    "goal": { "hfov": 56, "minVfov": 26, "maxVfov": 66, "near": 0.5, "damping": 2.6, "back": 6, "height": 9, "swapAt": 12, "followZ": 0.3, "minAhead": 4 },
+    "overhead": { "hfov": 78, "minVfov": 36, "maxVfov": 84, "near": 1, "damping": 1.4, "height": 70, "z": 34, "lookZ": 2, "follow": 0.4 },
+    "side": { "hfov": 34, "minVfov": 10, "maxVfov": 48, "near": 0.3, "damping": 3.5, "span": 26, "minHfov": 16, "minDist": 20, "height": 3.5, "z": 36.8, "follow": 0.92, "maxX": 50, "lookY": 0.7 }
+  },
   "players": {
     "_about": "Gaits blend by ground speed. clips are each gait's own speed in the animation; the legs are sped up or slowed to match the ground, within timeScale. Below standAt a player stands; he faces his run when faster than faceRunAt, otherwise the ball. turnRate is how quickly he turns (per second).",
     "standAt": 0.35,
@@ -94,5 +101,25 @@
     "celebrateWithin": 35,
     "throwLift": 1.9,
     "throwLiftMs": 450
+  },
+  "replays": {
+    "_about": "Stage 5.3: automatic replays in 3D. keepS is how much of the match the tape keeps (seconds). A goal is replayed goalAfter seconds after it goes in (as shown), a big chance chanceAfter seconds after the shot: a shot that does not go in with an xG of bigChanceXg or more, or hits the woodwork. Each take plays from fromS to toS seconds around the moment at rate times real speed, on a camera (side or goal, at the end the shot went to). The live match waits while a replay plays. If the screen stops being drawn (the match is paused), a waiting replay starts after idleMs.",
+    "keepS": 20,
+    "goalAfter": 3.2,
+    "chanceAfter": 3,
+    "bigChanceXg": 0.25,
+    "idleMs": 400,
+    "goal": [
+      { "camera": "side", "fromS": -6, "toS": 1, "rate": 0.55 },
+      { "camera": "goal", "fromS": -2.5, "toS": 1, "rate": 0.35 }
+    ],
+    "chance": [
+      { "camera": "goal", "fromS": -4.5, "toS": 1.2, "rate": 0.5 }
+    ],
+    "_highlights": "Highlights mode: the 2D pitch plays, and each big moment is played in 3D from the tape, as a TV highlights show does: from leadS seconds before it to afterS after, at real speed, on the owner's camera. A moment is a goal, or a shot that is saved or hits the woodwork, or any shot with an xG of shotXg or more (as above, after chanceAfter seconds). A goal then gets its last goalTakes slow-motion takes from the goal list, and a big chance its chance takes.",
+    "leadS": 7,
+    "afterS": 1.5,
+    "shotXg": 0.13,
+    "goalTakes": 1
   }
 }

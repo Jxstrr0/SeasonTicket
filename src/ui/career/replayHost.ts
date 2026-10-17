@@ -76,6 +76,7 @@ export class ReplayHost {
   private readonly list: HTMLElement;
   private readonly wrap: HTMLElement;
   private readonly toggle3d: HTMLButtonElement;
+  private readonly toggleHl: HTMLButtonElement;
 
   constructor(private readonly three: Match3D) {
     this.el = document.createElement('div');
@@ -86,6 +87,7 @@ export class ReplayHost {
         <div class="rp-score" aria-live="polite"></div>
         <span class="rp-clock"></span>
         <button type="button" class="btn-secondary rp-3d" data-action="match-3d" hidden>3D</button>
+        <button type="button" class="btn-secondary rp-hl" data-action="match-highlights" aria-label="Highlights: 3D for the big moments only" hidden>Highlights</button>
       </div>
       <div class="rp-pitch"><canvas aria-label="Top-down replay of the match"></canvas>
         <div class="rp-status" hidden></div>
@@ -109,6 +111,7 @@ export class ReplayHost {
     this.list = q('.rp-moments');
     this.wrap = q('.rp-pitch');
     this.toggle3d = q('.rp-3d');
+    this.toggleHl = q('.rp-hl');
     this.el.addEventListener('click', (e) => this.onClick(e));
     this.seek.addEventListener('change', () => this.seekTo(Number(this.seek.value)));
     this.seek.addEventListener('input', () => { this.clock.textContent = this.timeAt(Number(this.seek.value)); });
@@ -136,6 +139,9 @@ export class ReplayHost {
     this.toggle3d.hidden = !offered;
     this.toggle3d.textContent = choice?.want ? '2D' : '3D';
     this.toggle3d.setAttribute('aria-label', choice?.want ? 'Show the 2D pitch' : 'Show the match in 3D');
+    this.toggleHl.hidden = !offered || !choice?.want;
+    this.toggleHl.classList.toggle('on', !!choice?.highlights);
+    this.toggleHl.setAttribute('aria-pressed', String(!!choice?.highlights));
     if (offered && choice?.want && this.m) this.three.attach(this.wrap, this.canvas, key, this.m, choice);
     else this.three.detach(this.wrap);
     this.view?.fit(this.wrap.clientWidth, this.wrap.clientHeight);
@@ -223,6 +229,7 @@ export class ReplayHost {
     if (this.phase !== 'ready' || !Number.isFinite(ms)) return;
     const to = Math.max(0, Math.min(this.endMs, ms));
     const m = this.m as SpatialMatch;
+    this.three.cancel();
     if (to < m.clockMs) {
       this.m = this.fresh();
       this.goalsSeen = 0;
@@ -241,15 +248,16 @@ export class ReplayHost {
     if (this.phase === 'checking') this.check(now + BUSY_MS);
     else if (m && this.phase === 'ready') {
       if (this.target !== null) this.seekFrame(now);
-      else if (this.playing && !spatialFinished(m)) this.advance(this.viewMs + dt * 1000 * this.speed);
+      // A goal replay in 3D holds the match where it is.
+      else if (this.playing && !spatialFinished(m) && !this.three.holding) this.advance(this.viewMs + dt * 1000 * this.speed);
       this.checkGoals(now);
     }
     if (this.bannerUntil && now >= this.bannerUntil) {
       this.bannerUntil = 0;
       this.banner.hidden = true;
     }
-    if (this.m && this.three.ready && this.target === null) this.three.show(this.m, this.viewMs);
-    else if (this.m && this.view) this.view.draw(this.m, this.viewMs);
+    const in3d = !!this.m && this.target === null && this.three.show(this.m, this.viewMs);
+    if (!in3d && this.m && this.view) this.view.draw(this.m, this.viewMs);
     if (now - this.lastReadout >= READOUT_MS) {
       this.lastReadout = now;
       this.renderScore();
