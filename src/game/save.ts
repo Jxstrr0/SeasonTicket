@@ -45,6 +45,11 @@ const MIGRATIONS: Record<number, Migration> = {
     save.liveRecord = null;
     return save;
   },
+  /** Version 4 keeps replays for the 2D viewer. Matches played before it have none. */
+  3: (save) => {
+    save.replays = { club: {}, round: {} };
+    return save;
+  },
 };
 
 export class SaveError extends Error {}

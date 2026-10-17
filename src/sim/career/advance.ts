@@ -114,11 +114,15 @@ export function settleCareerWeek(career: Career, week: CareerWeek, played: reado
   const all = prep.setups.map((setup) => byId.get(setup.matchId) ?? finishLive(career, prep.ctx));
   settleWeek(career.season, prep, all);
   const results: MatchResult[] = [];
+  career.replays.round = {};
   for (const match of prep.fixtures) {
     const result = match.result;
     if (!result) continue;
     settleMatch(career, match, result);
-    if (match.homeId === career.userTeamId || match.awayId === career.userTeamId) {
+    const mine = match.homeId === career.userTeamId || match.awayId === career.userTeamId;
+    if (result.replay) (mine ? career.replays.club : career.replays.round)[result.matchId] = result.replay;
+    delete result.replay;
+    if (mine) {
       tallyUserPlayers(career, result);
       career.lastUserMatch = structuredClone(result);
     }

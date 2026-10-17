@@ -2,6 +2,7 @@
  * Shared sim types for Season Ticket (soccer).
  * This file is the contract between modules. No DOM or three.js here.
  */
+import type { SpatialRecord } from './spatial/types';
 
 // ---------------------------------------------------------------------------
 // People
@@ -423,6 +424,20 @@ export interface MatchResult {
   /** Head count on the day. Set when a career settles the match; missing from older saves and headless seasons. */
   crowd?: number;
   weather: Weather;
+  /** How to replay the match in the 2D viewer; taken off once the week is settled (career.replays keeps it). */
+  replay?: MatchReplay;
+}
+
+/**
+ * A finished match as a recipe (docs/DESIGN.md 17.9): the engine's record (seed, setup and
+ * every change, the AI's included) plus what it must be replayed under. `tuning` is the
+ * tuning fingerprint and `check` the engine's fingerprint at the final whistle, so a replay
+ * that comes out differently can tell.
+ */
+export interface MatchReplay {
+  record: SpatialRecord;
+  tuning: number;
+  check: string;
 }
 
 /** Actions a manager (human or AI) can take during a live match. */

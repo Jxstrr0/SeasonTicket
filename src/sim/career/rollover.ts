@@ -344,6 +344,7 @@ function startNewSeason(career: Career): void {
   career.season = createSeason(league, undefined, { homegrownRule: career.homegrownRule });
   career.playerSeason = {};
   career.lastUserMatch = null;
+  career.replays = { club: {}, round: {} };
   career.liveMatch = null;
   career.liveRecord = null;
   career.incomingBids = [];

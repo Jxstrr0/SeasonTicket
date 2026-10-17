@@ -11,13 +11,12 @@
  * The running engine is cached against the MatchState it keeps in step, so the screens
  * read career.liveMatch as before.
  */
-import { COACH_TUNING, MATCH_TUNING, SPATIAL_TUNING } from '../data';
+import { SPATIAL_TUNING } from '../data';
 import { finalizeMatch } from '../match/engine';
 import { sideState, type MatchContext, type MatchState } from '../match/state';
-import { hashString } from '../rng';
 import { matchContext } from '../season';
 import {
-  applySpatialAction, createSpatialLive, finalizeSpatial, resumeSpatialLive, stepSpatialMinute, type SpatialLive,
+  applySpatialAction, createSpatialLive, finalizeSpatial, resumeSpatialLive, stepSpatialMinute, tuningKey, type SpatialLive,
 } from '../spatial/bridge';
 import type { MatchAction, MatchEvent, MatchResult, MatchSetup, Side, Tactics } from '../types';
 import type { Career, LiveEntry, LiveRecord } from './types';
@@ -26,14 +25,6 @@ import type { Career, LiveEntry, LiveRecord } from './types';
 const MAX_LIVE_STEPS = 400;
 
 const engines = new WeakMap<MatchState, SpatialLive>();
-let tuningCache: number | null = null;
-
-/** A fingerprint of the tuning a match plays to: a record made under other numbers will not replay. */
-export function tuningKey(): number {
-  tuningCache ??= hashString(JSON.stringify([SPATIAL_TUNING, MATCH_TUNING, COACH_TUNING]));
-  return tuningCache;
-}
-
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T;
 }

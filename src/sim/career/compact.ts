@@ -18,6 +18,8 @@ function roundTeam(s: TeamMatchStats): void {
 }
 
 export function compactResult(result: MatchResult): void {
+  // Replays are kept in career.replays, and only for some matches.
+  delete result.replay;
   result.events = result.events
     .filter((e) => KEEP.has(e.type))
     .map((e) => ({ ...e, text: '', xg: e.xg === null ? null : r2(e.xg) }));
