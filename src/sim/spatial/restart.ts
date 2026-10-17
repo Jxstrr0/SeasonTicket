@@ -13,7 +13,7 @@
 import { SPATIAL_TUNING } from '../data';
 import { resetAttack } from './attack';
 import { detCos, detSin } from './det';
-import { control, startControl } from './onball';
+import { control, deflectBehind, startControl } from './onball';
 import { advantageAtDead, book, clearOffside, cornerHolding, pickTaker, pushEvent } from './rules';
 import { computeSpots, fillRing } from './shape';
 import { CROSS_GOAL, CROSS_NONE, CROSS_WOODWORK, classifyCross } from './shot';
@@ -403,7 +403,7 @@ function looseOff(m: SpatialMatch, j: number): void {
   ob.lastKick = j;
   ob.lastTouch = j;
   ob.touchAt = now;
-  ob.touchBlock[j] = now + C.retouchMs;
+  ob.touchBlock[j] = Math.max(ob.touchBlock[j], now + C.retouchMs);
   ob.chaseAt = now;
   m.ball.receiver = -1;
   wakeAll(m);
@@ -414,7 +414,9 @@ function block(m: SpatialMatch, j: number): void {
   const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
   const ux = sp > 1e-9 ? b.vx / sp : 1, uy = sp > 1e-9 ? b.vy / sp : 0;
   const v = sp * m.rng.float(SH.blockSpeed[0], SH.blockSpeed[1]);
-  redirect(m, ux, uy, m.rng.normalDet(0, SH.blockSpread), v, m.rng.float(SH.blockLift[0], SH.blockLift[1]));
+  const lift = m.rng.float(SH.blockLift[0], SH.blockLift[1]);
+  if (m.rng.chance(SH.blockBehind)) deflectBehind(m, sideOf(j), v, lift);
+  else redirect(m, ux, uy, m.rng.normalDet(0, SH.blockSpread), v, lift);
   looseOff(m, j);
 }
 

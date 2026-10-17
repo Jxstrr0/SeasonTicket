@@ -652,7 +652,7 @@ The same seed must give the same match on every phone and browser; replays and b
 8. **Which replays to keep.** Your club's all season, others' for the latest round only?
 9. **Pressing at dial 5.** Man-for-man (each presser takes a man) or zonal (press the ball, cover the lanes)?
 10. **Waiting times.** About 2 s for "Next week" (usually instant) and up to 60 s, with a progress bar, for "Sim to end of season"? Which phone do you test on? Tap the Engine check there once it exists.
-11. **The cost of pressing.** Energy follows distance run, so pressing high costs only the extra running: about 0.02 energy over an hour (out of about 0.3 used). Keep it physical, or add a direct cost for pressing so it bites harder late in matches?
+11. **The cost of pressing.** *Answered: keep it physical.* Energy follows distance run, so pressing high costs only the extra running (about 0.02 energy over an hour, out of about 0.3 used). There is no extra direct cost.
 
 ### 17.15 Build notes
 
