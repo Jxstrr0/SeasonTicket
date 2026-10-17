@@ -8,8 +8,8 @@ import { SPATIAL_TUNING, formation } from '../data';
 import type { Tactics } from '../types';
 import {
   A_BEHIND_CAP, A_BLEND, A_IN_CENTRE, A_IN_LEN, A_IN_LINE, A_IN_WIDTH, A_OFF_CAP, A_OUT_CENTRE,
-  A_OUT_LEN, A_OUT_LINE, A_OUT_WIDTH, A_PRESS_ADV, ANCHORS, LENGTH, RING, WIDTH,
-  acrossOf, clamp, depthOf, type SpatialMatch, type TeamState,
+  A_OUT_LEN, A_OUT_LINE, A_OUT_MID_LEN, A_OUT_WIDTH, A_PRESS_ADV, ANCHORS, BALL_HELD, LENGTH, RING, WIDTH,
+  acrossOf, clamp, depthOf, sideOf, type SpatialMatch, type TeamState,
 } from './state';
 import type { Side } from './types';
 
@@ -101,13 +101,22 @@ export function writeAnchors(m: SpatialMatch, team: TeamState, slotIndex: number
   if (bdOut - gap < outLine) outLine = bdOut - gap;
   const wBox = clamp((SO.boxBallDepth + SO.boxBlend - bdOut) / SO.boxBlend, 0, 1);
   if (wBox > 0) {
-    const boxLine = SO.boxLineBase + (SO.boxLineRise * clamp(bdOut, 0, SO.boxBallDepth)) / SO.boxBallDepth;
+    let boxLine = SO.boxLineBase + (SO.boxLineRise * clamp(bdOut, 0, SO.boxBallDepth)) / SO.boxBallDepth;
+    // With the ball inside the box the line keeps goal-side of it.
+    if (boxLine > bdOut - SO.boxGap) boxLine = Math.max(SO.boxLineMin, bdOut - SO.boxGap);
     outLine += (boxLine - outLine) * wBox;
   }
   if (outLine < SO.lineMin) outLine = SO.lineMin;
-  const outLen = SO.blockLength + shift;
-  const outWidth = SO.blockWidth;
+  // Defending the box, the block also gets shorter and narrower.
+  let outLen = SO.blockLength + shift + (SO.boxLength - SO.blockLength - shift) * wBox;
+  // Deeper still, the midfield drops into the box.
+  const wDeep = clamp((SO.deepFrom - bdOut) / (SO.deepFrom - SO.deepTo), 0, 1);
+  outLen += (SO.deepLength - outLen) * wDeep;
+  const outWidth = SO.blockWidth + (SO.boxWidth - SO.blockWidth) * wBox;
   const outCentre = clamp(34 + SO.acrossFollow * (ba - 34), outWidth / 2 + 1, WIDTH - 1 - outWidth / 2);
+  // Midfielders keep goal-side of the ball: their part of the block squeezes towards the line.
+  const midCap = Math.max(outLine + SO.midMinGap, bdOut - SO.midBehind);
+  const midLen = Math.min(outLen, (midCap - outLine) / SO.midU);
 
   // In possession.
   const inLine = clamp(H + SI.lineSlope * (bd - T.pitch.halfway) + shift, SI.lineMin, SI.lineMax);
@@ -132,6 +141,7 @@ export function writeAnchors(m: SpatialMatch, team: TeamState, slotIndex: number
   r[o + A_BEHIND_CAP] = behindCap;
   r[o + A_PRESS_ADV] = team.pressAdv;
   r[o + A_BLEND] = team.w;
+  r[o + A_OUT_MID_LEN] = midLen;
 }
 
 /** Fill the whole ring with the current anchors (at kick-off and after big jumps). */
@@ -142,7 +152,8 @@ export function fillRing(m: SpatialMatch, team: TeamState): void {
 /** Out-of-possession spot depth for a slot from a set of anchors, without the press advance. */
 export function outDepth(team: TeamState, slot: number, ringIndex: number): number {
   const o = (ringIndex % RING) * ANCHORS;
-  return team.ring[o + A_OUT_LINE] + team.defU[slot] * team.ring[o + A_OUT_LEN];
+  const u = team.defU[slot];
+  return team.ring[o + A_OUT_LINE] + u * team.ring[o + (u >= SO.forwardU ? A_OUT_LEN : A_OUT_MID_LEN)];
 }
 
 /**
@@ -160,8 +171,9 @@ export function computeSpots(m: SpatialMatch, team: TeamState): void {
     const o = idx * ANCHORS;
     const w = r[o + A_BLEND];
     // Out of possession.
-    let dOut = r[o + A_OUT_LINE] + team.defU[s] * r[o + A_OUT_LEN];
-    if (team.defU[s] >= minU) dOut += r[o + A_PRESS_ADV];
+    const u = team.defU[s];
+    let dOut = r[o + A_OUT_LINE] + u * r[o + (u >= SO.forwardU ? A_OUT_LEN : A_OUT_MID_LEN)];
+    if (u >= minU) dOut += r[o + A_PRESS_ADV];
     const aOut = r[o + A_OUT_CENTRE] + (team.defV[s] - 0.5) * r[o + A_OUT_WIDTH];
     // In possession.
     let dIn = r[o + A_IN_LINE] + team.attU[s] * r[o + A_IN_LEN];
@@ -181,12 +193,33 @@ export function computeSpots(m: SpatialMatch, team: TeamState): void {
   const bd = depthOf(side, m.ball.x);
   const ba = acrossOf(side, m.ball.y);
   const K = T.keeper;
-  const off = bd > K.nearBallDepth
+  let off = bd > K.nearBallDepth
     ? clamp(K.farFactor * line + K.farOffset, K.farMin, K.farMax)
     : K.nearMin + ((K.nearMax - K.nearMin) * clamp(bd, 0, K.nearBallDepth)) / K.nearBallDepth;
   const dx = bd;
   const dy = ba - T.pitch.goalCentreAcross;
   const len = Math.sqrt(dx * dx + dy * dy);
+  // One on one: an opponent through on goal with nobody goal-side of him. The keeper comes
+  // out to narrow the angle, stopping short of him.
+  team.rush = false;
+  const KS = T.keeperSave;
+  const c = m.ball.owner;
+  if (m.ball.state === BALL_HELD && c >= 0 && sideOf(c) !== side && len < KS.rushRange) {
+    let covered = false;
+    for (let s = 1; s < 11 && !covered; s++) {
+      const j = base + s;
+      const jd = depthOf(side, m.px[j]);
+      if (jd >= bd) continue;
+      const ja = acrossOf(side, m.py[j]) - T.pitch.goalCentreAcross;
+      const f = len > 1e-9 ? clamp((jd * dx + ja * dy) / (len * len), 0, 1) : 0;
+      const ex = jd - f * dx, ey = ja - f * dy;
+      if (ex * ex + ey * ey < KS.rushCorridor * KS.rushCorridor) covered = true;
+    }
+    if (!covered) {
+      off = Math.max(K.nearMin, Math.min(len * KS.rushFactor, len - KS.rushKeep));
+      team.rush = true;
+    }
+  }
   const gd = len > 1e-9 ? (off * dx) / len : off;
   const ga = len > 1e-9 ? T.pitch.goalCentreAcross + (off * dy) / len : T.pitch.goalCentreAcross;
   m.sx[gk] = depthOf(side, gd);

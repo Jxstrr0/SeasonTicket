@@ -55,29 +55,41 @@ export function simulateFlight(speed: number, cos: number, sin: number, h: numbe
 
 export interface LoftTable {
   h: number;
+  /** Cosine and sine of the launch angle. */
+  cos: number;
+  sin: number;
   speeds: Float64Array;
   carry: Float64Array;
   time: Float64Array;
 }
 
-const loftCache = new Map<number, LoftTable>();
+const loftCache = new Map<string, LoftTable>();
 
 /** The table of carry distance and flight time per launch speed at the standard loft angle. */
 export function loftTable(h: number): LoftTable {
-  const cached = loftCache.get(h);
+  return loftTableAt(h, B.loftDeg);
+}
+
+/** As loftTable, at a launch angle of `deg` degrees (crosses use a flatter one). */
+export function loftTableAt(h: number, deg: number): LoftTable {
+  const key = `${h}:${deg}`;
+  const cached = loftCache.get(key);
   if (cached) return cached;
+  const rad = (deg * PI) / 180;
+  const cos = deg === B.loftDeg ? LOFT_COS : detCos(rad);
+  const sin = deg === B.loftDeg ? LOFT_SIN : detSin(rad);
   const n = Math.round((B.loftMaxSpeed - B.loftMinSpeed) / B.loftTableStep) + 1;
   const speeds = new Float64Array(n);
   const carry = new Float64Array(n);
   const time = new Float64Array(n);
   for (let i = 0; i < n; i++) {
     speeds[i] = B.loftMinSpeed + i * B.loftTableStep;
-    const r = simulateFlight(speeds[i], LOFT_COS, LOFT_SIN, h);
+    const r = simulateFlight(speeds[i], cos, sin, h);
     carry[i] = r.carry;
     time[i] = r.time;
   }
-  const table = { h, speeds, carry, time };
-  loftCache.set(h, table);
+  const table = { h, cos, sin, speeds, carry, time };
+  loftCache.set(key, table);
   return table;
 }
 
