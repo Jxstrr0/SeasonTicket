@@ -6,7 +6,11 @@
     "unitCover": ["defender", "midfielder", "attacker"],
     "homegrownNation": "valmere",
     "cornerTakerCrossingWeight": 0.5,
-    "penaltyTakerComposureWeight": 0.3
+    "penaltyTakerComposureWeight": 0.3,
+    "formationPopularity": {
+      "_about": "How often coaches favour each shape: the weight a new head coach's preferred formation is drawn with, and a multiplier on the lineup score when the coach weighs up shapes that suit the squad about equally. Four at the back is the norm, as in most top leagues; back threes and fives are a minority taste.",
+      "4-2-3-1": 1.4, "4-3-3": 1.4, "4-4-2": 0.9, "4-1-4-1": 0.8, "3-4-3": 0.35, "3-5-2": 0.3, "5-3-2": 0.25
+    }
   },
   "positionFit": {
     "same": 1,

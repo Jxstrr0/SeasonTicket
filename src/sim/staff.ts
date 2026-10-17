@@ -7,7 +7,7 @@
  */
 import type { Player, StaffMember, StaffRole } from './types';
 import { POSITIONS, STAFF_ROLES as ROLE_ORDER } from './types';
-import { PLAYERS_TUNING } from './data';
+import { COACH_TUNING, PLAYERS_TUNING } from './data';
 import type { Rng } from './rng';
 import { defaultNames, foreignNations, type NameSource } from './names';
 import { clampRating, generatePlayer, logCurveAt, pickNationality, roundTo, type IdSource } from './players';
@@ -31,8 +31,13 @@ function drawHeadCoachPhilosophy(rng: Rng): Philosophy {
   return {
     attackLean: rng.normalClamped(h.leanMean, h.leanSd, 0, 1),
     aggression: rng.normalClamped(h.aggressionMean, h.aggressionSd, 0, 1),
-    preferredFormation: rng.pick(T.staff.formations),
+    preferredFormation: rng.weighted(T.staff.formations, formationPopularity),
   };
+}
+
+/** How often coaches favour a shape (coach.json selection.formationPopularity); 1 for one not listed. */
+export function formationPopularity(id: string): number {
+  return (COACH_TUNING.selection.formationPopularity as Record<string, number | string>)[id] as number ?? 1;
 }
 
 function neutralPhilosophy(): Philosophy {
