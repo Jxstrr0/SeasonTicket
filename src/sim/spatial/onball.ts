@@ -1,7 +1,8 @@
 /**
- * On-ball play for the spatial engine (Stage 4.5 build step 3): the carrier's decisions
- * (pass, carry, hold or clear), the strike and its error, interceptions, first touches,
- * loose balls and tackles, and the match stats they produce.
+ * On-ball play for the spatial engine (Stage 4.5 build steps 3 and 4): the carrier's
+ * decisions (pass, cross, shoot, carry, hold or clear), the strike and its error,
+ * interceptions, first touches, headers, loose balls and tackles, and the match stats they
+ * produce. Shots themselves are in shot.ts.
  *
  * Every option gets a success chance p worked out from where everyone is and how fast they
  * can get somewhere, and a value read from the threat grid (the chance that having the ball
@@ -13,12 +14,15 @@
  * helpers, so every browser plays the same match.
  */
 import { SPATIAL_TUNING } from '../data';
-import { LOFT_COS, LOFT_SIN, groundInto, loftInto } from './ball';
+import { boxPoint } from './attack';
+import { LOFT_COS, LOFT_SIN, flightSubstep, groundInto, loftInto } from './ball';
 import { PI, detCos, detSin, sCurve } from './det';
 import { secondLastOpponent } from './shape';
+import { blockEstimate, inAttackBox, shoot, shotBar, xgHere } from './shot';
 import {
-  BALL_AIR, BALL_FROZEN, BALL_HELD, BALL_ROLL, LENGTH, N, WIDTH,
-  acrossOf, clamp, depthOf, sideOf, type OnBallState, type SpatialMatch,
+  ATTRS, A_AGG, A_CMP, A_CRS, A_DRI, A_FIN, A_GKP, A_HAN, A_HEA, A_KCK, A_PAC, A_PAS, A_POS, A_REF, A_STR, A_TCK,
+  A_VIS, A_WRK, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_CLEAR, KICK_NONE, KICK_PASS, KICK_SHOT,
+  LENGTH, N, SHOT_VALUES, WIDTH, acrossOf, clamp, depthOf, sideOf, type OnBallState, type SpatialMatch,
 } from './state';
 import type { Side } from './types';
 
@@ -32,14 +36,12 @@ const TK = T.tackle;
 const DU = T.duel;
 const CL = T.clearance;
 const CH = T.chase;
-const SI = T.standIn;
+const SH = T.shot;
+const CR = T.cross;
+const PT = T.pitch;
 const V = T.vision;
 const TH = T.threat;
 const KP = T.keeper;
-
-// Attribute cache: ATTRS values per player in OnBallState.attr.
-const A_PAS = 0, A_VIS = 1, A_CMP = 2, A_POS = 3, A_DRI = 4, A_STR = 5, A_TCK = 6, A_HEA = 7, A_KCK = 8, A_PAC = 9, A_AGG = 10;
-export const ATTRS = 11;
 
 const GRID = Float64Array.from(TH.grid);
 const COLS = TH.cols;
@@ -75,6 +77,14 @@ export function createOnBall(): OnBallState {
     possMs: new Float64Array(2), passes: new Int32Array(2), completed: new Int32Array(2),
     intercepted: new Int32Array(2), tackles: new Int32Array(2), boxEntries: new Int32Array(2),
     shots: new Int32Array(2), entered: false,
+    passCross: false,
+    onTarget: new Int32Array(2), blocked: new Int32Array(2), woodwork: new Int32Array(2), shotsInBox: new Int32Array(2),
+    xg: new Float64Array(2), corners: new Int32Array(2), goalKicks: new Int32Array(2),
+    throwIns: new Int32Array(2), throwIn: false,
+    lastKick: -1, lastRecv: -1, lastRecvFrom: -1,
+    shooter: -1, shotXg: 0, shotHeader: false, shotAssist: -1,
+    shotPath: new Float64Array(SH.maxSamples * SHOT_VALUES), shotN: 0, shotK: 0,
+    shotEventK: 0, shotEventU: 0, shotEventKind: 0, shotEventPlayer: -1,
   };
 }
 
@@ -97,6 +107,12 @@ export function initOnBall(m: SpatialMatch): void {
     ob.attr[o + A_KCK] = a.kck;
     ob.attr[o + A_PAC] = a.pac;
     ob.attr[o + A_AGG] = a.agg;
+    ob.attr[o + A_FIN] = a.fin;
+    ob.attr[o + A_CRS] = a.crs;
+    ob.attr[o + A_REF] = a.ref;
+    ob.attr[o + A_HAN] = a.han;
+    ob.attr[o + A_GKP] = a.gkp;
+    ob.attr[o + A_WRK] = a.wrk;
     ob.scanMs[i] = Math.round((slow - (gain * a.vis) / 99) * 1000);
     ob.nextScan[i] = Math.round(m.rng.next() * ob.scanMs[i]);
     ob.scanAt[i] = -1e9;
@@ -138,18 +154,10 @@ export function segmentDistance(px: number, py: number, ax: number, ay: number, 
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-/** In the penalty area that `side` attacks. The box is symmetric across, so y works as is. */
-function inAttackBox(side: Side, x: number, y: number): boolean {
-  return depthOf(side, x) > SI.boxDepth && y > SI.acrossMin && y < SI.acrossMax;
-}
-
+/** In `side`'s own penalty area. */
 function inOwnBox(side: Side, x: number, y: number): boolean {
-  return depthOf(side, x) < LENGTH - SI.boxDepth && y > SI.acrossMin && y < SI.acrossMax;
-}
-
-/** Close in and central: where the stand-in shot goes off. */
-function inShotZone(side: Side, x: number, y: number): boolean {
-  return depthOf(side, x) > SI.shotDepth && y > SI.shotAcrossMin && y < SI.shotAcrossMax;
+  const off = y < PT.goalCentreAcross ? PT.goalCentreAcross - y : y - PT.goalCentreAcross;
+  return depthOf(side, x) < PT.boxDepth && off < PT.boxHalfWidth;
 }
 
 /** How far player i can reach for the ball at (x, y): a keeper in his own box has his hands. */
@@ -219,6 +227,9 @@ export function control(m: SpatialMatch, i: number): void {
   b.receiver = -1;
   b.z = 0;
   b.vz = 0;
+  ob.lastKick = i;
+  ob.shooter = -1;
+  ob.passCross = false;
   const ox = b.x - m.px[i];
   const oy = b.y - m.py[i];
   const r = Math.sqrt(ox * ox + oy * oy);
@@ -233,7 +244,9 @@ export function control(m: SpatialMatch, i: number): void {
 export function startControl(m: SpatialMatch, i: number): void {
   const ob = m.onball;
   const now = m.clockMs;
-  ob.readyAt = now + DC.touchMs;
+  // In the box a striker gets his shot off quicker.
+  const quick = i % 11 !== 0 && inAttackBox(sideOf(i), m.ball.x, m.ball.y);
+  ob.readyAt = now + (quick ? SH.boxTouchMs : DC.touchMs);
   ob.decideAt = ob.readyAt;
   if (i % 11 === 0) ob.holdUntil = now + DC.keeperHold * 1000;
   else {
@@ -244,10 +257,11 @@ export function startControl(m: SpatialMatch, i: number): void {
   ob.carryX = m.px[i];
   ob.carryY = m.py[i];
   ob.passTarget = -1;
-  ob.passKind = 0;
+  ob.passKind = KICK_NONE;
   ob.chase[0] = -1;
   ob.chase[1] = -1;
   ob.pressured = false;
+  ob.throwIn = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -348,7 +362,7 @@ function groundSpeed(D: number, weightT: number): void {
 // ---------------------------------------------------------------------------
 
 const CAP = 128;
-const K_FEET = 0, K_SPACE = 1, K_THROUGH = 2, K_CARRY = 3, K_HOLD = 4, K_CLEAR = 5;
+const K_FEET = 0, K_SPACE = 1, K_THROUGH = 2, K_CARRY = 3, K_HOLD = 4, K_CLEAR = 5, K_SHOT = 6, K_CROSS = 7;
 const oKind = new Uint8Array(CAP);
 const oRecv = new Int32Array(CAP);
 const oX = new Float64Array(CAP);
@@ -376,8 +390,8 @@ const byUB = new Int32Array(CAP);
 // The best few values seen so far (best first), and how many.
 const topV = new Float64Array(8);
 let nTop = 0;
-// Score scale and tactic nudges for the decision being made: S, directness, tempo, width.
-const SC = new Float64Array(4);
+// Score scale and tactic nudges for the decision being made: S, directness, tempo, width, shooting.
+const SC = new Float64Array(5);
 let sCounter = false;
 let sOverdue = false;
 // Slack for rounding when ruling a pass out on its bound.
@@ -446,7 +460,7 @@ function addPass(m: SpatialMatch, j: number, ax: number, ay: number, kind: numbe
   const rd = Math.sqrt(rdx * rdx + rdy * rdy);
   const tr = P.recvReaction + (rd > 1e-9 ? reach(m, j, rdx, rdy, rd, P.interceptReach) : 0);
   let weight = 0;
-  if (lofted) loftInto(m.loft, D, IO);
+  if (lofted) loftInto(kind === K_CROSS ? m.crossLoft : m.loft, D, IO);
   else {
     weight = kind === K_FEET ? 0 : tr;
     groundSpeed(D, weight);
@@ -464,7 +478,7 @@ function addPass(m: SpatialMatch, j: number, ax: number, ay: number, kind: numbe
   oTArr[k] = tArr;
   oTr[k] = tr;
   oLate[k] = lateF;
-  oUB[k] = ctrlHi * lateF * threatAt(side, ax, ay) * multHi;
+  oUB[k] = ctrlHi * lateF * threatAt(side, ax, ay) * multHi * (kind === K_CROSS ? CR.valueMul : 1);
   oDone[k] = 0;
 }
 
@@ -485,6 +499,7 @@ function evalPass(m: SpatialMatch, k: number): void {
   let mult = TH.recvFwd;
   if (depth > CV[C_LINE] && CV[C_NEAR2] > TH.freeWithin * TH.freeWithin) mult = TH.recvBehind;
   else if (oKind[k] === K_FEET && depth > CV[C_DEPTH] && nearOpp2(m, j) <= TH.pressedWithin * TH.pressedWithin) mult = TH.recvBack;
+  if (oKind[k] === K_CROSS) mult *= CR.valueMul;
   oRaw[k] = p * threatAt(side, ax, ay) * mult - (1 - p) * CV[C_RISK] * threatAt((1 - side) as Side, CV[C_LOSS_X], CV[C_LOSS_Y]);
   oDone[k] = 1;
 }
@@ -501,6 +516,7 @@ function insertTop(v: number, want: number): void {
 function scoreOf(k: number, s: number): number {
   const side = cSide;
   const kind = oKind[k];
+  if (kind === K_SHOT) return s + SC[4];
   const dDepth = depthOf(side, oX[k]) - CV[C_DEPTH];
   const tempoF = clamp(dDepth / DC.tempoDepth, -1, 1);
   if (kind === K_CARRY) s += SC[2] * tempoF * DC.carryTempoShare;
@@ -508,7 +524,8 @@ function scoreOf(k: number, s: number): number {
     if (oLen[k] >= DC.longPass) s += SC[1]; else if (oLen[k] <= DC.shortPass) s -= SC[1];
     s += SC[2] * tempoF;
   }
-  if (kind !== K_HOLD) {
+  if (kind === K_CROSS) s += SC[3];
+  else if (kind !== K_HOLD) {
     const a = acrossOf(side, oY[k]);
     if (a < DC.wideWithin || a > WIDTH - DC.wideWithin) s += SC[3];
   }
@@ -553,7 +570,6 @@ function decide(m: SpatialMatch, i: number): void {
   const keeper = i % 11 === 0;
   const at = ob.attr;
   const o = i * ATTRS;
-  if (!keeper && inShotZone(side, b.x, b.y)) { standInShot(m, i, side); return; }
 
   cSide = side;
   CV[C_BX] = b.x;
@@ -566,10 +582,12 @@ function decide(m: SpatialMatch, i: number): void {
   CV[C_VIS] = keeper ? Math.max(at[o + A_VIS], at[o + A_KCK]) : at[o + A_VIS];
   cAllow = ob.pressured || now >= ob.holdUntil;
   nOpt = 0;
+  // A throw-in can only be thrown, and not far.
+  const thr = ob.throwIn;
 
   // Passes to every team-mate he can see.
   const offLine = Math.max(CV[C_LINE], CV[C_DEPTH], LENGTH / 2);
-  const range = V.base + V.perVis * CV[C_VIS];
+  const range = thr ? T.restart.throwRange : V.base + V.perVis * CV[C_VIS];
   const range2 = range * range;
   const scanned = now - ob.scanAt[i] <= V.scanFresh * 1000;
   const fx = ob.faceX[i], fy = ob.faceY[i];
@@ -613,11 +631,37 @@ function decide(m: SpatialMatch, i: number): void {
     if (td >= 0) addVariants(m, j, depthOf(side, td), fay, K_THROUGH);
   }
 
+  // Crosses: from wide in the final third, to whoever is getting into the box.
+  if (!keeper && !thr && CV[C_DEPTH] >= CR.fromDepth && (CV[C_ACROSS] < CR.wideWithin || CV[C_ACROSS] > WIDTH - CR.wideWithin)) {
+    for (let j = t0 + 1; j < t0 + 11; j++) {
+      if (j === i) continue;
+      let gx: number, gy: number;
+      if (boxPoint(m, j, IO)) { gx = IO[0]; gy = IO[1]; }
+      else if (inAttackBox(side, m.px[j], m.py[j])) { gx = m.px[j]; gy = m.py[j]; }
+      else continue;
+      const dx = gx - CV[C_BX], dy = gy - CV[C_BY];
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < CR.minLen) continue;
+      addPass(m, j, gx + (dx / d) * CR.landBeyond, gy + (dy / d) * CR.landBeyond, K_CROSS, true);
+    }
+  }
   const nPass = nOpt;
   const px = m.px[i], py = m.py[i];
+  // A shot, if it is worth one: what it would score, less what blockers would take off it.
+  if (!keeper && !thr && nOpt < CAP) {
+    const gx = side === 0 ? LENGTH : 0;
+    const gdx = gx - CV[C_BX], gdy = PT.goalCentreAcross - CV[C_BY];
+    if (gdx * gdx + gdy * gdy <= SH.maxRange * SH.maxRange) {
+      const xg = xgHere(m, side, false);
+      if (xg >= shotBar(inAttackBox(side, CV[C_BX], CV[C_BY]), at[o + A_FIN], tac.mentality)) {
+        const raw = xg * (1 - blockEstimate(m, side, CV[C_BX], CV[C_BY]) * SH.blockLoss) * SH.valueMul;
+        pushOption(K_SHOT, -1, gx, PT.goalCentreAcross, 0, 0, Math.sqrt(gdx * gdx + gdy * gdy), raw);
+      }
+    }
+  }
   const lossHere = CV[C_RISK] * threatAt(opp, px, py);
   // Carries: a few metres in one of five directions.
-  if (!keeper) {
+  if (!keeper && !thr) {
     const dir = side === 0 ? 1 : -1;
     const dri = at[o + A_DRI] / 99;
     // Only opponents near enough to stand in some carry's way (its far end is at most a metre
@@ -645,8 +689,8 @@ function decide(m: SpatialMatch, i: number): void {
       pushOption(K_CARRY, i, ex, ey, 0, 0, CA.length, p * threatAt(side, ex, ey) - (1 - p) * lossHere);
     }
   }
-  // Hold: shield it from the nearest opponent.
-  {
+  // Hold: shield it from the nearest opponent (a thrower with nobody to throw to waits).
+  if (!thr || nOpt === 0) {
     let nk = -1, nd2 = Infinity;
     for (let k = o0; k < o0 + 11; k++) {
       const ex = px - m.px[k], ey = py - m.py[k];
@@ -655,7 +699,7 @@ function decide(m: SpatialMatch, i: number): void {
     }
     const nd = Math.sqrt(nd2);
     let hx = px, hy = py;
-    if (nk >= 0 && nd > 1e-9) {
+    if (nk >= 0 && nd > 1e-9 && !thr) {
       hx = clamp(px + ((px - m.px[nk]) / nd) * CA.shieldStep, 0.5, LENGTH - 0.5);
       hy = clamp(py + ((py - m.py[nk]) / nd) * CA.shieldStep, 0.5, WIDTH - 0.5);
     }
@@ -663,7 +707,7 @@ function decide(m: SpatialMatch, i: number): void {
     if (nOpt < CAP) pushOption(K_HOLD, i, hx, hy, 0, 0, 0, p * threatAt(side, px, py) - (1 - p) * lossHere);
   }
   // Clearance: under pressure deep in his own half, or the keeper going long.
-  if (cAllow && nOpt < CAP && (keeper || (ob.pressured && CV[C_DEPTH] < CL.depth))) {
+  if (cAllow && !thr && nOpt < CAP && (keeper || (ob.pressured && CV[C_DEPTH] < CL.depth))) {
     const len = (CL.length[0] + CL.length[1]) / 2;
     const ex = depthOf(side, clamp(CV[C_DEPTH] + len, 1, LENGTH - 1));
     const p = CL.retain;
@@ -697,6 +741,7 @@ function decide(m: SpatialMatch, i: number): void {
   SC[1] = (tac.directness - 3) * tb;
   SC[2] = (tac.tempo - 3) * tb;
   SC[3] = (tac.width - 3) * tb;
+  SC[4] = (tac.mentality - 3) * tb * SH.mentalityBonus + SH.bonus * S;
   sCounter = now < team.counterUntil;
   sOverdue = now >= ob.holdUntil;
   nTop = 0;
@@ -733,7 +778,11 @@ function decide(m: SpatialMatch, i: number): void {
     case K_CLEAR:
       clearBall(m, i, side);
       break;
+    case K_SHOT:
+      shoot(m, i, side, false);
+      break;
     default:
+      ob.throwIn = false;
       strike(m, i, side, pick);
   }
 }
@@ -754,7 +803,8 @@ function strike(m: SpatialMatch, i: number, side: Side, k: number): void {
   const dx = ax0 - b.x, dy = ay0 - b.y;
   const D0 = Math.sqrt(dx * dx + dy * dy);
   const ux = dx / D0, uy = dy / D0;
-  const pas = i % 11 === 0 ? ob.attr[o + A_KCK] : ob.attr[o + A_PAS];
+  const cross = oKind[k] === K_CROSS;
+  const pas = i % 11 === 0 ? ob.attr[o + A_KCK] : cross ? ob.attr[o + A_CRS] : ob.attr[o + A_PAS];
   let sd = D0 * (P.aimBase + P.aimPas * (1 - pas / 99));
   if (ob.pressured) sd *= 1 + P.pressureCmp * (1 - ob.attr[o + A_CMP] / 99);
   if (lofted) sd *= P.loftErr;
@@ -762,11 +812,38 @@ function strike(m: SpatialMatch, i: number, side: Side, k: number): void {
   const across = m.rng.normalDet(0, sd);
   const ax = clamp(ax0 + ux * along - uy * across, 0.5, LENGTH - 0.5);
   const ay = clamp(ay0 + uy * along + ux * across, 0.5, WIDTH - 0.5);
-  launch(m, i, side, oRecv[k], ax, ay, lofted, oWeight[k]);
+  launch(m, i, side, oRecv[k], ax, ay, lofted, oWeight[k], cross);
+}
+
+const CF = new Float64Array(6);
+
+/**
+ * Where a cross launched from the ball at (vx, vy, vz) first comes down through head height:
+ * CF[0..1] the spot and CF[2] the seconds to get there.
+ */
+function headPoint(m: SpatialMatch, vx: number, vy: number, vz: number): void {
+  const b = m.ball;
+  CF[0] = b.x; CF[1] = b.y; CF[2] = 0; CF[3] = vx; CF[4] = vy; CF[5] = vz;
+  const h = m.subH;
+  let t = 0, px = CF[0], py = CF[1], pz = 0;
+  for (let s = 0; s < 400; s++) {
+    flightSubstep(CF, h);
+    t += h;
+    if (CF[5] < 0 && CF[2] <= CR.headZ) {
+      const f = pz > CF[2] ? (pz - CR.headZ) / (pz - CF[2]) : 1;
+      const g = f < 0 ? 0 : f > 1 ? 1 : f;
+      CF[0] = px + g * (CF[0] - px);
+      CF[1] = py + g * (CF[1] - py);
+      CF[2] = t - h + g * h;
+      return;
+    }
+    px = CF[0]; py = CF[1]; pz = CF[2];
+  }
+  CF[2] = t;
 }
 
 /** Put the ball on its way to (ax, ay) for `recv`, rolling for interceptions on the way. */
-function launch(m: SpatialMatch, i: number, side: Side, recv: number, ax: number, ay: number, lofted: boolean, weightT: number): void {
+function launch(m: SpatialMatch, i: number, side: Side, recv: number, ax: number, ay: number, lofted: boolean, weightT: number, cross: boolean): void {
   const b = m.ball;
   const ob = m.onball;
   const now = m.clockMs;
@@ -774,7 +851,8 @@ function launch(m: SpatialMatch, i: number, side: Side, recv: number, ax: number
   let D = Math.sqrt(dx * dx + dy * dy);
   if (D < 0.1) D = 0.1;
   const ux = dx / D, uy = dy / D;
-  if (lofted) loftInto(m.loft, D, IO); else groundSpeed(D, weightT);
+  const table = cross ? m.crossLoft : m.loft;
+  if (lofted) loftInto(table, D, IO); else groundSpeed(D, weightT);
   const v0 = IO[0], tArr = IO[1];
   const rdx = ax - m.px[recv], rdy = ay - m.py[recv];
   const rd = Math.sqrt(rdx * rdx + rdy * rdy);
@@ -796,8 +874,8 @@ function launch(m: SpatialMatch, i: number, side: Side, recv: number, ax: number
   b.owner = -1;
   b.z = 0;
   if (lofted) {
-    const h = v0 * LOFT_COS;
-    b.vx = ux * h; b.vy = uy * h; b.vz = v0 * LOFT_SIN;
+    const h = v0 * table.cos;
+    b.vx = ux * h; b.vy = uy * h; b.vz = v0 * table.sin;
   } else {
     b.vx = ux * v0; b.vy = uy * v0; b.vz = 0;
   }
@@ -808,10 +886,21 @@ function launch(m: SpatialMatch, i: number, side: Side, recv: number, ax: number
   ob.passArriveMs = now + Math.round(tArr * 1000);
   ob.lastPasser = i;
   ob.passSide = side;
-  ob.passKind = 1;
+  ob.passKind = KICK_PASS;
+  ob.passCross = cross;
+  ob.lastKick = i;
   ob.passes[side]++;
   ob.pressured = false;
-  if (cut >= 0) {
+  if (cross) {
+    // A cross is met as it comes down through head height, by whoever gets there.
+    headPoint(m, b.vx, b.vy, b.vz);
+    const who = cut >= 0 ? (1 - side) * 11 + cut : recv;
+    b.receiver = who;
+    b.meetX = CF[0];
+    b.meetY = CF[1];
+    b.arriveMs = now + Math.round(CF[2] * 1000);
+    m.nextThink[who] = now;
+  } else if (cut >= 0) {
     const k = (1 - side) * 11 + cut;
     const s = cS[cut];
     const a = B.rollDecel;
@@ -868,41 +957,12 @@ function clearBall(m: SpatialMatch, i: number, side: Side): void {
   ob.passArriveMs = b.arriveMs;
   ob.lastPasser = i;
   ob.passSide = side;
-  ob.passKind = 2;
+  ob.passKind = KICK_CLEAR;
+  ob.passCross = false;
+  ob.lastKick = i;
   ob.pressured = false;
   m.nextThink[i] = now;
   m.nextThink[r] = now;
-}
-
-/** Stand-in for a shot until build step 4: a firm ball along the ground to the keeper. */
-function standInShot(m: SpatialMatch, i: number, side: Side): void {
-  const b = m.ball;
-  const ob = m.onball;
-  const now = m.clockMs;
-  const kp = (1 - side) * 11;
-  const dx = m.px[kp] - b.x, dy = m.py[kp] - b.y;
-  const D = Math.max(0.1, Math.sqrt(dx * dx + dy * dy));
-  const v0 = SI.speed;
-  const a = B.rollDecel;
-  const disc = v0 * v0 - 2 * a * D;
-  const t = disc > 0 ? (v0 - Math.sqrt(disc)) / a : v0 / a;
-  b.state = BALL_ROLL;
-  b.owner = -1;
-  b.z = 0;
-  b.vx = (dx / D) * v0; b.vy = (dy / D) * v0; b.vz = 0;
-  b.receiver = kp;
-  b.meetX = m.px[kp];
-  b.meetY = m.py[kp];
-  b.strikeMs = now;
-  b.arriveMs = now + Math.round(t * 1000);
-  ob.passTarget = -1;
-  ob.lastPasser = i;
-  ob.passSide = side;
-  ob.passKind = 3;
-  ob.pressured = false;
-  ob.shots[side]++;
-  m.nextThink[i] = now;
-  m.nextThink[kp] = now;
 }
 
 // ---------------------------------------------------------------------------
@@ -933,7 +993,7 @@ function tryTackle(m: SpatialMatch, i: number, side: Side): boolean {
   const b = m.ball;
   const ob = m.onball;
   const now = m.clockMs;
-  if (i % 11 === 0 && inOwnBox(side, m.px[i], m.py[i])) return false;
+  if (ob.throwIn || (i % 11 === 0 && inOwnBox(side, m.px[i], m.py[i]))) return false;
   const o = (1 - side) * 11;
   let k = -1, kd2 = TK.reach * TK.reach;
   for (let j = o; j < o + 11; j++) {
@@ -951,6 +1011,8 @@ function tryTackle(m: SpatialMatch, i: number, side: Side): boolean {
   const ahead = d > 1e-9 ? -(m.vx[i] * dx + m.vy[i] * dy) / d : 0;
   let rate = ahead > TK.frontSpeed ? TK.frontRate : TK.rate;
   if (m.teams[1 - side].pressSet.includes(k)) rate *= TK.pressMul;
+  // In his own box a defender commits: there is no cover behind him.
+  if (inOwnBox((1 - side) as Side, b.x, b.y)) rate *= TK.boxMul;
   if (!m.rng.chance(rate * m.stepS)) return false;
   ob.tackles[1 - side]++;
   const win = clamp(TK.base + (TK.perFive * (ob.attr[k * ATTRS + A_TCK] - ob.attr[i * ATTRS + A_DRI])) / 5, TK.min, TK.max);
@@ -985,10 +1047,11 @@ function poke(m: SpatialMatch, k: number, i: number): void {
   ob.touchBlock[k] = now + C.retouchMs;
   ob.touchBlock[i] = now + C.retouchMs;
   ob.lastTouch = k;
+  ob.lastKick = k;
   ob.touchAt = now;
   ob.chaseAt = now;
   ob.passTarget = -1;
-  ob.passKind = 0;
+  ob.passKind = KICK_NONE;
   m.nextThink[k] = now;
   m.nextThink[i] = now;
 }
@@ -1002,7 +1065,7 @@ export function ballContacts(m: SpatialMatch, x0: number, y0: number): void {
   const b = m.ball;
   const ob = m.onball;
   const now = m.clockMs;
-  if (b.state !== BALL_ROLL && b.state !== BALL_AIR) return;
+  if ((b.state !== BALL_ROLL && b.state !== BALL_AIR) || ob.passKind === KICK_SHOT) return;
   let r = b.receiver;
   if (r >= 0) {
     // An interceptor who did not get there: the ball carries on to the intended receiver.
@@ -1019,7 +1082,7 @@ export function ballContacts(m: SpatialMatch, x0: number, y0: number): void {
       }
     }
     if (b.z < C.headReach && segmentDistance(m.px[r], m.py[r], x0, y0, b.x, b.y) <= handReach(r, b.x, b.y)) {
-      const cut = ob.passKind === 1 && sideOf(r) !== ob.passSide;
+      const cut = ob.passKind === KICK_PASS && sideOf(r) !== ob.passSide;
       touch(m, r, cut ? C.interceptMul : 1);
       return;
     }
@@ -1061,15 +1124,37 @@ function touch(m: SpatialMatch, i: number, mul: number): void {
   const ob = m.onball;
   const now = m.clockMs;
   const side = sideOf(i);
-  if (ob.passKind === 1) {
-    if (side === ob.passSide) ob.completed[side]++;
-    else ob.intercepted[ob.passSide]++;
+  if (ob.passKind === KICK_PASS) {
+    if (side === ob.passSide) {
+      ob.completed[side]++;
+      ob.lastRecv = i;
+      ob.lastRecvFrom = ob.lastPasser;
+    } else ob.intercepted[ob.passSide]++;
   }
-  ob.passKind = 0;
-  if (i % 11 === 0 && inOwnBox(side, b.x, b.y)) { control(m, i); return; }
+  if (ob.lastRecv >= 0 && sideOf(ob.lastRecv) !== side) ob.lastRecv = -1;
+  ob.passKind = KICK_NONE;
+  ob.passCross = false;
+  ob.lastKick = i;
+  ob.shooter = -1;
+  const keeper = i % 11 === 0;
+  if (keeper && inOwnBox(side, b.x, b.y)) { control(m, i); return; }
   const o = i * ATTRS;
   const at = ob.attr;
   if (b.z >= C.chestBelow) {
+    // In the box: an attacker goes for goal, a defender heads it away.
+    if (!keeper && inAttackBox(side, b.x, b.y)) {
+      if (xgHere(m, side, true) >= SH.barHeader && m.rng.chance(SH.headerChance)) { shoot(m, i, side, true); return; }
+    } else if (!keeper && inOwnBox(side, b.x, b.y)) {
+      const th = m.rng.normalDet(0, C.looseSpread);
+      const v = m.rng.float(CR.headClearSpeed[0], CR.headClearSpeed[1]);
+      const dir = side === 0 ? 1 : -1;
+      b.vx = dir * detCos(th) * v;
+      b.vy = dir * detSin(th) * v;
+      b.vz = m.rng.float(CR.headClearLift[0], CR.headClearLift[1]);
+      b.state = BALL_AIR;
+      loseTouch(m, i);
+      return;
+    }
     const loose = (C.headLooseBase - (C.headLooseHea * at[o + A_HEA]) / 99) * mul;
     if (!m.rng.chance(loose)) { control(m, i); return; }
     // Headed on, roughly the way he is facing up the pitch.
@@ -1196,7 +1281,7 @@ function pickChasers(m: SpatialMatch): void {
 /** One step of on-ball play: stats, facing and scans, then the carrier or the loose ball. */
 export function onBallStep(m: SpatialMatch): void {
   const b = m.ball;
-  if (b.state === BALL_FROZEN) return;
+  if (b.state === BALL_FROZEN || b.state === BALL_DEAD) return;
   const ob = m.onball;
   const now = m.clockMs;
   ob.possMs[m.poss] += m.stepMs;
@@ -1242,11 +1327,12 @@ export function receiveTarget(m: SpatialMatch, i: number, out: Float64Array): vo
   out[1] = SY[k];
 }
 
-/** Players who were beaten to a pass step out of its way so the ball does not pass through them. */
+/** Players who were beaten to a pass or a shot step out of its way so the ball does not pass through them. */
 export function clearOfPath(m: SpatialMatch): void {
   const b = m.ball;
   const ob = m.onball;
-  if (b.receiver < 0 || (b.state !== BALL_ROLL && b.state !== BALL_AIR) || b.z >= C.headReach) return;
+  const shot = ob.passKind === KICK_SHOT;
+  if ((b.receiver < 0 && !shot) || (b.state !== BALL_ROLL && b.state !== BALL_AIR) || b.z >= C.headReach) return;
   const sx = b.vx * m.stepS, sy = b.vy * m.stepS;
   const L2 = sx * sx + sy * sy;
   const minStep = P.clearOfPath * m.stepS;
@@ -1256,6 +1342,7 @@ export function clearOfPath(m: SpatialMatch): void {
   const now = m.clockMs;
   for (let i = 0; i < N; i++) {
     if (i === b.receiver || i === ob.passTarget || i === ob.chase[0] || i === ob.chase[1] || ob.touchBlock[i] > now) continue;
+    if (shot && i === ob.shotEventPlayer) continue;
     const f = clamp(((m.px[i] - b.x) * sx + (m.py[i] - b.y) * sy) / L2, 0, 1);
     const cx = b.x + f * sx, cy = b.y + f * sy;
     const dx = m.px[i] - cx, dy = m.py[i] - cy;
@@ -1286,8 +1373,18 @@ export interface SideStats {
   tackles: number;
   /** Possessions that got the ball into the opponent's penalty area. */
   boxEntries: number;
-  /** Stand-in shots until build step 4. */
+  /** Shots (headers included), on target, blocked, off the woodwork and from inside the box. */
   shots: number;
+  onTarget: number;
+  blocked: number;
+  woodwork: number;
+  shotsInBox: number;
+  /** Expected goals from those shots. */
+  xg: number;
+  goals: number;
+  corners: number;
+  goalKicks: number;
+  throwIns: number;
 }
 
 export function matchStats(m: SpatialMatch): [SideStats, SideStats] {
@@ -1302,6 +1399,15 @@ export function matchStats(m: SpatialMatch): [SideStats, SideStats] {
     tackles: ob.tackles[s],
     boxEntries: ob.boxEntries[s],
     shots: ob.shots[s],
+    onTarget: ob.onTarget[s],
+    blocked: ob.blocked[s],
+    woodwork: ob.woodwork[s],
+    shotsInBox: ob.shotsInBox[s],
+    xg: ob.xg[s],
+    goals: m.score[s],
+    corners: ob.corners[s],
+    goalKicks: ob.goalKicks[s],
+    throwIns: ob.throwIns[s],
   });
   return [one(0), one(1)];
 }

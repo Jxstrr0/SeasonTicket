@@ -5,7 +5,7 @@
 import type { Formation, Tactics } from '../types';
 import type { Rng } from '../rng';
 import type { LoftTable } from './ball';
-import type { Side, SpatialAction, SpatialMode, SpatialSetup } from './types';
+import type { GoalRecord, ShotRecord, Side, SpatialAction, SpatialMode, SpatialSetup } from './types';
 
 export const N = 22;
 export const LENGTH = 105;
@@ -24,13 +24,37 @@ export const A_OFF_CAP = 8;
 export const A_BEHIND_CAP = 9;
 export const A_PRESS_ADV = 10;
 export const A_BLEND = 11;
-export const ANCHORS = 12;
+/** Out-of-possession block length for midfielders, squeezed so they stay goal-side of the ball. */
+export const A_OUT_MID_LEN = 12;
+export const ANCHORS = 13;
 export const RING = 16;
 
 export const BALL_HELD = 0;
 export const BALL_ROLL = 1;
 export const BALL_AIR = 2;
 export const BALL_FROZEN = 3;
+/** Out of play: waiting for a kick-off, goal kick or corner (SpatialMatch.restart*). */
+export const BALL_DEAD = 4;
+
+/** Restart kinds. */
+export const RESTART_NONE = 0;
+export const RESTART_KICKOFF = 1;
+export const RESTART_GOAL_KICK = 2;
+export const RESTART_CORNER = 3;
+export const RESTART_THROW_IN = 4;
+
+/** OnBallState.passKind values. */
+export const KICK_NONE = 0;
+export const KICK_PASS = 1;
+export const KICK_CLEAR = 2;
+export const KICK_SHOT = 3;
+/** Values per planned shot sample: x, y, z, vx, vy, vz, ball state. */
+export const SHOT_VALUES = 7;
+
+/** Attribute cache layout: ATTRS values per player in OnBallState.attr (filled by initOnBall). */
+export const A_PAS = 0, A_VIS = 1, A_CMP = 2, A_POS = 3, A_DRI = 4, A_STR = 5, A_TCK = 6, A_HEA = 7, A_KCK = 8, A_PAC = 9;
+export const A_AGG = 10, A_FIN = 11, A_CRS = 12, A_REF = 13, A_HAN = 14, A_GKP = 15, A_WRK = 16;
+export const ATTRS = 17;
 
 export interface TeamState {
   side: Side;
@@ -64,6 +88,8 @@ export interface TeamState {
   counterUntil: number;
   /** Per slot: the opponent this defender is tracking through his zone (-1 if none). */
   track: Int32Array;
+  /** The keeper is coming out to narrow the angle on a carrier through on goal. */
+  rush: boolean;
 }
 
 export interface BallState {
@@ -98,10 +124,11 @@ export interface OnBallState {
   /** After this time, holding on costs the carrier (tempo). */
   holdUntil: number;
   pressured: boolean;
-  /** The pass in flight: who played it, for which side, what kind (0 none, 1 pass, 2 clearance, 3 stand-in shot). */
+  /** The ball in flight: who kicked it, for which side, what kind (KICK_*), and whether a pass is a cross. */
   lastPasser: number;
   passSide: number;
   passKind: number;
+  passCross: boolean;
   /** Intended receiver of the pass in flight, and where it was aimed. */
   passTarget: number;
   aimX: number;
@@ -126,7 +153,7 @@ export interface OnBallState {
   scanMs: Float64Array;
   faceX: Float64Array;
   faceY: Float64Array;
-  /** Per player attribute cache, ATTRS values each (see onball.ts). */
+  /** Per player attribute cache, ATTRS values each (layout above). */
   attr: Float64Array;
   /** Match stats per side. */
   possMs: Float64Array;
@@ -138,6 +165,53 @@ export interface OnBallState {
   boxEntries: Int32Array;
   entered: boolean;
   shots: Int32Array;
+  onTarget: Int32Array;
+  blocked: Int32Array;
+  woodwork: Int32Array;
+  shotsInBox: Int32Array;
+  xg: Float64Array;
+  /** Corners won (a stand-in restart until build step 5) and goal kicks taken. */
+  corners: Int32Array;
+  goalKicks: Int32Array;
+  /** Throw-ins won (a stand-in restart until build step 5). */
+  throwIns: Int32Array;
+  /** The carrier is taking a throw-in: he can only pass, and nobody can tackle him. */
+  throwIn: boolean;
+  /** Last player to touch the ball in any way (decides restarts and own goals). */
+  lastKick: number;
+  /** The last completed pass: who received it and who played it (for assists). */
+  lastRecv: number;
+  lastRecvFrom: number;
+  /** The shot that is in flight or was deflected, until somebody else plays the ball. */
+  shooter: number;
+  shotXg: number;
+  shotHeader: boolean;
+  shotAssist: number;
+  /** The planned flight of the shot in flight: samples 1..shotN (SHOT_VALUES each), one per
+   * ball substep after the strike, how many have been played, and the planned contact. */
+  shotPath: Float64Array;
+  shotN: number;
+  shotK: number;
+  /** Sample at which the shot is blocked or saved (0 if neither), how far along the move into
+   * that sample the touch is (0..1), by whom, and how (1 block, 2 save). */
+  shotEventK: number;
+  shotEventU: number;
+  shotEventKind: number;
+  shotEventPlayer: number;
+}
+
+/** Off-the-ball attacking jobs (attack.ts): runs in behind and filling the box. */
+export interface AttackState {
+  /** Per player: run in behind until this time, where to, and no new run before runNext. */
+  runUntil: Float64Array;
+  runNext: Float64Array;
+  runX: Float64Array;
+  runY: Float64Array;
+  /** Per player: the box zone he is filling (-1 if none). */
+  boxSlot: Int8Array;
+  /** Per side: box filling is on, and which side of the goal the ball is (-1 left, +1 right, team frame). */
+  boxOn: Uint8Array;
+  boxSign: Float64Array;
 }
 
 export interface SpatialMatch {
@@ -155,6 +229,8 @@ export interface SpatialMatch {
   endMs: number;
   rng: Rng;
   loft: LoftTable;
+  /** Loft table for crosses (a flatter flight). */
+  crossLoft: LoftTable;
   px: Float64Array;
   py: Float64Array;
   vx: Float64Array;
@@ -181,6 +257,19 @@ export interface SpatialMatch {
   poss: Side;
   possChanged: boolean;
   onball: OnBallState;
+  attack: AttackState;
+  score: Int32Array;
+  shotLog: ShotRecord[];
+  goalLog: GoalRecord[];
+  /** The restart being waited for (RESTART_*), by which side, when it is taken, when the ball
+   * is put on the spot (it sits in the net or out of play until then), where, and who takes it. */
+  restartKind: number;
+  restartSide: Side;
+  restartAt: number;
+  placeAt: number;
+  restartX: number;
+  restartY: number;
+  restartTaker: number;
   /** Actions not yet applied, in time order. */
   pending: SpatialAction[];
   /** Every action, applied or not, for the replay record. */

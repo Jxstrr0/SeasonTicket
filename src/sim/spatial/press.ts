@@ -53,13 +53,15 @@ export function updatePress(m: SpatialMatch, team: TeamState): void {
     resetPress(team);
   }
   const p = team.tactics.pressing - 1;
-  if (team.pressEngaged && now - team.pressStartMs >= P.chase[p] * 1000) {
+  // Near our own goal the ball is always closed down, whatever the pressing dial says.
+  const danger = depthOf(side, b.x) <= P.dangerZone;
+  if (team.pressEngaged && !danger && now - team.pressStartMs >= P.chase[p] * 1000) {
     resetPress(team);
     team.pressRestUntil = now + P.rest * 1000;
   }
-  if (!team.pressEngaged && now >= team.pressRestUntil) {
+  if (!team.pressEngaged && (danger || now >= team.pressRestUntil)) {
     const counterPressing = now < team.counterPressUntil;
-    if (counterPressing || depthOf(side, b.x) <= P.startZone[p]) {
+    if (danger || counterPressing || depthOf(side, b.x) <= P.startZone[p]) {
       const base = side * 11;
       // Outfielders by distance to the carrier (insertion sort; ties go to the lower index).
       let count = 0;
@@ -74,7 +76,8 @@ export function updatePress(m: SpatialMatch, team: TeamState): void {
         while (k > 0 && dist[cand[k - 1]] > d) { cand[k] = cand[k - 1]; k--; }
         cand[k] = i;
       }
-      const range = P.engage[p] * (counterPressing ? P.counterPressEngage : 1);
+      let range = P.engage[p] * (counterPressing ? P.counterPressEngage : 1);
+      if (danger && range < P.dangerEngage) range = P.dangerEngage;
       if (count > 0 && dist[cand[0]] <= range * range) {
         team.pressEngaged = true;
         team.pressStartMs = now;
@@ -178,26 +181,39 @@ export function updateTracking(m: SpatialMatch, team: TeamState): void {
   // Players busy pressing, covering or man-marking count as taken from the start.
   for (let s = 0; s < 11; s++) taken[s] = base + s === team.coverIdx || (s === team.markerSlot && team.markTarget >= 0) ? 1 : 0;
   for (let k = 0; k < team.pressSet.length; k++) taken[team.pressSet[k] - base] = 1;
-  const r2 = TR.radius * TR.radius;
   for (let a = 0; a < n; a++) {
     const j = runners[a];
-    let best = -1, bd = r2;
-    for (let s = 1; s < 11; s++) {
-      if (taken[s]) continue;
-      const i = base + s;
-      const dx = m.sx[i] - m.px[j], dy = m.sy[i] - m.py[j];
-      const d2 = dx * dx + dy * dy;
-      if (d2 < bd) { bd = d2; best = s; }
-    }
+    // Near goal a runner is picked up by a defender goal-side of him if there is one free,
+    // not by the midfielder he has just run past.
+    const rd = runDepth[j];
+    let best = rd < TR.boxFrom ? nearestFree(m, team, j, rd + TR.behindSlack) : -1;
+    if (best < 0) best = nearestFree(m, team, j, Infinity);
     if (best >= 0) { taken[best] = 1; team.track[best] = j; }
   }
+}
+
+/** The free defender whose spot is nearest runner j, within the tracking radius and no deeper than maxDepth. */
+function nearestFree(m: SpatialMatch, team: TeamState, j: number, maxDepth: number): number {
+  const base = team.side * 11;
+  let best = -1, bd = TR.radius * TR.radius;
+  for (let s = 1; s < 11; s++) {
+    if (taken[s]) continue;
+    const i = base + s;
+    if (depthOf(team.side, m.sx[i]) > maxDepth) continue;
+    const dx = m.sx[i] - m.px[j], dy = m.sy[i] - m.py[j];
+    const d2 = dx * dx + dy * dy;
+    if (d2 < bd) { bd = d2; best = s; }
+  }
+  return best;
 }
 
 /** How far from his spot towards his runner a tracking defender goes, 0..1. */
 export function trackWeight(m: SpatialMatch, team: TeamState, slot: number): number {
   const j = team.track[slot];
   const d = depthOf(team.side, m.px[j]);
-  return clamp((TR.far - d) / (TR.far - TR.near), 0, 1) * m.tight[team.side * 11 + slot];
+  const w = clamp((TR.far - d) / (TR.far - TR.near), 0, 1) * m.tight[team.side * 11 + slot];
+  // Close to goal everyone is picked up tight.
+  return w + (1 - w) * clamp((TR.boxFrom - d) / TR.boxBlend, 0, 1);
 }
 
 /** A tracking defender moves from his spot towards a point just goal-side of his runner. */
@@ -205,11 +221,26 @@ export function trackTarget(m: SpatialMatch, team: TeamState, slot: number, out:
   const i = team.side * 11 + slot;
   const j = team.track[slot];
   towardsGoal(team.side, m.px[j], m.py[j]);
-  const gx = m.px[j] + TR.goalSide * dir[0];
-  const gy = m.py[j] + TR.goalSide * dir[1];
+  let ux = dir[0], uy = dir[1];
+  // Near goal he also shades towards the ball, to get to a pass for his man first.
+  const wb = TR.ballSide * clamp((TR.boxFrom - depthOf(team.side, m.px[j])) / TR.boxBlend, 0, 1);
+  if (wb > 0) {
+    const bx = m.ball.x - m.px[j], by = m.ball.y - m.py[j];
+    const bl = Math.sqrt(bx * bx + by * by);
+    if (bl > 1e-9) {
+      ux += (wb * bx) / bl; uy += (wb * by) / bl;
+      const l = Math.sqrt(ux * ux + uy * uy);
+      if (l > 1e-9) { ux /= l; uy /= l; }
+    }
+  }
+  const gx = m.px[j] + TR.goalSide * ux;
+  const gy = m.py[j] + TR.goalSide * uy;
   const w = trackWeight(m, team, slot);
   out[0] = m.sx[i] + w * (gx - m.sx[i]);
   out[1] = m.sy[i] + w * (gy - m.sy[i]);
+  // Near goal he holds his line against a runner still in front of it and drops with one
+  // who goes past it.
+  if (depthOf(team.side, m.px[j]) < TR.holdLineFrom && depthOf(team.side, out[0]) > depthOf(team.side, m.sx[i])) out[0] = m.sx[i];
   clampOut(out);
 }
 

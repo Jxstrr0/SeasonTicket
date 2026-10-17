@@ -62,8 +62,39 @@ export const ROLE = {
   MARK: 6,
   COUNTER: 7,
   TRACK: 8,
+  /** A run in behind the defence. */
+  RUN: 9,
+  /** Filling a zone in the box for a cross. */
+  BOX: 10,
 } as const;
 export type Role = (typeof ROLE)[keyof typeof ROLE];
+
+/** How a shot ended, settled when it was struck. */
+export type ShotOutcome = 'goal' | 'saved' | 'blocked' | 'off' | 'post';
+
+/** One shot. Players are global indices (side * 11 + slot); x, y is where it was struck. */
+export interface ShotRecord {
+  ms: number;
+  side: Side;
+  player: number;
+  x: number;
+  y: number;
+  xg: number;
+  header: boolean;
+  outcome: ShotOutcome;
+}
+
+/** One goal, credited to `side`. An own goal's scorer is the defender who put it in. */
+export interface GoalRecord {
+  ms: number;
+  side: Side;
+  scorer: number;
+  /** The team-mate whose pass the scorer took his shot from, or -1. */
+  assist: number;
+  xg: number;
+  ownGoal: boolean;
+  header: boolean;
+}
 
 /** Values per frame: 22 players (x, y) then the ball (x, y, z), all in centimetres. */
 export const FRAME_VALUES = 47;

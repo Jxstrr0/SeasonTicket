@@ -1,7 +1,7 @@
 /**
  * Engine Lab: a 2D top-down view of the spatial match engine (Stage 4.5). It is the
  * owner's tool for judging the engine: watch both shapes, change either side's tactics
- * while the match runs and see the change land. The engine runs on the main thread here;
+ * while the match runs and see the change land, and see every shot and goal. The engine runs on the main thread here;
  * it moves into a Web Worker in step 6. This file only reads engine state and queues
  * tactics: no match rules live here.
  */
@@ -10,8 +10,10 @@ import { FORMATIONS } from '../../sim/data';
 import { createLeague } from '../../sim/league';
 import { createSpatial, markingPair, matchStats, queueTactics, stepSpatial, teamShapeInfo } from '../../sim/spatial/engine';
 import { spatialSetupFromLeague } from '../../sim/spatial/setup';
-import type { SpatialMatch } from '../../sim/spatial/state';
-import { ROLE, type Side, type SpatialMode, type SpatialSetup } from '../../sim/spatial/types';
+import {
+  RESTART_CORNER, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_THROW_IN, type SpatialMatch,
+} from '../../sim/spatial/state';
+import { ROLE, type GoalRecord, type Side, type SpatialMode, type SpatialSetup } from '../../sim/spatial/types';
 import type { Dial, League, Tactics } from '../../sim/types';
 import { parseSeed, randomSeed } from '../app';
 import { esc } from '../html';
@@ -25,6 +27,8 @@ const VIEW_H = 68 + 2 * MARGIN;
 const MAX_FRAME_S = 0.1;
 const READOUT_MS = 250;
 const SKIP_MS = 60_000;
+/** How long the GOAL banner stays up, in real time (so it reads at any speed). */
+const BANNER_MS = 3000;
 
 type DialKey = 'mentality' | 'pressing' | 'defensiveLine' | 'width';
 const DIALS: { key: DialKey; label: string; low: string; high: string }[] = [
@@ -35,13 +39,24 @@ const DIALS: { key: DialKey; label: string; low: string; high: string }[] = [
 ];
 const DIAL_VALUES: Dial[] = [1, 2, 3, 4, 5];
 
-const ROLE_NAMES = ['Holding shape', 'Goalkeeper', 'On the ball', 'Receiving', 'Pressing', 'Covering the press', 'Man-marking', 'Counter run', 'Tracking a runner'];
+const ROLE_NAMES = [
+  'Holding shape', 'Goalkeeper', 'On the ball', 'Receiving', 'Pressing', 'Covering the press', 'Man-marking',
+  'Counter run', 'Tracking a runner', 'Run in behind', 'Attacking the box',
+];
 const ROLE_RING: Partial<Record<number, string>> = {
   [ROLE.PRESS]: '#ff5d5d',
   [ROLE.COVER]: '#ffa94d',
   [ROLE.MARK]: '#5ee0ff',
   [ROLE.COUNTER]: '#ffe066',
   [ROLE.TRACK]: '#b197fc',
+  [ROLE.RUN]: '#69db7c',
+  [ROLE.BOX]: '#f783ac',
+};
+const RESTART_NAMES: Partial<Record<number, string>> = {
+  [RESTART_KICKOFF]: 'Kick-off',
+  [RESTART_GOAL_KICK]: 'Goal kick',
+  [RESTART_CORNER]: 'Corner',
+  [RESTART_THROW_IN]: 'Throw-in',
 };
 const KEEPER_FILL = ['#ff9f1c', '#c77dff'];
 const GRASS = '#2f803d';
@@ -115,10 +130,13 @@ export class EngineLab {
   private readonly ix = new Float64Array(22);
   private readonly iy = new Float64Array(22);
   private readonly pendingMs: [number, number] = [0, 0];
-  private overlays = { roles: true, lines: true, spots: false, moves: false };
+  private overlays = { roles: true, lines: true, shots: false, spots: false, moves: false };
   private selected = -1;
   private lastFrame = 0;
   private lastReadout = 0;
+  /** Goals already listed and bannered, and when the banner comes down (real time). */
+  private goalsSeen = 0;
+  private bannerUntil = 0;
 
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
@@ -167,12 +185,16 @@ export class EngineLab {
     this.pendingMs[0] = 0;
     this.pendingMs[1] = 0;
     this.selected = -1;
+    this.goalsSeen = 0;
+    this.bannerUntil = 0;
     this.savePrev();
     this.renderBar();
     this.renderTabs();
     this.renderTactics();
     this.renderMatchSection();
+    this.renderGoals();
     this.updateReadout();
+    this.hideBanner();
   }
 
   private ended(): boolean {
@@ -214,6 +236,8 @@ export class EngineLab {
       this.advance(this.viewMs + dt * 1000 * this.speed);
       if (this.ended()) this.renderBar();
     }
+    this.checkGoals(now);
+    if (this.bannerUntil && now >= this.bannerUntil) this.hideBanner();
     this.draw();
     if (now - this.lastReadout >= READOUT_MS) {
       this.lastReadout = now;
@@ -327,7 +351,11 @@ export class EngineLab {
     <button type="button" class="btn-secondary lab-skip" data-act="skip">+1 min</button>
   </header>
   <div class="lab-main">
-    <div class="lab-pitch"><canvas aria-label="Top-down view of the match"></canvas></div>
+    <div class="lab-pitch">
+      <canvas aria-label="Top-down view of the match"></canvas>
+      <p class="lab-restart" aria-hidden="true" hidden></p>
+      <p class="lab-banner" role="status" aria-live="polite" hidden></p>
+    </div>
     <aside class="lab-panel">
       <p class="lab-rotate small muted">Turn your phone sideways for a bigger pitch.</p>
       <section class="lab-sel card" hidden></section>
@@ -335,10 +363,12 @@ export class EngineLab {
       <section class="lab-tactics"></section>
       <section class="lab-readout card"></section>
       <section class="lab-stats card"></section>
+      <section class="lab-goals-list card"></section>
       <section class="lab-overlays">
         <h3 class="lab-h">Show on the pitch</h3>
-        ${overlay('roles', 'Pressing, cover, marking and counter runs')}
+        ${overlay('roles', 'What players are doing (rings, key below)')}
         ${overlay('lines', 'Each back line (solid) and where it is aiming (dotted)')}
+        ${overlay('shots', 'Shot map (bigger = better chance, filled = goal)')}
         ${overlay('spots', 'Shape spots (where each player wants to stand)')}
         ${overlay('moves', 'Movement arrows (one second ahead)')}
         <p class="small muted lab-legend">
@@ -346,10 +376,13 @@ export class EngineLab {
           <span style="--c:#ffa94d">Cover</span>
           <span style="--c:#5ee0ff">Man-marking</span>
           <span style="--c:#ffe066">Counter run</span>
+          <span style="--c:#b197fc">Tracking a runner</span>
+          <span style="--c:#69db7c">Run in behind</span>
+          <span style="--c:#f783ac">Attacking the box</span>
         </p>
       </section>
       <section class="lab-match"></section>
-      <p class="small muted">Engine step 3 of 7. Real passing, interceptions, tackles and loose balls. Shots are stand-ins until step 4 (no goals yet), and the ball never goes out of play until step 5. Tap a player to follow him.</p>
+      <p class="small muted">Engine step 4 of 7. Real shots, blocks, saves and goals, runs in behind and crosses. Corners and throw-ins are simple stand-ins, and there are no fouls, offsides, free kicks or cards until step 5. Tap a player to follow him.</p>
     </aside>
   </div>
 </div>`;
@@ -361,7 +394,9 @@ export class EngineLab {
     const score = this.root.querySelector('.lab-score') as HTMLElement;
     score.innerHTML = `
       <span class="lab-team"><span class="lab-dot" style="background:${this.kit[0].fill};border-color:${this.kit[0].edge}"></span>${esc(s.home.short)}</span>
+      <span class="lab-goals" aria-label="${esc(s.home.short)} goals">${m.score[0]}</span>
       <span class="lab-clock">${this.ended() ? 'FT' : clock(m.clockMs)}</span>
+      <span class="lab-goals" aria-label="${esc(s.away.short)} goals">${m.score[1]}</span>
       <span class="lab-team">${esc(s.away.short)}<span class="lab-dot" style="background:${this.kit[1].fill};border-color:${this.kit[1].edge}"></span></span>`;
     const play = this.root.querySelector('.lab-play') as HTMLButtonElement;
     play.textContent = this.ended() ? '↺' : this.playing ? '❚❚' : '▶';
@@ -439,6 +474,12 @@ export class EngineLab {
     const m = this.m;
     const bar = this.root.querySelector('.lab-clock');
     if (bar) bar.textContent = this.ended() ? 'FT' : clock(m.clockMs);
+    const goals = this.root.querySelectorAll('.lab-goals');
+    if (goals.length === 2) { goals[0].textContent = String(m.score[0]); goals[1].textContent = String(m.score[1]); }
+    const restart = this.root.querySelector('.lab-restart') as HTMLElement;
+    const name = this.ended() ? undefined : RESTART_NAMES[m.restartKind];
+    restart.hidden = !name;
+    if (name) restart.textContent = `${name} · ${(m.restartSide === 0 ? m.setup.home : m.setup.away).short}`;
 
     const box = this.root.querySelector('.lab-readout') as HTMLElement;
     const rows = ([0, 1] as Side[]).map((side) => {
@@ -467,7 +508,12 @@ export class EngineLab {
         ${statRow('Passes cut out', (t) => String(t.intercepted))}
         ${statRow('Tackles made', (t) => String(t.tackles))}
         ${statRow('Box entries', (t) => String(t.boxEntries))}
-        ${statRow('Shots (stand-in)', (t) => String(t.shots))}
+        ${statRow('Shots', (t) => String(t.shots))}
+        ${statRow('On target', (t) => String(t.onTarget))}
+        ${statRow('Blocked', (t) => String(t.blocked))}
+        ${statRow('Expected goals', (t) => t.xg.toFixed(2))}
+        ${statRow('Corners', (t) => String(t.corners))}
+        ${statRow('Throw-ins', (t) => String(t.throwIns))}
       </tbody></table>`;
 
     const pending = this.root.querySelector('.lab-pending');
@@ -491,6 +537,48 @@ export class EngineLab {
         <p class="small">${ROLE_NAMES[m.role[i]] ?? 'Unknown'} · ${speed.toFixed(0)} km/h · ${(m.dist[i] / 1000).toFixed(2)} km run</p>
         <p class="small muted">Dashed line: where his shape wants him. Tap him again to stop following.</p>`;
     }
+  }
+
+  /** A player's name from his global index. */
+  private playerName(i: number): string {
+    const side = i < 11 ? this.m.setup.home : this.m.setup.away;
+    return side.players[i % 11]?.name ?? '?';
+  }
+
+  /** "12' Name (assist Name), xG 0.23" for one goal, as HTML. */
+  private goalLine(g: GoalRecord): string {
+    const minute = `${Math.floor(g.ms / 60_000) + 1}'`;
+    const how = g.ownGoal ? ' (own goal)' : g.assist >= 0 ? ` (assist ${esc(this.playerName(g.assist))})` : '';
+    const extra = g.ownGoal ? '' : `${g.header ? ' header,' : ''} xG ${g.xg.toFixed(2)}`;
+    return `${minute} ${esc(this.playerName(g.scorer))}${how}<span class="muted">${extra}</span>`;
+  }
+
+  private renderGoals(): void {
+    const box = this.root.querySelector('.lab-goals-list') as HTMLElement;
+    const log = this.m.goalLog;
+    const rows = log.map((g) => `<li><span class="lab-dot" style="background:${this.kit[g.side].fill};border-color:${this.kit[g.side].edge}"></span>${this.goalLine(g)}</li>`).join('');
+    box.innerHTML = `<h3 class="lab-h">Goals</h3>${log.length ? `<ul class="lab-goal-rows">${rows}</ul>` : '<p class="small muted">No goals yet.</p>'}`;
+  }
+
+  /** New goals since the last frame: list them and put the latest up in the banner. */
+  private checkGoals(now: number): void {
+    const log = this.m.goalLog;
+    if (log.length === this.goalsSeen) return;
+    this.goalsSeen = log.length;
+    this.renderGoals();
+    this.updateReadout();
+    const g = log[log.length - 1];
+    const s = this.m.setup;
+    const banner = this.root.querySelector('.lab-banner') as HTMLElement;
+    banner.innerHTML = `<strong>GOAL!</strong> ${esc(s.home.short)} ${this.m.score[0]}–${this.m.score[1]} ${esc(s.away.short)}<br><span class="small">${this.goalLine(g)}</span>`;
+    banner.style.setProperty('--c', this.kit[g.side].line);
+    banner.hidden = false;
+    this.bannerUntil = now + BANNER_MS;
+  }
+
+  private hideBanner(): void {
+    this.bannerUntil = 0;
+    (this.root.querySelector('.lab-banner') as HTMLElement).hidden = true;
   }
 
   /** A narrow column heading: kit dot and the first three letters, full name for screen readers. */
@@ -585,6 +673,7 @@ export class EngineLab {
     const r = Math.max(1.25 * this.scale, 8);
 
     if (this.overlays.lines) this.drawLines();
+    if (this.overlays.shots) this.drawShots();
     if (this.overlays.spots) {
       ctx.lineWidth = 1.5;
       for (let i = 0; i < 22; i++) {
@@ -672,6 +761,28 @@ export class EngineLab {
     ctx.strokeStyle = '#10131f';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(sx, sy - bz * 0.45 * this.scale, br, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+
+  /**
+   * Every shot so far where it was struck: size by expected goals, filled for a goal, a solid
+   * ring if saved or blocked, a faint ring if it missed.
+   */
+  private drawShots(): void {
+    const ctx = this.ctx;
+    ctx.lineWidth = 2;
+    for (const r of this.m.shotLog) {
+      const rad = Math.max(3, (0.5 + 2.2 * Math.sqrt(r.xg)) * this.scale);
+      const c = this.kit[r.side].line;
+      ctx.beginPath(); ctx.arc(this.X(r.x), this.Y(r.y), rad, 0, Math.PI * 2);
+      if (r.outcome === 'goal') {
+        ctx.globalAlpha = 0.9; ctx.fillStyle = c; ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      } else {
+        ctx.globalAlpha = r.outcome === 'saved' || r.outcome === 'blocked' ? 0.9 : 0.45;
+        ctx.strokeStyle = c; ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   /** Each team's back line (solid, from the players drawn) and the line it is aiming for (dotted). */

@@ -16,7 +16,7 @@ const SEP2 = SEP * SEP;
 
 /** Roles that go at full speed whatever the distance. */
 function urgent(role: number): boolean {
-  return role === ROLE.PRESS || role === ROLE.COUNTER || role === ROLE.MARK || role === ROLE.RECEIVE;
+  return role === ROLE.PRESS || role === ROLE.COUNTER || role === ROLE.MARK || role === ROLE.RECEIVE || role === ROLE.RUN;
 }
 
 export function movePlayers(m: SpatialMatch): void {
@@ -27,7 +27,7 @@ export function movePlayers(m: SpatialMatch): void {
     const dy = m.ty[i] - m.py[i];
     const d = Math.sqrt(dx * dx + dy * dy);
     let cap: number;
-    if (urgent(m.role[i])) cap = m.top[i];
+    if (urgent(m.role[i]) || (i % 11 === 0 && m.teams[i < 11 ? 0 : 1].rush)) cap = m.top[i];
     else if (d < GD[0]) cap = GS[0];
     else if (d < GD[1]) cap = GS[1];
     else if (d < GD[2]) cap = GS[2];
@@ -44,10 +44,15 @@ export function movePlayers(m: SpatialMatch): void {
         if (cap < rv) cap = rv;
       }
     }
-    // Out of position with the ball going the other way: get back goal-side at a run.
-    if ((m.role[i] === ROLE.SHAPE || m.role[i] === ROLE.TRACK) && m.poss !== (i < 11 ? 0 : 1) && (i < 11 ? -dx : dx) > MV.recoverOver) {
-      const rc = m.top[i] * MV.recoverShare;
-      if (cap < rc) cap = rc;
+    // Without the ball, a player whose spot is goal-side of him drops back in step with it,
+    // at a run once he is well out of position.
+    if ((m.role[i] === ROLE.SHAPE || m.role[i] === ROLE.TRACK) && m.poss !== (i < 11 ? 0 : 1)) {
+      const back = i < 11 ? -dx : dx;
+      if (back > 0) {
+        const run = m.top[i] * MV.recoverShare;
+        const rc = back > MV.recoverOver ? run : Math.min(run, d / MV.dropTau);
+        if (cap < rc) cap = rc;
+      }
     }
     let top = m.top[i];
     if (i === owner) { cap *= MV.withBall; top *= MV.withBall; }

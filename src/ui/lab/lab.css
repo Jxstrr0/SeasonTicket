@@ -20,6 +20,7 @@
 .lab-score { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; font-weight: 700; }
 .lab-team { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .lab-clock { font-variant-numeric: tabular-nums; min-width: 4.2em; text-align: center; color: var(--accent); }
+.lab-goals { font-variant-numeric: tabular-nums; font-size: 1.15rem; min-width: 1ch; text-align: center; }
 .lab-play { font-size: 1rem; }
 .lab-speed { flex-wrap: nowrap; flex: none; }
 .lab-speed .seg { flex: 0 0 auto; min-width: var(--tap); padding: 8px 10px; }
@@ -43,6 +44,36 @@
 }
 .lab-pitch { position: relative; min-width: 0; min-height: 0; background: #1f5a2b; touch-action: manipulation; }
 .lab-pitch canvas { position: absolute; display: block; }
+.lab-restart {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(11, 16, 32, 0.72);
+  font-size: 0.8rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.lab-banner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 3px solid var(--c, var(--accent));
+  background: rgba(11, 16, 32, 0.9);
+  text-align: center;
+  font-size: 1.05rem;
+  pointer-events: none;
+  max-width: 90%;
+}
+.lab-banner strong { font-size: 1.4rem; letter-spacing: 0.04em; color: var(--accent); }
+.lab-goal-rows { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
 
 .lab-panel {
   overflow-y: auto;

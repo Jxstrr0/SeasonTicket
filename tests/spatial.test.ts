@@ -1,19 +1,24 @@
 /**
- * Spatial match engine, build steps 2 and 3: shape and movement, then passing and possession.
- * Checks the deterministic maths, the ban on platform maths, ball flight, team shape,
- * tactic responses, determinism and replay, whole-match sanity, and that possession and
- * passing look believable. The time budgets are in tests/perf (docs/DESIGN.md 17.11).
+ * Spatial match engine, build steps 2 to 4: shape and movement, passing and possession, then
+ * attacking and shooting. Checks the deterministic maths, the ban on platform maths, ball
+ * flight, team shape, tactic responses, determinism and replay, whole-match sanity, that
+ * possession, passing, shots and goals look believable, and the stand-in restarts. The time
+ * budgets are in tests/perf (docs/DESIGN.md 17.11).
  */
 import { describe, expect, it } from 'vitest';
 import { simulateFlight } from '../src/sim/spatial/ball';
+import { SPATIAL_TUNING } from '../src/sim/data';
 import { PI, detAtan, detAtan2, detCos, detExp, detLog, detPow, detSin, powInt, sCurve } from '../src/sim/spatial/det';
 import {
   captureFrame, createSpatial, fingerprint, freezeBall, markingPair, playerRole, pressingPlayers,
   matchStats, queueTactics, replayFrames, runSeconds, spatialRecord, stepSpatial, teamShapeInfo,
   type SideStats,
 } from '../src/sim/spatial/engine';
-import { LENGTH, N, WIDTH, depthOf, type SpatialMatch } from '../src/sim/spatial/state';
-import { FRAME_VALUES, ROLE, type Side, type SpatialMode, type SpatialSetup } from '../src/sim/spatial/types';
+import { inAttackBox, xgFrom } from '../src/sim/spatial/shot';
+import {
+  BALL_DEAD, LENGTH, N, RESTART_KICKOFF, RESTART_NONE, RESTART_THROW_IN, WIDTH, depthOf, sideOf, type SpatialMatch,
+} from '../src/sim/spatial/state';
+import { FRAME_VALUES, ROLE, type Side, type SpatialMode, type SpatialSetup, type SpatialSide } from '../src/sim/spatial/types';
 import type { Dial, Tactics } from '../src/sim/types';
 import { listSources, readSource } from './helpers/node.mjs';
 import { setup, side, tactics } from './helpers/spatialFixtures';
@@ -234,12 +239,16 @@ interface Behaviour {
 function behaviour(home: Partial<Tactics>, seed: string, minutes = 20): Behaviour {
   const m = createSpatial(setup(home), seed, 'fine');
   let oppSteps = 0, pressSteps = 0, pressers = 0, counterSteps = 0, markSteps = 0, markDist = 0;
+  let lostAt = 0, lastPoss = m.poss;
   while (m.clockMs < minutes * 60000 && stepSpatial(m)) {
-    if (m.poss === 1) {
+    if (m.poss !== lastPoss) { lastPoss = m.poss; lostAt = m.clockMs; }
+    // Open play only, away from our own goal, where the ball is always closed down.
+    if (m.poss === 1 && m.ball.state !== BALL_DEAD && m.ball.x > SPATIAL_TUNING.press.dangerZone) {
       oppSteps++;
       const p = pressingPlayers(m, 0);
       if (p.length > 0) { pressSteps++; pressers += p.length; }
-      const pair = markingPair(m, 0);
+      // Once he has had a couple of seconds to get back to his man after losing the ball.
+      const pair = m.clockMs - lostAt >= 2000 ? markingPair(m, 0) : null;
       if (pair) {
         markSteps++;
         const dx = m.px[pair[0]] - m.px[pair[1]];
@@ -340,14 +349,13 @@ describe('spatial match sanity', () => {
     }
     expect(bad).toBe(0);
     expect(m.clockMs).toBeGreaterThanOrEqual(5_400_000);
-    // The ball never goes dead yet (throw-ins, goal kicks and fouls arrive in step 5), so
-    // outfielders run about 13.5 km; real matches are 9 to 13. Tighten this once dead-ball
-    // time exists.
+    // Outfielders still run about 13 km on average, the busiest about 16.5; real matches are
+    // 9 to 13. Fatigue and the tuning pass (build steps 6 and 7) bring this down; tighten it then.
     for (let i = 0; i < N; i++) {
       const km = m.dist[i] / 1000;
       if (i % 11 === 0) { expect(km).toBeLessThan(8); continue; }
       expect(km).toBeGreaterThan(8);
-      expect(km).toBeLessThan(16.5);
+      expect(km).toBeLessThan(17.5);
     }
   });
 });
@@ -393,8 +401,10 @@ describe('spatial passing and possession', () => {
           expect(st[q].completion).toBeGreaterThan(0.7);
           expect(st[q].completion).toBeLessThan(0.88);
         }
+        // Real matches have about 10 a minute; ours run high (about 15 fine, 12 coarse, where
+        // dead balls take longer). The tuning pass (build step 7) brings this down.
         const perMinute = (st[0].passes + st[1].passes) / 90;
-        expect(perMinute).toBeGreaterThan(12);
+        expect(perMinute).toBeGreaterThan(9);
         expect(perMinute).toBeLessThan(19);
       }
     },
@@ -423,4 +433,142 @@ describe('spatial passing and possession', () => {
     expect(patient.possession).toBeGreaterThan(direct.possession + 0.02);
     expect(completion(patient)).toBeGreaterThan(completion(direct) + 0.02);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Attacking and shooting (build step 4)
+// ---------------------------------------------------------------------------
+
+describe('spatial shot quality (xG)', () => {
+  const GC = WIDTH / 2;
+  const at = (x: number, y: number, header = false): number => xgFrom(0, x, y, header, false);
+
+  it('a central chance is worth more than the same distance from an angle', () => {
+    expect(at(LENGTH - 12, GC)).toBeGreaterThan(at(LENGTH - 12 * 0.6, GC + 12 * 0.8) * 1.5);
+  });
+
+  it('chances get worse with distance and headers are worth less', () => {
+    let last = 1;
+    for (const d of [6, 11, 16, 22, 30]) {
+      const v = at(LENGTH - d, GC);
+      expect(v).toBeLessThan(last);
+      last = v;
+    }
+    expect(at(LENGTH - 8, GC)).toBeGreaterThan(0.2);
+    expect(at(LENGTH - 30, GC)).toBeLessThan(0.05);
+    expect(at(LENGTH - 8, GC, true)).toBeLessThan(at(LENGTH - 8, GC) * 0.8);
+  });
+
+  it('is the same for both sides attacking their own way', () => {
+    expect(xgFrom(1, 14, 30, false, false)).toBeCloseTo(xgFrom(0, LENGTH - 14, WIDTH - 30, false, false), 12);
+  });
+});
+
+interface Attack { matches: number; goals: number; shots: number; xg: number; inBox: number; goalsWithShot: number; goalsInBox: number; onTarget: number }
+
+/** Shot and goal totals over a few whole matches, for one side or both. */
+function attacking(s: SpatialSetup, seed: string, mode: SpatialMode, matches: number, sides: Side[] = [0, 1]): Attack {
+  const a: Attack = { matches, goals: 0, shots: 0, xg: 0, inBox: 0, goalsWithShot: 0, goalsInBox: 0, onTarget: 0 };
+  for (let k = 0; k < matches; k++) {
+    const m = createSpatial(s, `${seed}-${k}`, mode);
+    while (stepSpatial(m)) { /* play the match */ }
+    const st = matchStats(m);
+    for (const q of sides) {
+      a.goals += st[q].goals; a.shots += st[q].shots; a.xg += st[q].xg; a.onTarget += st[q].onTarget;
+    }
+    for (const r of m.shotLog) {
+      if (!sides.includes(r.side)) continue;
+      if (inAttackBox(r.side, r.x, r.y)) a.inBox++;
+    }
+    for (const g of m.goalLog) {
+      if (!sides.includes(g.side) || g.ownGoal || g.xg === 0) continue;
+      // The shot it came from: his last one at or before the goal.
+      let shot = null;
+      for (const r of m.shotLog) if (r.player === g.scorer && r.ms <= g.ms) shot = r;
+      if (!shot) continue;
+      a.goalsWithShot++;
+      if (inAttackBox(shot.side, shot.x, shot.y)) a.goalsInBox++;
+    }
+  }
+  return a;
+}
+
+describe('spatial attacking and shooting', () => {
+  it.each([['coarse', 12, 1.8, 3.8], ['fine', 4, 1.25, 4.5]] as [SpatialMode, number, number, number][])(
+    'even sides make believable chances and goals (%s)',
+    (mode, matches, lo, hi) => {
+      const a = attacking(setup(), 'attack', mode, matches);
+      expect(a.goals / matches).toBeGreaterThan(lo);
+      expect(a.goals / matches).toBeLessThan(hi);
+      // The target is 9 to 16 a team; fine matches sit at the top of it. Step 7 tightens this.
+      expect(a.shots / matches / 2).toBeGreaterThan(8);
+      expect(a.shots / matches / 2).toBeLessThan(18);
+      // Most shots, and nearly all goals, come from inside the box.
+      expect(a.inBox / a.shots).toBeGreaterThan(0.55);
+      expect(a.goalsInBox / a.goalsWithShot).toBeGreaterThan(0.75);
+      // Goals follow the chances.
+      expect(a.goals / a.xg).toBeGreaterThan(0.6);
+      expect(a.goals / a.xg).toBeLessThan(1.4);
+      expect(a.onTarget / a.shots).toBeGreaterThan(0.25);
+      expect(a.onTarget / a.shots).toBeLessThan(0.5);
+    },
+    60_000,
+  );
+
+  const finishing = (s: SpatialSide, v: number): SpatialSide => ({
+    ...s, players: s.players.map((p, k) => (k === 0 ? p : { ...p, attributes: { ...p.attributes, fin: v } })),
+  });
+  const keeper = (s: SpatialSide, v: number): SpatialSide => ({
+    ...s, players: s.players.map((p, k) => (k > 0 ? p : { ...p, attributes: { ...p.attributes, ref: v, han: v, gkp: v } })),
+  });
+
+  it('good finishers score more of their chances than poor ones', () => {
+    const away = side('away', tactics());
+    const good = attacking({ home: finishing(side('home', tactics()), 88), away }, 'finish', 'coarse', 10, [0]);
+    const poor = attacking({ home: finishing(side('home', tactics()), 38), away }, 'finish', 'coarse', 10, [0]);
+    expect(good.goals / good.xg).toBeGreaterThan(poor.goals / poor.xg + 0.4);
+    expect(good.onTarget / good.shots).toBeGreaterThan(poor.onTarget / poor.shots);
+  }, 60_000);
+
+  it('a good keeper saves more than a poor one', () => {
+    const home = side('home', tactics());
+    const good = attacking({ home, away: keeper(side('away', tactics()), 88) }, 'keeper', 'coarse', 10, [0]);
+    const poor = attacking({ home, away: keeper(side('away', tactics()), 38) }, 'keeper', 'coarse', 10, [0]);
+    expect(good.goals / good.onTarget).toBeLessThan(poor.goals / poor.onTarget - 0.1);
+    expect(good.goals).toBeLessThan(poor.goals);
+  }, 60_000);
+});
+
+describe('spatial restarts', () => {
+  it.each(['fine', 'coarse'] as SpatialMode[])('kick-offs, goal kicks and throw-ins go to the right side (%s)', (mode) => {
+    const m = createSpatial(setup(), 'restarts', mode);
+    let goals = 0, kick = 0, throws = 0, wrong = 0, lastKind = RESTART_NONE;
+    while (stepSpatial(m)) {
+      if (m.goalLog.length > goals) {
+        const g = m.goalLog[goals++];
+        // The side that conceded kicks off, once the ball is back on the spot.
+        if (m.ball.state !== BALL_DEAD || m.restartKind !== RESTART_KICKOFF || m.restartSide !== 1 - g.side) wrong++;
+      }
+      if (m.restartKind !== lastKind) {
+        if (m.restartKind === RESTART_KICKOFF && lastKind === RESTART_NONE) kick++;
+        if (m.restartKind === RESTART_THROW_IN) {
+          throws++;
+          // To the other side from the last touch, from the touchline, taken by one of theirs.
+          const k = m.onball.lastKick;
+          if (k >= 0 && sideOf(k) === m.restartSide) wrong++;
+          if (m.restartY !== 0 && m.restartY !== WIDTH) wrong++;
+          if (sideOf(m.restartTaker) !== m.restartSide) wrong++;
+        }
+        lastKind = m.restartKind;
+      }
+    }
+    const st = matchStats(m);
+    expect(wrong).toBe(0);
+    expect(kick).toBe(goals);
+    expect(throws).toBe(st[0].throwIns + st[1].throwIns);
+    // Fine matches have far fewer than real football's 40 or so (docs/DESIGN.md 17.15).
+    expect(throws).toBeGreaterThan(3);
+    expect(throws).toBeLessThan(90);
+    expect(st[0].goalKicks + st[1].goalKicks).toBeGreaterThan(4);
+  }, 30_000);
 });
