@@ -83,7 +83,8 @@ function renderControls(career: Career, ui: UiState, state: MatchState): string 
   <div class="live-controls">
     <button type="button" class="play-btn" data-action="${live.running ? 'live-pause' : 'live-play'}">${live.running ? 'Pause' : 'Play'}</button>
     <div class="segmented" role="group" aria-label="Speed">${speeds}</div>
-    <button type="button" class="${cls('btn-secondary', live.pitch && 'on')}" data-action="live-pitch" aria-pressed="${live.pitch}">2D pitch</button>
+    <button type="button" class="${cls('btn-secondary', live.pitch && 'on')}" data-action="live-pitch" aria-pressed="${live.pitch}">Pitch</button>
+    ${live.pitch && ui.quality !== 'off' && !ui.match3dFailed ? `<button type="button" class="${cls('btn-secondary', ui.match3d && 'on')}" data-action="match-3d" aria-pressed="${ui.match3d}">3D</button>` : ''}
     ${coachToggle}
     ${confirmButton(ui, 'live-skip', 'end', 'Skip to the end')}
     <button type="button" class="btn-secondary" data-action="live-leave">Office</button>

@@ -105,6 +105,25 @@ export function storeLivePitch(on: boolean): void {
   }
 }
 
+/** Whether matches show in 3D: kept per device, like the 2D pitch. */
+const MATCH_3D_KEY = 'seasonticket.match3d';
+
+export function loadMatch3d(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(MATCH_3D_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+export function storeMatch3d(on: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(MATCH_3D_KEY, on ? 'on' : 'off');
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
 export const LIVE_SPEEDS: readonly { ms: number; label: string }[] = [
   { ms: 700, label: '1x' },
   { ms: 350, label: '2x' },
@@ -138,6 +157,10 @@ export interface UiState {
   stadiumView: StadiumView;
   /** True once the 3D stadium failed on this device; the plan shows instead. */
   stadium3dFailed: boolean;
+  /** Matches show in 3D (when Graphics is not Off): kept per device. */
+  match3d: boolean;
+  /** True once the 3D match failed on this device; the 2D pitch shows instead. */
+  match3dFailed: boolean;
   reportOpen: boolean;
   /** The match the 2D replay shows (screen 'replay'). */
   replayId: string | null;
@@ -189,6 +212,8 @@ export function initialUi(): UiState {
     stadiumPick: 'west',
     stadiumView: 'model',
     stadium3dFailed: false,
+    match3d: loadMatch3d(),
+    match3dFailed: false,
     reportOpen: false,
     replayId: null,
     flash: null,

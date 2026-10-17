@@ -17,6 +17,7 @@ import { PERIOD, PERSONS, personOf, type Side } from '../../sim/spatial/types';
 import type { MatchReplay } from '../../sim/types';
 import { cls, each, esc } from '../html';
 import { PitchView, goalBanner, nameOf } from '../pitch2d';
+import type { Match3D, ThreeChoice } from './match3d';
 
 /** Match time per real second. */
 const SPEEDS = [1, 4, 8, 16, 32] as const;
@@ -74,8 +75,9 @@ export class ReplayHost {
   private readonly controls: HTMLElement;
   private readonly list: HTMLElement;
   private readonly wrap: HTMLElement;
+  private readonly toggle3d: HTMLButtonElement;
 
-  constructor() {
+  constructor(private readonly three: Match3D) {
     this.el = document.createElement('div');
     this.el.className = 'replay';
     this.el.innerHTML = `
@@ -83,6 +85,7 @@ export class ReplayHost {
         <button type="button" class="btn-secondary" data-action="close-replay">Back</button>
         <div class="rp-score" aria-live="polite"></div>
         <span class="rp-clock"></span>
+        <button type="button" class="btn-secondary rp-3d" data-action="match-3d" hidden>3D</button>
       </div>
       <div class="rp-pitch"><canvas aria-label="Top-down replay of the match"></canvas>
         <div class="rp-status" hidden></div>
@@ -105,6 +108,7 @@ export class ReplayHost {
     this.controls = q('.rp-controls');
     this.list = q('.rp-moments');
     this.wrap = q('.rp-pitch');
+    this.toggle3d = q('.rp-3d');
     this.el.addEventListener('click', (e) => this.onClick(e));
     this.seek.addEventListener('change', () => this.seekTo(Number(this.seek.value)));
     this.seek.addEventListener('input', () => { this.clock.textContent = this.timeAt(Number(this.seek.value)); });
@@ -115,9 +119,10 @@ export class ReplayHost {
    * Shows `replay` in the page's `[data-slot="replay-2d"]` slot, or stops when there is
    * none. The same replay keeps playing across renders; a new one starts from kick-off.
    */
-  sync(root: ParentNode, replay: MatchReplay | null): void {
+  sync(root: ParentNode, replay: MatchReplay | null, key = '', choice: ThreeChoice | null = null): void {
     const slot = replay ? root.querySelector('[data-slot="replay-2d"]') : null;
     if (!slot || !replay) {
+      this.three.detach(this.wrap);
       this.visible = false;
       cancelAnimationFrame(this.raf);
       this.raf = 0;
@@ -127,6 +132,12 @@ export class ReplayHost {
     slot.replaceWith(this.el);
     if (replay !== this.replayed) this.open(replay);
     this.visible = true;
+    const offered = !!choice?.tier && !this.three.failed && this.phase !== 'broken';
+    this.toggle3d.hidden = !offered;
+    this.toggle3d.textContent = choice?.want ? '2D' : '3D';
+    this.toggle3d.setAttribute('aria-label', choice?.want ? 'Show the 2D pitch' : 'Show the match in 3D');
+    if (offered && choice?.want && this.m) this.three.attach(this.wrap, this.canvas, key, this.m, choice);
+    else this.three.detach(this.wrap);
     this.view?.fit(this.wrap.clientWidth, this.wrap.clientHeight);
     if (!this.raf) {
       this.lastFrame = 0;
@@ -164,6 +175,7 @@ export class ReplayHost {
     }
     this.view = new PitchView(this.canvas, this.m.setup);
     this.view.savePrev(this.m);
+    this.three.savePrev(this.m);
     this.phase = 'checking';
     this.setStatus('Loading the match…');
     this.renderScore();
@@ -236,7 +248,8 @@ export class ReplayHost {
       this.bannerUntil = 0;
       this.banner.hidden = true;
     }
-    if (this.m && this.view) this.view.draw(this.m, this.viewMs);
+    if (this.m && this.three.ready && this.target === null) this.three.show(this.m, this.viewMs);
+    else if (this.m && this.view) this.view.draw(this.m, this.viewMs);
     if (now - this.lastReadout >= READOUT_MS) {
       this.lastReadout = now;
       this.renderScore();
@@ -256,6 +269,7 @@ export class ReplayHost {
     this.target = null;
     this.goalsSeen = m.goalLog.length;
     this.view?.savePrev(m);
+    this.three.savePrev(m);
     this.viewMs = m.clockMs;
     this.setStatus(null);
     this.renderControls();
@@ -266,6 +280,7 @@ export class ReplayHost {
     const m = this.m as SpatialMatch;
     while (m.clockMs < toMs) {
       this.view?.savePrev(m);
+      this.three.savePrev(m);
       if (!stepSpatial(m)) break;
     }
     this.viewMs = Math.min(toMs, m.clockMs);
