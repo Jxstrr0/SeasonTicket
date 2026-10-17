@@ -1,6 +1,6 @@
 {
   "_doc": "Spatial match engine starting values (docs/DESIGN.md section 17, appendix docs/history/STAGE_4_5_SKETCH_NOTES.md). Distances in metres, speeds in m/s, times in seconds unless the key ends in Ms. Five-value arrays are indexed by dial 1..5.",
-  "engineRev": 9,
+  "engineRev": 10,
   "pitch": {
     "length": 105,
     "width": 68,
@@ -67,7 +67,7 @@
     "width": [45, 51, 57, 62, 66],
     "behindBall": [6, 5, 5, 4, 3],
     "behindGap": 3,
-    "onsideMargin": 1
+    "onsideMargin": 1.5
   },
   "mentalityShift": [-6, -3, 0, 3, 6],
   "blendSeconds": [5, 2.5],
@@ -170,7 +170,7 @@
     "ownHalf": 51
   },
   "threat": {
-    "_doc": "Chance that a possession from a spot ends in a goal. 21 rows of 5 m along depth (own goal line first) by 14 columns of 68/14 m across; read with bilinear interpolation between cell centres.",
+    "_doc": "Chance that a possession from a spot ends in a goal. 21 rows of 5 m along depth (own goal line first) by 14 columns of 68/14 m across; read with bilinear interpolation between cell centres. A pass that does not find a free man in behind, and any cross, is worth less straight back to the player who just passed (returnMul) and to a marked receiver: 1 - markCost x (1 - d / markWithin) with his nearest opponent d m away.",
     "cell": 5,
     "cols": 14,
     "grid": [
@@ -474,6 +474,9 @@
     "recvBehind": 1.2,
     "pressedWithin": 2.5,
     "freeWithin": 5,
+    "returnMul": 0.6,
+    "markWithin": 6,
+    "markCost": 0.9,
     "oppLossWeight": 0.8,
     "riskByMentality": [1.15, 1.05, 1, 0.92, 0.85]
   },
@@ -666,7 +669,7 @@
     "blockLoss": 0.85,
     "valueMul": {
       "fine": 1.3,
-      "coarse": 1.36
+      "coarse": 1.45
     },
     "bonus": 0.1,
     "mentalityBonus": 0.5,
@@ -678,7 +681,7 @@
     "highZ": 1.9,
     "headZ": 0.4,
     "postInset": [0.5, 2],
-    "errBase": 0.105,
+    "errBase": 0.09,
     "errFin": 0.12,
     "errPress0": 0.6,
     "errPressure": 1.25,
@@ -757,8 +760,9 @@
     "cooldown": 4
   },
   "box": {
-    "_doc": "Filling the box when the ball is wide and deep. zones: depth, then across offset from the goal centre towards the ball's side (near post, far post, penalty spot, cut-back, edge). count by mentality.",
+    "_doc": "Filling the box when the ball is wide and deep, or held centrally at least centralFrom m up the pitch. zones: depth, then across offset from the goal centre towards the ball's side (near post, far post, penalty spot, cut-back, edge). count by mentality.",
     "fromDepth": 70,
+    "centralFrom": 78,
     "wideWithin": 20,
     "count": [2, 3, 3, 4, 5],
     "zones": [[99, 3], [98.5, -3], [94, 0], [91, 8], [84, 0]]
@@ -809,7 +813,7 @@
   },
   "offside": {
     "_doc": "A passer reads the offside line with an error of readError m (sd) at vision 50, none at 99. Players in an offside position when a team-mate plays the ball are offside if they touch it before an opponent plays it.",
-    "readError": 2.5
+    "readError": 1.5
   },
   "foul": {
     "_doc": "Chance a challenge is a foul. Tackles: front (standing) or from the side or behind, times aggression (aggBase + aggGain * agg / 99), times 1 + skillPer10 per 10 points of the carrier's dribbling over the tackler's tackling, times byThird by where it happens (the fouler's defensive, middle and attacking third: most fouls are in midfield), less in the tackler's own box and when he is booked. Loose-ball duels and aerial challenges have their own rates; aerialAttacker is the share of aerial fouls that are the attacker's (a push). At a corner, holding is called with cornerHold, the attacker's foul with cornerHoldAttacker. keepBall: after a foul on the carrier he still has it, so advantage can be played.",

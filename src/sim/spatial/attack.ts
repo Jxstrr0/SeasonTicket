@@ -73,7 +73,7 @@ function boxWanted(m: SpatialMatch, side: Side): boolean {
     // A free kick near enough to put into the box.
     return m.restartKind === RESTART_FREE_KICK && depthOf(side, m.restartX) >= LENGTH - T.freeKick.crossWithin;
   }
-  if (b.state === BALL_HELD) return b.owner >= 0 && sideOf(b.owner) === side && wideFinalThird(side, b.x, b.y);
+  if (b.state === BALL_HELD) return b.owner >= 0 && sideOf(b.owner) === side && (wideFinalThird(side, b.x, b.y) || depthOf(side, b.x) >= BX.centralFrom);
   const ob = m.onball;
   return b.state === BALL_AIR && ob.passCross && ob.passSide === side;
 }
