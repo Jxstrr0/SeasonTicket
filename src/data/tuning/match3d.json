@@ -22,6 +22,7 @@
       { "clip": "Sprint_Loop", "speed": 6.6 }
     ],
     "idle": "Idle_Loop",
+    "crouch": "Crouch_Idle_Loop",
     "timeScale": [0.6, 1.5],
     "turnRate": 9,
     "heldBall": { "forward": 0.32, "height": 1.08 }
@@ -66,5 +67,32 @@
     "ball": 0.5,
     "opacity": 0.42
   },
-  "crowdCap": 9000
+  "crowdCap": 9000,
+  "actions": {
+    "_about": "Stage 5.2: what the players do with the ball. The 3D view runs lagMs behind the engine so a leg can swing back before the ball leaves it. A touch with the ball headerFrom or higher is a header, chestFrom or higher a chest. A tackle from slideFrom or further from the ball is a slide. A keeper with the ball in his hands throws it when it leaves slower than keeperThrowBelow and flatter than loftedVz (upward speed), otherwise punts it. fullPower is the ball speed of a full-power strike. A dive starts no sooner than keeperReactMs after the shot is hit; a shot that beats him still gets a dive if no higher than diveHighest. diveMatchMs pairs a catch or parry with the dive planned for it. Times in ms.",
+    "lagMs": 400,
+    "headerFrom": 1.6,
+    "chestFrom": 0.85,
+    "slideFrom": 1.3,
+    "fullPower": 28,
+    "keeperThrowBelow": 15,
+    "loftedVz": 2,
+    "keeperReactMs": 120,
+    "diveHighest": 3.2,
+    "diveMatchMs": 600,
+    "_moves": "How the moves play out on the 3D players. kickWind is the backswing time of a soft kick in seconds (a full-power one takes kickWindPower longer). leftFooted is the share of players who kick with the left. A header jumps when the ball is jumpFrom or higher. A keeper dives when the ball is diveFrom or more to his side, no earlier than diveLead seconds before it arrives; diveReach is feet to fingertips. A keeper gets set (crouchSet of the crouch) when the other side has the ball within setWithin of his goal and he is slower than setBelow. Team-mates celebrate a goal within celebrateWithin of it. A thrown ball starts throwLift above where the engine has it, easing down over throwLiftMs.",
+    "kickWind": 0.24,
+    "kickWindPower": 0.12,
+    "leftFooted": 0.22,
+    "jumpFrom": 1.95,
+    "diveFrom": 0.9,
+    "diveLead": 0.55,
+    "diveReach": 2.2,
+    "setWithin": 28,
+    "setBelow": 1.5,
+    "crouchSet": 0.55,
+    "celebrateWithin": 35,
+    "throwLift": 1.9,
+    "throwLiftMs": 450
+  }
 }

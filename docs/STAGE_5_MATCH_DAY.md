@@ -54,6 +54,32 @@ Each step ends with a deploy and a short report.
   - If 3D can't start, or the browser drops it more than twice, the game says so and stays on 2D until the Graphics setting is changed.
 - **Measured** at a phone landscape viewport (844 by 390) at Medium: about 70 draw calls and 380,000 triangles. Most of the triangles are the 22 bodies at about 7,000 vertices each. A lower-detail body for Low and for far players is a 5.6 task.
 
+## What 5.2 shipped
+
+- **Files:**
+  - `src/ui/career/match3dTape.ts` watches the engine and writes an action cue for every touch of the ball (who, what, where, when, and how hard).
+  - `src/render/match/actions.ts` turns each cue into a move: a pose over time, layered on top of the running clips by bending the bones.
+  - Tuning is in the `actions` block of `src/data/tuning/match3d.json`.
+- **Cue kinds:** kick (passes, crosses, clearances, shots, goal kicks and punts), touch, header, chest, standing tackle, slide, keeper dive, block, throw (throw-ins and keeper throws), fall (fouled) and goal.
+- **The 3D view runs 400 ms behind the engine.** That lets a leg swing back before the engine's strike, so the foot meets the ball on the frame it leaves. The text feed and score are not delayed, and 400 ms is too short to notice.
+- **Kicks:**
+  - The backswing is longer for a harder strike.
+  - 22% of players are left-footed and kick with the left.
+  - A lofted ball lifts the kicking leg higher.
+- **Headers** jump when the ball is high enough. **Chest** control leans back with the arms out.
+- **Tackles:** a standing tackle steps in on the side of the ball. A tackle from further out is a slide. A fouled player falls.
+- **Keepers:**
+  - A keeper gets set (a low crouch) when the other side has the ball near his goal and he isn't moving much.
+  - For a shot, a keeper dives sideways when the ball is wide of him, timed to reach it as it arrives. Otherwise he jumps, scoops or takes it on the chest.
+  - A held ball sits in his hands, and goes over his head for a throw.
+  - Beaten shots still get a dive if they are low enough to reach.
+- **Throw-ins:** the ball goes overhead and the arms come forward. The thrown ball starts 1.9 m up and eases down to the engine's path over 450 ms, because the engine starts a throw at ground level.
+- **Goals:** the scorer runs with his arms out like a plane, then pumps a fist. Team-mates within 35 m raise their arms, and the scoring keeper raises one. The other side put their hands on their heads, and their keeper sinks down. An own goal has no scorer celebration.
+- **Ball spin:** the ball rolls with its speed on the ground. In the air it keeps a spin from take-off that slowly fades.
+- **Measured** on one full match (seed `tape1`):
+  - Cues: about 770 kicks, 750 touches, 240 tackles and slides, 70 headers, 30 throws, 12 dives and 9 catches.
+  - At 844 by 390, Medium: about 84 draw calls and 410,000 triangles. The moves cost no draw calls; they only bend bones.
+
 ## Budgets
 
 These target a mid-range phone (about a 2022 Android) at Medium.
@@ -82,6 +108,6 @@ These target a mid-range phone (about a 2022 Android) at Medium.
 
 ## Simplifications
 
-- **Kicks and touches** are approximated: the leg swing is procedural, not a captured animation.
+- **Kicks, touches, tackles and dives** are approximated: the moves are procedural bone bends on top of the running clips, not captured animations. Celebrations are arm and body poses on top of the engine's own runs, not set-piece celebrations such as knee slides.
 - **The body is one shared build.** Height and build don't vary by player yet.
 - **Shirt numbers and names** come later in step 5.4. The 2D view and the tap card will show who's who.
