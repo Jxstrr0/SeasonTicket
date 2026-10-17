@@ -13,16 +13,16 @@
  * Everything here is deterministic: the engine replays from its seed and inputs, and the
  * commentary, coach and injury lengths draw from the MatchState's own stream.
  */
-import { MATCH_TUNING } from '../data';
+import { COACH_TUNING, MATCH_TUNING, SPATIAL_TUNING } from '../data';
 import { inMatchDecisions } from '../coach';
 import { changeTactics } from '../match/actions';
 import { shootoutKickLabel } from '../match/commentary';
 import { createMatch, finalizeMatch } from '../match/engine';
 import { emitEvent, nameOf, type EventDraft } from '../match/events';
 import { ensurePlayerStats, sideState, type MatchContext, type MatchState, type Period, type SideState } from '../match/state';
-import { Rng } from '../rng';
-import type { MatchAction, MatchEvent, MatchResult, MatchSetup, PlayerMatchStats, Side as MatchSide, TeamMatchStats } from '../types';
-import { createSpatial, queueSubstitution, queueTactics, resumeSpatial, stepSpatial } from './engine';
+import { Rng, hashString } from '../rng';
+import type { MatchAction, MatchEvent, MatchReplay, MatchResult, MatchSetup, PlayerMatchStats, Side as MatchSide, TeamMatchStats } from '../types';
+import { createSpatial, fingerprint, queueSubstitution, queueTactics, resumeSpatial, spatialRecord, stepSpatial } from './engine';
 import { matchStats } from './onball';
 import { spatialSetupFromMatch } from './setup';
 import { PSTATS, PS_FOULS, PS_KEY, PS_PASSES, PS_SAVES, PS_SECS, PS_TACKLES, type SpatialMatch } from './state';
@@ -46,6 +46,16 @@ export interface SpatialLive {
   liveStats: boolean;
   /** For a restarted match (resumeSpatialLive): the stats before the restart, added to the engine's. */
   carry: StatsCarry | null;
+  /** Where the minute being played ends, once its first frame is played (stepSpatialFrame). */
+  minute: MinuteEnd | null;
+}
+
+/** The end of a minute: the next whole minute of the period, or in the shootout the next kick. */
+interface MinuteEnd {
+  period: number;
+  boundary: number;
+  /** Kicks taken when the minute began, in the shootout; -1 otherwise. */
+  kicks: number;
 }
 
 interface StatsCarry {
@@ -85,7 +95,7 @@ export function createSpatialLive(setup: MatchSetup, ctx: MatchContext, opts: Sp
   const state = createMatch(setup, ctx);
   const m = createSpatial(spatialSetupFromMatch(setup, ctx.players, ctx.teams), `match:${setup.seed}`, o.mode ?? 'fine');
   const live: SpatialLive = {
-    m, state, ctx, cursor: { events: 0, shots: 0, goals: 0, kicks: 0 }, boxFouler: null, liveStats: o.liveStats ?? false, carry: null,
+    m, state, ctx, cursor: { events: 0, shots: 0, goals: 0, kicks: 0 }, boxFouler: null, liveStats: o.liveStats ?? false, carry: null, minute: null,
   };
   sync(live);
   return live;
@@ -140,6 +150,7 @@ export function resumeSpatialLive(saved: MatchState, ctx: MatchContext, opts: Sp
   const live: SpatialLive = {
     m, state, ctx, cursor: { events: 0, shots: 0, goals: 0, kicks: 0 }, boxFouler: null, liveStats: opts.liveStats ?? false,
     carry: { ms: m.clockMs, teams: [{ ...state.home.stats }, { ...state.away.stats }], players: [copyStats(state.home), copyStats(state.away)] },
+    minute: null,
   };
   sync(live);
   if (live.liveStats) fillStats(live);
@@ -156,17 +167,24 @@ export function spatialLiveFinished(live: SpatialLive): boolean {
  * appended to state.events.
  */
 export function stepSpatialMinute(live: SpatialLive): MatchEvent[] {
+  for (;;) {
+    const events = stepSpatialFrame(live);
+    if (events) return events;
+  }
+}
+
+/**
+ * One engine step, for a viewer that draws the match as it plays. When the step ends the
+ * minute, the minute's work is done as in stepSpatialMinute and its events are returned;
+ * otherwise null. A minute played frame by frame is the same minute, to the last bit.
+ */
+export function stepSpatialFrame(live: SpatialLive): MatchEvent[] | null {
   const { m, state } = live;
   if (state.finished) return [];
+  const end = (live.minute ??= minuteEnd(m));
+  if (stepSpatial(m) && !minuteOver(m, end)) return null;
+  live.minute = null;
   const start = state.events.length;
-  if (m.period === PERIOD.SHOOTOUT && m.shootout) {
-    const kicks = m.shootout.kicks.length;
-    while (m.period === PERIOD.SHOOTOUT && m.shootout.kicks.length === kicks && stepSpatial(m)) { /* to the next kick */ }
-  } else {
-    const period = m.period;
-    const boundary = m.periodStart + (Math.floor((m.clockMs - m.periodStart) / 60000) + 1) * 60000;
-    while (m.period === period && m.clockMs < boundary && stepSpatial(m)) { /* to the next minute */ }
-  }
   translate(live);
   sync(live);
   if (!state.finished && m.period < PERIOD.SHOOTOUT) {
@@ -183,6 +201,21 @@ export function stepSpatialMinute(live: SpatialLive): MatchEvent[] {
   }
   if (live.liveStats) fillStats(live);
   return state.events.slice(start);
+}
+
+function minuteEnd(m: SpatialMatch): MinuteEnd {
+  if (m.period === PERIOD.SHOOTOUT && m.shootout) return { period: m.period, boundary: Infinity, kicks: m.shootout.kicks.length };
+  return { period: m.period, boundary: m.periodStart + (Math.floor((m.clockMs - m.periodStart) / 60000) + 1) * 60000, kicks: -1 };
+}
+
+function minuteOver(m: SpatialMatch, end: MinuteEnd): boolean {
+  if (end.kicks >= 0) return !(m.period === PERIOD.SHOOTOUT && m.shootout && m.shootout.kicks.length === end.kicks);
+  return m.period !== end.period || m.clockMs >= end.boundary;
+}
+
+/** The minute being played has begun (some of its frames are played). */
+export function midMinute(live: SpatialLive): boolean {
+  return live.minute !== null;
 }
 
 /** A manager's action. Throws on anything the rules do not allow, like the Stage 1 engine. */
@@ -215,7 +248,31 @@ export function applySpatialAction(live: SpatialLive, action: MatchAction): Matc
 export function finalizeSpatial(live: SpatialLive): MatchResult {
   sync(live);
   fillStats(live);
-  return finalizeMatch(live.state, live.ctx);
+  const result = finalizeMatch(live.state, live.ctx);
+  // A match restarted part-way (restart-resume) has no record from kick-off to replay.
+  if (!live.carry) result.replay = replayOf(live.m);
+  return result;
+}
+
+let tuningCache: number | null = null;
+
+/** A fingerprint of the tuning a match plays to: a record made under other numbers will not replay. */
+export function tuningKey(): number {
+  tuningCache ??= hashString(JSON.stringify([SPATIAL_TUNING, MATCH_TUNING, COACH_TUNING]));
+  return tuningCache;
+}
+
+/** The match as a recipe for the 2D viewer, with the engine's fingerprint at the end to check it by. */
+function replayOf(m: SpatialMatch): MatchReplay {
+  return { record: JSON.parse(JSON.stringify(spatialRecord(m))) as MatchReplay['record'], tuning: tuningKey(), check: fingerprint(m) };
+}
+
+/** Why a stored replay cannot be shown by this build, or null if it can. */
+export function replayProblem(replay: MatchReplay): string | null {
+  if (replay.record.rev !== SPATIAL_TUNING.engineRev || replay.tuning !== tuningKey()) {
+    return 'This match was played by an older version of the match engine, so it can no longer be replayed.';
+  }
+  return null;
 }
 
 /** A whole match, start to finish, with the AI head coach managing both sides as the setup says. */

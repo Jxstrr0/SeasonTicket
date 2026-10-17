@@ -11,7 +11,7 @@ import { createStadiums } from './stadium';
 import type { Career, ClubBooks, Crest, MatchMode, TierId } from './types';
 import { C, addInbox, clamp, emptyLedger, money, userTeam } from './util';
 
-export const CAREER_VERSION = 3;
+export const CAREER_VERSION = 4;
 
 export interface Branding {
   name: string;
@@ -80,6 +80,7 @@ export function createCareer(opts: NewCareerOptions): Career {
     liveMatch: null,
     liveRecord: null,
     lastUserMatch: null,
+    replays: { club: {}, round: {} },
     playerSeason: {},
     inbox: [],
     history: [],

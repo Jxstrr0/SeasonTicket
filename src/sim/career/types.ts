@@ -5,7 +5,7 @@
  */
 import type { SeasonState } from '../season';
 import type { MatchState } from '../match/state';
-import type { MatchAction, MatchResult, MatchSetup, Side, Tactics, TeamSelection } from '../types';
+import type { MatchAction, MatchReplay, MatchResult, MatchSetup, Side, Tactics, TeamSelection } from '../types';
 
 export type TierId = 'easy' | 'normal' | 'hard' | 'veryHard';
 export type CareerPhase = 'preseason' | 'season' | 'review' | 'gameOver';
@@ -246,6 +246,16 @@ export interface LiveRecord {
   log: LiveEntry[];
 }
 
+/**
+ * Replays kept by match id: every match the user's club has played this season, and the
+ * latest round of everyone else's. Each is a recipe (about 14 KB before the save is
+ * compressed), never position frames.
+ */
+export interface CareerReplays {
+  club: Record<string, MatchReplay>;
+  round: Record<string, MatchReplay>;
+}
+
 export interface Career {
   version: number;
   seed: number;
@@ -278,6 +288,8 @@ export interface Career {
   /** What rebuilds the engine behind liveMatch exactly after a load (live.ts). */
   liveRecord: LiveRecord | null;
   lastUserMatch: MatchResult | null;
+  /** Matches the 2D viewer can replay (docs/DESIGN.md 17.9). */
+  replays: CareerReplays;
   playerSeason: Record<string, PlayerSeasonLine>;
   inbox: InboxMessage[];
   history: SeasonHistoryEntry[];
