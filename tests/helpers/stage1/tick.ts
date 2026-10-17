@@ -3,10 +3,10 @@
  * nothing, a foul, a corner, a shot or a turnover (which may become a
  * counter). Then injuries, fatigue, minutes and possession are booked.
  */
-import { MATCH_TUNING, formation as formationOf } from '../data';
-import type { Rng } from '../rng';
-import type { AttributeKey, Formation, Player, Position, Side } from '../types';
-import { emitEvent } from './events';
+import { MATCH_TUNING, formation as formationOf } from '../../../src/sim/data';
+import type { Rng } from '../../../src/sim/rng';
+import type { AttributeKey, Formation, Player, Position, Side } from '../../../src/sim/types';
+import { emitEvent } from '../../../src/sim/match/events';
 import {
   ensurePlayerStats,
   type ChanceType,
@@ -16,7 +16,7 @@ import {
   type MatchContext,
   type MatchState,
   type SideState,
-} from './state';
+} from '../../../src/sim/match/state';
 import {
   byDial,
   effective,
@@ -28,7 +28,7 @@ import {
   unitAttribute,
   weightedAttributes,
   type SideStrength,
-} from './strength';
+} from '../../../src/sim/match/strength';
 
 const T = MATCH_TUNING;
 

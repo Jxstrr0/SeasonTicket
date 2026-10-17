@@ -1,32 +1,21 @@
 /**
- * Locks the Stage 1 believability targets from CLAUDE.md against the real
- * generated league: real clubs, real squads, the real AI coach and the real
- * engine, over several seasons. Prints a compact table so a tuning change can
- * be judged at a glance.
+ * The season-level believability checks, shared by the Stage 1 engine's run
+ * (tests/believability.test.ts) and the spatial engine's runs in both modes
+ * (tests/slow/). Real clubs, real squads, the real AI coach, several seasons;
+ * prints a compact table so a tuning change can be judged at a glance.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { inMatchDecisions, pickSelection } from '../src/sim/coach';
-import { COACH_TUNING, MATCH_TUNING } from '../src/sim/data';
-import { createLeague } from '../src/sim/league';
-import { createMatch, isFinished, stepMinute } from '../src/sim/match/engine';
-import type { MatchState } from '../src/sim/match/state';
-import { unitOfPosition } from '../src/sim/match/strength';
-import { cushionFactor } from '../src/sim/match/tick';
-import { Rng } from '../src/sim/rng';
-import { createSeason, defaultHooks, runSeason, seasonSummary, type SeasonState } from '../src/sim/season';
-import type { MatchAction, MatchResult, PlayerMatchStats, Side } from '../src/sim/types';
-import { coachOf, contextOf, makeSetup, makeTeam, mergePlayers } from './helpers/matchFixtures';
-import { spearman } from './helpers/seasonFixtures';
+import { unitOfPosition } from '../../src/sim/match/strength';
+import { seasonSummary, type SeasonState } from '../../src/sim/season';
+import type { MatchResult, PlayerMatchStats, Side } from '../../src/sim/types';
+import { spearman } from './seasonFixtures';
 
-// Sixteen leagues: enough that one odd league (a cluster of gung-ho coaches, say) cannot carry the averages.
-const SEEDS = Array.from({ length: 16 }, (_, i) => `believe-${i + 1}`);
-const MAX_SEASON_MS = 10_000;
 const TOP_SIX = 6;
 const BOTTOM_SIX = 6;
 const TOP_SCORERS_CHECKED = 10;
 const ATTACKING_POSITIONS = new Set(['ST', 'W', 'AM']);
 
-interface Played {
+export interface Played {
   seed: string;
   state: SeasonState;
   ms: number;
@@ -53,12 +42,10 @@ interface Metrics {
   rating: number;
   winnerRating: number;
   loserRating: number;
-}
-
-function playSeason(seed: string): Played {
-  const start = performance.now();
-  const state = runSeason(createSeason(createLeague(seed)), defaultHooks());
-  return { seed, state, ms: performance.now() - start };
+  passAccuracy: number;
+  fouls: number;
+  corners: number;
+  offsides: number;
 }
 
 function leagueResults(state: SeasonState): MatchResult[] {
@@ -122,6 +109,10 @@ function measure(seasons: Played[]): Metrics {
     rating: mean(appearances.map((s) => s.rating)),
     winnerRating: mean(winners),
     loserRating: mean(losers),
+    passAccuracy: mean(teamStats.map((s) => s.passAccuracy)),
+    fouls: mean(teamStats.map((s) => s.fouls)),
+    corners: mean(teamStats.map((s) => s.corners)),
+    offsides: mean(teamStats.map((s) => s.offsides)),
   };
 }
 
@@ -157,7 +148,7 @@ function weakestClub(state: SeasonState): string {
   return qualityRanking(state)[state.league.teams.length - 1];
 }
 
-function printTable(seasons: Played[]): void {
+function printTable(label: string, seasons: Played[]): void {
   const pct = (x: number, d = 0) => `${(x * 100).toFixed(d)}%`.padStart(4 + (d ? d + 1 : 0));
   const f = (x: number, d = 2) => x.toFixed(d).padStart(5);
   const header = 'seed          ms goals    7+ home draw shots  onT    xG   yel   red   inj  subs  rate  top   rho champQ shieldQ weakest';
@@ -177,35 +168,74 @@ function printTable(seasons: Played[]): void {
   const totals =
     `ALL ${all.matches} matches: goals ${all.goals.toFixed(2)}, 7+ ${pct(all.sevenPlusShare, 1)}, home ${pct(all.homeWin)}, draw ${pct(all.draw)}, ` +
     `shots ${all.shots.toFixed(1)}, on target ${pct(all.onTargetShare)}, xG ${all.xg.toFixed(2)}, home poss ${all.homePossession.toFixed(3)}, ` +
-    `dominant poss ${all.dominantPossession.toFixed(3)}, yellows ${all.yellows.toFixed(2)}, reds ${all.reds.toFixed(3)}, injuries ${all.injuries.toFixed(2)}, subs ${all.subs.toFixed(2)} (max ${all.maxSubs})`;
-  console.log(['[believability]', header, ...rows, totals, ratings].join('\n'));
+    `dominant poss ${all.dominantPossession.toFixed(3)}, yellows ${all.yellows.toFixed(2)}, reds ${all.reds.toFixed(3)}, injuries ${all.injuries.toFixed(2)}, subs ${all.subs.toFixed(2)} (max ${all.maxSubs}), ` +
+    `pass accuracy ${pct(all.passAccuracy)}, fouls ${all.fouls.toFixed(1)}, corners ${all.corners.toFixed(1)}, offsides ${all.offsides.toFixed(1)}`;
+  console.log([`[believability: ${label}]`, header, ...rows, totals, ratings].join('\n'));
 }
 
-describe('believability of the real league over several seasons', () => {
+export interface SuiteOptions {
+  /** Each season (and its playoffs) must play within this; the spatial engine's budgets live in the perf tests. */
+  maxSeasonMs?: number;
+  /** Play the first season twice and compare. */
+  determinism?: boolean;
+  /** Also check the spatial engine's own targets: pass completion, fouls, corners, offsides. */
+  spatial?: boolean;
+}
+
+/**
+ * The season-level believability targets (CLAUDE.md and docs/STAGE_4_5_SPATIAL_ENGINE.md section 7)
+ * over `seeds` real generated leagues, each played to the end of its playoffs by `play`.
+ */
+export function believabilitySuite(label: string, seeds: readonly string[], play: (seed: string) => Played | Promise<Played>, opts: SuiteOptions = {}): void {
+describe(`believability of the real league over several seasons (${label})`, () => {
   let seasons: Played[];
   let all: Metrics;
 
-  beforeAll(() => {
-    seasons = SEEDS.map(playSeason);
+  beforeAll(async () => {
+    seasons = [];
+    for (const seed of seeds) seasons.push(await play(seed));
     all = measure(seasons);
-    printTable(seasons);
-  }, 300_000);
+    printTable(label, seasons);
+  }, 1_800_000);
 
-  it('simulates each season and playoffs in under 10 seconds', () => {
+  it('plays every season and its playoffs to the end', () => {
     for (const p of seasons) {
       expect(p.state.phase, p.seed).toBe('complete');
-      expect(p.ms, p.seed).toBeLessThan(MAX_SEASON_MS);
+      if (opts.maxSeasonMs !== undefined) expect(p.ms, p.seed).toBeLessThan(opts.maxSeasonMs);
     }
   });
 
-  it('is deterministic: the same seed replays the same season', () => {
-    const again = playSeason(SEEDS[0]);
+  it('plays 240 league matches and a five-match top-6 playoff, and crowns a top-6 side', () => {
+    for (const p of seasons) {
+      const { schedule, standings, bracket, championId } = p.state;
+      expect(schedule.matches.every((m) => m.result !== undefined), p.seed).toBe(true);
+      expect(leagueResults(p.state), p.seed).toHaveLength(240);
+      expect(allResults(p.state), p.seed).toHaveLength(245);
+      expect(bracket?.seeds, p.seed).toHaveLength(6);
+      expect(standings.slice(0, 6).map((r) => r.teamId), p.seed).toContain(championId);
+    }
+  });
+
+  it('only names players that exist in the league in every event', () => {
+    for (const p of seasons) {
+      const players = p.state.league.players;
+      for (const r of allResults(p.state)) {
+        for (const e of r.events) {
+          if (e.playerId !== null) expect(players[e.playerId], `${r.matchId} ${e.type}`).toBeDefined();
+          if (e.secondaryPlayerId !== null) expect(players[e.secondaryPlayerId], `${r.matchId} ${e.type}`).toBeDefined();
+        }
+      }
+    }
+  });
+
+  it.runIf(opts.determinism)('is deterministic: the same seed replays the same season', async () => {
+    const again = await play(seeds[0]);
     const first = seasons[0];
     expect(again.state.standings).toEqual(first.state.standings);
     expect(allResults(again.state).map((r) => [r.homeScore, r.awayScore, r.stats.home.shots, r.stats.away.xg])).toEqual(
       allResults(first.state).map((r) => [r.homeScore, r.awayScore, r.stats.home.shots, r.stats.away.xg]),
     );
-  }, 30_000);
+  }, 600_000);
 
   describe('scorelines', () => {
     it('averages 2.4 to 3.1 goals per match', () => {
@@ -292,6 +322,22 @@ describe('believability of the real league over several seasons', () => {
     });
   });
 
+  describe.runIf(opts.spatial)('play on the spatial engine', () => {
+    it('completes 70-88% of passes', () => {
+      expect(all.passAccuracy).toBeGreaterThanOrEqual(0.7);
+      expect(all.passAccuracy).toBeLessThanOrEqual(0.88);
+    });
+
+    it('gives each team 9 to 15 fouls, 3 to 7 corners and 1 to 4 offsides', () => {
+      expect(all.fouls).toBeGreaterThanOrEqual(9);
+      expect(all.fouls).toBeLessThanOrEqual(15);
+      expect(all.corners).toBeGreaterThanOrEqual(3);
+      expect(all.corners).toBeLessThanOrEqual(7);
+      expect(all.offsides).toBeGreaterThanOrEqual(1);
+      expect(all.offsides).toBeLessThanOrEqual(4);
+    });
+  });
+
   describe('squad strength predicts the table', () => {
     it('correlates squad quality and points above 0.6 on average', () => {
       const rhos = seasons.map((p) => qualityPointsRho(p.state));
@@ -335,7 +381,9 @@ describe('believability of the real league over several seasons', () => {
           const cameOn = new Set<string>();
           const starters = new Set(Object.keys(r.playerStats));
           for (const e of r.events) {
-            const named = [e.playerId, e.secondaryPlayerId].filter((id): id is string => id !== null);
+            // A penalty names the fouler, who may have just been sent off for the same foul.
+            const fouler = e.type === 'penaltyAwarded' ? e.secondaryPlayerId : null;
+            const named = [e.playerId, e.secondaryPlayerId].filter((id): id is string => id !== null && id !== fouler);
             for (const id of named) expect(gone.has(id), `${r.matchId} ${e.minute}' ${e.type} names departed ${id}`).toBe(false);
             if (e.type === 'substitution' && e.playerId && e.secondaryPlayerId) {
               expect(cameOn.has(e.secondaryPlayerId), `${r.matchId} ${e.secondaryPlayerId} came on twice`).toBe(false);
@@ -370,84 +418,4 @@ describe('believability of the real league over several seasons', () => {
     for (const position of ATTACKING_POSITIONS) expect(unitOfPosition(position as 'ST' | 'W' | 'AM')).toBe('attacker');
   });
 });
-
-// ---------------------------------------------------------------------------
-// The levers added during calibration, checked directly
-// ---------------------------------------------------------------------------
-
-describe('calibration levers', () => {
-  const favourite = makeTeam('calfav', 0.85, 71);
-  const middle = makeTeam('calmid', 0.6, 72);
-  const underdog = makeTeam('caldog', 0.35, 73);
-  const players = mergePlayers(favourite.players, middle.players, underdog.players);
-  const neutralCoach = (teamId: string) => ({ ...coachOf(teamId), attackLean: 0.5, aggression: 0.5 });
-  const mentalityAgainst = (teamId: string, team: typeof favourite, opponent: typeof favourite, lookup = players) =>
-    pickSelection(new Rng(1), team.team, lookup, neutralCoach(teamId), { opponent: opponent.team }).tactics.mentality;
-
-  it('lets a favourite play on the front foot and an underdog sit deeper', () => {
-    const balanced = COACH_TUNING.tactics.balancedDial;
-    expect(mentalityAgainst('calfav', favourite, underdog)).toBeGreaterThan(balanced);
-    expect(mentalityAgainst('caldog', underdog, favourite)).toBeLessThan(balanced);
-    expect(mentalityAgainst('calmid', middle, middle)).toBe(balanced);
-    // The shift is capped: even the biggest mismatch moves a neutral coach one dial step.
-    expect(mentalityAgainst('calfav', favourite, underdog) - mentalityAgainst('caldog', underdog, favourite)).toBeLessThanOrEqual(2);
-  });
-
-  it('ignores the matchup when the opponent eleven cannot be looked up', () => {
-    expect(mentalityAgainst('caldog', underdog, favourite, underdog.players)).toBe(COACH_TUNING.tactics.balancedDial);
-  });
-
-  const ctx = contextOf('calmid', 'caldog');
-  /** A human-managed match stepped to `minute`, so the only decisions are the ones the test asks for. */
-  function matchAt(minute: number, seed = 1): MatchState {
-    const state = createMatch(makeSetup('calmid', 'caldog', seed, { aiControlled: { home: false, away: false } }), ctx);
-    while (!isFinished(state) && state.minute < minute) stepMinute(state, ctx);
-    // A sending-off would trigger its own tactical change; keep the scenario clean.
-    if (state.home.sentOff.length + state.away.sentOff.length > 0) throw new Error('pick another seed: a player was sent off');
-    state.injuries = [];
-    return state;
-  }
-  const mentalityChange = (actions: MatchAction[]) => {
-    const change = actions.find((a): a is Extract<MatchAction, { type: 'setTactics' }> => a.type === 'setTactics');
-    return change?.tactics.mentality;
-  };
-
-  it('eases off with a two-goal cushion from the hour mark, and more so late on', () => {
-    const I = COACH_TUNING.inMatch;
-    const early = matchAt(I.comfortable.from - 5);
-    const start = early.setup.home.tactics.mentality;
-    early.homeScore = 2;
-    early.awayScore = 0;
-    expect(mentalityChange(inMatchDecisions(early, ctx, 'home'))).toBeUndefined();
-
-    const hour = matchAt(I.comfortable.from + 1);
-    hour.homeScore = 1;
-    hour.awayScore = 0;
-    expect(mentalityChange(inMatchDecisions(hour, ctx, 'home'))).toBeUndefined();
-    hour.homeScore = 2;
-    expect(mentalityChange(inMatchDecisions(hour, ctx, 'home'))).toBe(Math.max(1, start + I.comfortable.mentalityStep));
-
-    const late = matchAt(I.protect.from + 1);
-    late.homeScore = 3;
-    late.awayScore = 1;
-    expect(mentalityChange(inMatchDecisions(late, ctx, 'home'))).toBe(Math.max(1, start + I.comfortable.mentalityStep + I.protect.mentalityStep));
-  });
-
-  it('trims the shot rate of a side two or more goals up, never below the floor', () => {
-    const C = MATCH_TUNING.scoreEffects;
-    const state = matchAt(1);
-    const at = (home: number, away: number, side: Side) => {
-      state.homeScore = home;
-      state.awayScore = away;
-      return cushionFactor(state, side);
-    };
-    expect(at(0, 0, 'home')).toBe(1);
-    expect(at(1, 0, 'home')).toBe(1);
-    expect(at(2, 0, 'home')).toBeCloseTo(1 - C.shotRatePerGoal, 10);
-    expect(at(3, 0, 'home')).toBeCloseTo(1 - 2 * C.shotRatePerGoal, 10);
-    expect(at(9, 0, 'home')).toBe(C.minShotRate);
-    // Only the side ahead eases off; the side chasing keeps going.
-    expect(at(3, 0, 'away')).toBe(1);
-    expect(at(0, 2, 'away')).toBeCloseTo(1 - C.shotRatePerGoal, 10);
-  });
-});
+}

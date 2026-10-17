@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run --project unit",
     "test:perf": "vitest run --project perf",
+    "test:slow": "vitest run --project slow",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sim": "vitest run tests/season.test.ts",

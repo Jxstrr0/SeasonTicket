@@ -5,6 +5,6 @@
  * user's live match still runs on the spatial engine, and the game itself never swaps.
  */
 import { setBackgroundEngine } from '../../src/sim/career';
-import { simulateMatch } from '../../src/sim/match/engine';
+import { simulateMatch } from './stage1/engine';
 
 setBackgroundEngine(simulateMatch);

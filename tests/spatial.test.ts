@@ -100,7 +100,7 @@ describe('spatial engine uses only deterministic maths', () => {
   }
 
   const spatialFiles = listSources('src/sim/spatial');
-  const shared = ['src/sim/match/clock.ts', 'src/sim/match/strength.ts', 'src/sim/match/ratings.ts', 'src/sim/rng.ts'];
+  const shared = ['src/sim/match/strength.ts', 'src/sim/match/ratings.ts', 'src/sim/rng.ts'];
 
   it.each([...spatialFiles, ...shared])('%s has no banned maths', (path) => {
     const lines = code(path).split('\n').filter((l) => BANNED.test(l));

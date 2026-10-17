@@ -5,11 +5,12 @@
 import { describe, expect, it } from 'vitest';
 import { dialFrom, inMatchDecisions, pickSelection } from '../src/sim/coach';
 import { COACH_TUNING, FORMATIONS } from '../src/sim/data';
-import { createMatch, isFinished, stepMinute } from '../src/sim/match/engine';
+import { createMatch, isFinished } from '../src/sim/match/engine';
+import { stepMinute } from './helpers/stage1/engine';
 import type { MatchContext, MatchState } from '../src/sim/match/state';
 import { Rng } from '../src/sim/rng';
 import type { MatchAction, Player, StaffMember, Team, TeamSelection } from '../src/sim/types';
-import { coachOf, contextOf, makeSetup, makeTeam } from './helpers/matchFixtures';
+import { coachOf, contextOf, makeSetup, makeTeam, mergePlayers } from './helpers/matchFixtures';
 
 const I = COACH_TUNING.inMatch;
 
@@ -302,5 +303,68 @@ describe('inMatchDecisions', () => {
         }
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The levers added during calibration, checked directly
+// ---------------------------------------------------------------------------
+
+describe('calibration levers', () => {
+  const favourite = makeTeam('calfav', 0.85, 71);
+  const middle = makeTeam('calmid', 0.6, 72);
+  const underdog = makeTeam('caldog', 0.35, 73);
+  const players = mergePlayers(favourite.players, middle.players, underdog.players);
+  const neutralCoach = (teamId: string) => ({ ...coachOf(teamId), attackLean: 0.5, aggression: 0.5 });
+  const mentalityAgainst = (teamId: string, team: typeof favourite, opponent: typeof favourite, lookup = players) =>
+    pickSelection(new Rng(1), team.team, lookup, neutralCoach(teamId), { opponent: opponent.team }).tactics.mentality;
+
+  it('lets a favourite play on the front foot and an underdog sit deeper', () => {
+    const balanced = COACH_TUNING.tactics.balancedDial;
+    expect(mentalityAgainst('calfav', favourite, underdog)).toBeGreaterThan(balanced);
+    expect(mentalityAgainst('caldog', underdog, favourite)).toBeLessThan(balanced);
+    expect(mentalityAgainst('calmid', middle, middle)).toBe(balanced);
+    // The shift is capped: even the biggest mismatch moves a neutral coach one dial step.
+    expect(mentalityAgainst('calfav', favourite, underdog) - mentalityAgainst('caldog', underdog, favourite)).toBeLessThanOrEqual(2);
+  });
+
+  it('ignores the matchup when the opponent eleven cannot be looked up', () => {
+    expect(mentalityAgainst('caldog', underdog, favourite, underdog.players)).toBe(COACH_TUNING.tactics.balancedDial);
+  });
+
+  const ctx = contextOf('calmid', 'caldog');
+  /** A human-managed match stepped to `minute`, so the only decisions are the ones the test asks for. */
+  function matchAt(minute: number, seed = 1): MatchState {
+    const state = createMatch(makeSetup('calmid', 'caldog', seed, { aiControlled: { home: false, away: false } }), ctx);
+    while (!isFinished(state) && state.minute < minute) stepMinute(state, ctx);
+    // A sending-off would trigger its own tactical change; keep the scenario clean.
+    if (state.home.sentOff.length + state.away.sentOff.length > 0) throw new Error('pick another seed: a player was sent off');
+    state.injuries = [];
+    return state;
+  }
+  const mentalityChange = (actions: MatchAction[]) => {
+    const change = actions.find((a): a is Extract<MatchAction, { type: 'setTactics' }> => a.type === 'setTactics');
+    return change?.tactics.mentality;
+  };
+
+  it('eases off with a two-goal cushion from the hour mark, and more so late on', () => {
+    const I = COACH_TUNING.inMatch;
+    const early = matchAt(I.comfortable.from - 5);
+    const start = early.setup.home.tactics.mentality;
+    early.homeScore = 2;
+    early.awayScore = 0;
+    expect(mentalityChange(inMatchDecisions(early, ctx, 'home'))).toBeUndefined();
+
+    const hour = matchAt(I.comfortable.from + 1);
+    hour.homeScore = 1;
+    hour.awayScore = 0;
+    expect(mentalityChange(inMatchDecisions(hour, ctx, 'home'))).toBeUndefined();
+    hour.homeScore = 2;
+    expect(mentalityChange(inMatchDecisions(hour, ctx, 'home'))).toBe(Math.max(1, start + I.comfortable.mentalityStep));
+
+    const late = matchAt(I.protect.from + 1);
+    late.homeScore = 3;
+    late.awayScore = 1;
+    expect(mentalityChange(inMatchDecisions(late, ctx, 'home'))).toBe(Math.max(1, start + I.comfortable.mentalityStep + I.protect.mentalityStep));
   });
 });
