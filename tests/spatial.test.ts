@@ -838,7 +838,7 @@ describe('spatial referee rates', () => {
     const perMatch = (v: number) => v / matches;
     // Targets: fouls 9 to 15 a team, yellows 3.5 to 4.5 and reds 0.1 to 0.2 a match, offsides
     // 1 to 4 a team, penalties 0.25 to 0.35 a match (docs/DESIGN.md 17.10). These bounds are
-    // looser for a few matches; step 7 checks the targets over whole seasons.
+    // looser for a few matches; the slow suite (npm run test:slow) checks the targets over whole seasons.
     expect(perTeam(sum.fouls)).toBeGreaterThan(6);
     expect(perTeam(sum.fouls)).toBeLessThan(18);
     expect(perMatch(sum.yellows)).toBeGreaterThan(1.5);
