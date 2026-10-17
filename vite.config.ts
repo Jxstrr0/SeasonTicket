@@ -12,7 +12,8 @@ export default defineConfig({
     environment: 'node',
     // Time budgets run on their own (npm run test:perf) so other test files don't share the CPU.
     projects: [
-      { extends: true, test: { name: 'unit', include: ['tests/**/*.test.ts'], exclude: ['tests/perf/**'] } },
+      // Matches on the spatial engine take a few seconds each; the CI runner is about twice as slow as a dev machine.
+      { extends: true, test: { name: 'unit', include: ['tests/**/*.test.ts'], exclude: ['tests/perf/**'], testTimeout: 20_000 } },
       { extends: true, test: { name: 'perf', include: ['tests/perf/**/*.test.ts'] } },
     ],
   },
