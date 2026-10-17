@@ -142,6 +142,17 @@ export interface Formation {
   slots: FormationSlot[]; // exactly 11
   /** Natural width/attack bias used by the engine. 0-1. */
   defensiveBias: number;
+  /**
+   * Spatial engine shapes for a side down to ten or nine (keyed by players left, keeper
+   * included): the slots left empty and new spots for some of the rest.
+   */
+  short?: Record<string, ShortShape>;
+}
+
+export interface ShortShape {
+  name: string;
+  drop: number[];
+  set?: Record<string, { def: [number, number]; att: [number, number] }>;
 }
 
 /** Five-step dials: 1 = lowest, 3 = balanced, 5 = highest. */

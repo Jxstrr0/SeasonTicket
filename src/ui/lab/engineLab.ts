@@ -8,14 +8,15 @@
 import './lab.css';
 import { FORMATIONS } from '../../sim/data';
 import { createLeague } from '../../sim/league';
-import { createSpatial, markingPair, matchStats, queueTactics, stepSpatial, teamShapeInfo } from '../../sim/spatial/engine';
+import { createSpatial, markingPair, matchStats, queueTactics, spatialFinished, stepSpatial, teamShapeInfo } from '../../sim/spatial/engine';
+import { clockLabel, matchTime } from '../../sim/spatial/systems';
 import { spatialSetupFromLeague } from '../../sim/spatial/setup';
 import {
   RESTART_CORNER, RESTART_DROP, RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_PENALTY, RESTART_THROW_IN,
   type SpatialMatch,
 } from '../../sim/spatial/state';
 import {
-  ROLE, type GoalRecord, type Side, type SpatialEvent, type SpatialMode, type SpatialSetup,
+  PERSONS, ROLE, personOf, type GoalRecord, type Side, type SpatialEvent, type SpatialMode, type SpatialPlayer, type SpatialSetup,
 } from '../../sim/spatial/types';
 import type { Dial, League, Tactics } from '../../sim/types';
 import { parseSeed, randomSeed } from '../app';
@@ -217,7 +218,7 @@ export class EngineLab {
   }
 
   private ended(): boolean {
-    return this.m.clockMs >= this.m.endMs;
+    return spatialFinished(this.m);
   }
 
   private savePrev(): void {
@@ -232,12 +233,11 @@ export class EngineLab {
   /** Step the engine until it reaches `toMs`, keeping the step before for smooth drawing. */
   private advance(toMs: number): void {
     const m = this.m;
-    const to = Math.min(toMs, m.endMs);
-    while (m.clockMs < to) {
+    while (m.clockMs < toMs) {
       this.savePrev();
       if (!stepSpatial(m)) break;
     }
-    this.viewMs = to;
+    this.viewMs = Math.min(toMs, m.clockMs);
   }
 
   private applyTactics(side: Side): void {
@@ -417,7 +417,7 @@ export class EngineLab {
     score.innerHTML = `
       <span class="lab-team"><span class="lab-dot" style="background:${this.kit[0].fill};border-color:${this.kit[0].edge}"></span>${esc(s.home.short)}</span>
       <span class="lab-goals" aria-label="${esc(s.home.short)} goals">${m.score[0]}</span>
-      <span class="lab-clock">${this.ended() ? 'FT' : clock(m.clockMs)}</span>
+      <span class="lab-clock">${clockLabel(m)}</span>
       <span class="lab-goals" aria-label="${esc(s.away.short)} goals">${m.score[1]}</span>
       <span class="lab-team">${esc(s.away.short)}<span class="lab-dot" style="background:${this.kit[1].fill};border-color:${this.kit[1].edge}"></span></span>`;
     const play = this.root.querySelector('.lab-play') as HTMLButtonElement;
@@ -495,7 +495,7 @@ export class EngineLab {
   private updateReadout(): void {
     const m = this.m;
     const bar = this.root.querySelector('.lab-clock');
-    if (bar) bar.textContent = this.ended() ? 'FT' : clock(m.clockMs);
+    if (bar) bar.textContent = clockLabel(m);
     const goals = this.root.querySelectorAll('.lab-goals');
     if (goals.length === 2) { goals[0].textContent = String(m.score[0]); goals[1].textContent = String(m.score[1]); }
     const restart = this.root.querySelector('.lab-restart') as HTMLElement;
@@ -559,8 +559,8 @@ export class EngineLab {
       const i = this.selected;
       const side = (i < 11 ? 0 : 1) as Side;
       const slot = i % 11;
-      const p = (side === 0 ? m.setup.home : m.setup.away).players[m.who[i] % 11];
-      const label = m.teams[side].formation.slots[slot]?.label ?? p.position;
+      const p = personOf(m.setup, m.who[i]) as SpatialPlayer;
+      const label = m.teams[side].formation.slots[m.teams[side].spot[slot]]?.label ?? p.position;
       const booked = m.rules.yellow[i] ? ' · booked' : '';
       const speed = Math.sqrt(m.vx[i] * m.vx[i] + m.vy[i] * m.vy[i]) * 3.6;
       sel.hidden = false;
@@ -570,15 +570,15 @@ export class EngineLab {
     }
   }
 
-  /** A player's name from his line-up index (as logs and events record him). */
-  private playerName(i: number): string {
-    const side = i < 11 ? this.m.setup.home : this.m.setup.away;
-    return side.players[i % 11]?.name ?? '?';
+  /** A player's name from his person code (as logs and events record him). */
+  private playerName(w: number): string {
+    return w >= 0 && w < PERSONS ? personOf(this.m.setup, w)?.name ?? '?' : '?';
   }
 
   /** "12' Name (assist Name), xG 0.23" for one goal, as HTML. */
   private goalLine(g: GoalRecord): string {
-    const minute = `${Math.floor(g.ms / 60_000) + 1}'`;
+    const t = matchTime(this.m, g.ms);
+    const minute = `${t.minute}${t.added > 0 ? `+${t.added}` : ''}'`;
     const how = g.ownGoal ? ' (own goal)' : g.assist >= 0 ? ` (assist ${esc(this.playerName(g.assist))})` : '';
     const extra = g.ownGoal ? '' : `${g.header ? ' header,' : ''} xG ${g.xg.toFixed(2)}`;
     return `${minute} ${esc(this.playerName(g.scorer))}${how}<span class="muted">${extra}</span>`;
@@ -803,7 +803,7 @@ export class EngineLab {
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = slot === 0 ? '#10131f' : kit.text;
-      const p = (side === 0 ? m.setup.home : m.setup.away).players[m.who[i] % 11];
+      const p = personOf(m.setup, m.who[i]) as SpatialPlayer;
       ctx.fillText(String(p.jersey), x, y + 0.5);
     }
 

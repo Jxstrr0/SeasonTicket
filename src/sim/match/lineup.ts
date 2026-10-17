@@ -11,7 +11,7 @@ const FIT = COACH_TUNING.positionFit;
 const ADJACENT = FIT.adjacent as unknown as FitTable;
 
 /** 0-1 share of a player's ability that survives playing in a slot. */
-export function positionFit(player: Player, slotPosition: Position): number {
+export function positionFit(player: Pick<Player, 'position' | 'secondaryPositions'>, slotPosition: Position): number {
   if (player.position === slotPosition) return FIT.same;
   if (player.secondaryPositions.includes(slotPosition)) return FIT.secondary;
   if (player.position === 'GK') return FIT.goalkeeperOutfield;

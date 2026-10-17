@@ -7,7 +7,7 @@
  * opponent goal. For the home side d = x and a = y; for the away side d = 105 - x and
  * a = 68 - y.
  */
-import type { Attributes, Position, Tactics, TeamColors } from '../types';
+import type { Attributes, Position, Tactics, TeamColors, Weather } from '../types';
 
 export type SpatialMode = 'fine' | 'coarse';
 export type Side = 0 | 1;
@@ -17,6 +17,8 @@ export interface SpatialPlayer {
   name: string;
   jersey: number;
   position: Position;
+  /** Other positions he can play (for reshuffles after a red card or a formation change). */
+  secondary?: Position[];
   attributes: Attributes;
 }
 
@@ -27,19 +29,56 @@ export interface SpatialSide {
   tactics: Tactics;
   /** Eleven players ordered by formation slot (slot 0 is the goalkeeper). */
   players: SpatialPlayer[];
+  /** Up to nine substitutes. */
+  bench?: SpatialPlayer[];
+  /** Energy at kick-off (0..1), starters then bench, in the same order; 1 if left out. */
+  energy?: number[];
 }
 
 export interface SpatialSetup {
   home: SpatialSide;
   away: SpatialSide;
+  /** A cup tie: level after 90 minutes goes to extra time, then penalties. */
+  extraTime?: boolean;
+  weather?: Weather;
 }
 
-/** One input from outside the engine. Applied at `ms` exactly, so replays match. */
-export interface SpatialAction {
-  ms: number;
-  side: Side;
-  type: 'tactics';
-  tactics: Tactics;
+/**
+ * One input from outside the engine. Applied at `ms` exactly, so replays match. A
+ * substitution waits for the next stoppage (or half-time) and a bad one is ignored.
+ */
+export type SpatialAction =
+  | { ms: number; side: Side; type: 'tactics'; tactics: Tactics }
+  | { ms: number; side: Side; type: 'sub'; outId: string; inId: string }
+  | { ms: number; side: Side; type: 'cancelSub'; outId: string };
+
+/**
+ * Person codes ("who"): starters are side * 11 + place in the line-up (0..21), substitutes
+ * 22 + side * 9 + place on the bench (22..39).
+ */
+export const PERSONS = 40;
+export const BENCH_BASE = 22;
+export const BENCH_MAX = 9;
+
+/** The side a person code belongs to. */
+export function whoSide(w: number): Side {
+  return (w < BENCH_BASE ? (w < 11 ? 0 : 1) : w - BENCH_BASE < BENCH_MAX ? 0 : 1) as Side;
+}
+
+/** The player a person code stands for (undefined for an empty bench place). */
+export function personOf(setup: SpatialSetup, w: number): SpatialPlayer | undefined {
+  if (w < BENCH_BASE) return (w < 11 ? setup.home : setup.away).players[w % 11];
+  const b = w - BENCH_BASE;
+  return b < BENCH_MAX ? setup.home.bench?.[b] : setup.away.bench?.[b - BENCH_MAX];
+}
+
+/** The person code of player `id` on `side`, or -1. */
+export function whoOf(setup: SpatialSetup, side: Side, id: string): number {
+  const s = side === 0 ? setup.home : setup.away;
+  const k = s.players.findIndex((p) => p.id === id);
+  if (k >= 0) return side * 11 + k;
+  const b = s.bench ? s.bench.findIndex((p) => p.id === id) : -1;
+  return b >= 0 ? BENCH_BASE + side * BENCH_MAX + b : -1;
 }
 
 /** Everything needed to replay a match exactly: no position frames are stored. */
@@ -75,7 +114,7 @@ export type Role = (typeof ROLE)[keyof typeof ROLE];
 export type ShotOutcome = 'goal' | 'saved' | 'blocked' | 'off' | 'post';
 
 /**
- * One shot. Players are line-up indices (side * 11 + place in the line-up, SpatialMatch.who);
+ * One shot. Players are person codes (PERSONS above, SpatialMatch.who);
  * x, y is where it was struck.
  */
 export interface ShotRecord {
@@ -103,12 +142,13 @@ export interface GoalRecord {
   header: boolean;
 }
 
-export type SpatialEventKind = 'foul' | 'advantage' | 'yellow' | 'red' | 'offside' | 'penalty' | 'injury';
+export type SpatialEventKind = 'foul' | 'advantage' | 'yellow' | 'red' | 'offside' | 'penalty' | 'injury' | 'corner' | 'sub' | 'whistle';
 
 /**
  * A moment the referee was involved: `player` is who committed it (the fouler, the booked or
- * sent-off player, the man caught offside, the injured player) as in ShotRecord, `side` is
- * his side, and x, y is where it happened.
+ * sent-off player, the man caught offside, the injured player, the corner taker, the player
+ * going off) as in ShotRecord, `side` is his side, and x, y is where it happened. A whistle
+ * (the end of a period) has player -1.
  */
 export interface SpatialEvent {
   ms: number;
@@ -117,8 +157,45 @@ export interface SpatialEvent {
   player: number;
   x: number;
   y: number;
-  /** A yellow that was his second, so also a red; a foul in the box; a red for denying a goal. */
-  note?: 'second' | 'box' | 'dogso';
+  /** The fouled player, or the player coming on. */
+  other?: number;
+  /**
+   * A yellow that was his second, so also a red; a yellow for wasting time; a foul in the
+   * box; a red for denying a goal; which whistle (half-time, full time, the ends of the two
+   * halves of extra time, the end of a shootout).
+   */
+  note?: 'second' | 'delay' | 'box' | 'dogso' | 'half' | 'full' | 'etHalf' | 'etFull' | 'shootout';
+}
+
+/** Periods of play (SpatialMatch.period). */
+export const PERIOD = { FIRST: 0, SECOND: 1, ET_FIRST: 2, ET_SECOND: 3, SHOOTOUT: 4, DONE: 5 } as const;
+
+/** One period as it was played: engine times and the stoppage minutes shown. */
+export interface PeriodRecord {
+  period: number;
+  startMs: number;
+  endMs: number;
+  added: number;
+}
+
+/** One shootout kick: who took it (person code) and how it went. */
+export interface ShootoutKick {
+  side: Side;
+  player: number;
+  keeper: number;
+  outcome: 'scored' | 'saved' | 'missed';
+}
+
+export interface ShootoutState {
+  score: [number, number];
+  kicks: ShootoutKick[];
+  /** Kick order per side (person codes) and kicks taken. */
+  order: [number[], number[]];
+  taken: [number, number];
+  first: Side;
+  /** 0 waiting to set the next kick, 1 the kick is set, 2 struck and in flight. */
+  phase: number;
+  winner: Side | -1;
 }
 
 /** Values per frame: 22 players (x, y) then the ball (x, y, z), all in centimetres. */

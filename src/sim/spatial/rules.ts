@@ -6,14 +6,15 @@
  * the step (events and sendings-off are rare and may allocate), and only + - * /, Math.sqrt
  * and the det.ts helpers.
  */
-import { SPATIAL_TUNING } from '../data';
+import { MATCH_TUNING, SPATIAL_TUNING } from '../data';
 import { threatAt } from './onball';
 import { goDead } from './restart';
-import { applyTeamTactics, resolveMarker, secondLastOpponent } from './shape';
+import { resolveMarker, secondLastOpponent } from './shape';
+import { assignSpots, dropSubsFor, refreshPlayer } from './systems';
 import {
   ATTRS, A_AGG, A_CMP, A_CRS, A_DRI, A_DUR, A_GKP, A_SPK, A_TCK, BALL_DEAD, BALL_HELD, LENGTH, N, RESTART_CORNER, RESTART_DROP,
   RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_PENALTY, RESTART_THROW_IN, SP_CORNER, SP_GOAL_KICK,
-  SP_NONE, SP_THROW, WIDTH, acrossOf, clamp, depthOf, idOf, sideOf, type RulesState, type SpatialMatch,
+  PS_FOULS, SP_NONE, SP_THROW, WIDTH, acrossOf, addStoppage, clamp, depthOf, idOf, pstatAdd, sideOf, type RulesState, type SpatialMatch,
 } from './state';
 import type { Side, SpatialEvent, SpatialEventKind } from './types';
 
@@ -27,6 +28,7 @@ const INJ = T.injury;
 const SO = T.sentOff;
 const RS = T.restart;
 const PT = T.pitch;
+const MAX_SUBS = MATCH_TUNING.squad.maxSubs;
 const GC = PT.goalCentreAcross;
 const HW = PT.goalWidth / 2;
 
@@ -70,9 +72,10 @@ export function createRules(): RulesState {
   };
 }
 
-/** Record a referee moment by player i (events are rare, so this may allocate). */
-function pushEvent(m: SpatialMatch, kind: SpatialEventKind, i: number, x: number, y: number, note?: SpatialEvent['note']): void {
+/** Record a referee moment by player i, with `other` a person code (events are rare, so this may allocate). */
+export function pushEvent(m: SpatialMatch, kind: SpatialEventKind, i: number, x: number, y: number, note?: SpatialEvent['note'], other?: number): void {
   const e: SpatialEvent = { ms: m.clockMs, kind, side: sideOf(i), player: m.who[i], x, y };
+  if (other !== undefined) e.other = other;
   if (note) e.note = note;
   m.events.push(e);
 }
@@ -186,18 +189,19 @@ function denying(m: SpatialMatch, f: number, v: number): boolean {
   return true;
 }
 
-/** Book player i; a second yellow is a red. Returns true if he is sent off. */
-function book(m: SpatialMatch, i: number): boolean {
+/** Book player i (for wasting time with `delay`); a second yellow is a red. Returns true if he is sent off. */
+export function book(m: SpatialMatch, i: number, delay = false): boolean {
   const R = m.rules;
   const side = sideOf(i);
   R.yellows[side]++;
+  addStoppage(m, T.periods.stoppage.cardS * 1000);
   if (R.yellow[i]) {
     pushEvent(m, 'yellow', i, m.px[i], m.py[i], 'second');
     sendOff(m, i, 'second');
     return true;
   }
   R.yellow[i] = 1;
-  pushEvent(m, 'yellow', i, m.px[i], m.py[i]);
+  pushEvent(m, 'yellow', i, m.px[i], m.py[i], delay ? 'delay' : undefined);
   return false;
 }
 
@@ -213,7 +217,8 @@ export function foul(m: SpatialMatch, f: number, v: number, kind: number, canAdv
   const x = m.px[v], y = m.py[v];
   const pen = inOwnBox(fs, x, y);
   R.fouls[fs]++;
-  pushEvent(m, 'foul', f, x, y, pen ? 'box' : undefined);
+  pstatAdd(m, f, PS_FOULS);
+  pushEvent(m, 'foul', f, x, y, pen ? 'box' : undefined, m.who[v]);
   let red = false;
   let note: SpatialEvent['note'];
   let yellow = false;
@@ -328,24 +333,29 @@ function sw(a: Num, i: number, j: number): void {
 }
 
 /** Swap everything about the players at indices i and j (the keeper is always index side * 11). */
-function swapPlayers(m: SpatialMatch, i: number, j: number): void {
+export function swapPlayers(m: SpatialMatch, i: number, j: number): void {
   const ob = m.onball, R = m.rules, at = m.attack;
-  for (const a of [m.px, m.py, m.vx, m.vy, m.tx, m.ty, m.sx, m.sy, m.top, m.acc, m.dist, m.sprint, m.tight, m.role,
-    m.nextThink, m.delay, m.on, m.who, ob.scanAt, ob.nextScan, ob.scanMs, ob.faceX, ob.faceY, ob.tackleReady,
+  for (const a of [m.px, m.py, m.vx, m.vy, m.tx, m.ty, m.sx, m.sy, m.top, m.acc, m.dist, m.sprint, m.distMark, m.sprintMark,
+    m.tight, m.role, m.nextThink, m.delay, m.on, m.who, ob.scanAt, ob.nextScan, ob.scanMs, ob.faceX, ob.faceY, ob.tackleReady,
     ob.touchBlock, R.yellow, R.hurt, R.offFlag, at.runUntil, at.runNext, at.runX, at.runY, at.boxSlot]) sw(a, i, j);
-  for (let k = 0; k < ATTRS; k++) sw(ob.attr, i * ATTRS + k, j * ATTRS + k);
+  for (let k = 0; k < ATTRS; k++) { sw(ob.attr, i * ATTRS + k, j * ATTRS + k); sw(m.baseAttr, i * ATTRS + k, j * ATTRS + k); }
+  m.at[m.who[i]] = i;
+  m.at[m.who[j]] = j;
 }
 
 /**
  * Player i is sent off. He leaves the pitch (parked by the halfway line, out of play). A keeper
- * is replaced in goal by the outfielder best at it, and the most advanced player drops into a
- * deeper spot that was left empty.
+ * is replaced in goal by the outfielder best at it, and the rest take up the formation's
+ * shape for the numbers left.
  */
 function sendOff(m: SpatialMatch, i: number, note?: SpatialEvent['note']): void {
   const R = m.rules;
   const side = sideOf(i);
   R.reds[side]++;
+  if (note !== 'second') addStoppage(m, T.periods.stoppage.cardS * 1000);
   pushEvent(m, 'red', i, m.px[i], m.py[i], note);
+  dropSubsFor(m, m.who[i]);
+  m.used[m.who[i]] = 2;
   const base = side * 11;
   const at = m.onball.attr;
   let j = i;
@@ -371,20 +381,7 @@ function sendOff(m: SpatialMatch, i: number, note?: SpatialEvent['note']): void 
   m.tx[j] = m.px[j]; m.ty[j] = m.py[j];
   m.role[j] = 0;
   if (m.ball.owner === j) m.ball.owner = -1;
-  // The spot he leaves goes to the most advanced player if it is deeper than his.
-  const team = m.teams[side];
-  const sj = j - base;
-  let a = -1, au = -Infinity;
-  for (let s = 1; s < 11; s++) {
-    if (!m.on[base + s]) continue;
-    if (team.attU[s] > au) { au = team.attU[s]; a = s; }
-  }
-  if (sj > 0 && a > 0 && au > team.attU[sj]) {
-    const t = team.spot[sj];
-    team.spot[sj] = team.spot[a];
-    team.spot[a] = t;
-  }
-  applyTeamTactics(m, team, team.tactics);
+  assignSpots(m, m.teams[side]);
   resolveMarker(m, m.teams[1 - side]);
 }
 
@@ -403,17 +400,19 @@ export function injuryRoll(m: SpatialMatch, a: number, v: number, mul: number): 
   const p = INJ.perChallenge * (INJ.durBase - m.onball.attr[i * ATTRS + A_DUR] / 99) * mul;
   if (!m.rng.chance(p)) return false;
   R.hurt[i] = 1;
-  m.top[i] *= INJ.speed;
-  m.acc[i] *= INJ.speed;
-  R.injuries[sideOf(i)]++;
+  refreshPlayer(m, i);
+  const side = sideOf(i);
+  R.injuries[side]++;
+  addStoppage(m, T.periods.stoppage.injuryS * 1000);
   pushEvent(m, 'injury', i, m.px[i], m.py[i]);
+  if (m.subsUsed[side] >= MAX_SUBS) assignSpots(m, m.teams[side]);
   const b = m.ball;
   if (b.state === BALL_DEAD) {
     m.restartAt += INJ.stopMs;
     return false;
   }
-  const side = (b.owner >= 0 ? sideOf(b.owner) : m.poss) as Side;
-  goDead(m, RESTART_DROP, side, INJ.stopMs + INJ.dropMs, clamp(b.x, 1, LENGTH - 1), clamp(b.y, 1, WIDTH - 1));
+  const ps = (b.owner >= 0 ? sideOf(b.owner) : m.poss) as Side;
+  goDead(m, RESTART_DROP, ps, INJ.stopMs + INJ.dropMs, clamp(b.x, 1, LENGTH - 1), clamp(b.y, 1, WIDTH - 1));
   return true;
 }
 

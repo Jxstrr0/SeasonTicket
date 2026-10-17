@@ -19,10 +19,11 @@ import { detAtan, detAtan2, detCos, detExp, detSin } from './det';
 import { played, wallSlot } from './rules';
 import {
   ATTRS, A_CMP, A_FIN, A_GKP, A_HEA, A_REF, A_SPK, A_STR, BALL_AIR, BALL_ROLL, KICK_SHOT, LENGTH, N, SHOT_KIND_FREE_KICK,
-  SHOT_KIND_HEADER, SHOT_KIND_OPEN, SHOT_KIND_PENALTY, SHOT_VALUES, WIDTH, acrossOf, clamp, depthOf, sideOf,
+  PS_KEY, SHOT_KIND_HEADER, SHOT_KIND_OPEN, SHOT_KIND_PENALTY, SHOT_VALUES, WIDTH, acrossOf, clamp, depthOf, pstatAdd, sideOf,
   type SpatialMatch,
 } from './state';
-import type { ShotOutcome, ShotRecord, Side } from './types';
+import { shootoutKick } from './systems';
+import { PERIOD, type ShotOutcome, type ShotRecord, type Side } from './types';
 
 const T = SPATIAL_TUNING;
 const SH = T.shot;
@@ -479,19 +480,26 @@ export function shoot(m: SpatialMatch, i: number, side: Side, kind: number): voi
   ob.shotXg = xg;
   ob.shotHeader = header;
   ob.shotAssist = ob.lastRecv === i ? ob.lastRecvFrom : -1;
+  m.rules.shotKind = kind;
+  for (let j = 0; j < N; j++) m.nextThink[j] = now;
+  if (m.period === PERIOD.SHOOTOUT) {
+    // A shootout kick: logged by the shootout, not in the match stats.
+    shootoutKick(m, i, side, outcome === SHOT_GOAL, outcome === SHOT_SAVED);
+    played(m, i);
+    return;
+  }
+  if (ob.shotAssist >= 0) pstatAdd(m, ob.shotAssist, PS_KEY);
   ob.shots[side]++;
   ob.xg[side] += xg;
   if (inAttackBox(side, x0, y0)) ob.shotsInBox[side]++;
   if (outcome === SHOT_GOAL || (outcome === SHOT_SAVED && PLAN_WHERE[0] === CROSS_GOAL)) ob.onTarget[side]++;
   if (outcome === SHOT_BLOCKED) ob.blocked[side]++;
   if (outcome === SHOT_POST) ob.woodwork[side]++;
-  m.rules.shotKind = kind;
   if (fk) m.rules.fkShots[side]++;
   const rec: ShotRecord = { ms: now, side, player: m.who[i], x: x0, y: y0, xg, header, outcome: OUTCOME[outcome] };
   if (pen) rec.setPiece = 'penalty';
   else if (fk) rec.setPiece = 'freeKick';
   m.shotLog.push(rec);
-  for (let j = 0; j < N; j++) m.nextThink[j] = now;
   played(m, i);
 }
 
