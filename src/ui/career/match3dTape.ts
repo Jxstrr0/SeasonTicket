@@ -6,7 +6,7 @@
  * throws, and when the contact is. Cues are found by comparing the engine's state from one
  * step to the next, so the sim needs no hooks for them.
  */
-import { ACT, type ActionCue, type MatchFrame3D } from '../../render/match/types';
+import { ACT, CHANCE_POST, CHANCE_SAVED, type ActionCue, type MatchFrame3D } from '../../render/match/types';
 import {
   BALL_DEAD, BALL_HELD, KICK_SHOT, LENGTH, PSTATS, PS_TACKLES, SHOT_VALUES, SP_THROW, type SpatialMatch,
 } from '../../sim/spatial/state';
@@ -14,12 +14,12 @@ import { PERSONS } from '../../sim/spatial/types';
 import tuning from '../../data/tuning/match3d.json';
 
 const A = tuning.actions;
-/** Steps kept: enough to cover the lag at the finest step, with room to spare. */
-const RING = 16;
+/** Match time kept: the lag, and the run-up to a goal for its replay (Stage 5.3). */
+const KEEP_MS = tuning.replays.keepS * 1000;
+/** Steps kept: enough to cover KEEP_MS at the finest step (100 ms), with room to spare. */
+const RING = Math.ceil(KEEP_MS / 100) + 16;
 /** A gap bigger than this between two steps (a seek) starts the tape again. */
 const JUMP_MS = 3000;
-/** Cues are kept this long after their contact (a celebration plays for a few seconds). */
-const KEEP_MS = 9000;
 /** Goal mouth half-width plus a little: a shot inside this makes the keeper go for it. */
 const MOUTH = 3.66 + 1.6;
 const GC = 34;
@@ -49,6 +49,9 @@ export class MatchTape {
   private ballZ = 0;
   private goals = 0;
   private events = 0;
+  private shots = 0;
+  /** Rises by one each time the tape starts again (a new match or a seek). */
+  epoch = 0;
   private readonly tackles = new Float64Array(PERSONS);
 
   /** The 3D view's time for engine time `ms`. */
@@ -58,6 +61,7 @@ export class MatchTape {
 
   /** Drop everything (a new match or a seek) and start from `m`. */
   reset(m: SpatialMatch): void {
+    this.epoch += 1;
     this.count = 0;
     this.newest = -1;
     this.cues.length = 0;
@@ -78,6 +82,15 @@ export class MatchTape {
     let drop = 0;
     while (drop < this.cues.length && this.cues[drop].atMs < old) drop++;
     if (drop) this.cues.splice(0, drop);
+  }
+
+  /** The earliest and latest match times on the tape. */
+  get oldest(): number {
+    return this.count ? this.t[(this.newest - this.count + 1 + RING) % RING] : 0;
+  }
+
+  get latest(): number {
+    return this.count ? this.t[this.newest] : 0;
   }
 
   /** Fill `f` with the match at `ms`, blended between the two steps either side. */
@@ -168,6 +181,7 @@ export class MatchTape {
     this.ballZ = b.z;
     this.goals = m.goalLog.length;
     this.events = m.events.length;
+    this.shots = m.shotLog.length;
     for (let c = 0; c < PERSONS; c++) this.tackles[c] = m.pstat[c * PSTATS + PS_TACKLES];
   }
 
@@ -249,6 +263,14 @@ export class MatchTape {
           else this.cue(ACT.CATCH, p, t, b.x, b.y, this.ballZ, 0.5);
         } else if (!this.diveFor(p, t)) this.touch(p, t, b.x, b.y, newOwner ? this.ballZ : b.z);
       }
+    }
+
+    // Big chances missed, for a replay: the shot's outcome is settled when it is hit.
+    for (let s = this.shots; s < m.shotLog.length; s++) {
+      const rec = m.shotLog[s];
+      if (rec.outcome === 'goal') continue;
+      const how = rec.outcome === 'post' ? CHANCE_POST : rec.outcome === 'saved' ? CHANCE_SAVED : 0;
+      this.cue(ACT.CHANCE, -1, t, rec.x, rec.y, 0, Math.min(1, rec.xg), rec.side + how);
     }
 
     // Goals: the scorer's side celebrates.

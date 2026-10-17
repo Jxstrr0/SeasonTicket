@@ -11,7 +11,7 @@ The 3D view plays the same match the 2D pitch shows. It uses the same engine ste
 - **The ground** is the home club's Stage 4 stadium model: the stands, roof, boards and floodlights the owner has bought, in club colours. Away grounds use the other club's stadium record.
 - **The players** are 22 rigged characters. They wear their club's kit, with the keepers in their own colours, and each has a skin tone and hair seeded from the player.
 - **The ball** has its real height and a blob shadow.
-- **Cameras** follow the ball. Broadcast is the default; others come in step 5.3.
+- **Cameras** follow the ball. Broadcast is the default, with owner's box, behind the goal and overhead (tactics) one tap away. Replays add a low touchline camera.
 - **Toggles:**
   - The live screen and the replay screen get a 2D/3D toggle.
   - The 3D option only appears when Graphics is not Off.
@@ -79,6 +79,36 @@ Each step ends with a deploy and a short report.
 - **Measured** on one full match (seed `tape1`):
   - Cues: about 770 kicks, 750 touches, 240 tackles and slides, 70 headers, 30 throws, 12 dives and 9 catches.
   - At 844 by 390, Medium: about 84 draw calls and 410,000 triangles. The moves cost no draw calls; they only bend bones.
+
+## What 5.3 shipped
+
+- **Files:**
+  - `src/render/match/cameras.ts` places every camera. Each one eases towards the ball, and switching camera is a cut, as on TV.
+  - `src/ui/career/match3dDirector.ts` decides what gets replayed and when. It is plain logic, so the tests can drive it.
+  - `src/ui/career/match3d.ts` plays the replays and draws the camera buttons.
+  - Tuning is in the `cameras` and `replays` blocks of `src/data/tuning/match3d.json`.
+- **Cameras.** Four buttons sit bottom-left of the 3D view: TV (broadcast), Box, Goal and Top. The pick is remembered between matches.
+  - **Box** is the owner's seat in the main stand's box row, behind the glass. If the stand has no boxes, it is the back row.
+  - **Goal** is high behind the goal. It swaps ends once play is 12 m into the other half.
+  - **Top** is high over the pitch, for watching the shape.
+  - **Side** is a low touchline camera that only replays use. It zooms in on play across the pitch, and slides back along the line when play is close to it.
+- **Replays.**
+  - The tape keeps the last 20 seconds of frames.
+  - **Every goal** is replayed 3.2 seconds after it goes in. The replay has two slow-motion angles: the touchline at 0.55x, then behind the goal at 0.35x.
+  - **Big chances** are also replayed, behind the goal at 0.5x. A big chance is a shot worth 0.25 xG or more that doesn't go in, or one that hits the woodwork.
+  - If a goal follows soon after a chance, the goal's replay covers both.
+  - **A replay holds the live match**, then it picks up where it stopped, so nothing is missed. A **Skip** button (top-right) ends it early.
+  - Replays play in slow motion from the engine's frames, so the legs slow down too. Nothing is replayed in a penalty shootout.
+  - In the replay viewer, a replay starts when the match is paused or stopped at the moment, too.
+- **Highlights option.** A Highlights button sits next to 3D on the live screen and the replay screen. With it on, the 2D pitch plays the match, and each big moment plays in 3D:
+  - It starts 7 seconds before the moment, at real speed, on the owner's camera, and ends 1.5 seconds after.
+  - A goal then gets one slow-motion take behind the goal. A big chance gets its replay too.
+  - A moment is a goal, a saved shot, a shot off the woodwork, or any shot worth 0.13 xG or more.
+  - The badge reads "Highlight" for the real-speed part, then "Replay".
+  - **Why moments, not "danger":** the first design showed 3D whenever the ball was near a box. But the ball gets near a box about 100 times a match, so the screen flickered between 2D and 3D. Shots are the moments a TV highlights show uses.
+- **Measured** on one full match (seed `replay1`):
+  - Full mode: 2 goals, both replayed within one engine step of going in, on two angles. There were no big chances in that match.
+  - Highlights mode: 9 moments, about 97 seconds of 3D in total.
 
 ## Budgets
 

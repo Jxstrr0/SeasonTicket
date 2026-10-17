@@ -124,6 +124,44 @@ export function storeMatch3d(on: boolean): void {
   }
 }
 
+/** Highlights mode for 3D matches (2D between big moments): kept per device. */
+const HIGHLIGHTS_KEY = 'seasonticket.matchHighlights';
+
+export function loadHighlights(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(HIGHLIGHTS_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
+export function storeHighlights(on: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(HIGHLIGHTS_KEY, on ? 'on' : 'off');
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
+/** The 3D match camera the owner last picked: kept per device. */
+const CAMERA_KEY = 'seasonticket.matchCamera';
+
+export function loadMatchCamera(): string | null {
+  try {
+    return globalThis.localStorage?.getItem(CAMERA_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function storeMatchCamera(key: string): void {
+  try {
+    globalThis.localStorage?.setItem(CAMERA_KEY, key);
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
 export const LIVE_SPEEDS: readonly { ms: number; label: string }[] = [
   { ms: 700, label: '1x' },
   { ms: 350, label: '2x' },
@@ -159,6 +197,8 @@ export interface UiState {
   stadium3dFailed: boolean;
   /** Matches show in 3D (when Graphics is not Off): kept per device. */
   match3d: boolean;
+  /** 3D only for the big moments, 2D between them: kept per device. */
+  highlights: boolean;
   /** True once the 3D match failed on this device; the 2D pitch shows instead. */
   match3dFailed: boolean;
   reportOpen: boolean;
@@ -213,6 +253,7 @@ export function initialUi(): UiState {
     stadiumView: 'model',
     stadium3dFailed: false,
     match3d: loadMatch3d(),
+    highlights: loadHighlights(),
     match3dFailed: false,
     reportOpen: false,
     replayId: null,

@@ -1005,6 +1005,15 @@ body.office-mode .topbar { backdrop-filter: none; }
 .match3d-stage canvas { inset: 0; }
 .match3d-loading { position: absolute; right: 8px; bottom: 6px; margin: 0; padding: 4px 10px; border-radius: 6px; background: rgba(11, 16, 32, 0.75); font-size: 0.85rem; pointer-events: none; }
 .is-3d > canvas { visibility: hidden; }
+/* Camera buttons and the replay badge (Stage 5.3), only while the 3D view is showing. */
+.m3d-cams, .m3d-replay { position: absolute; display: flex; align-items: center; gap: 4px; }
+.m3d-cams { left: 6px; bottom: 6px; flex-wrap: nowrap; }
+.m3d-cams .seg { min-width: 44px; min-height: 44px; padding: 4px 8px; background: rgba(11, 16, 32, 0.72); font-size: 0.85rem; }
+.m3d-cams .seg.on { background: var(--accent); }
+.m3d-replay { right: 6px; top: 6px; gap: 8px; }
+.m3d-badge { padding: 4px 10px; border-radius: 6px; background: #b3122e; color: #fff; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.8rem; }
+.m3d-replay .btn-secondary { min-height: 44px; background: rgba(11, 16, 32, 0.72); }
+.match3d:not(.on) .m3d-cams, .match3d:not(.on) .m3d-replay, .m3d-cams[hidden], .m3d-replay[hidden] { display: none; }
 .has-pitch .scoreboard { padding: 6px 12px; }
 .has-pitch .sb-score { font-size: 1.5rem; }
 /* Landscape phone: the score and pitch fill the height on the left, the rest scrolls on the right. */

@@ -5,7 +5,8 @@
  * clock on the pitch and flashes goals. Like the replay, it lives in one element that is
  * moved into the screen's `[data-slot="live-2d"]` slot after every render, so the canvas
  * survives the menus being rebuilt each minute. With 3D on, the shared 3D match view is
- * laid over the canvas and the 2D pitch stops drawing once the players have loaded.
+ * laid over the canvas and the 2D pitch stops drawing once the players have loaded (in
+ * highlights mode, only while the 3D view is showing a big moment).
  */
 import type { SpatialMatch } from '../../sim/spatial/state';
 import { clockLabel } from '../../sim/spatial/systems';
@@ -90,8 +91,7 @@ export class LiveHost {
       this.bannerUntil = 0;
       this.banner.hidden = true;
     }
-    if (this.three.ready) this.three.show(m, this.viewMs);
-    else this.view.draw(m, this.viewMs);
+    if (!this.three.show(m, this.viewMs)) this.view.draw(m, this.viewMs);
     const text = clockLabel(m);
     if (text !== this.clockText) this.clock.textContent = this.clockText = text;
   }

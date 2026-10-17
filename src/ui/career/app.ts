@@ -76,7 +76,7 @@ import { OfficeHost } from './officeHost';
 import { StadiumHost } from './stadiumHost';
 import { ReplayHost } from './replayHost';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeLivePitch, storeMatch3d, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLivePitch, storeMatch3d, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -289,6 +289,7 @@ export class CareerApp {
     const ok = ui.quality !== 'off' && !ui.match3dFailed && !!career.stadiums[homeId];
     return {
       want: ok && ui.match3d,
+      highlights: ui.highlights,
       tier: ok && ui.quality !== 'off' ? ui.quality : null,
       ground: () => buildStadiumSnapshot(career, undefined, homeId, crowd),
     };
@@ -760,6 +761,11 @@ export class CareerApp {
       case 'match-3d': {
         ui.match3d = !ui.match3d;
         storeMatch3d(ui.match3d);
+        return this.render();
+      }
+      case 'match-highlights': {
+        ui.highlights = !ui.highlights;
+        storeHighlights(ui.highlights);
         return this.render();
       }
       case 'live-pitch': {
@@ -1294,7 +1300,8 @@ export class CareerApp {
       if (!engine) return;
       const dt = last ? Math.min((now - last) / 1000, PITCH_MAX_FRAME_S) : 0;
       last = now;
-      const target = this.pitch.at + dt * 1000 * live.pitchSpeed;
+      // A goal replay in 3D holds the match where it is.
+      const target = this.pitch.at + (this.match3d.holding ? 0 : dt * 1000 * live.pitchSpeed);
       let minute = false;
       let pause: string | null = null;
       try {
