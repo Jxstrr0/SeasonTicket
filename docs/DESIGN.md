@@ -449,6 +449,8 @@ Tactics set where each player wants to stand; the ball moves the whole block.
 
 **Weighing.** Each option is worth the threat it creates if it works, less the threat the opponents get if we lose it there, plus a tactic bonus (tempo, directness, width, counters, protecting a lead). Threat runs from 0.003 in our own box to 0.25 on the penalty spot. A pass works if no defender can reach its path in time.
 
+**Marked men and return passes (step 7c2).** Unless it finds a man free in behind, a pass is worth less to a receiver with a marker close: 1 − 0.9 × (1 − d / 6) with his nearest opponent d m away, so a man marked from 1 m keeps about a quarter of his spot's worth and one 6 m clear keeps it all. A pass straight back to the man who just passed is worth 0.6 of its value. Crosses take both discounts too. Before this a striker, tightly marked but standing in the best spots, was picked for 61% of his side's shots and wide players for 5%; the ball now goes to whoever is free (`threat.markWithin`, `markCost`, `returnMul`).
+
 **Vision.** He sees team-mates within 20-55 m, by vision, in the 200° in front of him, plus behind him if he scanned in the last 1.5 s.
 
 **Decision quality (q, 0 to 1)** blends vision 40%, composure 40% and positioning 20%, as there is no decisions attribute (question 1). Random noise is added to each option's worth, sized to the gap between his top options so it bites as hard in his own half as at the edge of the box; lower q means more noise. A q 0.9 player nearly always picks his best or second best; a q 0.4 player often picks the third. Tiredness adds up to 60% more noise.
@@ -464,7 +466,7 @@ Tactics set where each player wants to stand; the ball moves the whole block.
 
 ### 17.4 Off-ball logic
 
-**Attacking.** One or two players offer a short pass 8-15 m away that no defender blocks. Players near the ball read the next pass, giving one-twos and third-man runs. A run in behind starts only when it is on: the carrier free and facing forward, space behind, the runner on the shoulder. He holds 0.5-1.5 m onside, then goes; positioning and composure sharpen the timing and work rate sets how often. A flagged full-back overlaps when his winger comes inside. For crosses, 2-5 players (by mentality) fill the near post, far post, penalty spot, cut-back zone and edge of the box.
+**Attacking.** One or two players offer a short pass 8-15 m away that no defender blocks. Players near the ball read the next pass, giving one-twos and third-man runs. A run in behind starts only when it is on: the carrier free and facing forward, space behind, the runner on the shoulder. He holds 0.5-1.5 m onside, then goes; positioning and composure sharpen the timing and work rate sets how often. A flagged full-back overlaps when his winger comes inside. For crosses, 2-5 players (by mentality) fill the near post, far post, penalty spot, cut-back zone and edge of the box, when the ball is wide and deep or held centrally at least 78 m up the pitch (`box.centralFrom`, step 7c2), so a side building through the middle has men in the box to find.
 
 **Defending.** Zones 8-12 m apart, the cover 2-4 m behind and inside the presser. The nearest defender tracks a run into his zone, as tight as his marking. In the box: zones, plus tight marking on the 3-4 biggest aerial threats. A defender facing a dribbler stands off 1.5-2 m and shows him outside (question 3).
 
@@ -594,6 +596,7 @@ Saves keep the recipe for a match, not the film: the seed, the line-ups and ever
 2. **Rules, no randomness:** every offside case (a backward pass to a man beyond the line is onside; with the keeper out, the two deepest outfielders set the line); the named taker takes every penalty, direct free kick and corner while on the pitch; no back-pass is handled; the sub-queue cases.
 3. **Tactics, one test per dial on 120 shared seeds:** a high line means more balls in behind and offsides; a high press wins the ball higher and costs energy; width brings crosses, attacking mentality shots, slow short play completion and possession, counters fast breaks, time-wasting stoppage time; man-marking cuts his man's touches; high-q midfielders play more forward passes.
 4. **Believability seasons** in a slow job: 8 fine seasons, the same fixtures in coarse, and 8 more coarse seasons; about 9 minutes of work, 2.5 on the build machine's 4 cores. `npm test` stays at about 90 s.
+   *As built (step 7c1):* `npm run test:slow` (`tests/slow/`) plays 6 whole coarse seasons (one twice, to check it comes out the same) and 2 fine seasons, playoffs included, and checks each against the same bands as the Stage 1 season tests (`tests/helpers/believability.ts`): goals, results split, shots, xG, cards, fouls, corners, offsides, top scorers, and squad strength against the table. About 105 s on the build machine. It runs as its own CI job, `believability`, beside the build. The deploy does not wait for it, so a miss shows red there but does not hold back the site; the known misses are in 17.15.
 
 **What you judge first in the viewer:** no bunching, few passes straight back, few shots from beyond 30 m, nobody standing still, the back line moving as one, keepers sweeping behind a high line, no ball passing through a player.
 
@@ -643,7 +646,8 @@ The same seed must give the same match on every phone and browser; replays and b
 - **One weather per match, a fixed threat map, a kick-by-kick shootout.**
 - **Fine and coarse** may differ in a given match but hit the same averages.
 - **Ends never change.** The home side attacks the same way all match, extra time included. The pitch is symmetric and there is no wind or slope yet, so it changes nothing but the picture; the 3D viewer can mirror the second half when it arrives.
-- **No home advantage yet.** Home and away play the same game until step 7 adds it (attribute points and a referee lean, 17.7).
+- **Home advantage is the crowd's.** Up to 3 points on the home side's technical and mental attributes at a full ground and a referee lean on fouls and yellows (step 7a, 17.7); nothing physical changes and a match with no crowd is neutral.
+- **The Stage 1 engine is a test-only stand-in.** It lives in `tests/helpers/stage1/`. Owner-loop tests that play whole careers use it for the matches nobody watches, because the spatial engine under the test runner is several seconds a week. `src/data/tuning/match.json` stays unchanged, so the tuning fingerprint and stored replays are not disturbed.
 - **The match keeps its coach's minute.** The AI head coach looks at the match once a minute of match time, as in the Stage 1 engine; his changes then go in at the next whole second.
 
 **Cut order if the schedule slips:** set-piece routines, aerial bounce detail, first-touch variety, player separation, facing separate from movement. **Never cut:** offside at the pass, fouls by location, outcomes settled at the strike.
@@ -665,6 +669,28 @@ The same seed must give the same match on every phone and browser; replays and b
 ### 17.15 Build notes
 
 What the build actually did, step by step, where it differs from or adds to the plan above.
+
+**Step 7: tuning and swap-over (done; waiting on the owner's verdict).**
+- **7a, tuning.** Coarse steps now follow the ball's path, so a player meets it where it actually passed him (no ball through a player at half-second steps); coarse receivers stop just past the meeting point. The in-possession shape is wider and dead balls take longer. Home advantage comes from the crowd (17.13). Every rating is pulled 20% towards 65 before a match (`skillSpread`), as a 25-point gap between squads decided too many matches. Fouls are up 12% and keeper reach is 1.52 m. Pressing costs only the extra running (question 11, kept as it is).
+- **7b, the swap-over.** The career plays every match on the spatial engine: the live match in fine mode, the rest in coarse mode on two Web Workers, with pre-simulation of the coming week. Replays, the 2D viewer, live 2D and golden matches are covered under 17.8 and 17.9. Saves are version 4, migrated from 2 and 3. A full season of the club's replays takes a save code from about 175 KB to 260 KB.
+- **7c1, every match.** Season defaults (league and playoffs) are the spatial engine. The Stage 1 engine moved to `tests/helpers/stage1/` as a test-only stand-in (17.13). The slow season suite and its CI job are new (17.10). Unit tests have 20 s each on CI, where the runner is slower; this changes how tests are measured, not a performance budget.
+- **7c2, chances spread out.** Strikers took 61% of shots, wingers 5%, one striker took 361 shots in a season, and top scorers reached 46 to 52 goals. Three changes: the marked-man and return-pass discounts (17.3), filling the box from central possession (17.4), and runners holding 1.5 m onside instead of 1 m, with passers reading the line to 1.5 m at vision 50 instead of 2.5 m. Shots were tuned back to target (coarse `shot.valueMul` 1.45, `errBase` 0.09). Strikers now take about 42% of shots, and the season's top scorer has 17 to 32 goals. `engineRev` is 10.
+- **Season numbers** (6 coarse seasons / 2 fine seasons, playoffs included; targets in 17.10):
+  - goals 2.70 / 2.82 a match; home wins 44% / 41%, draws 22% / 26%;
+  - shots 14.2 / 11.8 a team, 36% / 38% on target; xG 1.51 / 1.31 a team;
+  - pass completion 77%, passes 8 to 9 a minute;
+  - yellows 1.71 / 1.88 and fouls 8.9 a team;
+  - corners 3.0 / 3.1, offsides 3.1 / 2.7 a team;
+  - squad strength against final position (rank correlation) 0.62 to 0.88.
+- **Benchmarks (dev machine):** fine match 251-286 ms (budget 750), league week 694-744 ms (budget 1,000), season about 21-23 s (budget 31), 3 garbage collections a fine match (budget 20).
+
+**Known gaps after step 7** (the slow suite shows these red; none hold back the deploy):
+- **7+ goal matches** are 2.3% (coarse) and 2.9% (fine), against at most 2%. The cause is the spread of team strength. Over a season the strongest club scores about 117 and the weakest about 9; the weakest take 5 to 8 shots and concede about 22. The AI coach picks a high press and fast tempo for strong clubs and passive play for weak ones, which widens the gap. This is an owner decision.
+- **Top scorer** has 31 or 32 goals in one season of each mode, against a cap of 30, from the same cause.
+- **Top 10 scorers** had only 6 attackers in one fine season (target 7 or more).
+- **Fouls** are 8.9 a team, against 9 to 15. The referee was left as it is (owner's call).
+- **Formations.** The AI coaches lean to back threes and fives.
+- **Smaller misses inside test bounds:** centre-backs run 7.5 to 8 km (real 9 to 10); passes are 8 to 9 a minute (real 8 to 10); throw-ins are about 9 a team (real about 20); the ball is in play about 61 minutes (55 to 60).
 
 **Step 6: systems hookup (done).**
 - **Periods.** Two halves of 45 minutes, each with 1 to 6 minutes added (from goals, cards, subs, injuries and time-wasting), and the whistle waits for the ball to be safe. Cup ties level after 90 minutes play two halves of 15 minutes, then a kick-by-kick shootout: the named penalty taker first, then by set pieces plus composure, keepers last, five each then sudden death.

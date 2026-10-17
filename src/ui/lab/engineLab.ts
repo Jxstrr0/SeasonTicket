@@ -333,7 +333,7 @@ export class EngineLab {
         </p>
       </section>
       <section class="lab-match"></section>
-      <p class="small muted">Engine step 5 of 7. The referee is in: fouls and advantage, offsides, free kicks with walls, penalties, corners, throw-ins, cards and injuries. Fatigue, substitutions and the AI coach come in step 6, and the numbers are tuned in step 7. Tap a player to follow him.</p>
+      <p class="small muted">The full engine: shape, passing, shooting, the referee, fatigue, substitutions and the AI coach, tuned against real-match numbers. Every league and playoff match plays on it. Tap a player to follow him.</p>
     </aside>
   </div>
 </div>`;

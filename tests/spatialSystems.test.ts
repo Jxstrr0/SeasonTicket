@@ -151,7 +151,7 @@ describe('spatial substitutions', () => {
 describe('spatial fatigue', () => {
   it('energy falls through the match, faster for a side that presses high', () => {
     // Energy goes with distance run and sprinted, so pressing costs what the extra running
-    // costs: a few per cent (step 7 tunes how much).
+    // costs: a few per cent (kept physical, docs/DESIGN.md 17.14 question 11).
     let press = 0, sit = 0, keeper = 0;
     for (let k = 0; k < 3; k++) {
       const m = createSpatial(setupWithBench({ pressing: 5, tempo: 5 }, { pressing: 1, tempo: 1 }), `fatigue-${k}`, 'coarse');
