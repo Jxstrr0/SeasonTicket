@@ -8,8 +8,8 @@
 import { pickSelection } from '../coach';
 import { simulateSpatialMatch } from '../spatial/bridge';
 import type { MatchContext, MatchState } from '../match/state';
-import { advanceWeek, attendanceShare, buildMatchSetup, matchContext, matchesForWeek } from '../season';
-import type { SeasonHooks } from '../season';
+import { attendanceShare, buildMatchSetup, matchesForWeek, prepareWeek, settleWeek } from '../season';
+import type { PreparedWeek, SeasonHooks } from '../season';
 import { SEASON_TUNING } from '../data';
 import type { MatchResult, MatchSetup, ScheduledMatch } from '../types';
 import { fairPrice, priceAdjustedShare, settleMatch, settleSeason, updateLadder, weeklyBooks } from './books';
@@ -80,33 +80,41 @@ export function startUserMatch(career: Career): MatchState | null {
   return startLive(career, setup);
 }
 
-/** One week forward. Returns the results played this week (already compacted). */
-export function advanceCareer(career: Career): MatchResult[] {
-  if (career.phase === 'review' || career.phase === 'gameOver') return [];
-  let results: MatchResult[] = [];
-  if (career.phase === 'preseason') {
-    weeklyBooks(career);
-    weeklyMarket(career);
-    preseasonRecovery(career);
-    if (checkLadder(career)) return [];
-    career.weekIndex += 1;
-    career.preseasonWeek += 1;
-    if (career.preseasonWeek > C.calendar.preseasonWeeks) {
-      career.phase = 'season';
-      autoSignSponsor(career);
-      addInbox(career, 'season', 'Kick-off week', `The season starts now. ${userTeam(career).shortName} play this week.`);
-    }
-    weeklyStadium(career);
-    return [];
-  }
+/**
+ * A season week with its matches set up, waiting to be played. `jobs` are the matches to
+ * play away from the screen (every fixture but the user's live one); the game hands them to
+ * the MatchRunner and passes the results, in the same order, to settleCareerWeek.
+ */
+export interface CareerWeek {
+  jobs: MatchSetup[];
+  ctx: MatchContext;
+  prep: PreparedWeek;
+}
 
+/**
+ * The first half of a season week: the weekly books, the coach check and a setup for every
+ * fixture. Null outside the season, where advanceCareer does the whole week. Nothing else may
+ * change the career until settleCareerWeek.
+ */
+export function prepareCareerWeek(career: Career): CareerWeek | null {
+  if (career.phase !== 'season' || career.season.phase === 'complete') return null;
   weeklyBooks(career);
   ensureHeadCoach(career);
-  const state = career.season;
-  const week = state.week;
-  const fixtures = matchesForWeek(state, week).filter((m) => !m.result);
-  advanceWeek(state, careerHooks(career));
-  for (const match of fixtures) {
+  const prep = prepareWeek(career.season, careerHooks(career));
+  if (!prep) return null;
+  const jobs = prep.setups.filter((s) => s.matchId !== career.liveMatch?.setup.matchId);
+  return { jobs, ctx: prep.ctx, prep };
+}
+
+/** The second half: the user's live match is seen out, then every result is settled. */
+export function settleCareerWeek(career: Career, week: CareerWeek, played: readonly MatchResult[]): MatchResult[] {
+  if (played.length !== week.jobs.length) throw new Error(`${played.length} results for ${week.jobs.length} matches`);
+  const byId = new Map(week.jobs.map((s, k) => [s.matchId, played[k]]));
+  const { prep } = week;
+  const all = prep.setups.map((setup) => byId.get(setup.matchId) ?? finishLive(career, prep.ctx));
+  settleWeek(career.season, prep, all);
+  const results: MatchResult[] = [];
+  for (const match of prep.fixtures) {
     const result = match.result;
     if (!result) continue;
     settleMatch(career, match, result);
@@ -123,6 +131,7 @@ export function advanceCareer(career: Career): MatchResult[] {
   weeklyMarket(career);
   if (checkLadder(career)) return results;
   career.weekIndex += 1;
+  const state = career.season;
   if (state.phase === 'complete') {
     settleSeason(career);
     career.phase = 'review';
@@ -131,6 +140,29 @@ export function advanceCareer(career: Career): MatchResult[] {
   }
   weeklyStadium(career);
   return results;
+}
+
+/** One week forward, all on this thread. Returns the results played this week (already compacted). */
+export function advanceCareer(career: Career): MatchResult[] {
+  if (career.phase === 'review' || career.phase === 'gameOver') return [];
+  if (career.phase === 'preseason') {
+    weeklyBooks(career);
+    weeklyMarket(career);
+    preseasonRecovery(career);
+    if (checkLadder(career)) return [];
+    career.weekIndex += 1;
+    career.preseasonWeek += 1;
+    if (career.preseasonWeek > C.calendar.preseasonWeeks) {
+      career.phase = 'season';
+      autoSignSponsor(career);
+      addInbox(career, 'season', 'Kick-off week', `The season starts now. ${userTeam(career).shortName} play this week.`);
+    }
+    weeklyStadium(career);
+    return [];
+  }
+  const week = prepareCareerWeek(career);
+  if (!week) return [];
+  return settleCareerWeek(career, week, week.jobs.map((setup) => background(setup, week.ctx)));
 }
 
 function checkLadder(career: Career): boolean {

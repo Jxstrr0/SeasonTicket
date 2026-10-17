@@ -115,8 +115,20 @@ export interface UiState {
   pendingConfirm: string | null;
   /** True while "Sim to season end" steps through weeks. */
   simming: boolean;
+  /** The week being played in the background, while "Playing the week..." shows. */
+  weekRun: WeekRun | null;
   live: LiveView;
   saveCode: string;
+}
+
+export interface WeekRun {
+  /** Matches played so far, of `total` (0 of 0 until the week is set up). */
+  done: number;
+  total: number;
+  /** Part of "Sim to end": the screen offers to stop after this week. */
+  toEnd: boolean;
+  /** The week, as the top bar shows it. */
+  label: string;
 }
 
 export const MARKET_PAGE = 40;
@@ -150,6 +162,7 @@ export function initialUi(): UiState {
     menuOpen: false,
     pendingConfirm: null,
     simming: false,
+    weekRun: null,
     live: { running: false, speed: 350, panel: 'none', subOut: null, pause: null, showAll: false },
     saveCode: '',
   };

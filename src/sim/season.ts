@@ -148,28 +148,52 @@ export function applyMatchResult(state: SeasonState, match: ScheduledMatch, resu
   }
 }
 
-export function advanceWeek(state: SeasonState, hooks: SeasonHooks = defaultHooks()): MatchResult[] {
-  if (state.phase === 'complete') return [];
+/** A week with its matches set up but not yet played (prepareWeek, then settleWeek). */
+export interface PreparedWeek {
+  week: number;
+  fixtures: ScheduledMatch[];
+  /** One per fixture, in the same order. */
+  setups: MatchSetup[];
+  ctx: MatchContext;
+  servingBan: Player[];
+  alreadyInjured: Set<string>;
+}
+
+/**
+ * Picks both sides of every fixture this week. Each club plays once a week and every match
+ * has its own seed, so the matches can then be played in any order, or all at once.
+ */
+export function prepareWeek(state: SeasonState, hooks: SeasonHooks = defaultHooks()): PreparedWeek | null {
+  if (state.phase === 'complete') return null;
   const week = state.week;
   const fixtures = matchesForWeek(state, week).filter((m) => !m.result);
   const servingBan = suspendedPlayers(state.league, fixtures);
   const alreadyInjured = injuredPlayers(state.league);
-  const ctx = matchContext(state.league);
-
-  const results = fixtures.map((match) => {
+  const setups = fixtures.map((match) => {
     const setup = buildMatchSetup(state, match, hooks);
     rememberSelections(state.league, setup);
-    const result = hooks.simulate(setup, ctx);
-    applyMatchResult(state, match, result);
-    return result;
+    return setup;
   });
+  return { week, fixtures, setups, ctx: matchContext(state.league), servingBan, alreadyInjured };
+}
 
-  for (const p of servingBan) p.suspensionMatches = Math.max(0, p.suspensionMatches - 1);
-  if (fixtures.some((m) => m.stage === 'league')) refreshStandings(state);
-  endOfWeekRecovery(state.league, alreadyInjured);
-  progressCalendar(state, week);
-  state.week = week + 1;
+/** Takes the week's results (one per fixture, in order) and moves the calendar on. */
+export function settleWeek(state: SeasonState, prep: PreparedWeek, results: readonly MatchResult[]): void {
+  if (results.length !== prep.fixtures.length) throw new Error(`Week ${prep.week}: ${results.length} results for ${prep.fixtures.length} matches`);
+  prep.fixtures.forEach((match, k) => applyMatchResult(state, match, results[k]));
+  for (const p of prep.servingBan) p.suspensionMatches = Math.max(0, p.suspensionMatches - 1);
+  if (prep.fixtures.some((m) => m.stage === 'league')) refreshStandings(state);
+  endOfWeekRecovery(state.league, prep.alreadyInjured);
+  progressCalendar(state, prep.week);
+  state.week = prep.week + 1;
   state.phase = state.championId ? 'complete' : phaseForWeek(state, state.week);
+}
+
+export function advanceWeek(state: SeasonState, hooks: SeasonHooks = defaultHooks()): MatchResult[] {
+  const prep = prepareWeek(state, hooks);
+  if (!prep) return [];
+  const results = prep.setups.map((setup) => hooks.simulate(setup, prep.ctx));
+  settleWeek(state, prep, results);
   return results;
 }
 
