@@ -96,6 +96,30 @@ export function loftFor(table: LoftTable, distance: number): { speed: number; ti
   return { speed: speeds[lo] + f * (speeds[hi] - speeds[lo]), time: time[lo] + f * (time[hi] - time[lo]) };
 }
 
+/** As loftFor, but writes [speed, time] into `out` so the hot loop makes no garbage. */
+export function loftInto(table: LoftTable, distance: number, out: Float64Array): void {
+  const { speeds, carry, time } = table;
+  const n = speeds.length;
+  if (distance <= carry[0]) { out[0] = speeds[0]; out[1] = time[0]; return; }
+  if (distance >= carry[n - 1]) { out[0] = speeds[n - 1]; out[1] = time[n - 1]; return; }
+  let lo = 0, hi = n - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (carry[mid] < distance) lo = mid; else hi = mid;
+  }
+  const f = (distance - carry[lo]) / (carry[hi] - carry[lo]);
+  out[0] = speeds[lo] + f * (speeds[hi] - speeds[lo]);
+  out[1] = time[lo] + f * (time[hi] - time[lo]);
+}
+
+/** As groundPass, but writes [speed, time] into `out`. */
+export function groundInto(distance: number, out: Float64Array): void {
+  const arrive = B.arriveBase + B.arrivePerM * distance;
+  const speed = Math.sqrt(arrive * arrive + 2 * B.rollDecel * distance);
+  out[0] = speed;
+  out[1] = (speed - arrive) / B.rollDecel;
+}
+
 /** Ground pass: launch speed and travel time so the ball arrives `distance` away at a receivable pace. */
 export function groundPass(distance: number): { speed: number; time: number } {
   const arrive = B.arriveBase + B.arrivePerM * distance;

@@ -73,7 +73,7 @@ export function resolveMarker(m: SpatialMatch, team: TeamState): void {
 }
 
 /** Second-deepest opponent (usually the last defender) measured in our frame. */
-function secondLastOpponent(m: SpatialMatch, side: Side): number {
+export function secondLastOpponent(m: SpatialMatch, side: Side): number {
   let a = -Infinity, b = -Infinity;
   const o = (1 - side) * 11;
   for (let j = o; j < o + 11; j++) {
@@ -93,13 +93,15 @@ export function writeAnchors(m: SpatialMatch, team: TeamState, slotIndex: number
   const H = SO.lineHeight[t.defensiveLine - 1];
   const shift = T.mentalityShift[t.mentality - 1];
 
-  // Out of possession.
-  let outLine = clamp(H + SO.lineSlope * (bd - T.pitch.halfway), SO.lineMin, SO.lineMax);
-  const gap = clamp(SO.gapFactor * bd, SO.gapMin, SO.gapMax);
-  if (bd - gap < outLine) outLine = bd - gap;
-  const wBox = clamp((SO.boxBallDepth + SO.boxBlend - bd) / SO.boxBlend, 0, 1);
+  // Out of possession. The line drops as soon as the ball comes towards it and steps up
+  // only as the focus moves away.
+  const bdOut = Math.min(bd, depthOf(side, m.ball.x));
+  let outLine = clamp(H + SO.lineSlope * (bdOut - T.pitch.halfway), SO.lineMin, SO.lineMax);
+  const gap = clamp(SO.gapFactor * bdOut, SO.gapMin, SO.gapMax);
+  if (bdOut - gap < outLine) outLine = bdOut - gap;
+  const wBox = clamp((SO.boxBallDepth + SO.boxBlend - bdOut) / SO.boxBlend, 0, 1);
   if (wBox > 0) {
-    const boxLine = SO.boxLineBase + (SO.boxLineRise * clamp(bd, 0, SO.boxBallDepth)) / SO.boxBallDepth;
+    const boxLine = SO.boxLineBase + (SO.boxLineRise * clamp(bdOut, 0, SO.boxBallDepth)) / SO.boxBallDepth;
     outLine += (boxLine - outLine) * wBox;
   }
   if (outLine < SO.lineMin) outLine = SO.lineMin;

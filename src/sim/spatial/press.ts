@@ -11,6 +11,7 @@ import {
 const P = SPATIAL_TUNING.press;
 const C = SPATIAL_TUNING.counter;
 const MM = SPATIAL_TUNING.manMark;
+const TR = SPATIAL_TUNING.track;
 // cos and sin of 60 degrees, for the second and third pressers' angles of approach.
 const COS60 = 0.5;
 const SIN60 = 0.8660254037844386;
@@ -19,6 +20,9 @@ const SIN60 = 0.8660254037844386;
 const cand = new Int32Array(10);
 const dist = new Float64Array(22);
 const dir = new Float64Array(2);
+const runners = new Int32Array(10);
+const runDepth = new Float64Array(22);
+const taken = new Uint8Array(11);
 
 function resetPress(team: TeamState): void {
   team.pressEngaged = false;
@@ -144,6 +148,68 @@ export function markTarget(m: SpatialMatch, team: TeamState, out: Float64Array):
   const d = Math.min(depthOf(team.side, x), MM.maxDepth);
   out[0] = depthOf(team.side, d);
   out[1] = y;
+  clampOut(out);
+}
+
+/**
+ * Zonal tracking for the team without the ball. Opponents within reach of our goal are
+ * taken in order of danger (nearest our goal first); each is picked up by the nearest free
+ * defender whose zone he is in. That defender stays goal-side of him, tighter the nearer
+ * he is to goal and the better a marker the defender is.
+ */
+export function updateTracking(m: SpatialMatch, team: TeamState): void {
+  const side = team.side;
+  for (let s = 0; s < 11; s++) team.track[s] = -1;
+  if (m.poss === side) return;
+  const o0 = (1 - side) * 11;
+  let n = 0;
+  for (let s = 1; s < 11; s++) {
+    const j = o0 + s;
+    if (j === m.ball.owner || j === team.markTarget) continue;
+    const d = depthOf(side, m.px[j]);
+    if (d >= TR.far) continue;
+    runDepth[j] = d;
+    let k = n++;
+    while (k > 0 && runDepth[runners[k - 1]] > d) { runners[k] = runners[k - 1]; k--; }
+    runners[k] = j;
+  }
+  if (n === 0) return;
+  const base = side * 11;
+  // Players busy pressing, covering or man-marking count as taken from the start.
+  for (let s = 0; s < 11; s++) taken[s] = base + s === team.coverIdx || (s === team.markerSlot && team.markTarget >= 0) ? 1 : 0;
+  for (let k = 0; k < team.pressSet.length; k++) taken[team.pressSet[k] - base] = 1;
+  const r2 = TR.radius * TR.radius;
+  for (let a = 0; a < n; a++) {
+    const j = runners[a];
+    let best = -1, bd = r2;
+    for (let s = 1; s < 11; s++) {
+      if (taken[s]) continue;
+      const i = base + s;
+      const dx = m.sx[i] - m.px[j], dy = m.sy[i] - m.py[j];
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bd) { bd = d2; best = s; }
+    }
+    if (best >= 0) { taken[best] = 1; team.track[best] = j; }
+  }
+}
+
+/** How far from his spot towards his runner a tracking defender goes, 0..1. */
+export function trackWeight(m: SpatialMatch, team: TeamState, slot: number): number {
+  const j = team.track[slot];
+  const d = depthOf(team.side, m.px[j]);
+  return clamp((TR.far - d) / (TR.far - TR.near), 0, 1) * m.tight[team.side * 11 + slot];
+}
+
+/** A tracking defender moves from his spot towards a point just goal-side of his runner. */
+export function trackTarget(m: SpatialMatch, team: TeamState, slot: number, out: Float64Array): void {
+  const i = team.side * 11 + slot;
+  const j = team.track[slot];
+  towardsGoal(team.side, m.px[j], m.py[j]);
+  const gx = m.px[j] + TR.goalSide * dir[0];
+  const gy = m.py[j] + TR.goalSide * dir[1];
+  const w = trackWeight(m, team, slot);
+  out[0] = m.sx[i] + w * (gx - m.sx[i]);
+  out[1] = m.sy[i] + w * (gy - m.sy[i]);
   clampOut(out);
 }
 

@@ -62,6 +62,8 @@ export interface TeamState {
   coverIdx: number;
   pressAdv: number;
   counterUntil: number;
+  /** Per slot: the opponent this defender is tracking through his zone (-1 if none). */
+  track: Int32Array;
 }
 
 export interface BallState {
@@ -85,11 +87,57 @@ export interface BallState {
   oy: number;
 }
 
-export interface ScriptState {
-  /** The carrier releases the ball at this time. */
-  holdUntil: number;
+/** On-ball decisions, loose balls and match stats (onball.ts). */
+export interface OnBallState {
+  /** Where the carrier is heading with the ball. */
   carryX: number;
   carryY: number;
+  /** Next on-ball decision; the carrier may not release before readyAt (first touch). */
+  decideAt: number;
+  readyAt: number;
+  /** After this time, holding on costs the carrier (tempo). */
+  holdUntil: number;
+  pressured: boolean;
+  /** The pass in flight: who played it, for which side, what kind (0 none, 1 pass, 2 clearance, 3 stand-in shot). */
+  lastPasser: number;
+  passSide: number;
+  passKind: number;
+  /** Intended receiver of the pass in flight, and where it was aimed. */
+  passTarget: number;
+  aimX: number;
+  aimY: number;
+  /** When the pass in flight reaches its aim point. */
+  passArriveMs: number;
+  /** Last player to touch a loose ball, and when; he may not touch it again straight away. */
+  lastTouch: number;
+  touchAt: number;
+  /** Per player: may not touch a loose ball again before this time (after a miscontrol, a poke or a tackle). */
+  touchBlock: Float64Array;
+  /** Each side's chaser for a loose ball (-1 if none), where he is running, and when to re-pick. */
+  chase: Int32Array;
+  chaseX: Float64Array;
+  chaseY: Float64Array;
+  chaseAt: number;
+  /** Per player: earliest next tackle attempt, last scan and next scan time, scan interval, and
+   * facing (his last velocity above facingMinSpeed, not normalised). */
+  tackleReady: Float64Array;
+  scanAt: Float64Array;
+  nextScan: Float64Array;
+  scanMs: Float64Array;
+  faceX: Float64Array;
+  faceY: Float64Array;
+  /** Per player attribute cache, ATTRS values each (see onball.ts). */
+  attr: Float64Array;
+  /** Match stats per side. */
+  possMs: Float64Array;
+  passes: Int32Array;
+  completed: Int32Array;
+  intercepted: Int32Array;
+  tackles: Int32Array;
+  /** Possessions that reached the opponent's box, and whether the current one has. */
+  boxEntries: Int32Array;
+  entered: boolean;
+  shots: Int32Array;
 }
 
 export interface SpatialMatch {
@@ -120,6 +168,8 @@ export interface SpatialMatch {
   acc: Float64Array;
   dist: Float64Array;
   sprint: Float64Array;
+  /** How tightly each player tracks a runner, 0..1, from his marking. */
+  tight: Float64Array;
   role: Uint8Array;
   nextThink: Float64Array;
   delay: Int32Array;
@@ -130,7 +180,7 @@ export interface SpatialMatch {
   focusY: number;
   poss: Side;
   possChanged: boolean;
-  script: ScriptState;
+  onball: OnBallState;
   /** Actions not yet applied, in time order. */
   pending: SpatialAction[];
   /** Every action, applied or not, for the replay record. */
