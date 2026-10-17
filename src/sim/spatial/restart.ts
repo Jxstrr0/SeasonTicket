@@ -344,7 +344,7 @@ function scoreGoal(m: SpatialMatch, side: Side): void {
   ob.shots[side]++;
   ob.onTarget[side]++;
   const a = ob.lastRecv === k ? ob.lastRecvFrom : -1;
-  m.goalLog.push({ ms: m.clockMs, side, scorer: k >= 0 ? m.who[k] : -1, assist: a >= 0 ? m.who[a] : -1, xg: 0, ownGoal: false, header: false });
+  m.goalLog.push({ ms: m.clockMs, side, scorer: k >= 0 ? m.who[k] : -1, assist: a >= 0 ? m.who[a] : -1, xg: 0, ownGoal: false, header: false, bundled: true });
 }
 
 // ---------------------------------------------------------------------------

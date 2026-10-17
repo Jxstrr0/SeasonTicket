@@ -140,6 +140,8 @@ export interface GoalRecord {
   xg: number;
   ownGoal: boolean;
   header: boolean;
+  /** Bundled in without a shot: counted as a shot on target for the scorer. */
+  bundled?: boolean;
 }
 
 export type SpatialEventKind = 'foul' | 'advantage' | 'yellow' | 'red' | 'offside' | 'penalty' | 'injury' | 'corner' | 'sub' | 'whistle';

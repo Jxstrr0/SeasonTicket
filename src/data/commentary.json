@@ -42,7 +42,7 @@
     "Fine save from {secondary} to deny {player}.",
     "{player} tests the keeper and {secondary} holds on.",
     "{secondary} is equal to a well-struck effort from {player}.",
-    "{assist} finds {player}, whose shot is turned behind by {secondary}."
+    "{player} lets fly and {secondary} turns it behind."
   ],
   "corner": [
     "Corner to {team}.",

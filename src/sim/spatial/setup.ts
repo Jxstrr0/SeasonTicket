@@ -2,7 +2,7 @@
  * Build a spatial match setup from league data: each side's eleven starters in formation
  * slot order and its bench, with the attributes, positions and fitness the engine reads.
  */
-import type { League, Player, Team, Weather } from '../types';
+import type { League, MatchSetup, Player, Team, TeamSelection, Weather } from '../types';
 import type { SpatialPlayer, SpatialSetup, SpatialSide } from './types';
 
 function toSpatial(p: Player): SpatialPlayer {
@@ -16,17 +16,17 @@ function toSpatial(p: Player): SpatialPlayer {
   };
 }
 
-function sideFromTeam(league: League, team: Team): SpatialSide {
-  const lineup = team.selection.lineup;
+function sideFrom(players: Record<string, Player>, team: Team, selection: TeamSelection): SpatialSide {
+  const lineup = selection.lineup;
   if (lineup.starters.length !== 11) throw new Error(`${team.shortName} has ${lineup.starters.length} starters, needs 11`);
   const look = (id: string): Player => {
-    const p = league.players[id];
+    const p = players[id];
     if (!p) throw new Error(`Unknown player ${id}`);
     return p;
   };
   const starters = lineup.starters.map(look);
   const bench = lineup.bench.map(look);
-  const t = team.selection.tactics;
+  const t = selection.tactics;
   return {
     name: team.name,
     short: team.shortName,
@@ -49,8 +49,18 @@ export function spatialSetupFromLeague(league: League, homeId: string, awayId: s
   const home = league.teams.find((t) => t.id === homeId);
   const away = league.teams.find((t) => t.id === awayId);
   if (!home || !away) throw new Error('Unknown team');
-  const setup: SpatialSetup = { home: sideFromTeam(league, home), away: sideFromTeam(league, away) };
+  const setup: SpatialSetup = { home: sideFrom(league.players, home, home.selection), away: sideFrom(league.players, away, away.selection) };
   if (opts.extraTime) setup.extraTime = true;
   if (opts.weather) setup.weather = opts.weather;
   return setup;
+}
+
+/** The spatial setup for a season fixture (the line-ups and tactics it was picked with). */
+export function spatialSetupFromMatch(setup: MatchSetup, players: Record<string, Player>, teams: Record<string, Team>): SpatialSetup {
+  const home = teams[setup.homeId];
+  const away = teams[setup.awayId];
+  if (!home || !away) throw new Error('Unknown team');
+  const out: SpatialSetup = { home: sideFrom(players, home, setup.home), away: sideFrom(players, away, setup.away), weather: setup.weather };
+  if (setup.playoff) out.extraTime = true;
+  return out;
 }
