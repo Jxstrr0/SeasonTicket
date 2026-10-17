@@ -1,20 +1,22 @@
 /**
- * Spatial match engine, build step 2: shape and movement with a scripted ball.
+ * Spatial match engine, build steps 2 and 3: shape and movement, then passing and possession.
  * Checks the deterministic maths, the ban on platform maths, ball flight, team shape,
- * tactic responses, determinism and replay, and the time budgets (docs/DESIGN.md 17.11).
+ * tactic responses, determinism and replay, whole-match sanity, and that possession and
+ * passing look believable. The time budgets are in tests/perf (docs/DESIGN.md 17.11).
  */
-import { afterAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { simulateFlight } from '../src/sim/spatial/ball';
 import { PI, detAtan, detAtan2, detCos, detExp, detLog, detPow, detSin, powInt, sCurve } from '../src/sim/spatial/det';
 import {
   captureFrame, createSpatial, fingerprint, freezeBall, markingPair, playerRole, pressingPlayers,
-  queueTactics, replayFrames, runSeconds, spatialRecord, stepSpatial, teamShapeInfo,
+  matchStats, queueTactics, replayFrames, runSeconds, spatialRecord, stepSpatial, teamShapeInfo,
+  type SideStats,
 } from '../src/sim/spatial/engine';
 import { LENGTH, N, WIDTH, depthOf, type SpatialMatch } from '../src/sim/spatial/state';
 import { FRAME_VALUES, ROLE, type Side, type SpatialMode, type SpatialSetup } from '../src/sim/spatial/types';
 import type { Dial, Tactics } from '../src/sim/types';
-import { bundleAndImport, countGcs, envFlag, listSources, readSource } from './helpers/node.mjs';
-import { setup, tactics } from './helpers/spatialFixtures';
+import { listSources, readSource } from './helpers/node.mjs';
+import { setup, side, tactics } from './helpers/spatialFixtures';
 
 function relErr(a: number, b: number): number {
   return Math.abs(a - b) / Math.max(1e-300, Math.abs(b));
@@ -218,7 +220,7 @@ describe('spatial team shape', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Pressing, counters and man-marking with the scripted ball
+// Pressing, counters and man-marking in open play
 // ---------------------------------------------------------------------------
 
 interface Behaviour {
@@ -338,8 +340,9 @@ describe('spatial match sanity', () => {
     }
     expect(bad).toBe(0);
     expect(m.clockMs).toBeGreaterThanOrEqual(5_400_000);
-    // Without stoppages yet (step 5) outfielders run about 14 km (coarse a little more);
-    // real matches are 9 to 13. Tighten this once dead-ball time exists.
+    // The ball never goes dead yet (throw-ins, goal kicks and fouls arrive in step 5), so
+    // outfielders run about 13.5 km; real matches are 9 to 13. Tighten this once dead-ball
+    // time exists.
     for (let i = 0; i < N; i++) {
       const km = m.dist[i] / 1000;
       if (i % 11 === 0) { expect(km).toBeLessThan(8); continue; }
@@ -350,55 +353,74 @@ describe('spatial match sanity', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Time budgets (DESIGN.md 17.11). The engine is bundled and imported natively:
-// vitest's module transform makes hot loops several times slower than real builds.
+// Passing and possession (docs/STAGE_4_5_SPATIAL_ENGINE.md: believability targets)
 // ---------------------------------------------------------------------------
 
-describe('spatial benchmarks', () => {
-  type Bench = typeof import('./bench/spatialBench');
-  let loaded: { mod: Bench; cleanup: () => void } | null = null;
-  async function load(): Promise<Bench> {
-    if (!loaded) loaded = await bundleAndImport<Bench>('tests/bench/spatialBench.ts');
-    return loaded.mod;
+interface Totals { possession: number; passes: number; completed: number; matches: number }
+
+/** Totals for each side over a few whole matches. */
+function season(s: SpatialSetup, seed: string, mode: SpatialMode, matches: number): [Totals, Totals, SideStats[][]] {
+  const t: [Totals, Totals] = [
+    { possession: 0, passes: 0, completed: 0, matches },
+    { possession: 0, passes: 0, completed: 0, matches },
+  ];
+  const each: SideStats[][] = [];
+  for (let k = 0; k < matches; k++) {
+    const m = createSpatial(s, `${seed}-${k}`, mode);
+    while (stepSpatial(m)) { /* play the match */ }
+    const st = matchStats(m);
+    each.push(st);
+    for (const q of [0, 1] as const) {
+      t[q].possession += st[q].possession / matches;
+      t[q].passes += st[q].passes;
+      t[q].completed += st[q].completed;
+    }
   }
-  afterAll(() => loaded?.cleanup());
+  return [t[0], t[1], each];
+}
 
-  const time = (fn: () => void): number => {
-    const t0 = performance.now();
-    fn();
-    return performance.now() - t0;
-  };
+const completion = (t: Totals): number => t.completed / t.passes;
 
-  it('fine match, league week and season fit their budgets', async () => {
-    const b = await load();
-    const s = setup();
-    // Warm up the JIT the way a long session would.
-    b.playMinutes(s, 'warm', 'fine', 20);
-    b.playMinutes(s, 'warm', 'coarse', 45);
+describe('spatial passing and possession', () => {
+  it.each([['fine', 1], ['coarse', 3]] as [SpatialMode, number][])(
+    'even sides share the ball and pass believably (%s)',
+    (mode, matches) => {
+      const [, , each] = season(setup(), 'even', mode, matches);
+      for (const st of each) {
+        for (const q of [0, 1]) {
+          expect(st[q].possession).toBeGreaterThan(0.35);
+          expect(st[q].possession).toBeLessThan(0.65);
+          expect(st[q].completion).toBeGreaterThan(0.7);
+          expect(st[q].completion).toBeLessThan(0.88);
+        }
+        const perMinute = (st[0].passes + st[1].passes) / 90;
+        expect(perMinute).toBeGreaterThan(12);
+        expect(perMinute).toBeLessThan(19);
+      }
+    },
+  );
 
-    const full = envFlag('BENCH_FULL');
-    const fine = time(() => b.playMatch(s, 'bench-fine', 'fine'));
-    const week = time(() => { for (let k = 0; k < 8; k++) b.playMatch(s, `bench-week-${k}`, 'coarse'); });
-    const seasonMatches = 245;
-    const season = full
-      ? time(() => { for (let k = 0; k < seasonMatches; k++) b.playMatch(s, `bench-season-${k}`, 'coarse'); })
-      : (week / 8) * seasonMatches;
-    console.log(
-      `[spatial bench] fine match ${fine.toFixed(0)} ms (budget 750), ` +
-      `league week ${week.toFixed(0)} ms (budget 1000), ` +
-      `season ${(season / 1000).toFixed(1)} s ${full ? 'measured' : 'estimated'} (budget 31)`,
-    );
-    expect(fine).toBeLessThan(750);
-    expect(week).toBeLessThan(1000);
-    expect(season).toBeLessThan(31_000);
-  }, 120_000);
+  it('the better side keeps more of the ball and completes more passes', () => {
+    const s = { home: side('home', tactics(), 70), away: side('away', tactics(), 60) };
+    const [strong, weak, each] = season(s, 'strength', 'coarse', 3);
+    expect(strong.possession).toBeGreaterThan(weak.possession);
+    expect(completion(strong)).toBeGreaterThan(completion(weak) + 0.01);
+    for (const st of each) {
+      for (const q of [0, 1]) {
+        expect(st[q].possession).toBeGreaterThan(0.35);
+        expect(st[q].completion).toBeGreaterThan(0.7);
+        expect(st[q].completion).toBeLessThan(0.9);
+      }
+    }
+  });
 
-  it('a fine match causes few garbage collections', async () => {
-    const b = await load();
-    const s = setup();
-    b.playMinutes(s, 'warm-gc', 'fine', 10);
-    const gcs = await countGcs(() => b.playMatch(s, 'bench-gc', 'fine'));
-    console.log(`[spatial bench] garbage collections in one fine match: ${gcs} (budget 20)`);
-    expect(gcs).toBeLessThanOrEqual(20);
-  }, 60_000);
+  it('patient, short passing keeps the ball better than direct, quick play', () => {
+    const s = {
+      home: side('home', tactics({ tempo: 1 as Dial, directness: 1 as Dial })),
+      away: side('away', tactics({ tempo: 5 as Dial, directness: 5 as Dial })),
+    };
+    const [patient, direct] = season(s, 'style', 'coarse', 3);
+    expect(patient.possession).toBeGreaterThan(direct.possession + 0.02);
+    expect(completion(patient)).toBeGreaterThan(completion(direct) + 0.02);
+  });
 });

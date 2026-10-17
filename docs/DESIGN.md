@@ -400,7 +400,7 @@ Every number is a **starting value** in `src/data/tuning`, adjusted in the tunin
 
 ### 17.1 Time model
 
-**Modes.** Fine mode (a step every **0.1 s**) runs any match shown on screen, in the text feed or the 2D viewer. Coarse mode (every **0.25 s**) runs the rest, including your own match when simmed unwatched. A match keeps its mode from kickoff, so "Play to end" stays fine. The man on the ball rethinks every 0.2 s, players within 30 m of it every 0.3 s and the rest every 1 s (0.4, 0.6 and 1.5 s in coarse); everyone rethinks at once after a pass or turnover.
+**Modes.** Fine mode (a step every **0.1 s**) runs any match shown on screen, in the text feed or the 2D viewer. Coarse mode (every **0.5 s**, raised from 0.25 s in build step 3; see 17.15) runs the rest, including your own match when simmed unwatched. A match keeps its mode from kickoff, so "Play to end" stays fine. The man on the ball rethinks every 0.2 s, players within 30 m of it every 0.3 s and the rest every 1 s (0.4, 0.6 and 1.5 s in coarse); everyone rethinks at once after a pass or turnover.
 
 **Keeping coarse honest.** In both modes the ball's flight is worked out every 0.1 s, so a pass cannot jump a defender, and who wins a pass is settled at the strike (17.5). Per-second chances, such as fouls, scale with step length. Both modes must hit every target and agree (17.10).
 
@@ -609,6 +609,8 @@ The engine runs in a worker and makes no new objects in its main loop, avoiding 
 
 **If the engine is slower:** distant players rethink less often, then 0.5 s coarse steps (about half the cost), then a second worker.
 
+**How the budgets are measured (changed in build step 3).** The benchmarks live in `tests/perf/` and run on their own (`npm run test:perf`, a separate CI step) instead of alongside the other test files, which run in parallel and were competing for the same CPU. Each timing is the fastest of a few runs: best of 3 league weeks, best of 2 fine matches. The limits in the table are unchanged; only the way they are timed changed.
+
 ### 17.12 Determinism
 
 The same seed must give the same match on every phone and browser; replays and bug reports depend on it.
@@ -651,6 +653,23 @@ The same seed must give the same match on every phone and browser; replays and b
 ### 17.15 Build notes
 
 What the build actually did, step by step, where it differs from or adds to the plan above.
+
+**Step 3: passing and possession (done).**
+- **Real on-ball play.** The ball script is gone (`src/sim/spatial/onball.ts` replaces it). The man on the ball scores his options (short, long, through and switch passes, a carry, or holding the ball) by how much each one improves the team's position, minus the risk of losing it. He picks the best one with a little noise, more noise when he is tired or pressed. He only sees passes inside his field of view, which comes from his vision rating and how recently he scanned. To save time he scores his best few options in detail (5 in fine mode, 3 in coarse) and skips the rest.
+- **Tactics nudge choices.** Directness favours long passes over short ones and tempo shortens how long players hold the ball (`decision.tacticBonus`, raised from 0.15 to 0.3 so the dials are clearly felt). At default settings patient, short passing (tempo 1, directness 1) keeps about 52-56% of the ball and completes 86-88% of passes; direct, quick play (5, 5) completes 82-83%.
+- **Passing error.** Every pass has aim and length error from the passer's passing rating and the pressure on him. Lofted passes are less accurate. Passes can be cut out by any player who reaches the line in time, including the intended receiver's marker stepping in front of him. Players block passes with their body, and a carrier is blocked by defenders in his path.
+- **Controls, tackles and loose balls.** Receiving a fast ball under pressure can spill it loose (first touch, chest and head each have their own chance). Defenders tackle more readily front-on than chasing from behind, and pressers go in more readily still; tackles win the ball, poke it loose or get beaten, from tackling against dribbling. Loose balls are chased by the players who can reach them first. Keepers claim balls within hand reach in their area.
+- **Shape changes.** The focus point now moves at up to 4 m/s and eases over 2 s, so shapes shift smoothly when the ball travels fast. The defending back line follows the ball's depth, not just the focus point. Out-of-position players run back goal-side when the ball goes the other way. Defenders zonally pick up runners near their own goal, tighter the nearer the runner is to goal and the better a marker the defender is. Possession changes blend each player's spot over about 7 s rather than snapping. Players walk, jog, run or sprint depending on how far they are from their spot (gait bands in `move`).
+- **Stand-in shots.** Shooting arrives in step 4. Until then, a side that carries or passes into a zone near goal gets a "shot (stand-in)" counted and the keeper takes the ball. Box entries count possessions that reach the penalty area.
+- **Speed work.** Coarse mode now steps every 0.5 s instead of 0.25 s (17.11's first fallback), saves position frames at 2 per second, and lets a player off the ball decide early at most once a second. Other speedups that don't change any results: separating players with a sweep along the pitch instead of checking every pair, working out facing only when needed, skipping square roots where a squared distance answers the question, and only checking tracking for players who could be tracking. Dev machine: a fine match takes about 194 ms (budget 750 ms) and a league week about 550-610 ms (budget 1 s), so a season is about 17-19 s (budget 31 s). A fine match causes 3 garbage collections (budget 20).
+- **Simplifications.** No dead balls yet: passes and carries are aimed inside the lines, nothing is given if a loose ball crosses one, and there are no throw-ins, goal kicks, corners or fouls until step 5. No real shots or goals until step 4. Headers are a simple control check, not aimed.
+
+**Known issues after step 3** (rechecked in step 7 tuning):
+- **Distance run.** Outfielders cover about 13.5 km, more than the real 9-13 km, because the ball never goes dead. Rechecked in step 5.
+- **Box entries and stand-in shots are high** (about 55 box entries and 38 stand-in shots a side in a match). The stand-in zone is generous on purpose, so step 4 has plenty of chances to turn into real shots.
+- **Better sides keep only a little more of the ball.** A 70-rated side against a 60-rated one has about 51-52% possession (75 against 55: about 53%), though it completes more passes. Real gaps are wider; step 7 tunes this.
+- **Coarse and fine differ.** Coarse matches have about 15 passes a minute against about 18 in fine. Parity is a step 7 target.
+- **Phone speed.** A coarse match takes about 70-80 ms of dev time, so a league week on a mid-range phone (×4) is about 2.2-2.6 s against the 2.0 s budget. The CI limit still passes. Ways to close the gap: a second worker (halves it), simulating the next week's other matches in the background while the owner is on menus, or a short progress bar on "Next week".
 
 **Step 2: shape and movement (done).**
 - **The ball follows a script.** There are no real passes, shots, goals, halves, stoppage time or dead balls yet. A temporary driver (`script` in `src/data/tuning/spatial.json`) moves the ball around and swaps possession so that shapes, pressing and runs can be judged. Step 3 replaces it with real on-ball decisions.

@@ -1,7 +1,8 @@
 /**
  * The spatial match engine (Stage 4.5): 22 players and a ball on a 105 m by 68 m pitch,
- * stepped at a fixed rate. Build step 2 covers team shape, pressing, movement and ball
- * physics; the ball itself is moved by a temporary script (script.ts).
+ * stepped at a fixed rate. Build steps 2 and 3 cover team shape, pressing, movement, ball
+ * physics, and on-ball play: passing, carrying, first touches, tackles and loose balls
+ * (onball.ts). Shots are a stand-in until step 4.
  *
  * Determinism: every random draw comes from one seeded Rng, time is whole milliseconds,
  * and only + - * /, Math.sqrt and rounding are used, so the same seed and the same list
@@ -13,8 +14,8 @@ import { Rng } from '../rng';
 import type { Tactics } from '../types';
 import { flightSubstep, loftTable } from './ball';
 import { movePlayers } from './move';
-import { counterTarget, coverTarget, markTarget, presserTarget, updatePress } from './press';
-import { onControl, scriptStep } from './script';
+import { counterTarget, coverTarget, markTarget, presserTarget, trackTarget, updatePress, updateTracking } from './press';
+import { ballContacts, clearOfPath, createOnBall, initOnBall, onBallStep, receiveTarget, startControl } from './onball';
 import { applyTeamTactics, computeSpots, currentLine, currentOffCap, fillRing, resolveMarker, writeAnchors } from './shape';
 import {
   ANCHORS, BALL_AIR, BALL_FROZEN, BALL_HELD, BALL_ROLL, LENGTH, N, RING, WIDTH,
@@ -57,6 +58,7 @@ function newTeam(side: Side, tactics: Tactics): TeamState {
     coverIdx: -1,
     pressAdv: 0,
     counterUntil: 0,
+    track: new Int32Array(11).fill(-1),
   };
 }
 
@@ -94,6 +96,7 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     acc: new Float64Array(N),
     dist: new Float64Array(N),
     sprint: new Float64Array(N),
+    tight: new Float64Array(N),
     role: new Uint8Array(N),
     nextThink: new Float64Array(N),
     delay: new Int32Array(N),
@@ -103,7 +106,7 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     focusY: 34,
     poss: 0,
     possChanged: false,
-    script: { holdUntil: 0, carryX: 0, carryY: 0 },
+    onball: createOnBall(),
     pending: actions.map((a) => ({ ...a, tactics: copyTactics(a.tactics) })).sort((a, b) => a.ms - b.ms),
     actions: actions.map((a) => ({ ...a, tactics: copyTactics(a.tactics) })),
   };
@@ -114,6 +117,7 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     const a = p.attributes;
     m.top[i] = MV.topBase + (MV.topPace * a.pac) / 99;
     m.acc[i] = MV.accBase + (MV.accPace * a.pac) / 99;
+    m.tight[i] = T.track.tightBase + (T.track.tightGain * a.mrk) / 99;
     const reaction = SO.reactionSlowest - (SO.reactionGain * (a.pos + a.mrk)) / 198;
     m.delay[i] = Math.min(RING - 1, Math.max(0, Math.round(reaction / stepS)));
   }
@@ -121,6 +125,7 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
   applyTeamTactics(m, m.teams[1], setup.away.tactics);
   resolveMarker(m, m.teams[0]);
   resolveMarker(m, m.teams[1]);
+  initOnBall(m);
   kickoff(m, 0);
   return m;
 }
@@ -138,7 +143,7 @@ function kickoff(m: SpatialMatch, side: Side): void {
     for (const team of m.teams) { fillRing(m, team); computeSpots(m, team); }
     for (let i = 0; i < N; i++) { m.px[i] = m.sx[i]; m.py[i] = m.sy[i]; }
   }
-  const limit = T.script.kickoffOwnHalf;
+  const limit = T.kickoff.ownHalf;
   for (let i = 0; i < N; i++) {
     const s = sideOf(i);
     const d = depthOf(s, m.px[i]);
@@ -175,42 +180,12 @@ function kickoff(m: SpatialMatch, side: Side): void {
     m.nextThink[i] = m.clockMs;
   }
   for (const t of m.teams) fillRing(m, t);
-  onControl(m, kicker);
-}
-
-// ---------------------------------------------------------------------------
-// Possession
-// ---------------------------------------------------------------------------
-
-function setPossession(m: SpatialMatch, side: Side): void {
-  if (side === m.poss) return;
-  const loser = m.teams[m.poss];
-  const winner = m.teams[side];
-  const now = m.clockMs;
-  m.poss = side;
-  m.possChanged = true;
-  loser.counterPressUntil = now + T.press.counterPress[loser.tactics.pressing - 1] * 1000;
-  loser.counterUntil = 0;
-  winner.counterPressUntil = 0;
-  winner.counterUntil = winner.tactics.counterAttack ? now + T.counter.seconds * 1000 : 0;
-  for (let i = 0; i < N; i++) m.nextThink[i] = now;
-}
-
-function control(m: SpatialMatch, i: number): void {
-  const b = m.ball;
-  b.state = BALL_HELD;
-  b.owner = i;
-  b.receiver = -1;
-  b.z = 0;
-  b.vz = 0;
-  const ox = b.x - m.px[i];
-  const oy = b.y - m.py[i];
-  const r = Math.sqrt(ox * ox + oy * oy);
-  if (r > 1e-9) { b.ox = (ox / r) * B.dribbleAhead; b.oy = (oy / r) * B.dribbleAhead; }
-  else { b.ox = (sideOf(i) === 0 ? 1 : -1) * B.dribbleAhead; b.oy = 0; }
-  m.nextThink[i] = m.clockMs;
-  setPossession(m, sideOf(i));
-  onControl(m, i);
+  const ob = m.onball;
+  ob.passTarget = -1;
+  ob.passKind = 0;
+  ob.chase[0] = -1;
+  ob.chase[1] = -1;
+  startControl(m, kicker);
 }
 
 // ---------------------------------------------------------------------------
@@ -261,18 +236,6 @@ function airFor(m: SpatialMatch): void {
   }
 }
 
-/** Closest distance from point (px, py) to the segment (ax, ay)-(bx, by). */
-function segmentDistance(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
-  const sx = bx - ax;
-  const sy = by - ay;
-  const L2 = sx * sx + sy * sy;
-  let f = L2 > 1e-12 ? ((px - ax) * sx + (py - ay) * sy) / L2 : 0;
-  f = clamp(f, 0, 1);
-  const dx = px - (ax + f * sx);
-  const dy = py - (ay + f * sy);
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
 function ballStep(m: SpatialMatch): void {
   const b = m.ball;
   if (b.state === BALL_FROZEN || b.state === BALL_HELD) return;
@@ -282,26 +245,7 @@ function ballStep(m: SpatialMatch): void {
   else airFor(m);
   if (b.x < 0) { b.x = 0; if (b.vx < 0) b.vx = 0; } else if (b.x > LENGTH) { b.x = LENGTH; if (b.vx > 0) b.vx = 0; }
   if (b.y < 0) { b.y = 0; if (b.vy < 0) b.vy = 0; } else if (b.y > WIDTH) { b.y = WIDTH; if (b.vy > 0) b.vy = 0; }
-  const r = b.receiver;
-  if (r >= 0 && b.z < B.controlHeight && segmentDistance(m.px[r], m.py[r], x0, y0, b.x, b.y) <= B.controlReach) {
-    control(m, r);
-    return;
-  }
-  if (m.clockMs >= b.arriveMs + B.giveUpAfter * 1000) {
-    // Nobody got there: the nearest player goes for it.
-    let best = 0;
-    let bestD = Infinity;
-    for (let i = 0; i < N; i++) {
-      const dx = m.px[i] - b.x;
-      const dy = m.py[i] - b.y;
-      const d = dx * dx + dy * dy;
-      if (d < bestD) { bestD = d; best = i; }
-    }
-    if (r >= 0) m.nextThink[r] = m.clockMs;
-    b.receiver = best;
-    b.arriveMs = m.clockMs;
-    m.nextThink[best] = m.clockMs;
-  }
+  ballContacts(m, x0, y0);
 }
 
 function ballFollowsCarrier(m: SpatialMatch): void {
@@ -327,8 +271,14 @@ function updateFocus(m: SpatialMatch): void {
   const gx = travelling ? b.meetX : b.x;
   const gy = travelling ? b.meetY : b.y;
   const k = Math.min(1, m.stepS / T.focusSeconds);
-  m.focusX += (gx - m.focusX) * k;
-  m.focusY += (gy - m.focusY) * k;
+  let fx = (gx - m.focusX) * k;
+  let fy = (gy - m.focusY) * k;
+  // A team shifts across the pitch at a run, not at the speed of the ball.
+  const f = Math.sqrt(fx * fx + fy * fy);
+  const cap = T.focusMaxSpeed * m.stepS;
+  if (f > cap) { fx *= cap / f; fy *= cap / f; }
+  m.focusX += fx;
+  m.focusY += fy;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,11 +292,14 @@ function decideRole(m: SpatialMatch, i: number): number {
   const b = m.ball;
   if (i === b.owner) return ROLE.CARRY;
   if (i === b.receiver) return ROLE.RECEIVE;
+  if (m.onball.chase[side] === i) return ROLE.RECEIVE;
+  if (m.onball.passTarget === i && (b.state === BALL_ROLL || b.state === BALL_AIR)) return ROLE.RECEIVE;
   if (slot === 0) return ROLE.KEEPER;
   if (m.poss !== side) {
     if (team.pressSet.includes(i)) return ROLE.PRESS;
     if (i === team.coverIdx) return ROLE.COVER;
     if (slot === team.markerSlot && team.markTarget >= 0) return ROLE.MARK;
+    if (team.track[slot] >= 0) return ROLE.TRACK;
     return ROLE.SHAPE;
   }
   if (m.clockMs < team.counterUntil && team.counterSlots.includes(slot) ) return ROLE.COUNTER;
@@ -364,12 +317,12 @@ function targetFor(m: SpatialMatch, i: number): void {
   let y = m.sy[i];
   switch (m.role[i]) {
     case ROLE.CARRY:
-      if (b.owner === i) { x = m.script.carryX; y = m.script.carryY; }
+      if (b.owner === i) { x = m.onball.carryX; y = m.onball.carryY; }
       break;
     case ROLE.RECEIVE:
-      if (b.receiver === i) {
-        if (m.clockMs < b.arriveMs) { x = b.meetX; y = b.meetY; } else { x = b.x; y = b.y; }
-      }
+      if (b.receiver === i || (m.onball.passTarget === i && (b.state === BALL_ROLL || b.state === BALL_AIR))) {
+        receiveTarget(m, i, tmp); x = tmp[0]; y = tmp[1];
+      } else if (m.onball.chase[side] === i) { x = m.onball.chaseX[side]; y = m.onball.chaseY[side]; }
       break;
     case ROLE.PRESS: {
       const k = team.pressEngaged ? team.pressSet.indexOf(i) : -1;
@@ -381,6 +334,9 @@ function targetFor(m: SpatialMatch, i: number): void {
       break;
     case ROLE.MARK:
       if (m.poss !== side && team.markTarget >= 0 && slot === team.markerSlot) { markTarget(m, team, tmp); x = tmp[0]; y = tmp[1]; }
+      break;
+    case ROLE.TRACK:
+      if (m.poss !== side && team.track[slot] >= 0) { trackTarget(m, team, slot, tmp); x = tmp[0]; y = tmp[1]; }
       break;
     case ROLE.COUNTER:
       if (m.clockMs < team.counterUntil) { counterTarget(team, slot, currentOffCap(team, m.steps), tmp); x = tmp[0]; y = tmp[1]; }
@@ -440,7 +396,7 @@ export function stepSpatial(m: SpatialMatch): boolean {
   m.possChanged = false;
   while (m.pending.length > 0 && m.pending[0].ms <= m.clockMs) applyAction(m, m.pending.shift() as SpatialAction);
   ballStep(m);
-  if (m.ball.state !== BALL_FROZEN) scriptStep(m);
+  onBallStep(m);
   updateFocus(m);
   const blend = m.stepS / T.blendSeconds;
   for (const team of m.teams) {
@@ -452,10 +408,13 @@ export function stepSpatial(m: SpatialMatch): boolean {
   computeSpots(m, m.teams[1]);
   updatePress(m, m.teams[1 - m.poss]);
   updatePress(m, m.teams[m.poss]);
+  updateTracking(m, m.teams[1 - m.poss]);
+  updateTracking(m, m.teams[m.poss]);
   rethink(m);
   for (let i = 0; i < N; i++) targetFor(m, i);
   turnCut(m);
   movePlayers(m);
+  clearOfPath(m);
   ballFollowsCarrier(m);
   m.steps++;
   m.clockMs += m.stepMs;
@@ -538,6 +497,8 @@ export function fingerprint(m: SpatialMatch): string {
   const b = m.ball;
   mix(b.x); mix(b.y); mix(b.z); mix(b.vx); mix(b.vy); mix(b.vz); mix(b.state); mix(b.owner); mix(b.receiver);
   mix(m.focusX); mix(m.focusY); mix(m.poss); mix(m.clockMs); mix(m.rng.getState());
+  const ob = m.onball;
+  mix(ob.decideAt); mix(ob.chase[0]); mix(ob.chase[1]); mix(ob.passTarget);
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
@@ -545,7 +506,7 @@ export function fingerprint(m: SpatialMatch): string {
 // Read-outs and test hooks
 // ---------------------------------------------------------------------------
 
-/** Test hook: pin the ball in place with `possSide` in possession. Turns the ball script off. */
+/** Test hook: pin the ball in place with `possSide` in possession. Turns on-ball logic off. */
 export function freezeBall(m: SpatialMatch, x: number, y: number, possSide: Side): void {
   const b = m.ball;
   b.state = BALL_FROZEN;
@@ -553,6 +514,10 @@ export function freezeBall(m: SpatialMatch, x: number, y: number, possSide: Side
   b.receiver = -1;
   b.x = x; b.y = y; b.z = 0; b.vx = 0; b.vy = 0; b.vz = 0;
   m.poss = possSide;
+  m.onball.chase[0] = -1;
+  m.onball.chase[1] = -1;
+  m.onball.passTarget = -1;
+  m.onball.passKind = 0;
   for (const t of m.teams) {
     t.counterUntil = 0;
     t.counterPressUntil = 0;
@@ -606,3 +571,4 @@ export function markingPair(m: SpatialMatch, side: Side): [number, number] | nul
 }
 
 export { BALL_AIR, BALL_FROZEN, BALL_HELD, BALL_ROLL };
+export { matchStats, type SideStats } from './onball';

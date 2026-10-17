@@ -4,6 +4,7 @@
  * two stand on the same spot.
  */
 import { SPATIAL_TUNING } from '../data';
+import { trackWeight } from './press';
 import { LENGTH, N, WIDTH, type SpatialMatch } from './state';
 import { ROLE } from './types';
 
@@ -32,20 +33,41 @@ export function movePlayers(m: SpatialMatch): void {
     else if (d < GD[2]) cap = GS[2];
     else if (d < GD[3]) cap = GS[3];
     else cap = m.top[i];
+    // A tracking defender keeps up with his runner.
+    if (m.role[i] === ROLE.TRACK) {
+      const side = i < 11 ? 0 : 1;
+      const team = m.teams[side];
+      const slot = i - side * 11;
+      const j = team.track[slot];
+      if (j >= 0) {
+        const rv = Math.sqrt(m.vx[j] * m.vx[j] + m.vy[j] * m.vy[j]) * MV.trackMatch * trackWeight(m, team, slot);
+        if (cap < rv) cap = rv;
+      }
+    }
+    // Out of position with the ball going the other way: get back goal-side at a run.
+    if ((m.role[i] === ROLE.SHAPE || m.role[i] === ROLE.TRACK) && m.poss !== (i < 11 ? 0 : 1) && (i < 11 ? -dx : dx) > MV.recoverOver) {
+      const rc = m.top[i] * MV.recoverShare;
+      if (cap < rc) cap = rc;
+    }
     let top = m.top[i];
     if (i === owner) { cap *= MV.withBall; top *= MV.withBall; }
     if (cap > top) cap = top;
     // Slow down in time to stop on the target (v^2 = 2 a d).
     // Close enough to the spot: stop rather than shuffle.
-    const arrive = d <= MV.settle ? 0 : Math.sqrt(2 * MV.arriveDecel * (d - MV.settle));
-    const want = arrive < cap ? arrive : cap;
-    const wx = d > 1e-9 ? (dx / d) * want : 0;
-    const wy = d > 1e-9 ? (dy / d) * want : 0;
-    let ax = wx - m.vx[i];
-    let ay = wy - m.vy[i];
-    const dv = Math.sqrt(ax * ax + ay * ay);
+    // A player meeting the ball runs through his spot rather than easing into it.
+    // (Square roots only when the answer needs them: the speed is capped, or the change is.)
+    const decel = m.role[i] === ROLE.RECEIVE ? MV.receiveDecel : MV.arriveDecel;
+    let want = 0;
+    if (d > MV.settle) {
+      const a2 = 2 * decel * (d - MV.settle);
+      want = a2 < cap * cap ? Math.sqrt(a2) : cap;
+    }
+    const f = d > 1e-9 ? want / d : 0;
+    let ax = dx * f - m.vx[i];
+    let ay = dy * f - m.vy[i];
+    const dv2 = ax * ax + ay * ay;
     const maxDv = m.acc[i] * dt;
-    if (dv > maxDv) { ax *= maxDv / dv; ay *= maxDv / dv; }
+    if (dv2 > maxDv * maxDv) { const s = maxDv / Math.sqrt(dv2); ax *= s; ay *= s; }
     let nvx = m.vx[i] + ax;
     let nvy = m.vy[i] + ay;
     const sp = Math.sqrt(nvx * nvx + nvy * nvy);
@@ -67,11 +89,30 @@ export function movePlayers(m: SpatialMatch): void {
   }
 }
 
-/** Push overlapping pairs apart, half the overlap each. Fixed pair order keeps it deterministic. */
+// Players in order along the pitch (scratch). Any starting order sorts to the same result.
+const ord = new Int32Array(N).map((_, k) => k);
+const xs = new Float64Array(N);
+
+/**
+ * Push overlapping pairs apart, half the overlap each. Players are swept in order along the
+ * pitch (index breaks ties) so only near pairs are checked, which keeps the order deterministic.
+ */
 function separate(m: SpatialMatch): void {
   const px = m.px, py = m.py;
-  for (let i = 0; i < N - 1; i++) {
-    for (let j = i + 1; j < N; j++) {
+  for (let a = 0; a < N; a++) xs[a] = px[ord[a]];
+  for (let a = 1; a < N; a++) {
+    const k = ord[a];
+    const x = xs[a];
+    let b = a - 1;
+    while (b >= 0 && (xs[b] > x || (xs[b] === x && ord[b] > k))) { ord[b + 1] = ord[b]; xs[b + 1] = xs[b]; b--; }
+    ord[b + 1] = k;
+    xs[b + 1] = x;
+  }
+  for (let a = 0; a < N - 1; a++) {
+    for (let b = a + 1; b < N; b++) {
+      if (xs[b] - xs[a] >= SEP) break;
+      let i = ord[a], j = ord[b];
+      if (i > j) { const t = i; i = j; j = t; }
       const dx = px[j] - px[i];
       const dy = py[j] - py[i];
       const d2 = dx * dx + dy * dy;

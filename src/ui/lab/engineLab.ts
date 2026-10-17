@@ -8,7 +8,7 @@
 import './lab.css';
 import { FORMATIONS } from '../../sim/data';
 import { createLeague } from '../../sim/league';
-import { createSpatial, markingPair, queueTactics, stepSpatial, teamShapeInfo } from '../../sim/spatial/engine';
+import { createSpatial, markingPair, matchStats, queueTactics, stepSpatial, teamShapeInfo } from '../../sim/spatial/engine';
 import { spatialSetupFromLeague } from '../../sim/spatial/setup';
 import type { SpatialMatch } from '../../sim/spatial/state';
 import { ROLE, type Side, type SpatialMode, type SpatialSetup } from '../../sim/spatial/types';
@@ -35,12 +35,13 @@ const DIALS: { key: DialKey; label: string; low: string; high: string }[] = [
 ];
 const DIAL_VALUES: Dial[] = [1, 2, 3, 4, 5];
 
-const ROLE_NAMES = ['Holding shape', 'Goalkeeper', 'On the ball', 'Receiving', 'Pressing', 'Covering the press', 'Man-marking', 'Counter run'];
+const ROLE_NAMES = ['Holding shape', 'Goalkeeper', 'On the ball', 'Receiving', 'Pressing', 'Covering the press', 'Man-marking', 'Counter run', 'Tracking a runner'];
 const ROLE_RING: Partial<Record<number, string>> = {
   [ROLE.PRESS]: '#ff5d5d',
   [ROLE.COVER]: '#ffa94d',
   [ROLE.MARK]: '#5ee0ff',
   [ROLE.COUNTER]: '#ffe066',
+  [ROLE.TRACK]: '#b197fc',
 };
 const KEEPER_FILL = ['#ff9f1c', '#c77dff'];
 const GRASS = '#2f803d';
@@ -333,6 +334,7 @@ export class EngineLab {
       <div class="segmented lab-tabs" role="group" aria-label="Team to change"></div>
       <section class="lab-tactics"></section>
       <section class="lab-readout card"></section>
+      <section class="lab-stats card"></section>
       <section class="lab-overlays">
         <h3 class="lab-h">Show on the pitch</h3>
         ${overlay('roles', 'Pressing, cover, marking and counter runs')}
@@ -347,7 +349,7 @@ export class EngineLab {
         </p>
       </section>
       <section class="lab-match"></section>
-      <p class="small muted">Engine step 2 of 7. The ball follows a script for now (no real passes, shots or goals), so this is for judging team shape and movement. Passing arrives in step 3. Tap a player to follow him.</p>
+      <p class="small muted">Engine step 3 of 7. Real passing, interceptions, tackles and loose balls. Shots are stand-ins until step 4 (no goals yet), and the ball never goes out of play until step 5. Tap a player to follow him.</p>
     </aside>
   </div>
 </div>`;
@@ -451,6 +453,23 @@ export class EngineLab {
       <tbody>${rows}</tbody></table>
       <p class="small muted">Metres. Line is the back line's distance from its own goal; ● has the ball.</p>`;
 
+    const stats = matchStats(m);
+    const pct = (v: number): string => `${Math.round(v * 100)}%`;
+    const statRow = (label: string, f: (t: (typeof stats)[0]) => string): string =>
+      `<tr><th scope="row">${label}</th><td>${f(stats[0])}</td><td>${f(stats[1])}</td></tr>`;
+    const statBox = this.root.querySelector('.lab-stats') as HTMLElement;
+    statBox.innerHTML = `<h3 class="lab-h">Match stats</h3><table class="lab-table">
+      <thead><tr><th></th>${([0, 1] as Side[]).map((side) => this.statHead(side)).join('')}</tr></thead>
+      <tbody>
+        ${statRow('Possession', (t) => pct(t.possession))}
+        ${statRow('Passes', (t) => String(t.passes))}
+        ${statRow('Pass completion', (t) => (t.passes > 0 ? pct(t.completion) : '–'))}
+        ${statRow('Passes cut out', (t) => String(t.intercepted))}
+        ${statRow('Tackles made', (t) => String(t.tackles))}
+        ${statRow('Box entries', (t) => String(t.boxEntries))}
+        ${statRow('Shots (stand-in)', (t) => String(t.shots))}
+      </tbody></table>`;
+
     const pending = this.root.querySelector('.lab-pending');
     if (pending) {
       const at = this.pendingMs[this.side];
@@ -472,6 +491,12 @@ export class EngineLab {
         <p class="small">${ROLE_NAMES[m.role[i]] ?? 'Unknown'} · ${speed.toFixed(0)} km/h · ${(m.dist[i] / 1000).toFixed(2)} km run</p>
         <p class="small muted">Dashed line: where his shape wants him. Tap him again to stop following.</p>`;
     }
+  }
+
+  /** A narrow column heading: kit dot and the first three letters, full name for screen readers. */
+  private statHead(side: Side): string {
+    const name = side === 0 ? this.m.setup.home.short : this.m.setup.away.short;
+    return `<th scope="col" aria-label="${esc(name)}"><span class="lab-dot" style="background:${this.kit[side].fill};border-color:${this.kit[side].edge}"></span>${esc(name.slice(0, 3).toUpperCase())}</th>`;
   }
 
   // -------------------------------------------------------------------------

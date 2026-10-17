@@ -61,6 +61,7 @@ export const ROLE = {
   COVER: 5,
   MARK: 6,
   COUNTER: 7,
+  TRACK: 8,
 } as const;
 export type Role = (typeof ROLE)[keyof typeof ROLE];
 

@@ -9,7 +9,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
   },
   test: {
-    include: ['tests/**/*.test.ts'],
     environment: 'node',
+    // Time budgets run on their own (npm run test:perf) so other test files don't share the CPU.
+    projects: [
+      { extends: true, test: { name: 'unit', include: ['tests/**/*.test.ts'], exclude: ['tests/perf/**'] } },
+      { extends: true, test: { name: 'perf', include: ['tests/perf/**/*.test.ts'] } },
+    ],
   },
 });
