@@ -135,7 +135,8 @@ function headerSide(t: Team, side: 'home' | 'away'): string {
   return `<span class="mh-team ${side}">${kit(t)}<span class="mh-name">${esc(t.shortName)}</span></span>`;
 }
 
-export function renderMatchFeed(league: League, match: ScheduledMatch, showAll: boolean): string {
+/** `watch`: the match has a replay, so offer the 2D viewer. */
+export function renderMatchFeed(league: League, match: ScheduledMatch, showAll: boolean, watch = false): string {
   const result: MatchResult | undefined = match.result;
   if (!result) {
     return `<section class="card"><button type="button" class="btn-secondary" data-action="close-match">Back</button><p class="muted">This match has not been played yet.</p></section>`;
@@ -153,6 +154,7 @@ export function renderMatchFeed(league: League, match: ScheduledMatch, showAll: 
   <section class="card match-feed">
     <div class="feed-top">
       <button type="button" class="btn-secondary" data-action="close-match">Back</button>
+      ${watch ? `<button type="button" data-action="watch-2d" data-id="${esc(match.id)}">Watch in 2D</button>` : ''}
       <span class="muted small">${esc(context.join(' · '))}</span>
     </div>
     <div class="match-header">

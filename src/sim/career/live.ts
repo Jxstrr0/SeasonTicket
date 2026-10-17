@@ -16,7 +16,7 @@ import { finalizeMatch } from '../match/engine';
 import { sideState, type MatchContext, type MatchState } from '../match/state';
 import { matchContext } from '../season';
 import {
-  applySpatialAction, createSpatialLive, finalizeSpatial, resumeSpatialLive, stepSpatialMinute, tuningKey, type SpatialLive,
+  applySpatialAction, createSpatialLive, finalizeSpatial, resumeSpatialLive, stepSpatialFrame, stepSpatialMinute, tuningKey, type SpatialLive,
 } from '../spatial/bridge';
 import type { MatchAction, MatchEvent, MatchResult, MatchSetup, Side, Tactics } from '../types';
 import type { Career, LiveEntry, LiveRecord } from './types';
@@ -52,16 +52,32 @@ function applyEntry(live: SpatialLive, e: LiveEntry): void {
   else sideState(live.state, e.side).aiControlled = e.ai;
 }
 
-/** Rebuild the engine from a record: the same start, the same minutes, the same changes. */
+/** Rebuild the engine from a record: the same start, the same minutes and frames, the same changes. */
 function replay(rec: LiveRecord, ctx: MatchContext): SpatialLive {
   const live = rec.base
     ? resumeSpatialLive(rec.base, ctx, { mode: 'fine', liveStats: true, spatial: rec.baseSpatial })
     : createSpatialLive(clone(rec.setup), ctx, { mode: 'fine', liveStats: true });
+  const log = rec.log;
   let k = 0;
+  const due = (step: number, frame: number) => {
+    while (k < log.length && log[k].step === step && (log[k].frame ?? 0) === frame) applyEntry(live, log[k++]);
+  };
   for (let step = 0; ; step++) {
-    while (k < rec.log.length && rec.log[k].step === step) applyEntry(live, rec.log[k++]);
-    if (step >= rec.steps) break;
-    stepSpatialMinute(live);
+    due(step, 0);
+    if (step >= rec.steps) {
+      // The minute being played when the record was taken.
+      for (let frame = 1; frame <= (rec.frames ?? 0); frame++) {
+        stepSpatialFrame(live);
+        due(step, frame);
+      }
+      break;
+    }
+    if (k >= log.length || log[k].step !== step) {
+      stepSpatialMinute(live);
+      continue;
+    }
+    // A change made part-way through this minute: go frame by frame to it.
+    for (let frame = 1; stepSpatialFrame(live) === null; frame++) due(step, frame);
   }
   return live;
 }
@@ -100,18 +116,46 @@ export function liveOf(career: Career): SpatialLive | null {
   return remember(career, live);
 }
 
-/** Note a change in the record, at the minute it was made. */
+/** Note a change in the record, at the minute (and frame) it was made. */
 function log(career: Career, entry: LiveEntry): void {
   const rec = career.liveRecord;
-  if (rec) rec.log.push({ ...entry, step: rec.steps });
+  if (!rec) return;
+  const at: LiveEntry = { ...entry, step: rec.steps };
+  if (rec.frames) at.frame = rec.frames;
+  else delete at.frame;
+  rec.log.push(at);
 }
 
-/** Play one minute of the user's match. */
+/** The minute is over: the record moves on to the next. */
+function minuteDone(career: Career): void {
+  const rec = career.liveRecord;
+  if (!rec) return;
+  rec.steps++;
+  delete rec.frames;
+}
+
+/** Play one minute of the user's match (or the rest of the minute the 2D view is part-way into). */
 export function stepLiveMinute(career: Career): MatchEvent[] {
   const live = liveOf(career);
   if (!live || live.state.finished) return [];
   const events = stepSpatialMinute(live);
-  if (career.liveRecord) career.liveRecord.steps++;
+  minuteDone(career);
+  return events;
+}
+
+/**
+ * Play one engine step of the user's match, for the 2D view. Null while the minute goes on;
+ * at the end of a minute, that minute's events (as stepLiveMinute gives them).
+ */
+export function stepLiveFrame(career: Career): MatchEvent[] | null {
+  const live = liveOf(career);
+  if (!live || live.state.finished) return [];
+  const events = stepSpatialFrame(live);
+  if (events === null) {
+    if (career.liveRecord) career.liveRecord.frames = (career.liveRecord.frames ?? 0) + 1;
+    return null;
+  }
+  minuteDone(career);
   return events;
 }
 

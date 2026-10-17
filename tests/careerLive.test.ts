@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import './helpers/quickCareer';
-import { C, advanceCareer, createCareer, finishLive, liveOf, startUserMatch, stepLiveMinute, type Career } from '../src/sim/career';
+import { C, advanceCareer, createCareer, finishLive, liveOf, startUserMatch, stepLiveFrame, stepLiveMinute, type Career } from '../src/sim/career';
 import { decodeSave, encodeSave, migrate } from '../src/game/save';
-import { liveSubstitute, userSide, userSideState } from '../src/game/matchday';
+import { liveSubstitute, liveTactics, userSide, userSideState } from '../src/game/matchday';
+import { fingerprint } from '../src/sim/spatial/engine';
 import { createMatch, stepMinute } from '../src/sim/match/engine';
 import { matchContext } from '../src/sim/season';
 
@@ -33,6 +34,37 @@ describe('the live match on the spatial engine', () => {
       stepLiveMinute(career);
       stepLiveMinute(copy);
     }
+    expect(copy.liveMatch?.events).toEqual(career.liveMatch?.events);
+  });
+
+  it('replays a match watched frame by frame, with changes and a save part-way through a minute', () => {
+    const career = kickedOff(34);
+    startUserMatch(career);
+    for (let i = 0; i < 12; i++) stepLiveMinute(career);
+    // The 2D view: a few seconds into the minute, the owner changes the plan, then a sub.
+    for (let i = 0; i < 137; i++) expect(stepLiveFrame(career)).toBeNull();
+    const now = userSideState(career, career.liveMatch!).tactics.mentality;
+    expect(liveTactics(career, { mentality: now >= 4 ? 1 : 5, pressing: 5 }).ok).toBe(true);
+    for (let i = 0; i < 211; i++) expect(stepLiveFrame(career)).toBeNull();
+    const S = userSideState(career, career.liveMatch!);
+    const inn = S.bench.find((id) => career.season.league.players[id].position !== 'GK')!;
+    expect(liveSubstitute(career, S.onPitch[7], inn).ok).toBe(true);
+    // Out of that minute, then two more played frame by frame, then part of another.
+    for (let ended = 0; ended < 3; ) if (stepLiveFrame(career) !== null) ended++;
+    for (let i = 0; i < 95; i++) stepLiveFrame(career);
+    expect(career.liveRecord?.log.map((e) => e.frame)).toEqual([137, 137, 348]);
+    expect(career.liveRecord?.frames).toBe(95);
+
+    const copy = decodeSave(encodeSave(career));
+    const rebuilt = liveOf(copy)!;
+    expect(copy.liveRecord?.base).toBeNull();
+    expect(fingerprint(rebuilt.m)).toBe(fingerprint(liveOf(career)!.m));
+    // And it goes on the same, whichever way it is stepped.
+    for (let i = 0; i < 15; i++) {
+      stepLiveMinute(career);
+      stepLiveMinute(copy);
+    }
+    expect(fingerprint(liveOf(copy)!.m)).toBe(fingerprint(liveOf(career)!.m));
     expect(copy.liveMatch?.events).toEqual(career.liveMatch?.events);
   });
 

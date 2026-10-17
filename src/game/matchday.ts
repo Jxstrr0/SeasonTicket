@@ -7,7 +7,7 @@
  */
 import { MATCH_TUNING } from '../sim/data';
 import type { MatchState, SideState } from '../sim/match/state';
-import { liveAction, liveControl, liveOf, livePlan, stepLiveMinute, type Career } from '../sim/career';
+import { liveAction, liveControl, liveOf, livePlan, stepLiveFrame, stepLiveMinute, type Career } from '../sim/career';
 import type { Dial, MatchEvent, Side, Tactics } from '../sim/types';
 
 /** The minute of the second half when big-calls mode stops once for a substitution window. */
@@ -55,6 +55,18 @@ export function pauseReason(career: Career, state: MatchState, events: MatchEven
 export function stepLive(career: Career): { events: MatchEvent[]; pause: string | null } {
   if (!career.liveMatch || career.liveMatch.finished) return { events: [], pause: null };
   const events = stepLiveMinute(career);
+  const state = career.liveMatch as MatchState;
+  return { events, pause: pauseReason(career, state, events) };
+}
+
+/**
+ * Plays one engine step, for the 2D pitch: null while the minute goes on, and at the end of
+ * a minute what stepLive gives. Changes made between steps take effect from the next one.
+ */
+export function stepLiveView(career: Career): { events: MatchEvent[]; pause: string | null } | null {
+  if (!career.liveMatch || career.liveMatch.finished) return { events: [], pause: null };
+  const events = stepLiveFrame(career);
+  if (events === null) return null;
   const state = career.liveMatch as MatchState;
   return { events, pause: pauseReason(career, state, events) };
 }

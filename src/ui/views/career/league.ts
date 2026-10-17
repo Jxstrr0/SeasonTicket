@@ -7,7 +7,7 @@ import { renderTable } from '../table';
 import { renderResults } from '../results';
 import { renderPlayoffs } from '../bracket';
 import { renderMatchFeed } from '../matchFeed';
-import { lastMatchFixture } from './home';
+import { lastMatchFixture, replayOf } from './home';
 
 const LEAGUE_TABS: readonly { id: LeagueTab; label: string }[] = [
   { id: 'table', label: 'Table' },
@@ -30,7 +30,7 @@ function renderOpenMatch(career: Career, ui: UiState): string | null {
   const match = last && last.id === ui.openMatchId ? last : findMatch(career.season, ui.openMatchId);
   if (!match) return null;
   const note = match === last ? '' : '<p class="muted small center">Older matches keep only goals, red cards and injuries.</p>';
-  return renderMatchFeed(career.season.league, match, ui.showAllEvents) + note;
+  return renderMatchFeed(career.season.league, match, ui.showAllEvents, !!replayOf(career, match.id)) + note;
 }
 
 export function renderLeague(career: Career, ui: UiState): string {
