@@ -372,6 +372,13 @@ Stadium (Stage 4):
 - Every club's starting ground (size, roofs, boxes, upgrades) is set from its finances and market by the thresholds in the `start` block of the same file.
 - Every club starts with a ground built up to its listed capacity. Roofs, boxes and upgrades follow its finances, market and condition.
 
+Match engine (Stage 4.5 verdict):
+- The owner's verdict on the spatial engine: it feels good. Stage 5 can start.
+- Team strength: every rating is pulled 28% towards 65 on the day (`skillSpread.keep` 0.72), so the best club no longer runs away with the league as often. Stronger squads still finish higher.
+- Fouls: refereed to real top-flight levels, about 10 to 11 a team and 2 yellows.
+- Formations: four at the back is the norm. Coaches favour 4-2-3-1 and 4-3-3, then 4-4-2 and 4-1-4-1; back threes and fives are a minority taste (`selection.formationPopularity` in `src/data/tuning/coach.json`).
+- Keepers: reflexes speed up the dive, so a good keeper saves noticeably more than a poor one, while an average keeper (65) saves as before.
+
 ---
 
 ## 16. Open items (decide during development)
@@ -665,12 +672,22 @@ The same seed must give the same match on every phone and browser; replays and b
 9. **Pressing at dial 5.** Man-for-man (each presser takes a man) or zonal (press the ball, cover the lanes)?
 10. **Waiting times.** About 2 s for "Next week" (usually instant) and up to 60 s, with a progress bar, for "Sim to end of season"? Which phone do you test on? Tap the Engine check there once it exists.
 11. **The cost of pressing.** *Answered: keep it physical.* Energy follows distance run, so pressing high costs only the extra running (about 0.02 energy over an hour, out of about 0.3 used). There is no extra direct cost.
+12. **The engine's feel, strength spread, referee and formations.** *Answered: it feels good; strength spread, coach tactics and fouls are ours to tune (17.15 step 7d); four at the back should be the norm.*
 
 ### 17.15 Build notes
 
 What the build actually did, step by step, where it differs from or adds to the plan above.
 
-**Step 7: tuning and swap-over (done; waiting on the owner's verdict).**
+**Step 7d: tuning after the owner's verdict (done).** The owner judged the engine "pretty good" and left the strength spread, the AI coaches' tactics and the referee to us, and asked for back fours.
+- **Strength spread.** `skillSpread.keep` 0.8 to 0.72. Tried 0.66, which let the weakest club finish mid-table.
+- **Fouls.** Front-on tackles 0.081 to 0.093, from behind 0.213 to 0.245, loose-ball duels 0.056 to 0.064, aerial 0.05 to 0.057. Fouls went from 8.9 to about 10.5 a team, yellows from 1.8 to about 2.
+- **Formations.** A new head coach draws his preferred shape by `formationPopularity`, and a coach choosing between shapes that suit his squad about equally weights them by it too. Same number of random draws, so nothing else shifts.
+- **Corners.** More shots deflected behind by blockers (`blockBehind` 0.3 to 0.4 and 0.4 to 0.5) and more parries out (0.35 to 0.4), as corners were just under 3 a team.
+- **Keepers.** A 50-point keeper gap changed the share of open-play shots on target that go in by about 1 point; real football is nearer 10. Faster reactions alone did little, because most shots arrive after even a slow keeper has finished his dive. Now dive speed follows reflexes too (`diveV` 5 m/s at reflexes 65, `diveRef` 3 m/s per 99 points), reactions count for more (`reactRef` 0.3) and positioning for more (`gkpBonus` 0.4), with `reach0` and `reactBase` set so a 65 keeper is where he was. Standing reach went up 4 cm overall (`reach0` 1.495) to bring goals back to about 2.5 a match. A keeper of 88 now lets in about 21% of open-play shots on target against 28% for a keeper of 38.
+- **Tests.** The named-taker test only counts shots while the taker is on the pitch. The red-card test allows a second red. The keeper test compares open-play goals per shot on target, since a penalty beats almost any keeper. Two tests use bigger samples (possession 6 matches, coarse even-sides goals 24). `engineRev` is 12.
+- **Season numbers** (6 coarse seasons / 2 fine seasons): goals 2.50 / 2.83; home wins 43% / 45%, draws 22% / 22%; shots 14.2 / 12.2 a team, 36% / 38% on target; fouls 10.5 / 10.4, yellows 1.97 / 2.13; corners 3.4 / 3.5; offsides 3.1 / 2.6; pass completion 77%; top scorer 15 to 28 goals; squad strength against final position 0.61 to 0.90.
+
+**Step 7: tuning and swap-over (done; the owner's verdict: it feels good).**
 - **7a, tuning.** Coarse steps now follow the ball's path, so a player meets it where it actually passed him (no ball through a player at half-second steps); coarse receivers stop just past the meeting point. The in-possession shape is wider and dead balls take longer. Home advantage comes from the crowd (17.13). Every rating is pulled 20% towards 65 before a match (`skillSpread`), as a 25-point gap between squads decided too many matches. Fouls are up 12% and keeper reach is 1.52 m. Pressing costs only the extra running (question 11, kept as it is).
 - **7b, the swap-over.** The career plays every match on the spatial engine: the live match in fine mode, the rest in coarse mode on two Web Workers, with pre-simulation of the coming week. Replays, the 2D viewer, live 2D and golden matches are covered under 17.8 and 17.9. Saves are version 4, migrated from 2 and 3. A full season of the club's replays takes a save code from about 175 KB to 260 KB.
 - **7c1, every match.** Season defaults (league and playoffs) are the spatial engine. The Stage 1 engine moved to `tests/helpers/stage1/` as a test-only stand-in (17.13). The slow season suite and its CI job are new (17.10). Unit tests have 20 s each on CI, where the runner is slower; this changes how tests are measured, not a performance budget.
@@ -684,12 +701,8 @@ What the build actually did, step by step, where it differs from or adds to the 
   - squad strength against final position (rank correlation) 0.62 to 0.88.
 - **Benchmarks (dev machine):** fine match 251-286 ms (budget 750), league week 694-744 ms (budget 1,000), season about 21-23 s (budget 31), 3 garbage collections a fine match (budget 20).
 
-**Known gaps after step 7** (the slow suite shows these red; none hold back the deploy):
-- **7+ goal matches** are 2.3% (coarse) and 2.9% (fine), against at most 2%. The cause is the spread of team strength. Over a season the strongest club scores about 117 and the weakest about 9; the weakest take 5 to 8 shots and concede about 22. The AI coach picks a high press and fast tempo for strong clubs and passive play for weak ones, which widens the gap. This is an owner decision.
-- **Top scorer** has 31 or 32 goals in one season of each mode, against a cap of 30, from the same cause.
-- **Top 10 scorers** had only 6 attackers in one fine season (target 7 or more).
-- **Fouls** are 8.9 a team, against 9 to 15. The referee was left as it is (owner's call).
-- **Formations.** The AI coaches lean to back threes and fives.
+**Known gaps after step 7d** (the slow suite shows this red; it does not hold back the deploy):
+- **7+ goal matches** are 1.0% in coarse but 3.5% in fine mode, against at most 2%. Almost all come from one of the two fine seasons (5.4%), where the champions scored a lot. Fine mode also beats its xG (2.83 goals from 2.70 xG a match, where coarse scores 2.50 from 2.98), so the watched match is a little more open than the background ones. Worth a look with more fine seasons in the balance pass (Stage 7).
 - **Smaller misses inside test bounds:** centre-backs run 7.5 to 8 km (real 9 to 10); passes are 8 to 9 a minute (real 8 to 10); throw-ins are about 9 a team (real about 20); the ball is in play about 61 minutes (55 to 60).
 
 **Step 6: systems hookup (done).**

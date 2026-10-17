@@ -9,6 +9,7 @@ import type { Dial, Formation, FormationSlot, MatchAction, Player, Side, StaffMe
 import { assignToSlots, positionFit } from './match/lineup';
 import { goalMargin, otherSide, sideState, type MatchContext, type MatchState, type SideState } from './match/state';
 import { energyOf, unitOfPosition, type Unit } from './match/strength';
+import { formationPopularity } from './staff';
 
 const C = COACH_TUNING;
 const SQUAD = MATCH_TUNING.squad;
@@ -39,7 +40,7 @@ export function pickSelection(rng: Rng, team: Team, players: Record<string, Play
   const best = Math.max(...candidates.map((c) => c.total));
   const good = candidates.filter((c) => c.total >= best * C.selection.preferredFormationTolerance);
   const preferred = good.find((c) => c.formation.id === headCoach?.preferredFormation);
-  const chosen = preferred ?? rng.weighted(good, (c) => c.total);
+  const chosen = preferred ?? rng.weighted(good, (c) => c.total * formationPopularity(c.formation.id));
 
   const bench = pickBench(available.filter((id) => !chosen.starters.includes(id)), players);
   const opponent = opts.opponent ? { team: opts.opponent, players: opts.opponentPlayers ?? players } : undefined;

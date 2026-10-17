@@ -300,6 +300,7 @@ export function planShot(m: SpatialMatch, side: Side, x0: number, y0: number, z0
     const at = ob.attr;
     const react = KS.reactBase - (KS.reactRef * at[kp * ATTRS + A_REF]) / 99 + PO[PO_REACT];
     const base = KS.reach0 + (KS.gkpBonus * at[kp * ATTRS + A_GKP]) / 99;
+    const dive = KS.diveV + (KS.diveRef * (at[kp * ATTRS + A_REF] - KS.refMid)) / 99;
     const kx = m.px[kp], ky = m.py[kp] + PO[PO_LEAN];
     let best = -Infinity, bk = 0, bu = 0;
     for (let s = 1; s <= last; s++) {
@@ -307,7 +308,7 @@ export function planShot(m: SpatialMatch, side: Side, x0: number, y0: number, z0
       const dx = SEG[0] - kx, dy = SEG[1] - ky;
       const up = SEG[2] > KS.standHigh ? SEG[2] - KS.standHigh : 0;
       const e = Math.sqrt(dx * dx + dy * dy + up * up);
-      const r = base + KS.diveV * clamp((s - 1 + u) * h - react, 0, KS.diveT);
+      const r = base + dive * clamp((s - 1 + u) * h - react, 0, KS.diveT);
       const mg = r - e;
       if (mg > best) { best = mg; bk = s; bu = u; }
     }
