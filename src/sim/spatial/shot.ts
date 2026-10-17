@@ -6,17 +6,23 @@
  * substep, and the blockers and the keeper are each given a chance to reach it on that path.
  * The engine then plays the samples back, so what was planned is exactly what happens.
  *
+ * Penalties and direct free kicks (step 5) are shots too, with their own aim, error and xG; a
+ * free kick may hit the wall. A defender's own-goal deflection is planned the same way, as if
+ * the attackers had struck it, but it is nobody's shot.
+ *
  * Same rules as the rest of the engine: random draws only through m.rng, no allocations in
  * the step, and only + - * /, Math.sqrt and the det.ts helpers.
  */
 import { SPATIAL_TUNING } from '../data';
 import { flightSubstep } from './ball';
 import { detAtan, detAtan2, detCos, detExp, detSin } from './det';
+import { played, wallSlot } from './rules';
 import {
-  ATTRS, A_CMP, A_FIN, A_GKP, A_HEA, A_REF, A_STR, BALL_AIR, BALL_ROLL, KICK_SHOT, LENGTH, N, SHOT_VALUES, WIDTH,
-  acrossOf, clamp, depthOf, type SpatialMatch,
+  ATTRS, A_CMP, A_FIN, A_GKP, A_HEA, A_REF, A_SPK, A_STR, BALL_AIR, BALL_ROLL, KICK_SHOT, LENGTH, N, SHOT_KIND_FREE_KICK,
+  SHOT_KIND_HEADER, SHOT_KIND_OPEN, SHOT_KIND_PENALTY, SHOT_VALUES, WIDTH, acrossOf, clamp, depthOf, sideOf,
+  type SpatialMatch,
 } from './state';
-import type { ShotOutcome, Side } from './types';
+import type { ShotOutcome, ShotRecord, Side } from './types';
 
 const T = SPATIAL_TUNING;
 const SH = T.shot;
@@ -26,8 +32,22 @@ const PT = T.pitch;
 const HW = PT.goalWidth / 2;
 const GC = PT.goalCentreAcross;
 const R = PT.ballRadius;
+const PEN = T.penalty;
+const FK = T.freeKick;
+const OG = T.ownGoal;
+const C = T.control;
 const XD = Float64Array.from(SH.xgDist);
 const XV = Float64Array.from(SH.xgVal);
+const FXD = Float64Array.from(FK.xgDist);
+const FXV = Float64Array.from(FK.xgVal);
+
+// Options for the next planShot, set by the caller and reset after: a player who cannot block
+// it (the deflecting defender), seconds added to the keeper's reaction, metres the keeper has
+// leant across (a penalty guess), whether the wall stands aside from the blockers, and
+// whether the wall gets it (a free kick that hits the wall).
+const PO = new Float64Array(5);
+const PO_SKIP = 0, PO_REACT = 1, PO_LEAN = 2, PO_WALL = 3, PO_WALL_HIT = 4;
+PO[PO_SKIP] = -1;
 
 /** Outcomes, settled at the strike. */
 export const SHOT_GOAL = 0;
@@ -46,15 +66,15 @@ export const CROSS_OUT = 2;
 // Expected goals
 // ---------------------------------------------------------------------------
 
-/** The xG curve value at d metres from the goal centre, straight on. */
-function xgCurve(d: number): number {
-  const n = XD.length;
-  if (d <= XD[0]) return XV[0];
-  if (d >= XD[n - 1]) return XV[n - 1];
+/** An xG curve's value at d metres from the goal centre, straight on. */
+function xgCurve(xd: Float64Array, xv: Float64Array, d: number): number {
+  const n = xd.length;
+  if (d <= xd[0]) return xv[0];
+  if (d >= xd[n - 1]) return xv[n - 1];
   let k = 1;
-  while (XD[k] < d) k++;
-  const f = (d - XD[k - 1]) / (XD[k] - XD[k - 1]);
-  return XV[k - 1] + f * (XV[k] - XV[k - 1]);
+  while (xd[k] < d) k++;
+  const f = (d - xd[k - 1]) / (xd[k] - xd[k - 1]);
+  return xv[k - 1] + f * (xv[k] - xv[k - 1]);
 }
 
 /**
@@ -74,10 +94,17 @@ export function goalShare(g: number, e: number): number {
 export function xgFrom(side: Side, x: number, y: number, header: boolean, close: boolean): number {
   const g = LENGTH - depthOf(side, x);
   const e = acrossOf(side, y) - GC;
-  let v = xgCurve(Math.sqrt(g * g + e * e)) * goalShare(g, e);
+  let v = xgCurve(XD, XV, Math.sqrt(g * g + e * e)) * goalShare(g, e);
   if (header) v *= SH.headerMul;
   if (close) v *= SH.closeMul;
   return v;
+}
+
+/** Expected goals of a direct free kick by `side` from (x, y), by a taker with set pieces spk. */
+export function fkXg(side: Side, x: number, y: number, spk: number): number {
+  const g = LENGTH - depthOf(side, x);
+  const e = acrossOf(side, y) - GC;
+  return xgCurve(FXD, FXV, Math.sqrt(g * g + e * e)) * (FK.spkBase + spk / 100) * goalShare(g, e);
 }
 
 /** The lowest xG worth shooting at: lower in the box, for good finishers and attacking sides. */
@@ -99,6 +126,7 @@ export function blockEstimate(m: SpatialMatch, side: Side, bx: number, by: numbe
   const o = (1 - side) * 11;
   let miss = 1;
   for (let k = o + 1; k < o + 11; k++) {
+    if (!m.on[k]) continue;
     const rx = m.px[k] - bx, ry = m.py[k] - by;
     const s = rx * ux + ry * uy;
     if (s <= 0 || s >= L) continue;
@@ -145,11 +173,11 @@ const S6 = new Float64Array(6);
 export const PLAN_WHERE = new Int32Array(1);
 const XC = new Float64Array(3);
 // Candidates to touch the shot (blockers, then the keeper last): who, at which sample, and how likely.
-const cWho = new Int32Array(11);
-const cK = new Int32Array(11);
-const cU = new Float64Array(11);
-const cP = new Float64Array(11);
-const cOrder = new Int32Array(11);
+const cWho = new Int32Array(12);
+const cK = new Int32Array(12);
+const cU = new Float64Array(12);
+const cP = new Float64Array(12);
+const cOrder = new Int32Array(12);
 
 // The strike point, and the point found by nearestOnMove.
 const P0 = new Float64Array(3);
@@ -237,6 +265,7 @@ export function planShot(m: SpatialMatch, side: Side, x0: number, y0: number, z0
   const rMax = SH.blockR0 + SH.blockGrow + SH.blockSoft;
   for (let q = 1; q < 11; q++) {
     const j = o0 + q;
+    if (!m.on[j] || j === PO[PO_SKIP] || (PO[PO_WALL] > 0 && wallSlot(m, j) >= 0)) continue;
     const jx = m.px[j], jy = m.py[j];
     let best = -Infinity, bk = 0, bu = 0;
     for (let s = 1; s <= last; s++) {
@@ -253,15 +282,24 @@ export function planShot(m: SpatialMatch, side: Side, x0: number, y0: number, z0
     const p = bk > 0 ? clamp(0.5 + best / SH.blockSoft, 0, SH.blockMax) : 0;
     if (p > 0) { cWho[nc] = j; cK[nc] = bk; cU[nc] = bu; cP[nc] = p; nc++; }
   }
+  // A free kick that hits the wall: it gets there, a wall's distance from the ball.
+  if (PO[PO_WALL_HIT] > 0 && m.rules.nWall > 0) {
+    const wd2 = FK.wallDist * FK.wallDist;
+    for (let s = 1; s <= last; s++) {
+      const o = (s - 1) * SHOT_VALUES;
+      const ex = path[o] - x0, ey = path[o + 1] - y0;
+      if (ex * ex + ey * ey >= wd2) { cWho[nc] = m.rules.wall[0]; cK[nc] = s; cU[nc] = 0.5; cP[nc] = 1; nc++; break; }
+    }
+  }
   // The keeper goes for anything heading for the goal frame.
   const onTarget = where === CROSS_GOAL;
   const post = where === CROSS_WOODWORK;
   if (onTarget || post) {
     const kp = o0;
     const at = ob.attr;
-    const react = KS.reactBase - (KS.reactRef * at[kp * ATTRS + A_REF]) / 99;
+    const react = KS.reactBase - (KS.reactRef * at[kp * ATTRS + A_REF]) / 99 + PO[PO_REACT];
     const base = KS.reach0 + (KS.gkpBonus * at[kp * ATTRS + A_GKP]) / 99;
-    const kx = m.px[kp], ky = m.py[kp];
+    const kx = m.px[kp], ky = m.py[kp] + PO[PO_LEAN];
     let best = -Infinity, bk = 0, bu = 0;
     for (let s = 1; s <= last; s++) {
       const u = nearestOnMove(path, s, kx, ky, s === cross ? fc : 1);
@@ -321,6 +359,7 @@ function nearestOpponent(m: SpatialMatch, side: Side, x: number, y: number): num
   const o = (1 - side) * 11;
   let best = Infinity;
   for (let k = o; k < o + 11; k++) {
+    if (!m.on[k]) continue;
     const dx = m.px[k] - x, dy = m.py[k] - y;
     const d2 = dx * dx + dy * dy;
     if (d2 < best) best = d2;
@@ -335,17 +374,21 @@ export function xgHere(m: SpatialMatch, side: Side, header: boolean): number {
 }
 
 /**
- * Player i of `side` shoots (a header if `header`, from the ball's height). He picks a corner
- * away from the keeper, misses it by an error that grows with poor finishing and pressure,
- * and the whole flight is planned there and then (planShot).
+ * Player i of `side` shoots (kind SHOT_KIND_*; a header from the ball's height). He picks a
+ * corner away from the keeper (a penalty taker picks one at random), misses it by an error
+ * that grows with poor finishing and pressure, and the whole flight is planned there and then
+ * (planShot).
  */
-export function shoot(m: SpatialMatch, i: number, side: Side, header: boolean): void {
+export function shoot(m: SpatialMatch, i: number, side: Side, kind: number): void {
   const b = m.ball;
   const ob = m.onball;
   const now = m.clockMs;
   const at = ob.attr;
   const o = i * ATTRS;
-  const skill = header ? at[o + A_HEA] : at[o + A_FIN];
+  const header = kind === SHOT_KIND_HEADER;
+  const pen = kind === SHOT_KIND_PENALTY;
+  const fk = kind === SHOT_KIND_FREE_KICK;
+  const skill = header ? at[o + A_HEA] : pen ? (at[o + A_SPK] + at[o + A_CMP]) / 2 : fk ? at[o + A_SPK] : at[o + A_FIN];
   const x0 = b.x, y0 = b.y;
   const z0 = header ? b.z : R;
   const gx = side === 0 ? LENGTH : 0;
@@ -356,14 +399,25 @@ export function shoot(m: SpatialMatch, i: number, side: Side, header: boolean): 
   if (kdx * gdx > 0 && (kdx > 0.1 || kdx < -0.1)) proj = y0 + ((m.py[kp] - y0) * gdx) / kdx;
   const lo = GC - HW, hi = GC + HW;
   const pc = clamp(proj, lo, hi);
-  const inset = m.rng.float(SH.postInset[0], SH.postInset[1]);
-  const ty = pc - lo >= hi - pc ? lo + inset : hi - inset;
-  let tz = header ? SH.headZ : m.rng.chance(SH.highShare) ? SH.highZ : SH.lowZ;
+  let ty: number;
+  if (pen) {
+    const inset = m.rng.float(PEN.inset[0], PEN.inset[1]);
+    ty = m.rng.chance(0.5) ? lo + inset : hi - inset;
+  } else {
+    const inset = m.rng.float(SH.postInset[0], SH.postInset[1]);
+    ty = pc - lo >= hi - pc ? lo + inset : hi - inset;
+  }
+  let tz = header ? SH.headZ : m.rng.chance(pen ? PEN.highShare : fk ? FK.highShare : SH.highShare) ? SH.highZ : SH.lowZ;
   // Aiming error: an angle across, and a height error in proportion.
   const close = nearestOpponent(m, side, x0, y0);
-  const pressF = clamp(1 - close / SH.pressureWithin, 0, 1);
-  let sdA = (SH.errBase + SH.errFin * (1 - skill / 99)) * (1 + pressF * (SH.errPress0 + SH.errPressure * (1 - at[o + A_CMP] / 99)));
-  if (header) sdA *= SH.errHeader;
+  let sdA: number;
+  if (pen) sdA = PEN.err + PEN.errSpk * (1 - skill / 99);
+  else if (fk) sdA = FK.err + FK.errSpk * (1 - skill / 99);
+  else {
+    const pressF = clamp(1 - close / SH.pressureWithin, 0, 1);
+    sdA = (SH.errBase + SH.errFin * (1 - skill / 99)) * (1 + pressF * (SH.errPress0 + SH.errPressure * (1 - at[o + A_CMP] / 99)));
+    if (header) sdA *= SH.errHeader;
+  }
   const dx = gx - x0, dy = ty - y0;
   const Dg = Math.max(0.5, Math.sqrt(dx * dx + dy * dy));
   const th = m.rng.normalDet(0, sdA);
@@ -375,7 +429,9 @@ export function shoot(m: SpatialMatch, i: number, side: Side, header: boolean): 
   // Pace from technique and strength; heading from heading.
   const v = header
     ? SH.headSpeed[0] + ((SH.headSpeed[1] - SH.headSpeed[0]) * at[o + A_HEA]) / 99
-    : SH.speed[0] + ((SH.speed[1] - SH.speed[0]) * (0.6 * at[o + A_FIN] + 0.4 * at[o + A_STR])) / 99;
+    : pen ? PEN.speed[0] + ((PEN.speed[1] - PEN.speed[0]) * skill) / 99
+      : fk ? FK.speed[0] + ((FK.speed[1] - FK.speed[0]) * skill) / 99
+        : SH.speed[0] + ((SH.speed[1] - SH.speed[0]) * (0.6 * at[o + A_FIN] + 0.4 * at[o + A_STR])) / 99;
   // Rise to reach height tz at the goal line: drag slows it, so time it with drag, then
   // correct once by flying it.
   const k = B.drag;
@@ -390,8 +446,19 @@ export function shoot(m: SpatialMatch, i: number, side: Side, header: boolean): 
   }
   vz += (tz - zAt) / t;
   const vx = ux * v, vy = uy * v;
-  const xg = xgFrom(side, x0, y0, header, close <= SH.closeWithin);
+  const xg = pen ? PEN.xg : fk ? fkXg(side, x0, y0, at[o + A_SPK]) : xgFrom(side, x0, y0, header, close <= SH.closeWithin);
+  if (pen) {
+    // The keeper picks a side and leans that way, and is quicker off his line.
+    if (m.rng.chance(PEN.guess)) PO[PO_LEAN] = m.rng.chance(0.5) ? PEN.lean : -PEN.lean;
+    PO[PO_REACT] = PEN.reactAdd;
+  } else if (fk && m.rules.nWall > 0) {
+    // Over or round the wall, or into it; if it beats the wall the keeper sees it late.
+    PO[PO_WALL] = 1;
+    if (m.rng.chance(FK.wallHit - (FK.wallHitSpk * at[o + A_SPK]) / 99)) PO[PO_WALL_HIT] = 1;
+    else PO[PO_REACT] = FK.keeperReact;
+  }
   const outcome = planShot(m, side, x0, y0, z0, vx, vy, vz);
+  PO[PO_SKIP] = -1; PO[PO_REACT] = 0; PO[PO_LEAN] = 0; PO[PO_WALL] = 0; PO[PO_WALL_HIT] = 0;
   // The ball is off.
   b.state = z0 > 0 || vz > 0 ? BALL_AIR : BALL_ROLL;
   b.owner = -1;
@@ -418,6 +485,60 @@ export function shoot(m: SpatialMatch, i: number, side: Side, header: boolean): 
   if (outcome === SHOT_GOAL || (outcome === SHOT_SAVED && PLAN_WHERE[0] === CROSS_GOAL)) ob.onTarget[side]++;
   if (outcome === SHOT_BLOCKED) ob.blocked[side]++;
   if (outcome === SHOT_POST) ob.woodwork[side]++;
-  m.shotLog.push({ ms: now, side, player: i, x: x0, y: y0, xg, header, outcome: OUTCOME[outcome] });
+  m.rules.shotKind = kind;
+  if (fk) m.rules.fkShots[side]++;
+  const rec: ShotRecord = { ms: now, side, player: m.who[i], x: x0, y: y0, xg, header, outcome: OUTCOME[outcome] };
+  if (pen) rec.setPiece = 'penalty';
+  else if (fk) rec.setPiece = 'freeKick';
+  m.shotLog.push(rec);
+  for (let j = 0; j < N; j++) m.nextThink[j] = now;
+  played(m, i);
+}
+
+/**
+ * Defender i turns the other side's ball towards his own goal. It is planned like a shot by
+ * the attackers (the keeper sees it late, the defender cannot block his own), but it is
+ * nobody's shot: in, it is his own goal.
+ */
+export function deflect(m: SpatialMatch, i: number): void {
+  const b = m.ball;
+  const ob = m.onball;
+  const now = m.clockMs;
+  const side = sideOf(i);
+  const att = (1 - side) as Side;
+  const dx = (side === 0 ? 0 : LENGTH) - b.x, dy = GC - b.y;
+  const D = Math.max(0.5, Math.sqrt(dx * dx + dy * dy));
+  const th = m.rng.normalDet(0, OG.spread);
+  const c = detCos(th), sn = detSin(th);
+  const ux = (dx / D) * c - (dy / D) * sn;
+  const uy = (dx / D) * sn + (dy / D) * c;
+  const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy + b.vz * b.vz);
+  const v = sp * m.rng.float(OG.speed[0], OG.speed[1]);
+  const vx = ux * v, vy = uy * v;
+  PO[PO_SKIP] = i;
+  PO[PO_REACT] = OG.react;
+  planShot(m, att, b.x, b.y, b.z, vx, vy, 0);
+  PO[PO_SKIP] = -1; PO[PO_REACT] = 0;
+  b.state = b.z > 0 ? BALL_AIR : BALL_ROLL;
+  b.owner = -1;
+  b.receiver = -1;
+  b.vx = vx; b.vy = vy; b.vz = 0;
+  b.strikeMs = now;
+  ob.passTarget = -1;
+  ob.passKind = KICK_SHOT;
+  ob.passCross = false;
+  ob.passSide = att;
+  ob.pressured = false;
+  ob.chase[0] = -1;
+  ob.chase[1] = -1;
+  ob.lastKick = i;
+  ob.lastTouch = i;
+  ob.touchAt = now;
+  ob.touchBlock[i] = now + C.retouchMs;
+  ob.shooter = -1;
+  ob.shotXg = 0;
+  ob.shotHeader = false;
+  ob.shotAssist = -1;
+  m.rules.shotKind = SHOT_KIND_OPEN;
   for (let j = 0; j < N; j++) m.nextThink[j] = now;
 }

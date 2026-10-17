@@ -68,6 +68,7 @@ export function updatePress(m: SpatialMatch, team: TeamState): void {
       for (let s = 1; s < 11; s++) {
         if (s === team.markerSlot && team.markTarget >= 0) continue;
         const i = base + s;
+        if (!m.on[i]) continue;
         const dx = m.px[i] - m.px[carrier];
         const dy = m.py[i] - m.py[carrier];
         const d = dx * dx + dy * dy;
@@ -168,7 +169,7 @@ export function updateTracking(m: SpatialMatch, team: TeamState): void {
   let n = 0;
   for (let s = 1; s < 11; s++) {
     const j = o0 + s;
-    if (j === m.ball.owner || j === team.markTarget) continue;
+    if (j === m.ball.owner || j === team.markTarget || !m.on[j]) continue;
     const d = depthOf(side, m.px[j]);
     if (d >= TR.far) continue;
     runDepth[j] = d;
@@ -199,6 +200,7 @@ function nearestFree(m: SpatialMatch, team: TeamState, j: number, maxDepth: numb
   for (let s = 1; s < 11; s++) {
     if (taken[s]) continue;
     const i = base + s;
+    if (!m.on[i]) continue;
     if (depthOf(team.side, m.sx[i]) > maxDepth) continue;
     const dx = m.sx[i] - m.px[j], dy = m.sy[i] - m.py[j];
     const d2 = dx * dx + dy * dy;

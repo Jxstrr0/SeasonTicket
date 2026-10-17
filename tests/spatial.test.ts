@@ -1,8 +1,9 @@
 /**
- * Spatial match engine, build steps 2 to 4: shape and movement, passing and possession, then
- * attacking and shooting. Checks the deterministic maths, the ban on platform maths, ball
- * flight, team shape, tactic responses, determinism and replay, whole-match sanity, that
- * possession, passing, shots and goals look believable, and the stand-in restarts. The time
+ * Spatial match engine, build steps 2 to 5: shape and movement, passing and possession,
+ * attacking and shooting, then the laws of the game. Checks the deterministic maths, the ban on
+ * platform maths, ball flight, team shape, tactic responses, determinism and replay,
+ * whole-match sanity, that possession, passing, shots and goals look believable, restarts,
+ * offside, set-piece takers, the back-pass rule, sendings-off and the referee's rates. The time
  * budgets are in tests/perf (docs/DESIGN.md 17.11).
  */
 import { describe, expect, it } from 'vitest';
@@ -14,9 +15,12 @@ import {
   matchStats, queueTactics, replayFrames, runSeconds, spatialRecord, stepSpatial, teamShapeInfo,
   type SideStats,
 } from '../src/sim/spatial/engine';
+import { FOUL_FRONT, foul, offsideCall, offsideNow, played } from '../src/sim/spatial/rules';
 import { inAttackBox, xgFrom } from '../src/sim/spatial/shot';
 import {
-  BALL_DEAD, LENGTH, N, RESTART_KICKOFF, RESTART_NONE, RESTART_THROW_IN, WIDTH, depthOf, sideOf, type SpatialMatch,
+  BALL_DEAD, BALL_HELD, KICK_CLEAR, KICK_PASS, LENGTH, N, RESTART_CORNER, RESTART_FREE_KICK, RESTART_KICKOFF,
+  RESTART_NONE, RESTART_PENALTY, RESTART_THROW_IN, SP_CORNER, SP_GOAL_KICK, SP_NONE, SP_THROW, WIDTH, depthOf, idOf,
+  sideOf, type SpatialMatch,
 } from '../src/sim/spatial/state';
 import { FRAME_VALUES, ROLE, type Side, type SpatialMode, type SpatialSetup, type SpatialSide } from '../src/sim/spatial/types';
 import type { Dial, Tactics } from '../src/sim/types';
@@ -342,6 +346,8 @@ describe('spatial match sanity', () => {
     let bad = 0;
     while (stepSpatial(m)) {
       for (let i = 0; i < N; i++) {
+        // A sent-off player waits off the pitch.
+        if (!m.on[i]) continue;
         const x = m.px[i], y = m.py[i];
         if (!(x >= 0 && x <= LENGTH && y >= 0 && y <= WIDTH)) bad++;
       }
@@ -352,8 +358,9 @@ describe('spatial match sanity', () => {
     // Outfielders still run about 13 km on average, the busiest about 16.5; real matches are
     // 9 to 13. Fatigue and the tuning pass (build steps 6 and 7) bring this down; tighten it then.
     for (let i = 0; i < N; i++) {
+      if (!m.on[i]) continue;
       const km = m.dist[i] / 1000;
-      if (i % 11 === 0) { expect(km).toBeLessThan(8); continue; }
+      if (i % 11 === 0) { if (m.who[i] === i) expect(km).toBeLessThan(8); continue; }
       expect(km).toBeGreaterThan(8);
       expect(km).toBeLessThan(17.5);
     }
@@ -464,11 +471,15 @@ describe('spatial shot quality (xG)', () => {
   });
 });
 
-interface Attack { matches: number; goals: number; shots: number; xg: number; inBox: number; goalsWithShot: number; goalsInBox: number; onTarget: number }
+interface Attack {
+  matches: number; goals: number; shots: number; xg: number; inBox: number; goalsWithShot: number; goalsInBox: number; onTarget: number;
+  /** Goals and xG from open play (not penalties or direct free kicks, which use set pieces, not finishing). */
+  openGoals: number; openXg: number;
+}
 
 /** Shot and goal totals over a few whole matches, for one side or both. */
 function attacking(s: SpatialSetup, seed: string, mode: SpatialMode, matches: number, sides: Side[] = [0, 1]): Attack {
-  const a: Attack = { matches, goals: 0, shots: 0, xg: 0, inBox: 0, goalsWithShot: 0, goalsInBox: 0, onTarget: 0 };
+  const a: Attack = { matches, goals: 0, shots: 0, xg: 0, inBox: 0, goalsWithShot: 0, goalsInBox: 0, onTarget: 0, openGoals: 0, openXg: 0 };
   for (let k = 0; k < matches; k++) {
     const m = createSpatial(s, `${seed}-${k}`, mode);
     while (stepSpatial(m)) { /* play the match */ }
@@ -479,6 +490,7 @@ function attacking(s: SpatialSetup, seed: string, mode: SpatialMode, matches: nu
     for (const r of m.shotLog) {
       if (!sides.includes(r.side)) continue;
       if (inAttackBox(r.side, r.x, r.y)) a.inBox++;
+      if (!r.setPiece) { a.openXg += r.xg; if (r.outcome === 'goal') a.openGoals++; }
     }
     for (const g of m.goalLog) {
       if (!sides.includes(g.side) || g.ownGoal || g.xg === 0) continue;
@@ -522,18 +534,19 @@ describe('spatial attacking and shooting', () => {
     ...s, players: s.players.map((p, k) => (k > 0 ? p : { ...p, attributes: { ...p.attributes, ref: v, han: v, gkp: v } })),
   });
 
+  // Sixteen matches each: with goals this rare, ten were not enough to tell the effect from luck.
   it('good finishers score more of their chances than poor ones', () => {
     const away = side('away', tactics());
-    const good = attacking({ home: finishing(side('home', tactics()), 88), away }, 'finish', 'coarse', 10, [0]);
-    const poor = attacking({ home: finishing(side('home', tactics()), 38), away }, 'finish', 'coarse', 10, [0]);
-    expect(good.goals / good.xg).toBeGreaterThan(poor.goals / poor.xg + 0.4);
+    const good = attacking({ home: finishing(side('home', tactics()), 88), away }, 'finish', 'coarse', 16, [0]);
+    const poor = attacking({ home: finishing(side('home', tactics()), 38), away }, 'finish', 'coarse', 16, [0]);
+    expect(good.openGoals / good.openXg).toBeGreaterThan(poor.openGoals / poor.openXg + 0.4);
     expect(good.onTarget / good.shots).toBeGreaterThan(poor.onTarget / poor.shots);
   }, 60_000);
 
   it('a good keeper saves more than a poor one', () => {
     const home = side('home', tactics());
-    const good = attacking({ home, away: keeper(side('away', tactics()), 88) }, 'keeper', 'coarse', 10, [0]);
-    const poor = attacking({ home, away: keeper(side('away', tactics()), 38) }, 'keeper', 'coarse', 10, [0]);
+    const good = attacking({ home, away: keeper(side('away', tactics()), 88) }, 'keeper', 'coarse', 16, [0]);
+    const poor = attacking({ home, away: keeper(side('away', tactics()), 38) }, 'keeper', 'coarse', 16, [0]);
     expect(good.goals / good.onTarget).toBeLessThan(poor.goals / poor.onTarget - 0.1);
     expect(good.goals).toBeLessThan(poor.goals);
   }, 60_000);
@@ -570,5 +583,237 @@ describe('spatial restarts', () => {
     expect(throws).toBeGreaterThan(3);
     expect(throws).toBeLessThan(90);
     expect(st[0].goalKicks + st[1].goalKicks).toBeGreaterThan(4);
+  }, 30_000);
+});
+
+// ---------------------------------------------------------------------------
+// Laws of the game (build step 5, docs/DESIGN.md 17.6)
+// ---------------------------------------------------------------------------
+
+/**
+ * A frozen scene for offside: home (attacking +x, so depth is x) is about to play the ball
+ * from (bx, 34) with its number 7 (index 6). Home's attackers 10, 9 and 11 (indices 9, 8, 10)
+ * stand at `att` (x), everyone else of home's in their own half. Away's keeper stands at `gk`,
+ * its two deepest outfielders at `deep`, the rest at x = 55.
+ */
+function offsideScene(bx: number, att: number[], deep: [number, number], gk = 103): SpatialMatch {
+  const m = createSpatial(setup(), 'offside', 'fine');
+  freezeBall(m, bx, 34, 0);
+  m.onball.setPiece = SP_NONE;
+  for (let i = 0; i < 11; i++) { m.px[i] = 20; m.py[i] = 4 + i * 6; }
+  m.px[6] = bx;
+  m.py[6] = 34;
+  att.forEach((x, k) => { m.px[[9, 8, 10][k]] = x; });
+  for (let i = 11; i < 22; i++) { m.px[i] = 55; m.py[i] = 4 + (i - 11) * 6; }
+  m.px[11] = gk;
+  m.py[11] = 34;
+  m.px[12] = deep[0];
+  m.px[13] = deep[1];
+  return m;
+}
+
+describe('spatial offside', () => {
+  it('beyond the ball and the second-last opponent in their half is offside; level is onside', () => {
+    const m = offsideScene(60, [92, 90, 88], [90, 85]);
+    played(m, 6);
+    expect(offsideNow(m, 9)).toBe(true);
+    expect(offsideNow(m, 8)).toBe(false);
+    expect(offsideNow(m, 10)).toBe(false);
+  });
+
+  it('a backward pass to a man beyond the line is onside', () => {
+    const m = offsideScene(95, [92], [90, 85]);
+    played(m, 6);
+    expect(offsideNow(m, 9)).toBe(false);
+  });
+
+  it('nobody is offside in his own half', () => {
+    // Away has pushed up: its keeper at 70 and outfielders at 50 and 48 make the line 50.
+    const m = offsideScene(40, [51], [50, 48], 70);
+    played(m, 6);
+    expect(offsideNow(m, 9)).toBe(false);
+  });
+
+  it('with the keeper out, the two deepest outfielders set the line', () => {
+    const m = offsideScene(60, [87, 84], [90, 85], 60);
+    played(m, 6);
+    expect(offsideNow(m, 9)).toBe(true);
+    expect(offsideNow(m, 8)).toBe(false);
+  });
+
+  it.each([['throw-in', SP_THROW], ['corner', SP_CORNER], ['goal kick', SP_GOAL_KICK]] as [string, number][])(
+    'nobody is offside from a %s',
+    (_name, sp) => {
+      const m = offsideScene(60, [92], [90, 85]);
+      m.onball.setPiece = sp;
+      played(m, 6);
+      expect(offsideNow(m, 9)).toBe(false);
+    },
+  );
+
+  it('an offside player who plays the ball gives away an indirect free kick where he is', () => {
+    const m = offsideScene(60, [92, 88], [90, 85]);
+    played(m, 6);
+    // An onside team-mate can play it without a call.
+    expect(offsideCall(m, 8)).toBe(false);
+    expect(offsideCall(m, 9)).toBe(true);
+    expect(m.restartKind).toBe(RESTART_FREE_KICK);
+    expect(m.restartSide).toBe(1);
+    expect(m.rules.indirect).toBe(true);
+    expect(m.rules.offsides[0]).toBe(1);
+    expect(m.events.at(-1)).toMatchObject({ kind: 'offside', side: 0, player: 9 });
+    // The flag only goes up once.
+    expect(offsideNow(m, 9)).toBe(false);
+  });
+});
+
+describe('spatial set pieces and the back-pass rule', () => {
+  const takers = (p: string) => ({ penalties: `${p}-9`, freeKicks: `${p}-7`, corners: `${p}-8` });
+  const named = setup({ setPieceTakers: takers('home') }, { setPieceTakers: takers('away') });
+
+  it('the named taker takes every penalty, free kick near goal and corner while he is on', () => {
+    const FK = SPATIAL_TUNING.freeKick;
+    let pens = 0, fks = 0, corners = 0, setShots = 0, wrong = 0;
+    for (let k = 0; k < 8; k++) {
+      const m = createSpatial(named, `takers-${k}`, 'coarse');
+      let last = RESTART_NONE;
+      const check = (id: string): void => {
+        let onPitch = false;
+        for (let j = 0; j < N; j++) if (m.on[j] && idOf(m, j) === id) onPitch = true;
+        if (onPitch && idOf(m, m.restartTaker) !== id) wrong++;
+      };
+      while (stepSpatial(m)) {
+        if (m.restartKind === last) continue;
+        last = m.restartKind;
+        const t = takers(m.restartSide === 0 ? 'home' : 'away');
+        if (last === RESTART_PENALTY) { pens++; check(t.penalties); }
+        else if (last === RESTART_CORNER) { corners++; check(t.corners); }
+        else if (last === RESTART_FREE_KICK) {
+          const g = LENGTH - depthOf(m.restartSide, m.restartX), e = m.restartY - 34;
+          if (Math.sqrt(g * g + e * e) <= FK.namedWithin) { fks++; check(t.freeKicks); }
+        }
+      }
+      // Every penalty and direct free-kick shot was struck by the named man.
+      for (const r of m.shotLog) {
+        if (!r.setPiece) continue;
+        setShots++;
+        const id = (r.side === 0 ? named.home : named.away).players[r.player % 11].id;
+        if (id !== takers(r.side === 0 ? 'home' : 'away')[r.setPiece === 'penalty' ? 'penalties' : 'freeKicks']) wrong++;
+      }
+    }
+    expect(wrong).toBe(0);
+    expect(pens).toBeGreaterThan(0);
+    expect(fks).toBeGreaterThan(5);
+    expect(corners).toBeGreaterThan(5);
+    expect(setShots).toBeGreaterThan(0);
+  }, 30_000);
+
+  it.each(['fine', 'coarse'] as SpatialMode[])('a keeper never handles a pass from a team-mate (%s)', (mode) => {
+    let catches = 0, wrong = 0;
+    for (let k = 0; k < 3; k++) {
+      const m = createSpatial(setup(), `back-pass-${k}`, mode);
+      for (;;) {
+        const ob = m.onball;
+        const kind = ob.passKind, from = ob.passSide, kicker = ob.lastKick;
+        const held = m.ball.state === BALL_HELD;
+        if (!stepSpatial(m)) break;
+        const o = m.ball.owner;
+        if (held || m.ball.state !== BALL_HELD || !ob.inHands || o < 0 || o % 11 !== 0) continue;
+        catches++;
+        if ((kind === KICK_PASS || kind === KICK_CLEAR) && from === sideOf(o) && kicker !== o) wrong++;
+      }
+    }
+    expect(catches).toBeGreaterThan(5);
+    expect(wrong).toBe(0);
+  }, 30_000);
+});
+
+describe('spatial sendings-off', () => {
+  /** A straight red for whoever commits the next foul. */
+  function sendOffNow(m: SpatialMatch, f: number, v: number): void {
+    const CD = SPATIAL_TUNING.card;
+    const keep = CD.straightRed;
+    CD.straightRed = 1;
+    try { foul(m, f, v, FOUL_FRONT, false); } finally { CD.straightRed = keep; }
+  }
+
+  it('a sent-off player leaves the pitch for good and his side plays on with ten', () => {
+    const m = createSpatial(setup(), 'red-card', 'fine');
+    runSeconds(m, 120);
+    sendOffNow(m, 13, 9);
+    expect(m.on[13]).toBe(0);
+    expect(m.rules.reds[1]).toBe(1);
+    expect(m.events.some((e) => e.kind === 'red' && e.player === 13)).toBe(true);
+    let touched = 0, onPitch = 0;
+    while (stepSpatial(m)) {
+      if (m.ball.owner === 13 || m.onball.lastKick === 13) touched++;
+      if (m.px[13] >= 0 && m.px[13] <= LENGTH && m.py[13] >= 0 && m.py[13] <= WIDTH) onPitch++;
+    }
+    expect(touched).toBe(0);
+    expect(onPitch).toBe(0);
+    expect(m.on.slice(11).reduce((a, b) => a + b, 0)).toBe(10);
+    expect(matchStats(m)[1].reds).toBe(1);
+  }, 30_000);
+
+  it('a sent-off keeper is replaced in goal by an outfielder', () => {
+    const m = createSpatial(setup(), 'red-keeper', 'fine');
+    runSeconds(m, 120);
+    sendOffNow(m, 11, 9);
+    // Index 11 is always the keeper: an outfielder has moved into it.
+    expect(m.on[11]).toBe(1);
+    expect(m.who[11]).not.toBe(11);
+    const gone = Array.from(m.who).indexOf(11);
+    expect(m.on[gone]).toBe(0);
+    runSeconds(m, 120);
+    expect(depthOf(1, m.px[11])).toBeLessThan(20);
+  }, 30_000);
+});
+
+describe('spatial referee rates', () => {
+  it.each([['coarse', 10], ['fine', 4]] as [SpatialMode, number][])('fouls, cards, offsides and penalties are in the right range (%s)', (mode, matches) => {
+    const sum = { fouls: 0, yellows: 0, reds: 0, offsides: 0, penalties: 0, injuries: 0, corners: 0, freeKicks: 0 };
+    let mismatched = 0;
+    for (let k = 0; k < matches; k++) {
+      const m = createSpatial(setup(), `referee-${k}`, mode);
+      while (stepSpatial(m)) { /* play the match */ }
+      const st = matchStats(m);
+      for (const q of [0, 1] as const) for (const key of Object.keys(sum) as (keyof typeof sum)[]) sum[key] += st[q][key];
+      // The stats and the event list agree.
+      const count = (kind: string, side: Side) => m.events.filter((e) => e.kind === kind && e.side === side).length;
+      for (const q of [0, 1] as Side[]) {
+        if (count('foul', q) !== st[q].fouls || count('yellow', q) !== st[q].yellows || count('offside', q) !== st[q].offsides) mismatched++;
+        // A second yellow is logged as a yellow and a red.
+        if (count('red', q) !== st[q].reds) mismatched++;
+        // A penalty is logged for the side that won it.
+        if (count('penalty', q) !== st[q].penalties) mismatched++;
+      }
+    }
+    expect(mismatched).toBe(0);
+    const perTeam = (v: number) => v / matches / 2;
+    const perMatch = (v: number) => v / matches;
+    // Targets: fouls 9 to 15 a team, yellows 3.5 to 4.5 and reds 0.1 to 0.2 a match, offsides
+    // 1 to 4 a team, penalties 0.25 to 0.35 a match (docs/DESIGN.md 17.10). These bounds are
+    // looser for a few matches; step 7 checks the targets over whole seasons.
+    expect(perTeam(sum.fouls)).toBeGreaterThan(6);
+    expect(perTeam(sum.fouls)).toBeLessThan(18);
+    expect(perMatch(sum.yellows)).toBeGreaterThan(1.5);
+    expect(perMatch(sum.yellows)).toBeLessThan(7.5);
+    expect(perMatch(sum.reds)).toBeLessThan(1.25);
+    expect(perTeam(sum.offsides)).toBeGreaterThan(0.25);
+    expect(perTeam(sum.offsides)).toBeLessThan(8);
+    expect(perMatch(sum.penalties)).toBeLessThan(1.5);
+    expect(perMatch(sum.injuries)).toBeLessThan(1.5);
+    expect(perTeam(sum.corners)).toBeGreaterThan(0.4);
+    // Every foul outside the box and every offside gives a free kick.
+    expect(sum.freeKicks).toBeGreaterThan(sum.fouls * 0.6);
+  }, 60_000);
+
+  it('the same seed gives the same fouls, cards and shots', () => {
+    const run = () => {
+      const m = createSpatial(setup(), 'same-referee', 'coarse');
+      while (stepSpatial(m)) { /* play the match */ }
+      return JSON.stringify([m.events, m.shotLog, m.goalLog]);
+    };
+    expect(run()).toBe(run());
   }, 30_000);
 });

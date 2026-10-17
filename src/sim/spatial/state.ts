@@ -5,7 +5,7 @@
 import type { Formation, Tactics } from '../types';
 import type { Rng } from '../rng';
 import type { LoftTable } from './ball';
-import type { GoalRecord, ShotRecord, Side, SpatialAction, SpatialMode, SpatialSetup } from './types';
+import type { GoalRecord, ShotRecord, Side, SpatialAction, SpatialEvent, SpatialMode, SpatialSetup } from './types';
 
 export const N = 22;
 export const LENGTH = 105;
@@ -33,7 +33,7 @@ export const BALL_HELD = 0;
 export const BALL_ROLL = 1;
 export const BALL_AIR = 2;
 export const BALL_FROZEN = 3;
-/** Out of play: waiting for a kick-off, goal kick or corner (SpatialMatch.restart*). */
+/** Out of play: waiting for a restart (SpatialMatch.restart*). */
 export const BALL_DEAD = 4;
 
 /** Restart kinds. */
@@ -42,6 +42,27 @@ export const RESTART_KICKOFF = 1;
 export const RESTART_GOAL_KICK = 2;
 export const RESTART_CORNER = 3;
 export const RESTART_THROW_IN = 4;
+export const RESTART_FREE_KICK = 5;
+export const RESTART_PENALTY = 6;
+/** After an injury stops play, the side that had the ball restarts unopposed. */
+export const RESTART_DROP = 7;
+
+/** OnBallState.setPiece: the restart the carrier is taking, until he plays the ball. */
+export const SP_NONE = 0;
+export const SP_THROW = 1;
+export const SP_CORNER = 2;
+export const SP_GOAL_KICK = 3;
+/** A free kick that may be shot at goal. */
+export const SP_DIRECT = 4;
+/** An indirect free kick (offside) or a dropped ball: no shot. */
+export const SP_INDIRECT = 5;
+export const SP_PENALTY = 6;
+
+/** What kind of shot is in flight (RulesState.shotKind and shoot()). */
+export const SHOT_KIND_OPEN = 0;
+export const SHOT_KIND_HEADER = 1;
+export const SHOT_KIND_FREE_KICK = 2;
+export const SHOT_KIND_PENALTY = 3;
 
 /** OnBallState.passKind values. */
 export const KICK_NONE = 0;
@@ -54,7 +75,8 @@ export const SHOT_VALUES = 7;
 /** Attribute cache layout: ATTRS values per player in OnBallState.attr (filled by initOnBall). */
 export const A_PAS = 0, A_VIS = 1, A_CMP = 2, A_POS = 3, A_DRI = 4, A_STR = 5, A_TCK = 6, A_HEA = 7, A_KCK = 8, A_PAC = 9;
 export const A_AGG = 10, A_FIN = 11, A_CRS = 12, A_REF = 13, A_HAN = 14, A_GKP = 15, A_WRK = 16;
-export const ATTRS = 17;
+export const A_SPK = 17, A_DUR = 18;
+export const ATTRS = 19;
 
 export interface TeamState {
   side: Side;
@@ -88,6 +110,8 @@ export interface TeamState {
   counterUntil: number;
   /** Per slot: the opponent this defender is tracking through his zone (-1 if none). */
   track: Int32Array;
+  /** Per slot: the formation slot whose spots he takes (a red card moves players up). */
+  spot: Int8Array;
   /** The keeper is coming out to narrow the angle on a carrier through on goal. */
   rush: boolean;
 }
@@ -170,13 +194,17 @@ export interface OnBallState {
   woodwork: Int32Array;
   shotsInBox: Int32Array;
   xg: Float64Array;
-  /** Corners won (a stand-in restart until build step 5) and goal kicks taken. */
+  /** Corners won, goal kicks taken and throw-ins won. */
   corners: Int32Array;
   goalKicks: Int32Array;
-  /** Throw-ins won (a stand-in restart until build step 5). */
   throwIns: Int32Array;
-  /** The carrier is taking a throw-in: he can only pass, and nobody can tackle him. */
-  throwIn: boolean;
+  /** Crosses struck (blocked ones included). */
+  crosses: Int32Array;
+  /** The restart the carrier is taking (SP_*) until he plays the ball: it limits his options,
+   * and nobody may tackle him first. */
+  setPiece: number;
+  /** The keeper has the ball in his hands (nobody may tackle him). */
+  inHands: boolean;
   /** Last player to touch the ball in any way (decides restarts and own goals). */
   lastKick: number;
   /** The last completed pass: who received it and who played it (for assists). */
@@ -212,6 +240,47 @@ export interface AttackState {
   /** Per side: box filling is on, and which side of the goal the ball is (-1 left, +1 right, team frame). */
   boxOn: Uint8Array;
   boxSign: Float64Array;
+  /** Per side: the box is being filled for a corner (corner zones, best headers). */
+  boxCorner: Uint8Array;
+}
+
+/** Laws of the game (rules.ts): offside, fouls, advantage, cards, injuries and their stats. */
+export interface RulesState {
+  /** Per player: yellow cards (0..1) and whether he is carrying a knock. */
+  yellow: Uint8Array;
+  hurt: Uint8Array;
+  /** Per player: in an offside position when a team-mate last played the ball, and for which side (-1 none). */
+  offFlag: Uint8Array;
+  offSide: number;
+  /** Advantage being played: until when, for which side (-1 none), and where the free kick would be. */
+  advUntil: number;
+  advSide: number;
+  advX: number;
+  advY: number;
+  /** The free kick or penalty waiting: whether it is indirect, and its wall (defenders and spots). */
+  indirect: boolean;
+  nWall: number;
+  wall: Int32Array;
+  wallX: Float64Array;
+  wallY: Float64Array;
+  /** The kind of shot in flight (SHOT_KIND_*), for penalty and free-kick goals. */
+  shotKind: number;
+  /** Stats per side. */
+  fouls: Int32Array;
+  offsides: Int32Array;
+  yellows: Int32Array;
+  reds: Int32Array;
+  penalties: Int32Array;
+  penGoals: Int32Array;
+  freeKicks: Int32Array;
+  fkShots: Int32Array;
+  fkGoals: Int32Array;
+  injuries: Int32Array;
+  duels: Int32Array;
+  aerials: Int32Array;
+  advantages: Int32Array;
+  /** Time the ball has been in play. */
+  inPlayMs: number;
 }
 
 export interface SpatialMatch {
@@ -249,6 +318,11 @@ export interface SpatialMatch {
   role: Uint8Array;
   nextThink: Float64Array;
   delay: Int32Array;
+  /** 1 while the player is on the pitch (0 once sent off). */
+  on: Uint8Array;
+  /** The player at each index, as side * 11 + his place in the line-up (a keeper sent off swaps
+   * an outfielder into index side * 11). Logs and events use these. */
+  who: Int32Array;
   teams: [TeamState, TeamState];
   ball: BallState;
   /** Smoothed point the shapes follow: where the ball is, or where a pass is going. */
@@ -258,9 +332,12 @@ export interface SpatialMatch {
   possChanged: boolean;
   onball: OnBallState;
   attack: AttackState;
+  rules: RulesState;
   score: Int32Array;
   shotLog: ShotRecord[];
   goalLog: GoalRecord[];
+  /** Fouls, cards, offsides, penalties and injuries, in time order. */
+  events: SpatialEvent[];
   /** The restart being waited for (RESTART_*), by which side, when it is taken, when the ball
    * is put on the spot (it sits in the net or out of play until then), where, and who takes it. */
   restartKind: number;
@@ -274,6 +351,12 @@ export interface SpatialMatch {
   pending: SpatialAction[];
   /** Every action, applied or not, for the replay record. */
   actions: SpatialAction[];
+}
+
+/** The id of the player at index i (through SpatialMatch.who). */
+export function idOf(m: SpatialMatch, i: number): string {
+  const w = m.who[i];
+  return (w < 11 ? m.setup.home : m.setup.away).players[w % 11].id;
 }
 
 export function sideOf(i: number): Side {

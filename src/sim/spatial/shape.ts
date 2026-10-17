@@ -23,7 +23,7 @@ export function applyTeamTactics(m: SpatialMatch, team: TeamState, tactics: Tact
   team.formation = formation(tactics.formationId);
   const slots = team.formation.slots;
   for (let s = 0; s < 11; s++) {
-    const slot = slots[s];
+    const slot = slots[team.spot[s]];
     const def = slot.def ?? [slot.y, slot.x];
     const att = slot.att ?? def;
     team.defU[s] = def[0];
@@ -34,7 +34,7 @@ export function applyTeamTactics(m: SpatialMatch, team: TeamState, tactics: Tact
   // Rest defence: the K deepest outfield slots by in-possession depth stay behind the ball.
   const k = SI.behindBall[team.tactics.mentality - 1];
   const order = [];
-  for (let s = 1; s < 11; s++) order.push(s);
+  for (let s = 1; s < 11; s++) if (m.on[team.side * 11 + s]) order.push(s);
   order.sort((a, b) => team.attU[a] - team.attU[b] || a - b);
   team.isBehind.fill(0);
   for (let j = 0; j < k && j < order.length; j++) team.isBehind[order[j]] = 1;
@@ -56,13 +56,19 @@ export function resolveMarker(m: SpatialMatch, team: TeamState): void {
   if (!id) return;
   const opp = m.teams[1 - team.side];
   const oppPlayers = team.side === 0 ? m.setup.away.players : m.setup.home.players;
-  const slot = oppPlayers.findIndex((p) => p.id === id);
+  const li = oppPlayers.findIndex((p) => p.id === id);
+  if (li < 0) return;
+  // Where he is now (a red card can move players about), if he is still on.
+  const ob = (1 - team.side) * 11;
+  let slot = -1;
+  for (let s = 0; s < 11; s++) if (m.who[ob + s] === ob + li && m.on[ob + s]) { slot = s; break; }
   if (slot <= 0) return; // not on the pitch, or the goalkeeper
   const tu = 1 - opp.attU[slot];
   const tv = 1 - opp.attV[slot];
   let best = -1;
   let bestD = Infinity;
   for (let s = 1; s < 11; s++) {
+    if (!m.on[team.side * 11 + s]) continue;
     const du = (team.defU[s] - tu) * SO.blockLength;
     const dv = (team.defV[s] - tv) * SO.blockWidth;
     const d = du * du + dv * dv;
@@ -77,6 +83,7 @@ export function secondLastOpponent(m: SpatialMatch, side: Side): number {
   let a = -Infinity, b = -Infinity;
   const o = (1 - side) * 11;
   for (let j = o; j < o + 11; j++) {
+    if (!m.on[j]) continue;
     const d = depthOf(side, m.px[j]);
     if (d > a) { b = a; a = d; } else if (d > b) b = d;
   }
@@ -208,6 +215,7 @@ export function computeSpots(m: SpatialMatch, team: TeamState): void {
     let covered = false;
     for (let s = 1; s < 11 && !covered; s++) {
       const j = base + s;
+      if (!m.on[j]) continue;
       const jd = depthOf(side, m.px[j]);
       if (jd >= bd) continue;
       const ja = acrossOf(side, m.py[j]) - T.pitch.goalCentreAcross;

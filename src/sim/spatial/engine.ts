@@ -18,11 +18,12 @@ import { flightSubstep, loftTable, loftTableAt } from './ball';
 import { movePlayers } from './move';
 import { counterTarget, coverTarget, markTarget, presserTarget, trackTarget, updatePress, updateTracking } from './press';
 import { ballContacts, clearOfPath, createOnBall, initOnBall, onBallStep, receiveTarget } from './onball';
+import { createRules, inOwnBox, rulesStep, wallSlot } from './rules';
 import { LINE_DEAD, kickoff, lineCross, restartStep, shotStep, touchCross } from './restart';
 import { applyTeamTactics, computeSpots, currentLine, currentOffCap, resolveMarker, writeAnchors } from './shape';
 import {
-  ANCHORS, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_SHOT, LENGTH, N, RESTART_CORNER, RESTART_THROW_IN,
-  RESTART_GOAL_KICK, RESTART_KICKOFF, RING, WIDTH, acrossOf, clamp, depthOf, sideOf, type SpatialMatch, type TeamState,
+  ANCHORS, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_SHOT, LENGTH, N, RESTART_CORNER, RESTART_DROP,
+  RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_PENALTY, RESTART_THROW_IN, RING, WIDTH, acrossOf, clamp, depthOf, sideOf, type SpatialMatch, type TeamState,
 } from './state';
 import {
   FRAME_VALUES, ROLE, type Side, type SpatialAction, type SpatialMode, type SpatialRecord,
@@ -62,6 +63,7 @@ function newTeam(side: Side, tactics: Tactics): TeamState {
     pressAdv: 0,
     counterUntil: 0,
     track: new Int32Array(11).fill(-1),
+    spot: Int8Array.from({ length: 11 }, (_, k) => k),
     rush: false,
   };
 }
@@ -105,6 +107,8 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     role: new Uint8Array(N),
     nextThink: new Float64Array(N),
     delay: new Int32Array(N),
+    on: new Uint8Array(N).fill(1),
+    who: Int32Array.from({ length: N }, (_, k) => k),
     teams: [newTeam(0, setup.home.tactics), newTeam(1, setup.away.tactics)],
     ball: { x: 52.5, y: 34, z: 0, vx: 0, vy: 0, vz: 0, state: BALL_HELD, owner: -1, receiver: -1, meetX: 0, meetY: 0, strikeMs: 0, arriveMs: 0, ox: 0.6, oy: 0 },
     focusX: 52.5,
@@ -113,9 +117,11 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     possChanged: false,
     onball: createOnBall(),
     attack: createAttack(),
+    rules: createRules(),
     score: new Int32Array(2),
     shotLog: [],
     goalLog: [],
+    events: [],
     restartKind: 0,
     restartSide: 0,
     restartAt: 0,
@@ -257,8 +263,10 @@ function decideRole(m: SpatialMatch, i: number): number {
   const slot = i - side * 11;
   const team = m.teams[side];
   const b = m.ball;
+  if (!m.on[i]) return ROLE.SHAPE;
   if (b.state === BALL_DEAD) {
     if (i === m.restartTaker) return ROLE.CARRY;
+    if (m.restartKind === RESTART_FREE_KICK && wallSlot(m, i) >= 0) return ROLE.WALL;
     if (slot === 0) return ROLE.KEEPER;
     if (m.attack.boxSlot[i] >= 0) return ROLE.BOX;
     if (m.restartSide !== side && team.track[slot] >= 0) return ROLE.TRACK;
@@ -289,9 +297,16 @@ function targetFor(m: SpatialMatch, i: number): void {
   const slot = i - side * 11;
   const team = m.teams[side];
   const b = m.ball;
+  // Sent off: he stays where he was parked.
+  if (!m.on[i]) { m.tx[i] = m.px[i]; m.ty[i] = m.py[i]; return; }
   let x = m.sx[i];
   let y = m.sy[i];
   switch (m.role[i]) {
+    case ROLE.WALL: {
+      const q = wallSlot(m, i);
+      if (q >= 0) { m.tx[i] = m.rules.wallX[q]; m.ty[i] = m.rules.wallY[q]; return; }
+      break;
+    }
     case ROLE.CARRY:
       if (b.owner === i) { x = m.onball.carryX; y = m.onball.carryY; }
       else if (b.state === BALL_DEAD && i === m.restartTaker) { x = m.restartX; y = m.restartY; }
@@ -327,20 +342,27 @@ function targetFor(m: SpatialMatch, i: number): void {
         // Wait on the offside line until the ball is on its way in.
         const inFlight = (b.state === BALL_AIR || b.state === BALL_ROLL) && m.onball.passCross;
         const cap = currentOffCap(team, m.steps);
-        if (!inFlight && b.state !== BALL_DEAD && depthOf(side, x) > cap) x = depthOf(side, cap);
+        if (!inFlight && (b.state !== BALL_DEAD || m.restartKind === RESTART_FREE_KICK) && depthOf(side, x) > cap) x = depthOf(side, cap);
       }
       break;
   }
-  if (b.state === BALL_DEAD) { deadBallSpot(m, side, x, y, tmp); x = tmp[0]; y = tmp[1]; }
+  if (b.state === BALL_DEAD) { deadBallSpot(m, i, side, x, y, tmp); x = tmp[0]; y = tmp[1]; }
   m.tx[i] = x;
   m.ty[i] = y;
 }
 
-/** Where the laws let a player of `side` stand for the restart being waited for, given where he wants to go. */
-function deadBallSpot(m: SpatialMatch, side: Side, x: number, y: number, out: Float64Array): void {
+/** Where the laws let player i of `side` stand for the restart being waited for, given where he wants to go. */
+function deadBallSpot(m: SpatialMatch, i: number, side: Side, x: number, y: number, out: Float64Array): void {
   const kind = m.restartKind;
   const kick = m.restartSide;
   let cx = -1, cy = 0;
+  if (kind === RESTART_PENALTY && i !== m.restartTaker) {
+    // The defending keeper on his line; everybody else out of the box and the arc.
+    if (i === (1 - kick) * 11) { out[0] = depthOf(kick, LENGTH - 0.3); out[1] = T.pitch.goalCentreAcross; return; }
+    const lim = LENGTH - T.pitch.boxDepth - 1;
+    if (depthOf(kick, x) > lim) x = depthOf(kick, lim);
+    cx = m.restartX; cy = m.restartY;
+  }
   if (kind === RESTART_KICKOFF) {
     const lim = T.kickoff.ownHalf;
     if (depthOf(side, x) > lim) x = depthOf(side, lim);
@@ -348,9 +370,17 @@ function deadBallSpot(m: SpatialMatch, side: Side, x: number, y: number, out: Fl
   } else if (kind === RESTART_GOAL_KICK) {
     const off = y < 34 ? 34 - y : y - 34;
     if (side !== kick && depthOf(kick, x) < T.pitch.boxDepth + 1 && off < T.pitch.boxHalfWidth + 1) x = depthOf(kick, T.pitch.boxDepth + 1);
-  } else if ((kind === RESTART_CORNER || kind === RESTART_THROW_IN) && side !== kick) { cx = m.restartX; cy = m.restartY; }
+  } else if ((kind === RESTART_CORNER || kind === RESTART_THROW_IN || kind === RESTART_FREE_KICK || kind === RESTART_DROP) && side !== kick) {
+    cx = m.restartX; cy = m.restartY;
+    // A free kick in his own box: the opponents wait outside it too.
+    if (kind === RESTART_FREE_KICK && inOwnBox(kick, cx, cy)) {
+      const off = y < 34 ? 34 - y : y - 34;
+      if (depthOf(kick, x) < T.pitch.boxDepth + 1 && off < T.pitch.boxHalfWidth + 1) x = depthOf(kick, T.pitch.boxDepth + 1);
+    }
+  }
   if (cx >= 0) {
-    const r = kind === RESTART_THROW_IN ? T.restart.throwKeep : T.restart.keepAway;
+    const r = kind === RESTART_THROW_IN ? T.restart.throwKeep : kind === RESTART_DROP ? T.injury.dropKeep
+      : kind === RESTART_PENALTY ? T.penalty.arc + 0.5 : T.restart.keepAway;
     const dx = x - cx, dy = y - cy;
     const d = Math.sqrt(dx * dx + dy * dy);
     if (d < r) {
@@ -416,6 +446,7 @@ export function stepSpatial(m: SpatialMatch): boolean {
   if (m.ball.state === BALL_DEAD) restartStep(m);
   updateAttack(m);
   onBallStep(m);
+  rulesStep(m);
   updateFocus(m);
   // A team that loses the ball gets back into its defensive shape faster than one that wins
   // it spreads out.
@@ -558,6 +589,7 @@ export function teamShapeInfo(m: SpatialMatch, side: Side): TeamShapeInfo {
   let dMin = Infinity, dMax = -Infinity, aMin = Infinity, aMax = -Infinity;
   for (let s = 1; s < 11; s++) {
     const i = side * 11 + s;
+    if (!m.on[i]) continue;
     const d = depthOf(side, m.px[i]);
     const a = acrossOf(side, m.py[i]);
     if (team.defU[s] === 0) { backSum += d; backN++; }
