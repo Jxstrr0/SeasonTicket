@@ -36,6 +36,15 @@ const MIGRATIONS: Record<number, Migration> = {
     }
     return save;
   },
+  /**
+   * Version 3 plays every match on the spatial engine (Stage 4.5). A match saved part-way
+   * has no record the engine can replay, so it restarts in the engine from where it stood
+   * the next time it is opened (src/sim/career/live.ts).
+   */
+  2: (save) => {
+    save.liveRecord = null;
+    return save;
+  },
 };
 
 export class SaveError extends Error {}

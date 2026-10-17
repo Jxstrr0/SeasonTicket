@@ -21,13 +21,13 @@ import { createMatch, finalizeMatch } from '../match/engine';
 import { emitEvent, nameOf, type EventDraft } from '../match/events';
 import { ensurePlayerStats, sideState, type MatchContext, type MatchState, type Period, type SideState } from '../match/state';
 import { Rng } from '../rng';
-import type { MatchAction, MatchEvent, MatchResult, MatchSetup, Side as MatchSide } from '../types';
-import { createSpatial, queueSubstitution, queueTactics, stepSpatial } from './engine';
+import type { MatchAction, MatchEvent, MatchResult, MatchSetup, PlayerMatchStats, Side as MatchSide, TeamMatchStats } from '../types';
+import { createSpatial, queueSubstitution, queueTactics, resumeSpatial, stepSpatial } from './engine';
 import { matchStats } from './onball';
 import { spatialSetupFromMatch } from './setup';
 import { PSTATS, PS_FOULS, PS_KEY, PS_PASSES, PS_SAVES, PS_SECS, PS_TACKLES, type SpatialMatch } from './state';
 import { matchTime } from './systems';
-import { PERIOD, PERSONS, personOf, whoOf, whoSide, type ShotRecord, type Side, type SpatialMode } from './types';
+import { PERIOD, PERSONS, personOf, whoOf, whoSide, type ShotRecord, type Side, type SpatialMode, type SpatialResume, type SpatialResumeSide } from './types';
 
 const T = MATCH_TUNING;
 const SIDES: readonly MatchSide[] = ['home', 'away'];
@@ -42,6 +42,22 @@ export interface SpatialLive {
   cursor: { events: number; shots: number; goals: number; kicks: number };
   /** The fouler of the last foul in the box, for the penalty that follows. */
   boxFouler: string | null;
+  /** Keep the team and player stats current every minute (the watched match), not just at the end. */
+  liveStats: boolean;
+  /** For a restarted match (resumeSpatialLive): the stats before the restart, added to the engine's. */
+  carry: StatsCarry | null;
+}
+
+interface StatsCarry {
+  /** Engine time at the restart. */
+  ms: number;
+  teams: [TeamMatchStats, TeamMatchStats];
+  players: [Record<string, PlayerMatchStats>, Record<string, PlayerMatchStats>];
+}
+
+export interface SpatialLiveOptions {
+  mode?: SpatialMode;
+  liveStats?: boolean;
 }
 
 function sideName(s: Side): MatchSide {
@@ -64,11 +80,69 @@ function withRng(state: MatchState, work: (rng: Rng) => void): void {
 }
 
 /** Start a live match: the engine and the classic state, with the kick-off event. */
-export function createSpatialLive(setup: MatchSetup, ctx: MatchContext, mode: SpatialMode = 'fine'): SpatialLive {
+export function createSpatialLive(setup: MatchSetup, ctx: MatchContext, opts: SpatialMode | SpatialLiveOptions = 'fine'): SpatialLive {
+  const o = typeof opts === 'string' ? { mode: opts } : opts;
   const state = createMatch(setup, ctx);
-  const m = createSpatial(spatialSetupFromMatch(setup, ctx.players, ctx.teams), `match:${setup.seed}`, mode);
-  const live: SpatialLive = { m, state, ctx, cursor: { events: 0, shots: 0, goals: 0, kicks: 0 }, boxFouler: null };
+  const m = createSpatial(spatialSetupFromMatch(setup, ctx.players, ctx.teams), `match:${setup.seed}`, o.mode ?? 'fine');
+  const live: SpatialLive = {
+    m, state, ctx, cursor: { events: 0, shots: 0, goals: 0, kicks: 0 }, boxFouler: null, liveStats: o.liveStats ?? false, carry: null,
+  };
   sync(live);
+  return live;
+}
+
+/**
+ * Restart a saved match in the engine from where it stood (docs/DESIGN.md 17.9), for when
+ * its record can no longer replay exactly: an engine or tuning change, or a save from the
+ * Stage 1 engine. The saved state (events, score, stats so far) carries on; the engine
+ * picks up with the players back in shape and the ball with the side that had it.
+ * `spatial` says the state came from this engine, whose minute is the one being played
+ * (the Stage 1 engine's is the one just played). A shootout under way starts again.
+ */
+export function resumeSpatialLive(saved: MatchState, ctx: MatchContext, opts: SpatialLiveOptions & { spatial?: boolean } = {}): SpatialLive {
+  if (saved.finished) throw new Error('The match is finished');
+  const state = JSON.parse(JSON.stringify(saved)) as MatchState;
+  const setup = state.setup;
+  const sp = spatialSetupFromMatch(setup, ctx.players, ctx.teams);
+  const period = PERIOD_NAMES.indexOf(state.period);
+  if (period === PERIOD.SHOOTOUT) {
+    state.shootout = null;
+    state.events = state.events.filter((e) => e.type !== 'shootoutStart' && e.type !== 'shootoutKick');
+  }
+  // Engine time into the period, from the minute shown.
+  const base = [0, 45, 90, 105][Math.min(period, 3)];
+  const reg = period < PERIOD.ET_FIRST ? T.clock.halfMinutes : T.clock.extraHalfMinutes;
+  const shift = opts.spatial ? 1 : 0;
+  const elapsed = state.added > 0 ? reg + state.added - shift : Math.min(reg, Math.max(0, state.minute - base - shift));
+  const stoppage = state.added > 0 || elapsed >= reg;
+  const sideOf = (S: SideState): SpatialResumeSide => {
+    const played = new Set<string>([...S.onPitch.filter((id) => id !== ''), ...S.sentOff, ...Object.keys(S.playerStats).filter((id) => !S.bench.includes(id))]);
+    return {
+      onPitch: [...S.onPitch],
+      played: [...played],
+      sentOff: [...S.sentOff],
+      booked: Object.keys(S.yellows).filter((id) => S.yellows[id] > 0 && !S.sentOff.includes(id)),
+      energy: { ...S.fatigue },
+      subsUsed: S.subsUsed,
+      tactics: { ...S.tactics, setPieceTakers: { ...S.tactics.setPieceTakers } },
+    };
+  };
+  const r: SpatialResume = {
+    period,
+    elapsedMs: elapsed * 60000,
+    added: stoppage ? Math.max(1, state.addedPlanned, state.added) : -1,
+    score: [state.homeScore, state.awayScore],
+    poss: sideIndex(state.possession),
+    sides: [sideOf(state.home), sideOf(state.away)],
+  };
+  const m = resumeSpatial(sp, `match:${setup.seed}:resume:${state.events.length}`, opts.mode ?? 'fine', r);
+  const copyStats = (S: SideState) => JSON.parse(JSON.stringify(S.playerStats)) as Record<string, PlayerMatchStats>;
+  const live: SpatialLive = {
+    m, state, ctx, cursor: { events: 0, shots: 0, goals: 0, kicks: 0 }, boxFouler: null, liveStats: opts.liveStats ?? false,
+    carry: { ms: m.clockMs, teams: [{ ...state.home.stats }, { ...state.away.stats }], players: [copyStats(state.home), copyStats(state.away)] },
+  };
+  sync(live);
+  if (live.liveStats) fillStats(live);
   return live;
 }
 
@@ -107,6 +181,7 @@ export function stepSpatialMinute(live: SpatialLive): MatchEvent[] {
       }
     }
   }
+  if (live.liveStats) fillStats(live);
   return state.events.slice(start);
 }
 
@@ -132,6 +207,7 @@ export function applySpatialAction(live: SpatialLive, action: MatchAction): Matc
     queueTactics(m, s, S.tactics);
     sync(live);
   }
+  if (live.liveStats) fillStats(live);
   return state.events.slice(start);
 }
 
@@ -211,6 +287,7 @@ function setClock(live: SpatialLive, ms: number): void {
   const t = matchTime(m, ms);
   state.minute = t.minute;
   state.added = t.added;
+  state.addedPlanned = m.added < 0 || t.period !== m.period ? 0 : m.added;
 }
 
 // ---------------------------------------------------------------------------
@@ -469,5 +546,27 @@ function fillStats(live: SpatialLive): void {
     if (!p) continue;
     if (e.kind === 'yellow') p.yellowCards++;
     else p.redCards++;
+  }
+  if (live.carry) addCarry(live, live.carry);
+}
+
+const PLAYER_COUNTS = ['minutes', 'goals', 'assists', 'shots', 'shotsOnTarget', 'xg', 'passes', 'keyPasses', 'tackles', 'saves', 'fouls', 'yellowCards', 'redCards'] as const;
+const TEAM_COUNTS = ['shots', 'shotsOnTarget', 'xg', 'passes', 'corners', 'fouls', 'yellowCards', 'redCards', 'offsides', 'saves', 'tackles'] as const;
+
+/** Add the stats from before a restart: counts add up, shares are weighted by time and passes. */
+function addCarry(live: SpatialLive, c: StatsCarry): void {
+  const { m, state } = live;
+  for (const s of [0, 1] as Side[]) {
+    const S = sideState(state, sideName(s));
+    for (const id in c.players[s]) {
+      const p = ensurePlayerStats(S, id);
+      const q = c.players[s][id];
+      for (const k of PLAYER_COUNTS) p[k] += q[k];
+    }
+    const n = S.stats, o = c.teams[s];
+    const before = c.ms, after = Math.max(0, m.clockMs - c.ms);
+    n.possession = before + after > 0 ? (o.possession * before + n.possession * after) / (before + after) : o.possession;
+    n.passAccuracy = o.passes + n.passes > 0 ? (o.passAccuracy * o.passes + n.passAccuracy * n.passes) / (o.passes + n.passes) : 0;
+    for (const k of TEAM_COUNTS) n[k] += o[k];
   }
 }

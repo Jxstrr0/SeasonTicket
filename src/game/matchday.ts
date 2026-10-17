@@ -1,14 +1,13 @@
 /**
  * The user's live match: stepping it a minute at a time, the moments that
  * pause play for a decision, and the owner's changes (subs, tactics, handing
- * over to the head coach). Every change goes through the engine's
- * applyAction, so the same rules hold as in the headless season.
+ * over to the head coach). The match runs on the spatial engine through
+ * src/sim/career/live.ts, which notes every change so a saved match replays
+ * exactly; the same rules hold as in the headless season.
  */
 import { MATCH_TUNING } from '../sim/data';
-import { applyAction, stepMinute } from '../sim/match/engine';
 import type { MatchState, SideState } from '../sim/match/state';
-import { matchContext } from '../sim/season';
-import type { Career } from '../sim/career';
+import { liveAction, liveControl, liveOf, livePlan, stepLiveMinute, type Career } from '../sim/career';
 import type { Dial, MatchEvent, Side, Tactics } from '../sim/types';
 
 /** The minute of the second half when big-calls mode stops once for a substitution window. */
@@ -54,22 +53,21 @@ export function pauseReason(career: Career, state: MatchState, events: MatchEven
  * the reason to pause if something needs the owner.
  */
 export function stepLive(career: Career): { events: MatchEvent[]; pause: string | null } {
-  const state = career.liveMatch;
-  if (!state || state.finished) return { events: [], pause: null };
-  const events = stepMinute(state, matchContext(career.season.league));
+  if (!career.liveMatch || career.liveMatch.finished) return { events: [], pause: null };
+  const events = stepLiveMinute(career);
+  const state = career.liveMatch as MatchState;
   return { events, pause: pauseReason(career, state, events) };
 }
 
 /** Plays straight to the final whistle (the head coach decides for both sides). */
 export function playToEnd(career: Career, maxSteps = 400): void {
-  const state = career.liveMatch;
-  if (!state) return;
-  for (let i = 0; i < maxSteps && !state.finished; i++) stepMinute(state, matchContext(career.season.league));
+  for (let i = 0; i < maxSteps && career.liveMatch && !career.liveMatch.finished; i++) stepLiveMinute(career);
 }
 
 function act(career: Career, run: (state: MatchState, side: Side) => void): ActionResult {
+  if (!career.liveMatch) return { ok: false, message: 'No match is on.' };
+  liveOf(career);
   const state = career.liveMatch;
-  if (!state) return { ok: false, message: 'No match is on.' };
   try {
     run(state, userSide(career, state));
     return { ok: true, message: '' };
@@ -89,7 +87,7 @@ function friendly(message: string): string {
 }
 
 export function liveSubstitute(career: Career, outId: string, inId: string): ActionResult {
-  return act(career, (state, side) => applyAction(state, matchContext(career.season.league), { type: 'substitute', side, outId, inId }));
+  return act(career, (_state, side) => { liveAction(career, { type: 'substitute', side, outId, inId }); });
 }
 
 /**
@@ -101,9 +99,8 @@ export function liveTactics(career: Career, patch: Partial<Tactics>): ActionResu
   return act(career, (state, side) => {
     const S = side === 'home' ? state.home : state.away;
     const tactics: Tactics = { ...S.tactics, ...patch, setPieceTakers: { ...S.tactics.setPieceTakers, ...(patch.setPieceTakers ?? {}) } };
-    applyAction(state, matchContext(career.season.league), { type: 'setTactics', side, tactics });
-    const plan = side === 'home' ? state.setup.home : state.setup.away;
-    plan.tactics = { ...tactics, setPieceTakers: { ...tactics.setPieceTakers } };
+    liveAction(career, { type: 'setTactics', side, tactics });
+    livePlan(career, side, tactics);
   });
 }
 
@@ -114,8 +111,8 @@ export function liveMentality(career: Career, mentality: Dial): ActionResult {
 /** Hands the touchline to the head coach (or takes it back). */
 export function setCoachInCharge(career: Career, coach: boolean): void {
   const state = career.liveMatch;
-  if (!state) return;
-  userSideState(career, state).aiControlled = coach || career.delegation.matchMode !== 'full';
+  if (!state || state.finished) return;
+  liveControl(career, userSide(career, state), coach || career.delegation.matchMode !== 'full');
 }
 
 export function coachInCharge(career: Career): boolean {

@@ -2,26 +2,38 @@
  * Moving a career forward one week at a time. Pre-season weeks are money and
  * the market; season weeks also play every fixture through the same Stage 1
  * season code, with the user's lineup, ticket prices and live match plugged
- * in through hooks.
+ * in through hooks. Every match plays on the spatial engine: the user's
+ * live match in fine mode (live.ts), the rest in coarse mode.
  */
 import { pickSelection } from '../coach';
-import { createMatch, finalizeMatch, simulateMatch, stepMinute } from '../match/engine';
-import type { MatchState } from '../match/state';
+import { simulateSpatialMatch } from '../spatial/bridge';
+import type { MatchContext, MatchState } from '../match/state';
 import { advanceWeek, attendanceShare, buildMatchSetup, matchContext, matchesForWeek } from '../season';
 import type { SeasonHooks } from '../season';
 import { SEASON_TUNING } from '../data';
-import type { MatchResult, ScheduledMatch } from '../types';
+import type { MatchResult, MatchSetup, ScheduledMatch } from '../types';
 import { fairPrice, priceAdjustedShare, settleMatch, settleSeason, updateLadder, weeklyBooks } from './books';
 import { autoSignSponsor, ensureHeadCoach, fitnessRehab } from './club';
 import { compactResult } from './compact';
+import { clearLive, finishLive, liveOf, startLive } from './live';
 import { weeklyMarket } from './market';
 import { matchSelection } from './selection';
 import { stadiumAttendance, weeklyStadium } from './stadium';
 import type { Career } from './types';
 import { C, addInbox, userTeam } from './util';
 
-/** Hard stop for a live match that somehow never finishes. */
-const MAX_LIVE_STEPS = 400;
+type Background = (setup: MatchSetup, ctx: MatchContext) => MatchResult;
+const SPATIAL: Background = (setup, ctx) => simulateSpatialMatch(setup, ctx, 'coarse');
+let background: Background = SPATIAL;
+
+/**
+ * Swap the engine for the matches the user does not watch, or null for the spatial engine.
+ * Only for tests of the owner loop (finances, contracts, the stadium), which play many
+ * seasons and would otherwise spend minutes in the match engine; the game never calls it.
+ */
+export function setBackgroundEngine(fn: Background | null): void {
+  background = fn ?? SPATIAL;
+}
 
 /**
  * The hooks the season uses for this career. `live` builds the user's side
@@ -40,14 +52,9 @@ export function careerHooks(career: Career, live = false): SeasonHooks {
     },
     aiControlled: (teamId) => !(live && teamId === userId && career.delegation.matchMode === 'full'),
     simulate: (setup, ctx) => {
-      const live = career.liveMatch;
-      if (!live || live.setup.matchId !== setup.matchId) return simulateMatch(setup, ctx);
-      // The user walked away from the match screen: the head coach sees it out.
-      live.home.aiControlled = true;
-      live.away.aiControlled = true;
-      for (let i = 0; i < MAX_LIVE_STEPS && !live.finished; i++) stepMinute(live, ctx);
-      career.liveMatch = null;
-      return finalizeMatch(live, ctx);
+      // The user's match: finished on the match screen, or walked away from and seen out by the head coach.
+      if (career.liveMatch?.setup.matchId === setup.matchId) return finishLive(career, ctx);
+      return background(setup, ctx);
     },
   };
 }
@@ -63,12 +70,14 @@ export function userFixture(career: Career): ScheduledMatch | null {
 export function startUserMatch(career: Career): MatchState | null {
   const match = userFixture(career);
   if (!match) return null;
-  if (career.liveMatch?.setup.matchId === match.id) return career.liveMatch;
+  if (career.liveMatch?.setup.matchId === match.id) {
+    liveOf(career);
+    return career.liveMatch;
+  }
   ensureHeadCoach(career);
   const setup = buildMatchSetup(career.season, match, careerHooks(career, true));
   if (career.delegation.matchMode === 'coach') setup.aiControlled = { home: true, away: true };
-  career.liveMatch = createMatch(setup, matchContext(career.season.league));
-  return career.liveMatch;
+  return startLive(career, setup);
 }
 
 /** One week forward. Returns the results played this week (already compacted). */
@@ -109,7 +118,7 @@ export function advanceCareer(career: Career): MatchResult[] {
     results.push(result);
   }
   // The live match, if any, belonged to this week; never carry it over.
-  career.liveMatch = null;
+  clearLive(career);
   fitnessRehab(career);
   weeklyMarket(career);
   if (checkLadder(career)) return results;
@@ -127,7 +136,7 @@ export function advanceCareer(career: Career): MatchResult[] {
 function checkLadder(career: Career): boolean {
   if (!updateLadder(career)) return false;
   career.phase = 'gameOver';
-  career.liveMatch = null;
+  clearLive(career);
   career.gameOverReason = 'The lenders put the club into receivership. Your time as owner is over.';
   return true;
 }

@@ -5,7 +5,7 @@
  */
 import type { SeasonState } from '../season';
 import type { MatchState } from '../match/state';
-import type { MatchResult, TeamSelection } from '../types';
+import type { MatchAction, MatchResult, MatchSetup, Side, Tactics, TeamSelection } from '../types';
 
 export type TierId = 'easy' | 'normal' | 'hard' | 'veryHard';
 export type CareerPhase = 'preseason' | 'season' | 'review' | 'gameOver';
@@ -222,6 +222,30 @@ export interface Owner {
   injected: number;
 }
 
+/** One change the owner made during the live match, after `step` minutes had been played. */
+export type LiveEntry =
+  | { step: number; type: 'action'; action: MatchAction }
+  | { step: number; type: 'plan'; side: Side; tactics: Tactics }
+  | { step: number; type: 'control'; side: Side; ai: boolean };
+
+/**
+ * The user's live match as the engine can replay it: the setup at kick-off (or, for a match
+ * restarted from a saved state, that state), the minutes played and the owner's changes.
+ * A record only replays under the engine revision and tuning it was made with.
+ */
+export interface LiveRecord {
+  matchId: string;
+  rev: number;
+  tuning: number;
+  setup: MatchSetup;
+  /** A match restarted from a saved state (restart-resume): that state. */
+  base: MatchState | null;
+  /** The base state came from the spatial engine (its minute is the one being played). */
+  baseSpatial: boolean;
+  steps: number;
+  log: LiveEntry[];
+}
+
 export interface Career {
   version: number;
   seed: number;
@@ -249,8 +273,10 @@ export interface Career {
   staffPool: string[];
   userSelection: TeamSelection | null;
   delegation: Delegation;
-  /** The user's match in progress, stepped by the match screen. */
+  /** The user's match in progress, stepped by the match screen (as it stands; see live.ts). */
   liveMatch: MatchState | null;
+  /** What rebuilds the engine behind liveMatch exactly after a load (live.ts). */
+  liveRecord: LiveRecord | null;
   lastUserMatch: MatchResult | null;
   playerSeason: Record<string, PlayerSeasonLine>;
   inbox: InboxMessage[];
