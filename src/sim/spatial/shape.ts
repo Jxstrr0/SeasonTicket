@@ -9,7 +9,7 @@ import type { Tactics } from '../types';
 import {
   A_BEHIND_CAP, A_BLEND, A_IN_CENTRE, A_IN_LEN, A_IN_LINE, A_IN_WIDTH, A_OFF_CAP, A_OUT_CENTRE,
   A_OUT_LEN, A_OUT_LINE, A_OUT_MID_LEN, A_OUT_WIDTH, A_PRESS_ADV, ANCHORS, BALL_HELD, LENGTH, RING, WIDTH,
-  acrossOf, clamp, depthOf, sideOf, type SpatialMatch, type TeamState,
+  acrossOf, clamp, depthOf, idOf, sideOf, type SpatialMatch, type TeamState,
 } from './state';
 import type { Side } from './types';
 
@@ -22,10 +22,15 @@ export function applyTeamTactics(m: SpatialMatch, team: TeamState, tactics: Tact
   team.tactics = { ...tactics, setPieceTakers: { ...tactics.setPieceTakers } };
   team.formation = formation(tactics.formationId);
   const slots = team.formation.slots;
+  // Down to ten or nine: the formation's short-handed spots.
+  let n = 0;
+  for (let s = 0; s < 11; s++) if (m.on[team.side * 11 + s]) n++;
+  const set = n < 11 ? team.formation.short?.[String(n)]?.set : undefined;
   for (let s = 0; s < 11; s++) {
     const slot = slots[team.spot[s]];
-    const def = slot.def ?? [slot.y, slot.x];
-    const att = slot.att ?? def;
+    const o = set?.[String(team.spot[s])];
+    const def = o ? o.def : slot.def ?? [slot.y, slot.x];
+    const att = o ? o.att : slot.att ?? def;
     team.defU[s] = def[0];
     team.defV[s] = def[1];
     team.attU[s] = att[0];
@@ -55,13 +60,10 @@ export function resolveMarker(m: SpatialMatch, team: TeamState): void {
   const id = team.tactics.manMarkTarget;
   if (!id) return;
   const opp = m.teams[1 - team.side];
-  const oppPlayers = team.side === 0 ? m.setup.away.players : m.setup.home.players;
-  const li = oppPlayers.findIndex((p) => p.id === id);
-  if (li < 0) return;
-  // Where he is now (a red card can move players about), if he is still on.
+  // Where he is now (a red card or a substitution can move players about), if he is on.
   const ob = (1 - team.side) * 11;
   let slot = -1;
-  for (let s = 0; s < 11; s++) if (m.who[ob + s] === ob + li && m.on[ob + s]) { slot = s; break; }
+  for (let s = 0; s < 11; s++) if (m.on[ob + s] && idOf(m, ob + s) === id) { slot = s; break; }
   if (slot <= 0) return; // not on the pitch, or the goalkeeper
   const tu = 1 - opp.attU[slot];
   const tv = 1 - opp.attV[slot];

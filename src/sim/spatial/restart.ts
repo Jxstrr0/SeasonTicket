@@ -14,16 +14,17 @@ import { SPATIAL_TUNING } from '../data';
 import { resetAttack } from './attack';
 import { detCos, detSin } from './det';
 import { control, startControl } from './onball';
-import { advantageAtDead, clearOffside, cornerHolding, pickTaker } from './rules';
+import { advantageAtDead, book, clearOffside, cornerHolding, pickTaker, pushEvent } from './rules';
 import { computeSpots, fillRing } from './shape';
 import { CROSS_GOAL, CROSS_NONE, CROSS_WOODWORK, classifyCross } from './shot';
+import { wasteBooking, wasteMs } from './systems';
 import {
   ATTRS, A_HAN, BALL_AIR, BALL_DEAD, BALL_HELD, BALL_ROLL, KICK_NONE, KICK_SHOT, LENGTH, N,
   RESTART_CORNER, RESTART_DROP, RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_NONE, RESTART_PENALTY,
   RESTART_THROW_IN, SHOT_KIND_FREE_KICK, SHOT_KIND_PENALTY, SHOT_VALUES, SP_CORNER, SP_DIRECT, SP_GOAL_KICK, SP_INDIRECT,
-  SP_NONE, SP_PENALTY, SP_THROW, WIDTH, clamp, depthOf, sideOf, type SpatialMatch,
+  PS_SAVES, SP_NONE, SP_PENALTY, SP_THROW, WIDTH, addStoppage, clamp, depthOf, pstatAdd, sideOf, type SpatialMatch,
 } from './state';
-import type { Side } from './types';
+import { PERIOD, type Side } from './types';
 
 const T = SPATIAL_TUNING;
 const B = T.ball;
@@ -73,7 +74,7 @@ export function goDead(m: SpatialMatch, kind: number, side: Side, delayMs: numbe
   ob.entered = false;
   m.restartKind = kind;
   m.restartSide = side;
-  m.restartAt = now + delayMs;
+  m.restartAt = now + delayMs + wasteMs(m, side, kind, RESTART_KICKOFF);
   m.placeAt = now + RS.placeMs;
   m.restartX = x;
   m.restartY = y;
@@ -169,6 +170,11 @@ export function restartStep(m: SpatialMatch): void {
   b.x = m.restartX; b.y = m.restartY; b.z = 0;
   let k = m.restartTaker;
   if (k < 0 || !m.on[k]) k = m.restartTaker = pickTaker(m, kind, side, b.x, b.y);
+  // Booked for taking too long over it (a second yellow sends him off: somebody else takes it).
+  if (kind !== RESTART_PENALTY && k >= 0) {
+    const p = wasteBooking(m, side);
+    if (p > 0 && m.rng.chance(p) && book(m, k, true)) k = m.restartTaker = pickTaker(m, kind, side, b.x, b.y);
+  }
   const ob = m.onball;
   const R = m.rules;
   const o = (1 - side) * 11;
@@ -220,6 +226,7 @@ export function restartStep(m: SpatialMatch): void {
   ob.lastKick = k;
   control(m, k);
   ob.holdUntil = now;
+  ob.show = -1;
   ob.setPiece = kind === RESTART_THROW_IN ? SP_THROW
     : kind === RESTART_CORNER ? SP_CORNER
     : kind === RESTART_GOAL_KICK ? SP_GOAL_KICK
@@ -246,7 +253,7 @@ export function touchCross(m: SpatialMatch, xa: number, ya: number): void {
   b.z = 0;
   const k = ob.lastKick;
   const side = (k < 0 ? 1 - m.poss : 1 - sideOf(k)) as Side;
-  ob.throwIns[side]++;
+  if (m.period < PERIOD.SHOOTOUT) ob.throwIns[side]++;
   goDead(m, RESTART_THROW_IN, side, RS.throwInMs, x, edge);
 }
 
@@ -297,20 +304,28 @@ export function lineCross(m: SpatialMatch, xa: number, ya: number, za: number): 
   const k = ob.lastKick;
   const defenders = (1 - attackers) as Side;
   if (k < 0 || sideOf(k) === attackers) {
-    ob.goalKicks[defenders]++;
+    if (m.period < PERIOD.SHOOTOUT) ob.goalKicks[defenders]++;
     const across = XC[1] < GC ? GC - RS.goalKickAcross : GC + RS.goalKickAcross;
     goDead(m, RESTART_GOAL_KICK, defenders, RS.goalKickMs, depthOf(defenders, PT.sixDepth), across);
-  } else {
-    ob.corners[attackers]++;
-    goDead(m, RESTART_CORNER, attackers, RS.cornerMs, line - into * CORNER_IN, XC[1] < GC ? CORNER_IN : WIDTH - CORNER_IN);
-  }
+  } else cornerTo(m, attackers, line - into * CORNER_IN, XC[1] < GC ? CORNER_IN : WIDTH - CORNER_IN);
   return LINE_DEAD;
+}
+
+/** A corner to `side` from (x, y): counted, and logged with its taker. */
+export function cornerTo(m: SpatialMatch, side: Side, x: number, y: number): void {
+  const live = m.period < PERIOD.SHOOTOUT;
+  if (live) m.onball.corners[side]++;
+  goDead(m, RESTART_CORNER, side, RS.cornerMs, x, y);
+  if (live && m.restartKind === RESTART_CORNER && m.restartTaker >= 0) pushEvent(m, 'corner', m.restartTaker, x, y);
 }
 
 /** `side` has scored: who gets it, who made it, and the record. */
 function scoreGoal(m: SpatialMatch, side: Side): void {
+  // In a shootout the kick was counted when it was struck.
+  if (m.period >= PERIOD.SHOOTOUT) return;
   const ob = m.onball;
   m.score[side]++;
+  addStoppage(m, T.periods.stoppage.goalS * 1000);
   const R = m.rules;
   const shooter = ob.shooter;
   if (shooter >= 0 && sideOf(shooter) === side) {
@@ -407,6 +422,7 @@ function save(m: SpatialMatch, j: number): void {
   const b = m.ball;
   const ob = m.onball;
   const side = sideOf(j);
+  pstatAdd(m, j, PS_SAVES);
   const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy + b.vz * b.vz);
   // How far he had to go for it, against the most he could reach.
   const dx = b.x - m.px[j], dy = b.y - m.py[j];
@@ -429,10 +445,9 @@ function save(m: SpatialMatch, j: number): void {
   }
   const attackers = (1 - side) as Side;
   if (m.rng.chance(KS.parryOut)) {
-    ob.corners[attackers]++;
     const line = side === 0 ? 0 : LENGTH;
     const into = side === 0 ? -1 : 1;
-    goDead(m, RESTART_CORNER, attackers, RS.cornerMs, line - into * CORNER_IN, b.y < GC ? CORNER_IN : WIDTH - CORNER_IN);
+    cornerTo(m, attackers, line - into * CORNER_IN, b.y < GC ? CORNER_IN : WIDTH - CORNER_IN);
     return;
   }
   // Pushed back out, off to one side.

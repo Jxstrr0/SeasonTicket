@@ -21,21 +21,25 @@ import { ballContacts, clearOfPath, createOnBall, initOnBall, onBallStep, receiv
 import { createRules, inOwnBox, rulesStep, wallSlot } from './rules';
 import { LINE_DEAD, kickoff, lineCross, restartStep, shotStep, touchCross } from './restart';
 import { applyTeamTactics, computeSpots, currentLine, currentOffCap, resolveMarker, writeAnchors } from './shape';
+import { applySubs, assignSpots, cancelSub, initEnergy, loadPerson, periodStep, queueSub, secondTick, shootoutStep } from './systems';
 import {
-  ANCHORS, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_SHOT, LENGTH, N, RESTART_CORNER, RESTART_DROP,
-  RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_PENALTY, RESTART_THROW_IN, RING, WIDTH, acrossOf, clamp, depthOf, sideOf, type SpatialMatch, type TeamState,
+  ANCHORS, ATTRS, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_SHOT, LENGTH, N, PSTATS, RESTART_CORNER, RESTART_DROP,
+  RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_PENALTY, RESTART_THROW_IN, RING, SP_NONE, WIDTH, acrossOf, clamp, depthOf, sideOf, type SpatialMatch, type TeamState,
 } from './state';
 import {
-  FRAME_VALUES, ROLE, type Side, type SpatialAction, type SpatialMode, type SpatialRecord,
+  BENCH_MAX, FRAME_VALUES, PERIOD, PERSONS, ROLE, type Side, type SpatialAction, type SpatialMode, type SpatialRecord,
   type SpatialSetup, type TeamShapeInfo,
 } from './types';
 
 const T = SPATIAL_TUNING;
 const B = T.ball;
-const MATCH_MS = 90 * 60 * 1000;
 
 function copyTactics(t: Tactics): Tactics {
   return { ...t, setPieceTakers: { ...t.setPieceTakers } };
+}
+
+function copyAction(a: SpatialAction): SpatialAction {
+  return a.type === 'tactics' ? { ...a, tactics: copyTactics(a.tactics) } : { ...a };
 }
 
 function newTeam(side: Side, tactics: Tactics): TeamState {
@@ -75,7 +79,10 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
   const subN = Math.ceil(stepMs / (T.time.ballSubstepS * 1000));
   const subH = stepS / subN;
   const sides = [setup.home, setup.away];
-  for (const s of sides) if (s.players.length !== 11) throw new Error('Each side needs eleven players');
+  for (const s of sides) {
+    if (s.players.length !== 11) throw new Error('Each side needs eleven players');
+    if ((s.bench?.length ?? 0) > BENCH_MAX) throw new Error(`A bench holds at most ${BENCH_MAX}`);
+  }
   const m: SpatialMatch = {
     rev: T.engineRev,
     seed,
@@ -87,8 +94,24 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     subN,
     steps: 0,
     clockMs: 0,
-    endMs: MATCH_MS,
     rng: new Rng(`spatial:${seed}`),
+    period: PERIOD.FIRST,
+    periodStart: 0,
+    added: -1,
+    stoppageMs: 0,
+    periodLog: [],
+    nextSecond: 1000,
+    energy: new Float64Array(PERSONS),
+    periodEnergy: new Float64Array(PERSONS),
+    at: new Int8Array(PERSONS).fill(-1),
+    used: new Uint8Array(PERSONS),
+    pstat: new Float64Array(PERSONS * PSTATS),
+    subQ: [],
+    subsUsed: new Int32Array(2),
+    baseAttr: new Float64Array(N * ATTRS),
+    distMark: new Float64Array(N),
+    sprintMark: new Float64Array(N),
+    shootout: null,
     loft: loftTable(subH),
     crossLoft: loftTableAt(subH, T.cross.deg),
     px: new Float64Array(N),
@@ -129,20 +152,11 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     restartX: 52.5,
     restartY: 34,
     restartTaker: -1,
-    pending: actions.map((a) => ({ ...a, tactics: copyTactics(a.tactics) })).sort((a, b) => a.ms - b.ms),
-    actions: actions.map((a) => ({ ...a, tactics: copyTactics(a.tactics) })),
+    pending: actions.map(copyAction).sort((a, b) => a.ms - b.ms),
+    actions: actions.map(copyAction),
   };
-  const MV = T.move;
-  const SO = T.shapeOut;
-  for (let i = 0; i < N; i++) {
-    const p = sides[sideOf(i)].players[i % 11];
-    const a = p.attributes;
-    m.top[i] = MV.topBase + (MV.topPace * a.pac) / 99;
-    m.acc[i] = MV.accBase + (MV.accPace * a.pac) / 99;
-    m.tight[i] = T.track.tightBase + (T.track.tightGain * a.mrk) / 99;
-    const reaction = SO.reactionSlowest - (SO.reactionGain * (a.pos + a.mrk)) / 198;
-    m.delay[i] = Math.min(RING - 1, Math.max(0, Math.round(reaction / stepS)));
-  }
+  initEnergy(m);
+  for (let i = 0; i < N; i++) loadPerson(m, i, i);
   applyTeamTactics(m, m.teams[0], setup.home.tactics);
   applyTeamTactics(m, m.teams[1], setup.away.tactics);
   resolveMarker(m, m.teams[0]);
@@ -275,6 +289,7 @@ function decideRole(m: SpatialMatch, i: number): number {
   if (i === b.owner) return ROLE.CARRY;
   if (i === b.receiver) return ROLE.RECEIVE;
   if (m.onball.chase[side] === i) return ROLE.RECEIVE;
+  if (m.onball.show === i && m.onball.setPiece !== SP_NONE && b.owner >= 0) return ROLE.RECEIVE;
   if (m.onball.passTarget === i && (b.state === BALL_ROLL || b.state === BALL_AIR)) return ROLE.RECEIVE;
   if (slot === 0) return ROLE.KEEPER;
   if (m.poss !== side) {
@@ -315,6 +330,15 @@ function targetFor(m: SpatialMatch, i: number): void {
       if (b.receiver === i || (m.onball.passTarget === i && (b.state === BALL_ROLL || b.state === BALL_AIR))) {
         receiveTarget(m, i, tmp); x = tmp[0]; y = tmp[1];
       } else if (m.onball.chase[side] === i) { x = m.onball.chaseX[side]; y = m.onball.chaseY[side]; }
+      else if (m.onball.show === i && b.owner >= 0) {
+        // Coming short: to showDist from the ball, on his side of it.
+        const dx = m.px[i] - b.x, dy = m.py[i] - b.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d > T.restart.showDist) {
+          x = clamp(b.x + (dx / d) * T.restart.showDist, 1, LENGTH - 1);
+          y = clamp(b.y + (dy / d) * T.restart.showDist, 1, WIDTH - 1);
+        } else { x = m.px[i]; y = m.py[i]; }
+      }
       break;
     case ROLE.PRESS: {
       const k = team.pressEngaged ? team.pressSet.indexOf(i) : -1;
@@ -430,20 +454,30 @@ function turnCut(m: SpatialMatch): void {
 
 function applyAction(m: SpatialMatch, a: SpatialAction): void {
   if (a.type === 'tactics') {
-    applyTeamTactics(m, m.teams[a.side], a.tactics);
+    const team = m.teams[a.side];
+    const was = team.formation.id;
+    applyTeamTactics(m, team, a.tactics);
+    // A new formation: everyone to the slot that suits him best.
+    if (team.formation.id !== was) assignSpots(m, team);
     resolveMarker(m, m.teams[0]);
     resolveMarker(m, m.teams[1]);
     for (let i = a.side * 11; i < a.side * 11 + 11; i++) m.nextThink[i] = m.clockMs;
-  }
+  } else if (a.type === 'sub') queueSub(m, a.side, a.outId, a.inId);
+  else cancelSub(m, a.side, a.outId);
 }
 
 /** Advance one step. Returns false once the match is over. */
 export function stepSpatial(m: SpatialMatch): boolean {
-  if (m.clockMs >= m.endMs) return false;
+  if (!periodStep(m)) return false;
   m.possChanged = false;
   while (m.pending.length > 0 && m.pending[0].ms <= m.clockMs) applyAction(m, m.pending.shift() as SpatialAction);
+  secondTick(m);
   ballStep(m);
-  if (m.ball.state === BALL_DEAD) restartStep(m);
+  shootoutStep(m);
+  if (m.ball.state === BALL_DEAD) {
+    applySubs(m, false);
+    restartStep(m);
+  }
   updateAttack(m);
   onBallStep(m);
   rulesStep(m);
@@ -485,16 +519,36 @@ export function runSeconds(m: SpatialMatch, seconds: number): void {
 // Inputs, record and replay
 // ---------------------------------------------------------------------------
 
-/** Change one side's tactics. Takes effect at the start of the next whole second. */
-export function queueTactics(m: SpatialMatch, side: Side, tactics: Tactics): SpatialAction {
-  const ms = (Math.floor(m.clockMs / 1000) + 1) * 1000;
-  const action: SpatialAction = { ms, side, type: 'tactics', tactics: copyTactics(tactics) };
+/** Queue an input for the start of the next whole second, and keep it for the record. */
+function queueAction(m: SpatialMatch, action: SpatialAction): SpatialAction {
   m.actions.push(action);
-  const queued = { ...action, tactics: copyTactics(tactics) };
+  const queued = copyAction(action);
   let k = m.pending.length;
-  while (k > 0 && m.pending[k - 1].ms > ms) k--;
+  while (k > 0 && m.pending[k - 1].ms > action.ms) k--;
   m.pending.splice(k, 0, queued);
   return action;
+}
+
+function nextSecond(m: SpatialMatch): number {
+  return (Math.floor(m.clockMs / 1000) + 1) * 1000;
+}
+
+/** Change one side's tactics. Takes effect at the start of the next whole second. */
+export function queueTactics(m: SpatialMatch, side: Side, tactics: Tactics): SpatialAction {
+  return queueAction(m, { ms: nextSecond(m), side, type: 'tactics', tactics: copyTactics(tactics) });
+}
+
+/**
+ * Ask for a substitution (player ids). From the next whole second it waits for the ball to
+ * go dead; a substitution that is not allowed then is ignored.
+ */
+export function queueSubstitution(m: SpatialMatch, side: Side, outId: string, inId: string): SpatialAction {
+  return queueAction(m, { ms: nextSecond(m), side, type: 'sub', outId, inId });
+}
+
+/** Take back a substitution that has not been made yet. */
+export function queueCancelSub(m: SpatialMatch, side: Side, outId: string): SpatialAction {
+  return queueAction(m, { ms: nextSecond(m), side, type: 'cancelSub', outId });
 }
 
 export function spatialRecord(m: SpatialMatch): SpatialRecord {
@@ -503,8 +557,13 @@ export function spatialRecord(m: SpatialMatch): SpatialRecord {
     seed: m.seed,
     mode: m.mode,
     setup: m.setup,
-    actions: m.actions.map((a) => ({ ...a, tactics: copyTactics(a.tactics) })),
+    actions: m.actions.map(copyAction),
   };
+}
+
+/** The match is over (after full time, extra time or the shootout). */
+export function spatialFinished(m: SpatialMatch): boolean {
+  return m.period === PERIOD.DONE;
 }
 
 /** Write the current positions (centimetres) into `out` at `offset`. */
@@ -551,7 +610,8 @@ export function fingerprint(m: SpatialMatch): string {
   mix(m.focusX); mix(m.focusY); mix(m.poss); mix(m.clockMs); mix(m.rng.getState());
   const ob = m.onball;
   mix(ob.decideAt); mix(ob.chase[0]); mix(ob.chase[1]); mix(ob.passTarget);
-  mix(m.score[0]); mix(m.score[1]);
+  mix(m.score[0]); mix(m.score[1]); mix(m.period); mix(m.subsUsed[0]); mix(m.subsUsed[1]);
+  for (let i = 0; i < N; i++) mix(m.energy[m.who[i]]);
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 

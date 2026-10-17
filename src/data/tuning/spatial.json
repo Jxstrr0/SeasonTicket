@@ -1,6 +1,6 @@
 {
   "_doc": "Spatial match engine starting values (docs/DESIGN.md section 17, appendix docs/history/STAGE_4_5_SKETCH_NOTES.md). Distances in metres, speeds in m/s, times in seconds unless the key ends in Ms. Five-value arrays are indexed by dial 1..5.",
-  "engineRev": 8,
+  "engineRev": 9,
   "pitch": {
     "length": 105,
     "width": 68,
@@ -507,7 +507,7 @@
     },
     "minScale": 0.0001,
     "tacticBonus": 0.3,
-    "tiredNoiseMax": 0.6,
+    "tiredNoiseMax": 0,
     "holdPenalty": 1,
     "carryTempoShare": 0.5,
     "pressureR": 2,
@@ -710,7 +710,7 @@
     "rushCorridor": 4
   },
   "restart": {
-    "_doc": "Dead-ball waits in ms. Opponents stand keepAway m from a corner or free kick and throwKeep m from a throw-in; a thrower can only throw, to a team-mate within throwRange m. Throw-ins go to the full-back on that side in our half (the wide player in theirs) if he is within throwerWithin m, else the nearest outfielder.",
+    "_doc": "Dead-ball waits in ms. Opponents stand keepAway m from a corner or free kick and throwKeep m from a throw-in; a thrower can only throw, to a team-mate within throwRange m. A set-piece taker with nobody to play it to calls the nearest team-mate short (to showDist m); after takerWaitMs he plays it to anyone. Throw-ins go to the full-back on that side in our half (the wide player in theirs) if he is within throwerWithin m, else the nearest outfielder.",
     "kickoffMs": 55000,
     "goalKickMs": 25000,
     "cornerMs": 32000,
@@ -722,6 +722,8 @@
     "throwInMs": 12000,
     "throwKeep": 2,
     "throwRange": 25,
+    "takerWaitMs": 4000,
+    "showDist": 10,
     "throwOut": 0.3,
     "throwerWithin": 25,
     "throwerU": 0.4
@@ -889,5 +891,31 @@
     "_doc": "Where a sent-off player waits, off the pitch: across from the touchline, spaced along it from halfway.",
     "across": -4,
     "spacing": 1.5
+  },
+  "periods": {
+    "_doc": "Halves of halfMinutes and extra-time halves of extraHalfMinutes (match.json clock). Stoppage time is baseS plus goalS per goal, subS per substitution, injuryS per injury, cardS per card and the time a side wasted, in minutes rounded after adding a normal draw of sd, clamped to regulation or extraTime [min, max]. A period ends once its time is up, unless a penalty is waiting or a shot is in flight. recover is the share of the energy used in a period that comes back in the break after it (half-time, before extra time, the extra-time turn-round). Shootout kicks are gapMs apart.",
+    "stoppage": { "baseS": 45, "goalS": 30, "subS": 20, "injuryS": 45, "cardS": 15, "sd": 0.6, "regulation": [1, 6], "extraTime": [0, 2] },
+    "recover": [0.25, 0.1, 0, 0],
+    "gapMs": 25000
+  },
+  "subs": {
+    "_doc": "A substitution waits for the ball to go dead (or half-time) and holds the restart up by delayMs. The player coming on starts on the touchline (across m in from it) alongM metres from halfway on his own side.",
+    "delayMs": 20000,
+    "across": 0.5,
+    "alongM": 2
+  },
+  "fatigue": {
+    "_doc": "Energy drained each second: (baseS, times keeperBase for a keeper, plus perM per metre run and perSprintM per metre sprinted) times (staBase - staGain * stamina / 99) times the weather's fatigue (match.json). Energy never drops below match.json fatigue.minEnergy and lowers every attribute but aggression by match.json attributes.fatiguePenalty * (1 - energy); lower vision, composure and positioning already make a tired player's decisions noisier, and decision.tiredNoiseMax can add more on top (0 for now: on top of the attribute drop it sent too many shots from distance).",
+    "baseS": 0.00002,
+    "keeperBase": 0.3,
+    "perM": 0.00003,
+    "perSprintM": 0.000055,
+    "staBase": 1.225,
+    "staGain": 0.45
+  },
+  "timeWasting": {
+    "_doc": "By the time-wasting dial (1..5): seconds a side adds to each of its own restarts (not kick-offs or penalties), all of it added on as stoppage, and the chance the taker is booked for it.",
+    "addS": [0, 2, 4, 7, 10],
+    "booking": [0, 0, 0, 0.015, 0.03]
   }
 }

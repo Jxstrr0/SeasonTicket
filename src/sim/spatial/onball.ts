@@ -24,12 +24,13 @@ import {
 import { secondLastOpponent } from './shape';
 import { blockEstimate, deflect, fkXg, inAttackBox, shoot, shotBar, xgHere } from './shot';
 import {
-  ATTRS, A_AGG, A_CMP, A_CRS, A_DRI, A_DUR, A_FIN, A_GKP, A_HAN, A_HEA, A_KCK, A_PAC, A_PAS, A_POS, A_REF, A_SPK, A_STR,
-  A_TCK, A_VIS, A_WRK, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_CLEAR, KICK_NONE, KICK_PASS, KICK_SHOT,
+  ATTRS, A_AGG, A_CMP, A_CRS, A_DRI, A_FIN, A_HEA, A_KCK, A_PAC, A_PAS, A_POS, A_SPK, A_STR,
+  A_TCK, A_VIS, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_CLEAR, KICK_NONE, KICK_PASS, KICK_SHOT,
   LENGTH, N, SHOT_KIND_FREE_KICK, SHOT_KIND_HEADER, SHOT_KIND_OPEN, SHOT_KIND_PENALTY, SHOT_VALUES, SP_CORNER, SP_DIRECT,
-  SP_INDIRECT, SP_NONE, SP_PENALTY, SP_THROW, WIDTH, acrossOf, clamp, depthOf, sideOf, type OnBallState, type SpatialMatch,
+  PS_COMPLETED, PS_INTERCEPT, PS_PASSES, PS_TACKLES, SP_INDIRECT, SP_NONE, SP_PENALTY, SP_THROW, WIDTH, acrossOf, clamp, depthOf,
+  pstatAdd, sideOf, type OnBallState, type SpatialMatch,
 } from './state';
-import type { Side } from './types';
+import { PERIOD, type Side } from './types';
 
 const T = SPATIAL_TUNING;
 const B = T.ball;
@@ -77,7 +78,7 @@ export function createOnBall(): OnBallState {
   return {
     carryX: 0, carryY: 0,
     decideAt: 0, readyAt: 0,
-    holdUntil: 0, pressured: false,
+    holdUntil: 0, pressured: false, show: -1,
     lastPasser: -1, passSide: 0, passKind: 0,
     passTarget: -1, aimX: 0, aimY: 0,
     passArriveMs: 0,
@@ -101,41 +102,22 @@ export function createOnBall(): OnBallState {
   };
 }
 
-/** Cache attributes, stagger the scans and face everyone up the pitch. Call before kick-off. */
+/** Stagger the scans and face everyone up the pitch. Call before kick-off, after the attributes are loaded. */
 export function initOnBall(m: SpatialMatch): void {
+  for (let i = 0; i < N; i++) initPlayerOnBall(m, i);
+}
+
+/** Scan timing and facing for the player at index i (at kick-off, or coming on). */
+export function initPlayerOnBall(m: SpatialMatch, i: number): void {
   const ob = m.onball;
-  const sides = [m.setup.home, m.setup.away];
   const slow = V.scanEvery[1], gain = V.scanEvery[1] - V.scanEvery[0];
-  for (let i = 0; i < N; i++) {
-    const a = sides[sideOf(i)].players[i % 11].attributes;
-    const o = i * ATTRS;
-    ob.attr[o + A_PAS] = a.pas;
-    ob.attr[o + A_VIS] = a.vis;
-    ob.attr[o + A_CMP] = a.cmp;
-    ob.attr[o + A_POS] = a.pos;
-    ob.attr[o + A_DRI] = a.dri;
-    ob.attr[o + A_STR] = a.str;
-    ob.attr[o + A_TCK] = a.tck;
-    ob.attr[o + A_HEA] = a.hea;
-    ob.attr[o + A_KCK] = a.kck;
-    ob.attr[o + A_PAC] = a.pac;
-    ob.attr[o + A_AGG] = a.agg;
-    ob.attr[o + A_FIN] = a.fin;
-    ob.attr[o + A_CRS] = a.crs;
-    ob.attr[o + A_REF] = a.ref;
-    ob.attr[o + A_HAN] = a.han;
-    ob.attr[o + A_GKP] = a.gkp;
-    ob.attr[o + A_WRK] = a.wrk;
-    ob.attr[o + A_SPK] = a.spk;
-    ob.attr[o + A_DUR] = a.dur;
-    ob.scanMs[i] = Math.round((slow - (gain * a.vis) / 99) * 1000);
-    ob.nextScan[i] = Math.round(m.rng.next() * ob.scanMs[i]);
-    ob.scanAt[i] = -1e9;
-    ob.faceX[i] = sideOf(i) === 0 ? 1 : -1;
-    ob.faceY[i] = 0;
-    ob.tackleReady[i] = 0;
-    ob.touchBlock[i] = 0;
-  }
+  ob.scanMs[i] = Math.round((slow - (gain * m.baseAttr[i * ATTRS + A_VIS]) / 99) * 1000);
+  ob.nextScan[i] = m.clockMs + Math.round(m.rng.next() * ob.scanMs[i]);
+  ob.scanAt[i] = -1e9;
+  ob.faceX[i] = sideOf(i) === 0 ? 1 : -1;
+  ob.faceY[i] = 0;
+  ob.tackleReady[i] = 0;
+  ob.touchBlock[i] = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -669,9 +651,12 @@ function decide(m: SpatialMatch, i: number): void {
 
   // Passes to every team-mate he can see.
   const offLine = Math.max(CV[C_LINE], CV[C_DEPTH], LENGTH / 2);
+  // A set-piece taker who has waited long enough plays it to anyone: a long throw, a longer pass.
+  const waited = dead && now - ob.readyAt >= T.restart.takerWaitMs;
   const range = thr ? T.restart.throwRange : V.base + V.perVis * CV[C_VIS];
-  const range2 = range * range;
-  const scanned = now - ob.scanAt[i] <= V.scanFresh * 1000;
+  const range2 = waited ? Infinity : range * range;
+  // He looks around before he takes it.
+  const scanned = dead || now - ob.scanAt[i] <= V.scanFresh * 1000;
   const fx = ob.faceX[i], fy = ob.faceY[i];
   const fovL = V.fovCos * Math.sqrt(fx * fx + fy * fy);
   const t0 = side * 11;
@@ -685,7 +670,8 @@ function decide(m: SpatialMatch, i: number): void {
     if (d2 > range2) continue;
     if (!scanned && fx * dx + fy * dy < fovL * Math.sqrt(d2)) continue;
     const dj = depthOf(side, jx);
-    if (dj > offLine) continue;
+    // Nobody is offside from a throw-in.
+    if (dj > offLine && !thr) continue;
     // In behind, for a runner on the shoulder of the last line.
     let td = -1;
     if (j !== t0 && dj <= CV[C_LINE] && CV[C_LINE] - dj <= P.throughShoulder) {
@@ -731,6 +717,17 @@ function decide(m: SpatialMatch, i: number): void {
   }
   const nPass = nOpt;
   const px = m.px[i], py = m.py[i];
+  // Nobody to play it to: the nearest outfield team-mate comes short.
+  if (dead && nPass === 0 && ob.show < 0) {
+    let nd2 = Infinity;
+    for (let j = t0 + 1; j < t0 + 11; j++) {
+      if (j === i || !m.on[j]) continue;
+      const ex = m.px[j] - px, ey = m.py[j] - py;
+      const e2 = ex * ex + ey * ey;
+      if (e2 < nd2) { nd2 = e2; ob.show = j; }
+    }
+    if (ob.show >= 0) m.nextThink[ob.show] = now;
+  }
   // A shot, if it is worth one: what it would score, less what blockers would take off it.
   if (!keeper && !dead && nOpt < CAP) {
     const gx = side === 0 ? LENGTH : 0;
@@ -847,7 +844,8 @@ function decide(m: SpatialMatch, i: number): void {
   c = pickTop(oScore, N);
   const Q = DC.quality;
   const q = (Q[0] * at[o + A_VIS] + Q[1] * at[o + A_CMP] + Q[2] * at[o + A_POS]) / 99;
-  const sd = DC.noise * (DC.noiseQ - q) * S;
+  // A tired player decides worse.
+  const sd = DC.noise * (DC.noiseQ - q) * S * (1 + DC.tiredNoiseMax * (1 - m.energy[m.who[i]]));
   let pick = top5[0];
   let pickS = -Infinity;
   for (let r = 0; r < c; r++) {
@@ -984,6 +982,7 @@ function launch(m: SpatialMatch, i: number, side: Side, recv: number, ax: number
   ob.passCross = cross;
   ob.lastKick = i;
   ob.passes[side]++;
+  pstatAdd(m, i, PS_PASSES);
   ob.pressured = false;
   if (cross) {
     // A cross is met as it comes down through head height, by whoever gets there.
@@ -1051,6 +1050,7 @@ function crossBlock(m: SpatialMatch, i: number, side: Side, ux: number, uy: numb
   b.strikeMs = now;
   ob.passes[side]++;
   ob.intercepted[side]++;
+  pstatAdd(m, i, PS_PASSES);
   ob.lastPasser = i;
   ob.passSide = side;
   ob.passKind = KICK_NONE;
@@ -1169,6 +1169,7 @@ function tryTackle(m: SpatialMatch, i: number, side: Side): boolean {
   if (inOwnBox((1 - side) as Side, b.x, b.y)) rate *= TK.boxMul;
   if (!m.rng.chance(rate * m.stepS)) return false;
   ob.tackles[1 - side]++;
+  pstatAdd(m, k, PS_TACKLES);
   // A foul: from the front a mistimed tackle, from the side or behind a trip. He may keep the
   // ball through it, so advantage can be played.
   const front = ahead > TK.frontSpeed;
@@ -1315,9 +1316,13 @@ function touch(m: SpatialMatch, i: number, mul: number): void {
   if (ob.passKind === KICK_PASS) {
     if (side === ob.passSide) {
       ob.completed[side]++;
+      if (ob.lastPasser >= 0) pstatAdd(m, ob.lastPasser, PS_COMPLETED);
       ob.lastRecv = i;
       ob.lastRecvFrom = ob.lastPasser;
-    } else ob.intercepted[ob.passSide]++;
+    } else {
+      ob.intercepted[ob.passSide]++;
+      pstatAdd(m, i, PS_INTERCEPT);
+    }
   }
   if (ob.lastRecv >= 0 && sideOf(ob.lastRecv) !== side) ob.lastRecv = -1;
   ob.passKind = KICK_NONE;
@@ -1531,8 +1536,10 @@ export function onBallStep(m: SpatialMatch): void {
   if (b.state === BALL_FROZEN || b.state === BALL_DEAD) return;
   const ob = m.onball;
   const now = m.clockMs;
-  m.rules.inPlayMs += m.stepMs;
-  ob.possMs[m.poss] += m.stepMs;
+  if (m.period < PERIOD.SHOOTOUT) {
+    m.rules.inPlayMs += m.stepMs;
+    ob.possMs[m.poss] += m.stepMs;
+  }
   const fm2 = V.facingMinSpeed * V.facingMinSpeed;
   for (let i = 0; i < N; i++) {
     const vx = m.vx[i], vy = m.vy[i];

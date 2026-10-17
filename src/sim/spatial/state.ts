@@ -5,7 +5,10 @@
 import type { Formation, Tactics } from '../types';
 import type { Rng } from '../rng';
 import type { LoftTable } from './ball';
-import type { GoalRecord, ShotRecord, Side, SpatialAction, SpatialEvent, SpatialMode, SpatialSetup } from './types';
+import {
+  PERIOD, personOf, type GoalRecord, type PeriodRecord, type ShootoutState, type ShotRecord, type Side, type SpatialAction, type SpatialEvent,
+  type SpatialMode, type SpatialSetup,
+} from './types';
 
 export const N = 22;
 export const LENGTH = 105;
@@ -75,8 +78,20 @@ export const SHOT_VALUES = 7;
 /** Attribute cache layout: ATTRS values per player in OnBallState.attr (filled by initOnBall). */
 export const A_PAS = 0, A_VIS = 1, A_CMP = 2, A_POS = 3, A_DRI = 4, A_STR = 5, A_TCK = 6, A_HEA = 7, A_KCK = 8, A_PAC = 9;
 export const A_AGG = 10, A_FIN = 11, A_CRS = 12, A_REF = 13, A_HAN = 14, A_GKP = 15, A_WRK = 16;
-export const A_SPK = 17, A_DUR = 18;
-export const ATTRS = 19;
+export const A_SPK = 17, A_DUR = 18, A_STA = 19;
+export const ATTRS = 20;
+
+/** Per-person match stats (SpatialMatch.pstat), PSTATS values per person code. */
+export const PS_SECS = 0, PS_PASSES = 1, PS_COMPLETED = 2, PS_KEY = 3, PS_TACKLES = 4, PS_SAVES = 5, PS_DIST = 6, PS_SPRINT = 7;
+export const PS_FOULS = 8, PS_INTERCEPT = 9;
+export const PSTATS = 10;
+
+/** A substitution waiting for the ball to go dead: person codes. */
+export interface QueuedSub {
+  side: Side;
+  out: number;
+  in: number;
+}
 
 export interface TeamState {
   side: Side;
@@ -148,6 +163,8 @@ export interface OnBallState {
   /** After this time, holding on costs the carrier (tempo). */
   holdUntil: number;
   pressured: boolean;
+  /** A team-mate coming short for a set-piece taker who has nobody to play it to, or -1. */
+  show: number;
   /** The ball in flight: who kicked it, for which side, what kind (KICK_*), and whether a pass is a cross. */
   lastPasser: number;
   passSide: number;
@@ -294,9 +311,35 @@ export interface SpatialMatch {
   subH: number;
   subN: number;
   steps: number;
+  /** Engine time since kick-off: it runs on through every period (shown times come from periodLog). */
   clockMs: number;
-  endMs: number;
   rng: Rng;
+  /** The period being played (PERIOD in types.ts), when it started, the stoppage minutes shown
+   * (-1 until the board goes up), the stoppage built up so far (ms), and the periods so far. */
+  period: number;
+  periodStart: number;
+  added: number;
+  stoppageMs: number;
+  periodLog: PeriodRecord[];
+  /** Next whole second of engine time (fatigue and minutes played are counted each second). */
+  nextSecond: number;
+  /** Per person code: energy (0..1), energy at the start of the period, index on the pitch
+   * (-1 if not on), and whether he has played (1) or has gone off (2: subbed off or sent off). */
+  energy: Float64Array;
+  periodEnergy: Float64Array;
+  at: Int8Array;
+  used: Uint8Array;
+  /** Per person code: PSTATS stats each. */
+  pstat: Float64Array;
+  /** Substitutions waiting for a stoppage, and substitutions used per side (queued ones count). */
+  subQ: QueuedSub[];
+  subsUsed: Int32Array;
+  /** Per index: unfatigued attributes (ATTRS each), and dist / sprint at the last whole second. */
+  baseAttr: Float64Array;
+  distMark: Float64Array;
+  sprintMark: Float64Array;
+  /** Penalties after extra time, or null. */
+  shootout: ShootoutState | null;
   loft: LoftTable;
   /** Loft table for crosses (a flatter flight). */
   crossLoft: LoftTable;
@@ -320,8 +363,9 @@ export interface SpatialMatch {
   delay: Int32Array;
   /** 1 while the player is on the pitch (0 once sent off). */
   on: Uint8Array;
-  /** The player at each index, as side * 11 + his place in the line-up (a keeper sent off swaps
-   * an outfielder into index side * 11). Logs and events use these. */
+  /** The person at each index (person codes, types.ts: a substitute takes the index of the
+   * player he replaces, and a keeper sent off swaps an outfielder into index side * 11). Logs
+   * and events use these. */
   who: Int32Array;
   teams: [TeamState, TeamState];
   ball: BallState;
@@ -355,8 +399,17 @@ export interface SpatialMatch {
 
 /** The id of the player at index i (through SpatialMatch.who). */
 export function idOf(m: SpatialMatch, i: number): string {
-  const w = m.who[i];
-  return (w < 11 ? m.setup.home : m.setup.away).players[w % 11].id;
+  return (personOf(m.setup, m.who[i]) as { id: string }).id;
+}
+
+/** Add to the stoppage time the referee is keeping (only while a period is being played). */
+export function addStoppage(m: SpatialMatch, ms: number): void {
+  if (m.period < PERIOD.SHOOTOUT) m.stoppageMs += ms;
+}
+
+/** Count a per-person stat for the player at index i. */
+export function pstatAdd(m: SpatialMatch, i: number, k: number, v = 1): void {
+  if (m.period < PERIOD.SHOOTOUT) m.pstat[m.who[i] * PSTATS + k] += v;
 }
 
 export function sideOf(i: number): Side {
