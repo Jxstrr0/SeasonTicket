@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import './helpers/quickCareer';
 import { advanceCareer, createCareer, orderProject, stadiumOptions, type Career } from '../src/sim/career';
 import {
   CORNER_NEIGHBOURS,

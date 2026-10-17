@@ -10,7 +10,7 @@
  * of actions give the same match, step for step, in every browser. Matches are replayed
  * from that record instead of storing position frames.
  */
-import { SPATIAL_TUNING } from '../data';
+import { MATCH_TUNING, SPATIAL_TUNING } from '../data';
 import { Rng } from '../rng';
 import type { Tactics } from '../types';
 import { boxPoint, createAttack, updateAttack } from './attack';
@@ -21,14 +21,14 @@ import { BALL_PATH, BALL_PATH_N, MET_BY, ballContacts, clearOfPath, createOnBall
 import { createRules, inOwnBox, rulesStep, wallSlot } from './rules';
 import { LINE_DEAD, kickoff, lineCross, restartStep, shotStep, touchCross } from './restart';
 import { applyTeamTactics, computeSpots, currentLine, currentOffCap, resolveMarker, writeAnchors } from './shape';
-import { applySubs, assignSpots, cancelSub, initEnergy, loadPerson, periodStep, queueSub, secondTick, shootoutStep } from './systems';
+import { applySubs, assignSpots, cancelSub, initEnergy, loadPerson, periodLength, periodStep, queueSub, secondTick, shootoutStep, startShootout } from './systems';
 import {
   ANCHORS, ATTRS, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_SHOT, LENGTH, N, PSTATS, RESTART_CORNER, RESTART_DROP,
   RESTART_FREE_KICK, RESTART_GOAL_KICK, RESTART_KICKOFF, RESTART_PENALTY, RESTART_THROW_IN, RING, SP_NONE, WIDTH, acrossOf, clamp, depthOf, sideOf, type SpatialMatch, type TeamState,
 } from './state';
 import {
   BENCH_MAX, FRAME_VALUES, PERIOD, PERSONS, ROLE, type Side, type SpatialAction, type SpatialMode, type SpatialRecord,
-  type SpatialSetup, type TeamShapeInfo,
+  type SpatialResume, type SpatialSetup, type TeamShapeInfo, personOf, whoOf, whoSide,
 } from './types';
 
 const T = SPATIAL_TUNING;
@@ -164,6 +164,99 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
   resolveMarker(m, m.teams[1]);
   initOnBall(m);
   kickoff(m, 0);
+  return m;
+}
+
+/**
+ * Restart a match from where it stood (SpatialResume), for a saved match whose record can
+ * no longer replay exactly. Played periods are logged at their regular length; the players
+ * line up in shape and the side that had the ball kicks off.
+ */
+export function resumeSpatial(setup: SpatialSetup, seed: string, mode: SpatialMode, r: SpatialResume): SpatialMatch {
+  if (r.period >= PERIOD.DONE) throw new Error('The match is finished');
+  const m = createSpatial(setup, seed, mode);
+  const R = m.rules;
+  m.at.fill(-1);
+  m.used.fill(0);
+  for (const s of [0, 1] as Side[]) {
+    const rs = r.sides[s];
+    const ids = rs.onPitch.slice(0, 11);
+    while (ids.length < 11) ids.push('');
+    // Nobody in goal: the last outfielder still on goes there.
+    if (!ids[0]) for (let k = 10; k >= 1; k--) if (ids[k]) { ids[0] = ids[k]; ids[k] = ''; break; }
+    for (const id of rs.played) {
+      const w = whoOf(setup, s, id);
+      if (w >= 0) m.used[w] = 2;
+    }
+    for (const id in rs.energy) {
+      const w = whoOf(setup, s, id);
+      if (w >= 0) m.energy[w] = Math.max(MATCH_TUNING.fatigue.minEnergy, Math.min(1, rs.energy[id]));
+    }
+    // Who stands at an empty slot (out of play): someone sent off, else anyone gone.
+    const onW = ids.map((id) => (id ? whoOf(setup, s, id) : -1));
+    const gone: number[] = [];
+    const add = (w: number) => { if (w >= 0 && !onW.includes(w) && !gone.includes(w)) gone.push(w); };
+    for (const id of rs.sentOff) add(whoOf(setup, s, id));
+    for (let w = 0; w < PERSONS; w++) if (whoSide(w) === s && m.used[w] === 2) add(w);
+    for (let w = 0; w < PERSONS; w++) if (whoSide(w) === s && personOf(setup, w)) add(w);
+    let reds = 0;
+    for (let k = 0; k < 11; k++) {
+      const i = s * 11 + k;
+      const w = onW[k];
+      if (w >= 0) {
+        loadPerson(m, i, w);
+        m.on[i] = 1;
+        R.yellow[i] = rs.booked.includes(ids[k]) ? 1 : 0;
+        continue;
+      }
+      const g = gone.shift();
+      if (g === undefined) throw new Error('Nobody to fill an empty slot');
+      loadPerson(m, i, g);
+      m.used[g] = 2;
+      m.on[i] = 0;
+      reds++;
+      m.px[i] = T.pitch.halfway + (s === 0 ? -1 : 1) * reds * T.sentOff.spacing;
+      m.py[i] = T.sentOff.across;
+      m.tx[i] = m.px[i]; m.ty[i] = m.py[i];
+    }
+    R.reds[s] = reds;
+    m.subsUsed[s] = rs.subsUsed;
+  }
+  m.periodEnergy.set(m.energy);
+  for (const s of [0, 1] as Side[]) {
+    const team = m.teams[s];
+    for (let k = 0; k < 11; k++) team.spot[k] = k;
+    applyTeamTactics(m, team, r.sides[s].tactics);
+    if (R.reds[s] > 0) assignSpots(m, team);
+  }
+  resolveMarker(m, m.teams[0]);
+  resolveMarker(m, m.teams[1]);
+  initOnBall(m);
+  // The clock: the periods already played, at their regular length.
+  const last = r.period < PERIOD.SHOOTOUT ? r.period : PERIOD.SHOOTOUT;
+  let t = 0;
+  for (let p = 0; p < last; p++) {
+    const len = periodLength(p);
+    m.periodLog.push({ period: p, startMs: t, endMs: t + len, added: 0 });
+    t += len;
+  }
+  m.score[0] = r.score[0];
+  m.score[1] = r.score[1];
+  m.period = r.period;
+  m.periodStart = t;
+  if (r.period === PERIOD.SHOOTOUT) {
+    m.clockMs = t;
+    m.steps = Math.round(t / m.stepMs);
+    m.nextSecond = t + 1000;
+    startShootout(m);
+    return m;
+  }
+  const el = Math.max(0, Math.round(r.elapsedMs / 60000) * 60000);
+  m.clockMs = t + el;
+  m.steps = Math.round(m.clockMs / m.stepMs);
+  m.nextSecond = m.clockMs + 1000;
+  m.added = r.added;
+  kickoff(m, r.poss);
   return m;
 }
 

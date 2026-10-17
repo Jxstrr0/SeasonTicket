@@ -137,7 +137,7 @@ export function secondTick(m: SpatialMatch): void {
 // ---------------------------------------------------------------------------
 
 /** Engine time a period's regular time runs for. */
-function periodLength(period: number): number {
+export function periodLength(period: number): number {
   return period < PERIOD.ET_FIRST ? HALF_MS : ET_HALF_MS;
 }
 
@@ -442,7 +442,7 @@ function kickOrder(m: SpatialMatch, side: Side): number[] {
   return order;
 }
 
-function startShootout(m: SpatialMatch): void {
+export function startShootout(m: SpatialMatch): void {
   const first: Side = m.rng.chance(SHOOT.firstKickHomeChance) ? 0 : 1;
   const so: ShootoutState = { score: [0, 0], kicks: [], order: [kickOrder(m, 0), kickOrder(m, 1)], taken: [0, 0], first, phase: 0, winner: -1 };
   m.shootout = so;

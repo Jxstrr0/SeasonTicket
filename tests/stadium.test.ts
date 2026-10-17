@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import './helpers/quickCareer';
 import {
   CAREER_VERSION,
   STAND_IDS,

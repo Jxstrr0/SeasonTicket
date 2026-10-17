@@ -171,6 +171,37 @@ export interface SpatialEvent {
   note?: 'second' | 'delay' | 'box' | 'dogso' | 'half' | 'full' | 'etHalf' | 'etFull' | 'shootout';
 }
 
+/**
+ * Where a match stood, for restarting it in the engine when its record can no longer
+ * replay exactly (docs/DESIGN.md 17.9, restart-resume): the score, clock, cards, subs and
+ * tiredness carry over, the players go back into shape and the ball goes to the side that had it.
+ */
+export interface SpatialResume {
+  /** PERIOD of play; DONE is not allowed. */
+  period: number;
+  /** Engine time played in the current period, ms (whole minutes). */
+  elapsedMs: number;
+  /** Stoppage minutes on the board, or -1 if it is not up yet. */
+  added: number;
+  score: [number, number];
+  poss: Side;
+  sides: [SpatialResumeSide, SpatialResumeSide];
+}
+
+export interface SpatialResumeSide {
+  /** Player ids by formation slot; '' for a slot left empty. */
+  onPitch: string[];
+  /** Everyone who has been on the pitch (still on, taken off or sent off). */
+  played: string[];
+  sentOff: string[];
+  /** Players on a yellow card. */
+  booked: string[];
+  /** Energy left (0..1) by player id. */
+  energy: Record<string, number>;
+  subsUsed: number;
+  tactics: Tactics;
+}
+
 /** Periods of play (SpatialMatch.period). */
 export const PERIOD = { FIRST: 0, SECOND: 1, ET_FIRST: 2, ET_SECOND: 3, SHOOTOUT: 4, DONE: 5 } as const;
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import './helpers/quickCareer';
 import { C, CAREER_VERSION, advanceCareer, createCareer, startUserMatch, type Career, type TierId } from '../src/sim/career';
 import {
   SaveError,

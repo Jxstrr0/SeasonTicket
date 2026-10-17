@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import './helpers/quickCareer';
 import {
   C,
   advanceCareer,
@@ -6,10 +7,12 @@ import {
   continueToNextSeason,
   createCareer,
   injectCash,
+  liveAction,
   ledgerTotals,
   renewContract,
   renewalTerms,
   startUserMatch,
+  stepLiveMinute,
   squadOf,
   tierOfClub,
   userBooks,
@@ -17,8 +20,6 @@ import {
   type Career,
   type TierId,
 } from '../src/sim/career';
-import { applyAction, stepMinute } from '../src/sim/match/engine';
-import { matchContext } from '../src/sim/season';
 
 const TIERS = C.tiers.order as TierId[];
 
@@ -117,15 +118,14 @@ describe('career', () => {
     while (career.phase === 'preseason') advanceCareer(career);
     const live = startUserMatch(career);
     expect(live).not.toBeNull();
-    const ctx = matchContext(career.season.league);
     const side = live!.home.teamId === career.userTeamId ? 'home' : 'away';
     expect(live![side].aiControlled).toBe(false);
-    for (let i = 0; i < 30; i++) stepMinute(live!, ctx);
+    for (let i = 0; i < 30; i++) stepLiveMinute(career);
     const tactics = { ...live![side].tactics, mentality: 4 as const };
-    applyAction(live!, ctx, { type: 'setTactics', side, tactics });
+    liveAction(career, { type: 'setTactics', side, tactics });
     const sub = live![side].bench[0];
     const off = live![side].onPitch.find((id) => id !== '');
-    if (sub && off) applyAction(live!, ctx, { type: 'substitute', side, outId: off, inId: sub });
+    if (sub && off) liveAction(career, { type: 'substitute', side, outId: off, inId: sub });
     const results = advanceCareer(career);
     expect(career.liveMatch).toBeNull();
     const mine = results.find((r) => r.homeId === career.userTeamId || r.awayId === career.userTeamId);

@@ -345,6 +345,7 @@ function startNewSeason(career: Career): void {
   career.playerSeason = {};
   career.lastUserMatch = null;
   career.liveMatch = null;
+  career.liveRecord = null;
   career.incomingBids = [];
   career.counters = {};
   career.phase = 'preseason';
