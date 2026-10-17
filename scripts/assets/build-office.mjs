@@ -14,6 +14,7 @@
 //   props.glb   every prop as a named root node, textures KTX2, geometry Meshopt
 //   people.glb  two base bodies and a few hairstyles, all on the same 65-bone rig
 //   anims.glb   only the clips the office uses, no mesh
+//   ../match/anims.glb  the clips match-day players use (built with the `match` step)
 //   *.ktx2      carpet, parquet and wall textures
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
@@ -42,6 +43,11 @@ const AMBIENTCG = ['Carpet012'];
 const CLIPS = [
   'Idle_Loop', 'Idle_Talking_Loop', 'Walk_Formal_Loop', 'Walk_Loop', 'Interact',
   'Sitting_Enter', 'Sitting_Idle_Loop', 'Sitting_Talking_Loop', 'Sitting_Exit',
+];
+/** Match day: running, jumping, the keeper's crouch and dive, and a celebration. */
+const MATCH_CLIPS = [
+  'Idle_Loop', 'Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop', 'Jump_Start', 'Jump_Loop', 'Jump_Land',
+  'Roll', 'Crouch_Idle_Loop', 'Dance_Loop', 'Hit_Chest',
 ];
 const HAIR = ['Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Long', 'Hair_Buns', 'Hair_Beard'];
 
@@ -127,16 +133,17 @@ async function buildPeople() {
   await finish(doc, join(OUT, 'people.glb'), { size: 512, normalSize: 256 });
 }
 
-async function buildAnims() {
+async function buildAnims(clips = CLIPS, out = join(OUT, 'anims.glb')) {
   const doc = await io.read(join(SRC, 'ual/Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb'));
   const root = doc.getRoot();
-  for (const anim of root.listAnimations()) if (!CLIPS.includes(anim.getName())) anim.dispose();
+  for (const anim of root.listAnimations()) if (!clips.includes(anim.getName())) anim.dispose();
   for (const node of root.listNodes()) node.setMesh(null);
   for (const mesh of root.listMeshes()) mesh.dispose();
   await doc.transform(resample(), prune({ keepLeaves: true }), dedup());
   const a = join(TMP, 'anims.glb');
   await io.write(a, doc);
-  cli('meshopt', a, join(OUT, 'anims.glb'), '--level', 'medium');
+  mkdirSync(dirname(out), { recursive: true });
+  cli('meshopt', a, out, '--level', 'medium');
 }
 
 /** ambientCG ships AO and roughness separately: pack them as R = AO, G = rough, B = metal (0). */
@@ -175,6 +182,7 @@ try {
   if (!only || only === 'people') await buildPeople();
   if (!only || only === 'anims') await buildAnims();
   if (!only || only === 'surfaces') await buildSurfaces();
+  if (!only || only === 'match') await buildAnims(MATCH_CLIPS, join(OUT, '../match/anims.glb'));
 } finally {
   rmSync(TMP, { recursive: true, force: true });
 }

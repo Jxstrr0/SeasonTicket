@@ -4,11 +4,13 @@
  * per screen frame; the view draws the players between the last two steps, keeps a running
  * clock on the pitch and flashes goals. Like the replay, it lives in one element that is
  * moved into the screen's `[data-slot="live-2d"]` slot after every render, so the canvas
- * survives the menus being rebuilt each minute.
+ * survives the menus being rebuilt each minute. With 3D on, the shared 3D match view is
+ * laid over the canvas and the 2D pitch stops drawing once the players have loaded.
  */
 import type { SpatialMatch } from '../../sim/spatial/state';
 import { clockLabel } from '../../sim/spatial/systems';
 import { PitchView, goalBanner } from '../pitch2d';
+import type { Match3D, ThreeChoice } from './match3d';
 
 const BANNER_MS = 2500;
 
@@ -25,7 +27,7 @@ export class LiveHost {
   private bannerUntil = 0;
   private clockText = '';
 
-  constructor() {
+  constructor(private readonly three: Match3D) {
     this.el = document.createElement('div');
     this.el.className = 'live-pitch';
     this.el.innerHTML = `<canvas aria-label="Top-down view of the match"></canvas>
@@ -43,9 +45,10 @@ export class LiveHost {
   }
 
   /** Shows `m` in the page's slot, or takes the view away when there is none. */
-  sync(root: ParentNode, m: SpatialMatch | null): void {
+  sync(root: ParentNode, m: SpatialMatch | null, key = '', choice: ThreeChoice | null = null): void {
     const slot = m ? root.querySelector('[data-slot="live-2d"]') : null;
     if (!slot || !m) {
+      this.three.detach(this.el);
       this.el.remove();
       return;
     }
@@ -60,12 +63,16 @@ export class LiveHost {
       this.bannerUntil = 0;
       this.banner.hidden = true;
     }
+    if (choice?.want && choice.tier) this.three.attach(this.el, this.canvas, key, m, choice);
+    else this.three.detach(this.el);
     this.fit();
   }
 
   /** Call before each engine step, so the view can blend from it. */
   beforeStep(): void {
-    if (this.m) this.view?.savePrev(this.m);
+    if (!this.m) return;
+    this.view?.savePrev(this.m);
+    this.three.savePrev(this.m);
   }
 
   /** Draw the match at `toMs` (no further than the engine has played). */
@@ -83,7 +90,8 @@ export class LiveHost {
       this.bannerUntil = 0;
       this.banner.hidden = true;
     }
-    this.view.draw(m, this.viewMs);
+    if (this.three.ready) this.three.show(m, this.viewMs);
+    else this.view.draw(m, this.viewMs);
     const text = clockLabel(m);
     if (text !== this.clockText) this.clock.textContent = this.clockText = text;
   }

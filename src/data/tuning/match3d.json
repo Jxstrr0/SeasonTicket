@@ -1,0 +1,70 @@
+{
+  "_about": "The 3D match view (Stage 5, docs/STAGE_5_MATCH_DAY.md). Read by src/render/match. Distances in metres, speeds in metres per second, angles in degrees. Stadium space: x along the pitch (0 is the centre spot), z across it (+z is the main stand, where the broadcast camera sits), y up.",
+  "camera": {
+    "_about": "The broadcast camera sits on a gantry just in front of the main stand (its front wall is at z 40) and pans to follow the ball. hfov is the horizontal field of view it keeps on any screen shape (the vertical one is clamped to minVfov-maxVfov). follow is the share of the ball's x the camera body moves; the aim follows the ball fully, out to maxX. lookZ is the share of the ball's z the aim takes. damping is how quickly it catches up (higher is snappier).",
+    "height": 20,
+    "z": 39,
+    "hfov": 34,
+    "minVfov": 22,
+    "maxVfov": 62,
+    "follow": 0.8,
+    "maxX": 42,
+    "lookZ": 0.65,
+    "damping": 2.2
+  },
+  "players": {
+    "_about": "Gaits blend by ground speed. clips are each gait's own speed in the animation; the legs are sped up or slowed to match the ground, within timeScale. Below standAt a player stands; he faces his run when faster than faceRunAt, otherwise the ball. turnRate is how quickly he turns (per second).",
+    "standAt": 0.35,
+    "faceRunAt": 1.4,
+    "gaits": [
+      { "clip": "Walk_Loop", "speed": 1.5 },
+      { "clip": "Jog_Fwd_Loop", "speed": 3.6 },
+      { "clip": "Sprint_Loop", "speed": 6.6 }
+    ],
+    "idle": "Idle_Loop",
+    "timeScale": [0.6, 1.5],
+    "turnRate": 9,
+    "heldBall": { "forward": 0.32, "height": 1.08 }
+  },
+  "kit": {
+    "_about": "Kits are painted onto the bare base body by region, measured on the model's rest pose (a T-pose, about 1.8 m tall). y is height, ax the distance out along the arms.",
+    "bootsTo": 0.115,
+    "socksTo": 0.47,
+    "shortsFrom": 0.7,
+    "waist": 1.0,
+    "neck": 1.5,
+    "sleeveTo": 0.36,
+    "keeperSleeveTo": 0.66,
+    "collar": 0.035,
+    "cuff": 0.03,
+    "boots": "#151515",
+    "keeperShorts": "#1d2029",
+    "keeperTrim": "#1d2029",
+    "gloves": "#eef1f4"
+  },
+  "looks": {
+    "_about": "Each player's skin tone, hair colour and hair, seeded from his id. Styles list the hair pieces worn together; an empty list is a shaved head.",
+    "skinTones": ["#f1d3bf", "#e3b597", "#c98f6b", "#a76f4c", "#7d4f33", "#5a3825"],
+    "hairColors": ["#1c1410", "#2b1d14", "#3a2618", "#6b4a2b", "#a07a4a", "#c9b08a"],
+    "styles": [
+      ["hair_buzzed"],
+      ["hair_buzzed"],
+      ["hair_simpleparted"],
+      ["hair_simpleparted"],
+      ["hair_buzzed", "hair_beard"],
+      ["hair_simpleparted", "hair_beard"],
+      ["hair_long"],
+      []
+    ]
+  },
+  "ball": {
+    "radius": 0.11
+  },
+  "shadow": {
+    "_about": "Soft round shadows under the players and the ball (cheaper than real shadows for 23 moving things).",
+    "player": 1.1,
+    "ball": 0.5,
+    "opacity": 0.42
+  },
+  "crowdCap": 9000
+}

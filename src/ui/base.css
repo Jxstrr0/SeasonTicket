@@ -997,6 +997,14 @@ body.office-mode .topbar { backdrop-filter: none; }
 .live-pitch canvas { position: absolute; display: block; }
 .lp-clock { position: absolute; left: 8px; top: 6px; padding: 2px 8px; border-radius: 6px; background: rgba(11, 16, 32, 0.7); font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
 .lp-clock:empty { display: none; }
+
+/* The 3D match laid over the pitch (src/ui/career/match3d.ts). The 2D pitch shows until the players have loaded. */
+.match3d { position: absolute; inset: 0; }
+.match3d-stage { position: absolute; inset: 0; visibility: hidden; }
+.match3d.on .match3d-stage { visibility: visible; }
+.match3d-stage canvas { inset: 0; }
+.match3d-loading { position: absolute; right: 8px; bottom: 6px; margin: 0; padding: 4px 10px; border-radius: 6px; background: rgba(11, 16, 32, 0.75); font-size: 0.85rem; pointer-events: none; }
+.is-3d > canvas { visibility: hidden; }
 .has-pitch .scoreboard { padding: 6px 12px; }
 .has-pitch .sb-score { font-size: 1.5rem; }
 /* Landscape phone: the score and pitch fill the height on the left, the rest scrolls on the right. */

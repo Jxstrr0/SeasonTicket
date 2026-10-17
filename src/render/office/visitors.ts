@@ -13,14 +13,12 @@ import {
   AnimationMixer,
   BoxGeometry,
   Color,
-  Float32BufferAttribute,
   Group,
   LoopRepeat,
   Matrix4,
   Mesh,
   MeshStandardMaterial,
   Object3D,
-  PropertyBinding,
   Skeleton,
   Vector3,
   type AnimationAction,
@@ -28,10 +26,10 @@ import {
   type Material,
   type SkinnedMesh,
 } from 'three';
-import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import officeTuning from '../../data/tuning/office.json';
 import type { Assets } from '../assets';
+import { addRest, restoreBoneNames, splitTrack } from '../rig';
 import type { OfficeSnapshot, OfficeVisitorCall } from './types';
 
 interface RoleLook {
@@ -470,44 +468,4 @@ export class Visitors {
     this.current = null;
     this.hitGeo.dispose();
   }
-}
-
-/**
- * Every body and hair piece in people.glb carries its own copy of the same
- * skeleton, so GLTFLoader renames the duplicate bones (Head, Head_1, ...).
- * Hair is rebound and animations play by bone name, so put the file's names
- * back. All skins share one joint order.
- */
-function restoreBoneNames(gltf: GLTF): void {
-  const json = gltf.parser.json as { skins?: { joints: number[] }[]; nodes: { name?: string }[] };
-  const names = (json.skins?.[0]?.joints ?? []).map((j) => PropertyBinding.sanitizeNodeName(json.nodes[j]?.name ?? ''));
-  gltf.scene.traverse((o) => {
-    const m = o as SkinnedMesh;
-    if (!m.isSkinnedMesh || m.skeleton.bones.length !== names.length) return;
-    m.skeleton.bones.forEach((b, i) => {
-      if (names[i]) b.name = names[i];
-    });
-  });
-}
-
-function splitTrack(name: string): [string, string] {
-  const i = name.lastIndexOf('.');
-  return [name.slice(0, i), name.slice(i + 1)];
-}
-
-/** Stores each vertex's rest-pose position (body space, metres) for the clothes shader. */
-function addRest(mesh: SkinnedMesh, bodyInverse: Matrix4): void {
-  const pos = mesh.geometry.getAttribute('position');
-  const out = new Float32Array(pos.count * 3);
-  const v = new Vector3();
-  const toBody = new Matrix4().multiplyMatrices(bodyInverse, mesh.matrixWorld);
-  for (let i = 0; i < pos.count; i++) {
-    v.fromBufferAttribute(pos, i);
-    mesh.applyBoneTransform(i, v);
-    v.applyMatrix4(toBody);
-    out[i * 3] = v.x;
-    out[i * 3 + 1] = v.y;
-    out[i * 3 + 2] = v.z;
-  }
-  mesh.geometry.setAttribute('aRest', new Float32BufferAttribute(out, 3));
 }

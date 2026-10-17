@@ -54,6 +54,9 @@ import type { MatchResult, Position, StaffRole, Tactics } from '../../sim/types'
 import { STAFF_ROLES } from '../../sim/types';
 import { coachInCharge, liveSubstitute, liveTactics, playToEnd, setCoachInCharge, stepLive, stepLiveView } from '../../game/matchday';
 import { LiveHost } from './liveHost';
+import { Match3D, type ThreeChoice } from './match3d';
+import { buildStadiumSnapshot } from './stadiumSnapshot';
+import { findMatch } from '../model';
 import { SaveError, decodeSave, encodeSave, loadCareer, saveCareer } from '../../game/save';
 import { createMatchRunner, type MatchRunner } from '../../game/matchRunner';
 import { WeekPlayer } from '../../game/week';
@@ -73,7 +76,7 @@ import { OfficeHost } from './officeHost';
 import { StadiumHost } from './stadiumHost';
 import { ReplayHost } from './replayHost';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeLivePitch, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeLivePitch, storeMatch3d, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -161,7 +164,13 @@ export class CareerApp {
   private runToken = 0;
   private liveTimer: number | null = null;
   private liveRaf = 0;
-  private readonly pitch = new LiveHost();
+  /** The 3D match, shared by the live screen and the replay so a match uses one WebGL context. */
+  private readonly match3d = new Match3D((text) => {
+    this.ui.match3dFailed = true;
+    this.ui.flash = { kind: 'error', text };
+    this.render();
+  });
+  private readonly pitch = new LiveHost(this.match3d);
   /** Set after one failed save so the warning shows once. */
   private saveWarned = false;
   /** The 3D office sits behind the menus; the menus render into uiLayer. */
@@ -169,7 +178,7 @@ export class CareerApp {
   private readonly officeLayer: HTMLElement;
   private readonly office: OfficeHost;
   private readonly stadium: StadiumHost;
-  private readonly replay = new ReplayHost();
+  private readonly replay = new ReplayHost(this.match3d);
   /** Set when a pick should also turn the 3D stadium's camera to face it. */
   private stadiumFocus = false;
   private runner: MatchRunner | null = null;
@@ -258,21 +267,41 @@ export class CareerApp {
   private syncPitch(): void {
     const { ui, career } = this;
     let m = null;
+    let three: ThreeChoice | null = null;
     if (career?.liveMatch && ui.screen === 'live' && ui.live.pitch) {
       try {
         m = liveOf(career)?.m ?? null;
       } catch {
         m = null;
       }
+      const setup = career.liveMatch.setup;
+      three = this.matchChoice(setup.homeId, setup.attendanceShare);
+      this.pitch.sync(this.uiLayer, m, setup.matchId, three);
+      return;
     }
     this.pitch.sync(this.uiLayer, m);
+  }
+
+  /** What the 3D match should show for a match at `homeId`'s ground. */
+  private matchChoice(homeId: string, crowd: number | undefined): ThreeChoice {
+    const { ui } = this;
+    const career = this.career as Career;
+    const ok = ui.quality !== 'off' && !ui.match3dFailed && !!career.stadiums[homeId];
+    return {
+      want: ok && ui.match3d,
+      tier: ok && ui.quality !== 'off' ? ui.quality : null,
+      ground: () => buildStadiumSnapshot(career, undefined, homeId, crowd),
+    };
   }
 
   /** Moves the 2D replay into its screen (if it is showing), or stops it. */
   private syncReplay(): void {
     const { ui, career } = this;
     const replay = career && ui.screen === 'replay' && ui.replayId ? replayOf(career, ui.replayId) : null;
-    this.replay.sync(this.uiLayer, replay);
+    if (!career || !replay || !ui.replayId) return this.replay.sync(this.uiLayer, null);
+    const fixture = findMatch(career.season, ui.replayId);
+    const home = fixture?.homeId ?? career.season.league.teams.find((t) => t.name === replay.record.setup.home.name)?.id ?? '';
+    this.replay.sync(this.uiLayer, replay, ui.replayId, this.matchChoice(home, fixture?.result?.attendanceShare ?? replay.record.setup.crowd));
   }
 
   /** Once the screen is idle, start the coming week's matches in the workers. */
@@ -505,7 +534,9 @@ export class CareerApp {
         storeQuality(d.quality);
         this.office.reset();
         this.stadium.reset();
+        this.match3d.reset();
         ui.stadium3dFailed = false;
+        ui.match3dFailed = false;
         // Turning 3D on (or changing tier) shows the office straight away.
         ui.inOffice = d.quality !== 'off';
         return this.render();
@@ -724,6 +755,11 @@ export class CareerApp {
       case 'live-pitch-speed': {
         const x = Number(d.x);
         if (PITCH_SPEEDS.some((s) => s.x === x)) ui.live.pitchSpeed = x;
+        return this.render();
+      }
+      case 'match-3d': {
+        ui.match3d = !ui.match3d;
+        storeMatch3d(ui.match3d);
         return this.render();
       }
       case 'live-pitch': {
