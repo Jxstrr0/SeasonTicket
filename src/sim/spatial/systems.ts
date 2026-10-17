@@ -212,7 +212,7 @@ export function matchTime(m: SpatialMatch, ms: number): { period: number; minute
   let period = m.period, start = m.periodStart;
   const log = m.periodLog;
   let k = 0;
-  while (k < log.length && ms >= log[k].endMs) k++;
+  while (k < log.length && ms > log[k].endMs) k++;
   if (k < log.length) { period = log[k].period; start = log[k].startMs; }
   else if (m.period === PERIOD.DONE && log.length > 0) { period = log[k - 1].period; start = log[k - 1].startMs; }
   if (period >= PERIOD.SHOOTOUT) return { period, minute: MT.clock.shootoutMinute, added: 0, seconds: 0 };
