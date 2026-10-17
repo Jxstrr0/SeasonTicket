@@ -5,7 +5,7 @@
  */
 import { SPATIAL_TUNING } from '../data';
 import { trackWeight } from './press';
-import { LENGTH, N, WIDTH, depthOf, type SpatialMatch } from './state';
+import { FINE_S, LENGTH, N, WIDTH, depthOf, type SpatialMatch } from './state';
 import { ROLE } from './types';
 
 const MV = SPATIAL_TUNING.move;
@@ -83,6 +83,20 @@ export function movePlayers(m: SpatialMatch): void {
     if (sp > top) { nvx *= top / sp; nvy *= top / sp; }
     m.vx[i] = nvx;
     m.vy[i] = nvy;
+    // In a long (coarse) step a player meeting the ball would run on well past the spot on its
+    // path he was going for; he gets no further past it than one fine step's run, as he would
+    // re-aim in fine steps, and keeps his speed.
+    const run = (sp > top ? top : sp) * dt;
+    const past = run - d;
+    if (dt > FINE_S && m.role[i] === ROLE.RECEIVE && m.ball.receiver === i && d > 1e-9 && past > MV.coarseOvershoot && nvx * dx + nvy * dy > 0) {
+      const over = MV.coarseOvershoot;
+      m.px[i] = m.tx[i] + (dx / d) * over;
+      m.py[i] = m.ty[i] + (dy / d) * over;
+      const moved = d + over;
+      m.dist[i] += moved;
+      if (sp > MV.sprintOver) m.sprint[i] += moved;
+      continue;
+    }
     m.px[i] += nvx * dt;
     m.py[i] += nvy * dt;
     const moved = (sp > top ? top : sp) * dt;

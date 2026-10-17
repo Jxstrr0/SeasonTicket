@@ -10,7 +10,7 @@ import { SPATIAL_TUNING } from '../data';
 import { currentOffCap, secondLastOpponent } from './shape';
 import {
   A_HEA, A_STR, A_WRK, ATTRS, BALL_AIR, BALL_DEAD, BALL_HELD, LENGTH, N, RESTART_CORNER, RESTART_FREE_KICK, WIDTH,
-  acrossOf, depthOf, sideOf, type AttackState, type SpatialMatch,
+  acrossOf, depthOf, sideOf, stepChance, type AttackState, type SpatialMatch,
 } from './state';
 import type { Side } from './types';
 
@@ -166,7 +166,7 @@ function updateRuns(m: SpatialMatch, side: Side): void {
     const d = depthOf(side, m.px[i]);
     if (d < cap - RN.shoulder || d < bd + RN.aheadOfBall) continue;
     const wrk = att[i * ATTRS + A_WRK] / 99;
-    if (!m.rng.chance(RN.rate * (RN.wrkBase + (1 - RN.wrkBase) * wrk) * m.stepS)) continue;
+    if (!m.rng.chance(stepChance(m, RN.rate * (RN.wrkBase + (1 - RN.wrkBase) * wrk)))) continue;
     const a = acrossOf(side, m.py[i]);
     at.runUntil[i] = now + RN.seconds * 1000;
     at.runNext[i] = at.runUntil[i] + RN.cooldown * 1000;

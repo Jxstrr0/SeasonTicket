@@ -17,7 +17,7 @@ import { boxPoint, createAttack, updateAttack } from './attack';
 import { flightSubstep, loftTable, loftTableAt } from './ball';
 import { movePlayers } from './move';
 import { counterTarget, coverTarget, markTarget, presserTarget, trackTarget, updatePress, updateTracking } from './press';
-import { ballContacts, clearOfPath, createOnBall, initOnBall, onBallStep, receiveTarget } from './onball';
+import { BALL_PATH, BALL_PATH_N, MET_BY, ballContacts, clearOfPath, createOnBall, initOnBall, metBeforeLine, onBallStep, receiveTarget } from './onball';
 import { createRules, inOwnBox, rulesStep, wallSlot } from './rules';
 import { LINE_DEAD, kickoff, lineCross, restartStep, shotStep, touchCross } from './restart';
 import { applyTeamTactics, computeSpots, currentLine, currentOffCap, resolveMarker, writeAnchors } from './shape';
@@ -185,13 +185,28 @@ function rollFor(b: SpatialMatch['ball'], dt: number): void {
   b.vy = uy * ns;
 }
 
+/** Adds where the ball is now to this step's flight path (BALL_PATH). */
+function pathPoint(b: SpatialMatch['ball']): void {
+  const n = BALL_PATH_N[0];
+  if (n * 6 >= BALL_PATH.length) return;
+  const o = n * 6;
+  BALL_PATH[o] = b.x; BALL_PATH[o + 1] = b.y; BALL_PATH[o + 2] = b.z;
+  BALL_PATH[o + 3] = b.vx; BALL_PATH[o + 4] = b.vy; BALL_PATH[o + 5] = b.vz;
+  BALL_PATH_N[0] = n + 1;
+}
+
 /** Fly the ball for one step. Returns true if it went dead on the way (a goal or out of play). */
 function airFor(m: SpatialMatch): boolean {
   const b = m.ball;
   const h = m.subH;
+  pathPoint(b);
   for (let k = 0; k < m.subN; k++) {
     const xa = b.x, ya = b.y, za = b.z;
-    if (b.state === BALL_ROLL) { rollFor(b, h * (m.subN - k)); return lineCross(m, xa, ya, za) === LINE_DEAD; }
+    if (b.state === BALL_ROLL) {
+      rollFor(b, h * (m.subN - k));
+      pathPoint(b);
+      return !metBeforeLine(m, xa, ya, za) && lineCross(m, xa, ya, za) === LINE_DEAD;
+    }
     flight[0] = b.x; flight[1] = b.y; flight[2] = b.z;
     flight[3] = b.vx; flight[4] = b.vy; flight[5] = b.vz;
     flightSubstep(flight, h);
@@ -213,6 +228,8 @@ function airFor(m: SpatialMatch): boolean {
       b.x = flight[0]; b.y = flight[1]; b.z = flight[2];
       b.vx = flight[3]; b.vy = flight[4]; b.vz = flight[5];
     }
+    pathPoint(b);
+    if (metBeforeLine(m, xa, ya, za)) return false;
     if (lineCross(m, xa, ya, za) === LINE_DEAD) return true;
   }
   return false;
@@ -220,6 +237,8 @@ function airFor(m: SpatialMatch): boolean {
 
 function ballStep(m: SpatialMatch): void {
   const b = m.ball;
+  BALL_PATH_N[0] = 0;
+  MET_BY[0] = -1;
   if (b.state === BALL_FROZEN || b.state === BALL_HELD || b.state === BALL_DEAD) return;
   const x0 = b.x;
   const y0 = b.y;
@@ -228,7 +247,7 @@ function ballStep(m: SpatialMatch): void {
     if (shotStep(m) || b.state === BALL_DEAD) return;
   } else if (b.state === BALL_ROLL) {
     rollFor(b, m.stepS);
-    if (lineCross(m, x0, y0, 0) === LINE_DEAD) return;
+    if (!metBeforeLine(m, x0, y0, 0) && lineCross(m, x0, y0, 0) === LINE_DEAD) return;
   } else if (airFor(m)) return;
   if (b.y < 0 || b.y > WIDTH) { touchCross(m, x0, y0); return; }
   if (b.state === BALL_HELD || m.onball.passKind === KICK_SHOT) return;

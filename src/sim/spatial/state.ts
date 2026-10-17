@@ -2,7 +2,9 @@
  * Mutable state of one spatial match. Players live in flat typed arrays indexed by
  * i = side * 11 + slot, which keeps the hot loops fast and makes the fingerprint easy.
  */
+import { SPATIAL_TUNING } from '../data';
 import type { Formation, Tactics } from '../types';
+import { powInt } from './det';
 import type { Rng } from '../rng';
 import type { LoftTable } from './ball';
 import {
@@ -405,6 +407,18 @@ export function idOf(m: SpatialMatch, i: number): string {
 /** Add to the stoppage time the referee is keeping (only while a period is being played). */
 export function addStoppage(m: SpatialMatch, ms: number): void {
   if (m.period < PERIOD.SHOOTOUT) m.stoppageMs += ms;
+}
+
+export const FINE_S = SPATIAL_TUNING.time.fineStepMs / 1000;
+
+/**
+ * The chance this step of something that happens at `rate` per second: in a coarse step, the
+ * chance it happens in any of the fine steps the step stands for, so both modes agree.
+ */
+export function stepChance(m: SpatialMatch, rate: number): number {
+  if (m.stepS <= FINE_S) return rate * m.stepS;
+  const p = rate * FINE_S;
+  return p >= 1 ? 1 : 1 - powInt(1 - p, Math.round(m.stepS / FINE_S));
 }
 
 /** Count a per-person stat for the player at index i. */

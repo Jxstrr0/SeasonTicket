@@ -28,7 +28,7 @@ import {
   A_TCK, A_VIS, BALL_AIR, BALL_DEAD, BALL_FROZEN, BALL_HELD, BALL_ROLL, KICK_CLEAR, KICK_NONE, KICK_PASS, KICK_SHOT,
   LENGTH, N, SHOT_KIND_FREE_KICK, SHOT_KIND_HEADER, SHOT_KIND_OPEN, SHOT_KIND_PENALTY, SHOT_VALUES, SP_CORNER, SP_DIRECT,
   PS_COMPLETED, PS_INTERCEPT, PS_PASSES, PS_TACKLES, SP_INDIRECT, SP_NONE, SP_PENALTY, SP_THROW, WIDTH, acrossOf, clamp, depthOf,
-  pstatAdd, sideOf, type OnBallState, type SpatialMatch,
+  pstatAdd, sideOf, stepChance, type OnBallState, type SpatialMatch,
 } from './state';
 import { PERIOD, type Side } from './types';
 
@@ -149,6 +149,22 @@ export function segmentDistance(px: number, py: number, ax: number, ay: number, 
   const dx = px - (ax + f * sx);
   const dy = py - (ay + f * sy);
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * How far along the segment from (ax, ay) to (bx, by), 0..1, the ball first comes within r of
+ * (px, py) (which it does somewhere on the segment).
+ */
+function segmentEntry(px: number, py: number, ax: number, ay: number, bx: number, by: number, r: number): number {
+  const sx = bx - ax;
+  const sy = by - ay;
+  const L2 = sx * sx + sy * sy;
+  if (L2 <= 1e-12) return 0;
+  const f = ((px - ax) * sx + (py - ay) * sy) / L2;
+  const dx = px - (ax + f * sx);
+  const dy = py - (ay + f * sy);
+  const h2 = r * r - dx * dx - dy * dy;
+  return clamp(f - (h2 > 0 ? Math.sqrt(h2 / L2) : 0), 0, 1);
 }
 
 /** In `side`'s own penalty area. */
@@ -735,7 +751,7 @@ function decide(m: SpatialMatch, i: number): void {
     if (gdx * gdx + gdy * gdy <= SH.maxRange * SH.maxRange) {
       const xg = xgHere(m, side, false);
       if (xg >= shotBar(inAttackBox(side, CV[C_BX], CV[C_BY]), at[o + A_FIN], tac.mentality)) {
-        const raw = xg * (1 - blockEstimate(m, side, CV[C_BX], CV[C_BY]) * SH.blockLoss) * SH.valueMul;
+        const raw = xg * (1 - blockEstimate(m, side, CV[C_BX], CV[C_BY]) * SH.blockLoss) * (m.mode === 'fine' ? SH.valueMul.fine : SH.valueMul.coarse);
         pushOption(K_SHOT, -1, gx, PT.goalCentreAcross, 0, 0, Math.sqrt(gdx * gdx + gdy * gdy), raw);
       }
     }
@@ -1045,6 +1061,7 @@ function crossBlock(m: SpatialMatch, i: number, side: Side, ux: number, uy: numb
   b.z = 0;
   b.vz = m.rng.float(CR.blockLift[0], CR.blockLift[1]);
   b.state = BALL_AIR;
+  if (m.rng.chance(CR.blockBehind)) deflectBehind(m, (1 - side) as Side, v, b.vz);
   b.owner = -1;
   b.receiver = -1;
   b.strikeMs = now;
@@ -1059,12 +1076,49 @@ function crossBlock(m: SpatialMatch, i: number, side: Side, ux: number, uy: numb
   ob.lastKick = k;
   ob.lastTouch = k;
   ob.touchAt = now;
-  ob.touchBlock[k] = now + C.retouchMs;
-  ob.touchBlock[i] = now + C.retouchMs;
+  ob.touchBlock[k] = Math.max(ob.touchBlock[k], now + C.retouchMs);
+  ob.touchBlock[i] = Math.max(ob.touchBlock[i], now + C.retouchMs);
   ob.chaseAt = now;
   ob.pressured = false;
   for (let j = 0; j < N; j++) m.nextThink[j] = now;
   return true;
+}
+
+/**
+ * A deflection off a defender of `defSide` that goes behind his own goal line, wide of the
+ * post nearer the ball (a corner unless someone gets to it first), at v m/s.
+ */
+export function deflectBehind(m: SpatialMatch, defSide: Side, v: number, lift: number): void {
+  const b = m.ball;
+  // Aimed at the goal line itself, so it crosses it wide of the post.
+  const gx = defSide === 0 ? 0 : LENGTH;
+  const w = HW + m.rng.float(T.deflectBehind.wide[0], T.deflectBehind.wide[1]);
+  const gy = b.y < GC ? GC - w : GC + w;
+  const dx = gx - b.x, dy = gy - b.y;
+  const d = Math.max(0.1, Math.sqrt(dx * dx + dy * dy));
+  const DB = T.deflectBehind;
+  v = outPace(d, v);
+  if (v < DB.minSpeed) v = DB.minSpeed;
+  b.vx = (dx / d) * v;
+  b.vy = (dy / d) * v;
+  b.vz = lift > DB.minLift ? lift : DB.minLift;
+  b.state = BALL_AIR;
+  // The roll already decided it beats everyone (the keeper was set for the shot or cross).
+  untouchedTillOut(m, d, v);
+}
+
+/** At least enough pace (m/s) to carry d m to a line once it has bounced and rolled. */
+function outPace(d: number, v: number): number {
+  const need = T.deflectBehind.carry * Math.sqrt(2 * B.rollDecel * d);
+  return v < need ? need : v;
+}
+
+/** A ball going out d m away at v m/s: nobody can touch it until it should be over the line. */
+function untouchedTillOut(m: SpatialMatch, d: number, v: number): void {
+  const DB = T.deflectBehind;
+  const ob = m.onball;
+  const until = m.clockMs + Math.min(DB.maxMs, (1000 * d) / v + DB.reactMs);
+  for (let j = 0; j < N; j++) if (ob.touchBlock[j] < until) ob.touchBlock[j] = until;
 }
 
 /** Hoof it upfield. Whoever is nearest the drop, ours or theirs, goes for it. */
@@ -1167,7 +1221,7 @@ function tryTackle(m: SpatialMatch, i: number, side: Side): boolean {
   if (m.teams[1 - side].pressSet.includes(k)) rate *= TK.pressMul;
   // In his own box a defender commits: there is no cover behind him.
   if (inOwnBox((1 - side) as Side, b.x, b.y)) rate *= TK.boxMul;
-  if (!m.rng.chance(rate * m.stepS)) return false;
+  if (!m.rng.chance(stepChance(m, rate * (m.mode === 'fine' ? TK.rateMul.fine : TK.rateMul.coarse)))) return false;
   ob.tackles[1 - side]++;
   pstatAdd(m, k, PS_TACKLES);
   // A foul: from the front a mistimed tackle, from the side or behind a trip. He may keep the
@@ -1193,6 +1247,31 @@ function tryTackle(m: SpatialMatch, i: number, side: Side): boolean {
   return false;
 }
 
+/** The ball goes off player j towards the touchline on side ty (-1 or 1), and out. */
+function knockOut(m: SpatialMatch, j: number, ty: number): void {
+  const b = m.ball;
+  const ob = m.onball;
+  const now = m.clockMs;
+  const th = m.rng.normalDet(0, DU.outSpread);
+  const ux = detSin(th), uy = ty * detCos(th);
+  const d = (ty < 0 ? b.y : WIDTH - b.y) / Math.abs(uy);
+  const v = outPace(d, m.rng.float(TK.looseSpeed[0], TK.looseSpeed[1]));
+  b.state = BALL_ROLL;
+  b.owner = -1;
+  b.receiver = -1;
+  b.z = 0;
+  b.vz = 0;
+  b.vx = ux * v;
+  b.vy = uy * v;
+  untouchedTillOut(m, d, v);
+  ob.lastTouch = j;
+  ob.lastKick = j;
+  ob.touchAt = now;
+  ob.chaseAt = now;
+  ob.passTarget = -1;
+  ob.passKind = KICK_NONE;
+}
+
 /** A tackle that knocks the ball loose instead of winning it cleanly. */
 function poke(m: SpatialMatch, k: number, i: number): void {
   const b = m.ball;
@@ -1207,20 +1286,26 @@ function poke(m: SpatialMatch, k: number, i: number): void {
   const ks = sideOf(k);
   const ty = b.y < TK.lineWithin ? -1 : b.y > WIDTH - TK.lineWithin ? 1 : 0;
   const gl = depthOf(ks, b.x) < TK.lineWithin && Math.abs(b.y - GC) > HW + TK.postClear;
+  let outD = 0;
   if ((ty !== 0 || gl) && m.rng.chance(TK.lineOut)) {
     const toT = ty < 0 ? b.y : WIDTH - b.y;
-    if (gl && (ty === 0 || depthOf(ks, b.x) < toT)) { fx = ks === 0 ? -1 : 1; fy = 0; } else { fx = 0; fy = ty; }
+    if (gl && (ty === 0 || depthOf(ks, b.x) < toT)) { fx = ks === 0 ? -1 : 1; fy = 0; outD = depthOf(ks, b.x); } else { fx = 0; fy = ty; outD = toT; }
   }
-  const v = m.rng.float(TK.looseSpeed[0], TK.looseSpeed[1]);
+  let v = m.rng.float(TK.looseSpeed[0], TK.looseSpeed[1]);
+  // Knocked out on purpose: hard enough to get there (along the way it actually goes).
+  const ux = fx * c - fy * s, uy = fx * s + fy * c;
+  const across = outD > 0 ? Math.abs(fy !== 0 ? uy : ux) : 0;
+  if (across > TK.outAcross) v = outPace(outD / across, v);
   b.state = BALL_ROLL;
   b.owner = -1;
   b.receiver = -1;
   b.z = 0;
   b.vz = 0;
-  b.vx = (fx * c - fy * s) * v;
-  b.vy = (fx * s + fy * c) * v;
+  b.vx = ux * v;
+  b.vy = uy * v;
   ob.touchBlock[k] = now + C.retouchMs;
   ob.touchBlock[i] = now + C.retouchMs;
+  if (across > TK.outAcross) untouchedTillOut(m, outD / across, v);
   ob.lastTouch = k;
   ob.lastKick = k;
   ob.touchAt = now;
@@ -1247,6 +1332,11 @@ export function ballContacts(m: SpatialMatch, x0: number, y0: number): void {
     if (r !== ob.passTarget && ob.passTarget >= 0) {
       const ex = b.x - b.meetX, ey = b.y - b.meetY;
       if (ex * b.vx + ey * b.vy > 0 && ex * ex + ey * ey > 1) {
+        // Unless he met it on its way past (a long step can carry it well beyond him).
+        if (b.z < C.headReach && (MET_BY[0] === r || segmentDistance(m.px[r], m.py[r], x0, y0, b.x, b.y) <= handReach(m, r, b.x, b.y))) {
+          meet(m, r, C.interceptMul);
+          return;
+        }
         m.nextThink[r] = now;
         r = ob.passTarget;
         b.receiver = r;
@@ -1256,9 +1346,9 @@ export function ballContacts(m: SpatialMatch, x0: number, y0: number): void {
         m.nextThink[r] = now;
       }
     }
-    if (b.z < C.headReach && segmentDistance(m.px[r], m.py[r], x0, y0, b.x, b.y) <= handReach(m, r, b.x, b.y)) {
+    if (b.z < C.headReach && (MET_BY[0] === r || segmentDistance(m.px[r], m.py[r], x0, y0, b.x, b.y) <= handReach(m, r, b.x, b.y))) {
       const cut = ob.passKind === KICK_PASS && sideOf(r) !== ob.passSide;
-      touch(m, r, cut ? C.interceptMul : 1);
+      meet(m, r, cut ? C.interceptMul : 1);
       return;
     }
     const stalled = b.state === BALL_ROLL && b.vx * b.vx + b.vy * b.vy < P.stallSpeed * P.stallSpeed;
@@ -1281,8 +1371,19 @@ export function ballContacts(m: SpatialMatch, x0: number, y0: number): void {
     if (d > handReach(m, i, b.x, b.y)) continue;
     if (i < 11) { if (d <= d0) { d0 = d; p0 = i; } } else if (d <= d1) { d1 = d; p1 = i; }
   }
+  const met = MET_BY[0];
+  if (met >= 0) { if (met < 11) { if (p0 < 0) p0 = met; } else if (p1 < 0) p1 = met; }
   if (p0 < 0 && p1 < 0) return;
   if (p0 >= 0 && p1 >= 0) {
+    // In a long (coarse) step the ball can pass both players; whoever it reached first by
+    // more than a fine step's worth of time simply has it, as he would in fine mode.
+    const e0 = segmentEntry(m.px[p0], m.py[p0], x0, y0, b.x, b.y, handReach(m, p0, b.x, b.y));
+    const e1 = segmentEntry(m.px[p1], m.py[p1], x0, y0, b.x, b.y, handReach(m, p1, b.x, b.y));
+    const gap = (e0 - e1) * m.stepS;
+    if (gap > C.duelWindowS || gap < -C.duelWindowS) { meet(m, gap < 0 ? p0 : p1, 1); return; }
+    // Both in reach by the end of a long step, where fine steps would mostly have seen one get
+    // there first: the nearer one, unless it is a real 50-50 (DU.coarseShare of them).
+    if (m.mode !== 'fine' && !m.rng.chance(DU.coarseShare)) { meet(m, d0 <= d1 ? p0 : p1, 1); return; }
     const a0 = ob.attr, o0 = p0 * ATTRS, o1 = p1 * ATTRS;
     const s0 = (a0[o0 + A_STR] + a0[o0 + A_PAC] + a0[o0 + A_AGG]) / 3;
     const s1 = (a0[o1 + A_STR] + a0[o1 + A_PAC] + a0[o1 + A_AGG]) / 3;
@@ -1298,10 +1399,102 @@ export function ballContacts(m: SpatialMatch, x0: number, y0: number): void {
     if (m.rng.chance(foulChance(m, f, v, FO.duel, false))) {
       if (foul(m, f, v, FOUL_DUEL, w === v)) return;
     } else if (injuryRoll(m, p0, p1, 1)) return;
-    touch(m, w, C.duelMul);
+    // Near a touchline a 50-50 often ends with the ball off the loser and out.
+    const ty = b.y < DU.lineWithin ? -1 : b.y > WIDTH - DU.lineWithin ? 1 : 0;
+    if (ty !== 0 && m.rng.chance(DU.lineOut)) { knockOut(m, w === p0 ? p1 : p0, ty); return; }
+    meet(m, w, C.duelMul);
     return;
   }
-  touch(m, p0 >= 0 ? p0 : p1, 1);
+  meet(m, p0 >= 0 ? p0 : p1, 1);
+}
+
+/**
+ * The ball has just moved from (xa, ya, za) to past a line. In a long (coarse) step it can run
+ * out straight past a player who would have reached it first; if one could (only the receiver,
+ * for a pass on its way to him), stop it where he meets it and return true, so the contacts
+ * that follow give it to him instead of the line.
+ */
+export function metBeforeLine(m: SpatialMatch, xa: number, ya: number, za: number): boolean {
+  const b = m.ball;
+  let f = 1;
+  if (b.x < 0) f = Math.min(f, xa / (xa - b.x));
+  else if (b.x > LENGTH) f = Math.min(f, (LENGTH - xa) / (b.x - xa));
+  if (b.y < 0) f = Math.min(f, ya / (ya - b.y));
+  else if (b.y > WIDTH) f = Math.min(f, (WIDTH - ya) / (b.y - ya));
+  if (f >= 1 || f < 0) return false;
+  const cx = xa + f * (b.x - xa), cy = ya + f * (b.y - ya);
+  const sx = cx - xa, sy = cy - ya;
+  const L2 = sx * sx + sy * sy;
+  const ob = m.onball;
+  const now = m.clockMs;
+  const r = b.receiver;
+  // The earliest meeting, at the point of his closest approach (the contacts then take him).
+  let best = 2, who = -1;
+  for (let i = 0; i < N; i++) {
+    if (r >= 0 ? i !== r : ob.touchBlock[i] > now || !m.on[i]) continue;
+    const t = L2 > 1e-12 ? clamp(((m.px[i] - xa) * sx + (m.py[i] - ya) * sy) / L2, 0, 1) : 0;
+    const qx = xa + t * sx, qy = ya + t * sy;
+    const dx = m.px[i] - qx, dy = m.py[i] - qy;
+    const hr = handReach(m, i, qx, qy);
+    if (dx * dx + dy * dy > hr * hr) continue;
+    if (t < best) { best = t; who = i; }
+  }
+  if (best > 1) return false;
+  const u = best * f;
+  const z = za + u * (b.z - za);
+  if (z >= C.headReach) return false;
+  b.x = xa + u * (b.x - xa);
+  b.y = ya + u * (b.y - ya);
+  b.z = z > 0 ? z : 0;
+  MET_BY[0] = who;
+  return true;
+}
+
+/**
+ * The ball's flight through the current step, one point (x, y, z, vx, vy, vz) per ball substep
+ * from where it started; BALL_PATH_N[0] counts the points. A long (coarse) step flies several
+ * substeps, and ballContacts uses this to put the ball back where a player first met it.
+ */
+export const BALL_PATH = new Float64Array(6 * 32);
+export const BALL_PATH_N = new Int32Array(1);
+/** Who metBeforeLine stopped the ball for this step (-1 for nobody); ballContacts gives it him. */
+export const MET_BY = new Int32Array(1);
+
+/**
+ * Player i is about to touch a ball that flew several substeps this step: move it back to the
+ * first point on its path within his reach and below head height, so a cross met at the far
+ * post is headed there, not taken at his feet after it has dropped (as it would be in fine mode).
+ */
+function meetOnPath(m: SpatialMatch, i: number): void {
+  const n = BALL_PATH_N[0];
+  if (n < 3) return;
+  const b = m.ball;
+  const P6 = BALL_PATH;
+  const px = m.px[i], py = m.py[i];
+  for (let k = 1; k < n; k++) {
+    const o = (k - 1) * 6, q = k * 6;
+    const ax = P6[o], ay = P6[o + 1], sx = P6[q] - ax, sy = P6[q + 1] - ay;
+    const L2 = sx * sx + sy * sy;
+    const t = L2 > 1e-12 ? clamp(((px - ax) * sx + (py - ay) * sy) / L2, 0, 1) : 0;
+    const qx = ax + t * sx, qy = ay + t * sy;
+    const z = P6[o + 2] + t * (P6[q + 2] - P6[o + 2]);
+    if (z >= C.headReach) continue;
+    const dx = px - qx, dy = py - qy;
+    const hr = handReach(m, i, qx, qy);
+    if (dx * dx + dy * dy > hr * hr) continue;
+    b.x = qx; b.y = qy; b.z = z > 0 ? z : 0;
+    b.vx = P6[o + 3] + t * (P6[q + 3] - P6[o + 3]);
+    b.vy = P6[o + 4] + t * (P6[q + 4] - P6[o + 4]);
+    b.vz = b.z > 0 ? P6[o + 5] + t * (P6[q + 5] - P6[o + 5]) : 0;
+    if (b.z > 0) b.state = BALL_AIR;
+    return;
+  }
+}
+
+/** A touch at the end of the ball's move this step, met where the player first reached it. */
+function meet(m: SpatialMatch, i: number, mul: number): void {
+  meetOnPath(m, i);
+  touch(m, i, mul);
 }
 
 /** Player i gets a touch on the ball: a catch, a clean first touch, or it gets away from him. */
