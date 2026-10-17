@@ -27,7 +27,7 @@ Each step ends with a deploy and a short report.
 |---|---|---|
 | 5.1 | **Scene:** the home ground, pitch and ball, 22 kit-coloured players running on engine positions (idle, walk, jog and sprint blended by speed, turning to face their way), a broadcast camera following the ball, and quality tiers. 3D toggle on the live and replay screens. | A live match plays in 3D on a phone at Medium. |
 | 5.2 | **Actions:** passes, shots and clearances as a leg swing timed to the engine's strike, tackles and slides, headers and jumps, keeper set position, dives, catches and parries, throw-ins, celebrations, ball spin. | Every touch of the ball reads as a touch. |
-| 5.3 | **Cameras and replays:** broadcast, owner's box, behind the goal, overhead (tactics). Automatic goal and big-chance replays from a ring buffer of frames, in slow motion with two angles. Camera buttons. | Every goal gets a replay; cameras switch without a hitch. |
+| 5.3 | **Cameras and replays:** broadcast, owner's box, behind the goal, overhead (tactics). Automatic goal and big-chance replays from a ring buffer of frames, in slow motion with two angles. Camera buttons. The highlights option (2D between big moments, 3D for each one). | Every goal gets a replay; cameras switch without a hitch. |
 | 5.4 | **3D tactics overlay:** the shape and back line drawn on the grass, tap a player for his name, energy and rating, and the subs and tactics panels over the 3D view. | The owner can manage a match without leaving 3D. |
 | 5.5 | **Atmosphere:** weather (rain, snow, wind, heat haze), floodlights at night, crowd density from attendance, crowd and stadium audio that react to chances and goals, the referee's whistle, and a commentary ticker. | The match sounds and looks like a match day. |
 | 5.6 | **Performance pass** and the Stage 5 "done when" check on a phone. | A full match can be managed and watched in 3D on a phone at Medium. |
@@ -73,12 +73,12 @@ These target a mid-range phone (about a 2022 Android) at Medium.
 - **No kick clip:** the library has none, so kicks, tackles and dives (step 5.2) are made in code on top of the running clips, by bending the leg and hip bones towards the strike.
 - **Kits:** painted on in a shader by body region, the same way the office paints suits. This covers the shirt with collar and cuffs, shorts, socks, boots, and long sleeves and gloves for keepers.
 
-## Decisions for the owner (defaults in bold)
+## Owner's decisions (2026-10-17)
 
-1. **Player look:** **Quaternius base bodies with painted kits (free, CC0, already in the game)**, or look for a dedicated CC0 footballer model later.
-2. **How much 3D:** **the full live match in 3D, plus automatic goal replays**. The alternative is a highlights-only mode, where 3D shows only the big moments and 2D plays in between. Highlights-only would use less battery and could come later as an option.
-3. **Audio:** **CC0 recorded crowd and whistle samples where good ones exist, filled in with synthesized sound**, or synthesized only (no download).
-4. **Default camera:** **broadcast (main stand, following the ball)**. Owner's box, behind goal and overhead are one tap away.
+1. **Player look:** keep the Quaternius base bodies with painted kits.
+2. **How much 3D:** the full live match in 3D with automatic goal replays, **plus a highlights option**. In highlights mode, 2D plays between the big moments and each big moment switches to 3D. It is a per-device setting next to the 3D toggle and comes with the replays in step 5.3.
+3. **Audio:** free recorded (CC0) crowd, whistle and ball sounds, each listed in `CREDITS.md`. Synthesized sound is only a stopgap where no good recording exists yet.
+4. **Cameras:** broadcast is the default, with owner's box, behind the goal and overhead as one-tap presets (step 5.3).
 
 ## Simplifications
 
