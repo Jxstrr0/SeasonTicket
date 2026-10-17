@@ -6,6 +6,8 @@
  *
  * The render code never reads the sim: this turns the engine's state into plain frames
  * (blended between two steps exactly as the 2D pitch does) and a plain scene description.
+ * The frames run a little behind the engine (MatchTape), so the players' actions can start
+ * before the engine's contact: a leg swings back before the ball leaves it.
  */
 import type { QualityTier } from '../../render/quality';
 import type { MatchFrame3D, MatchScene3D, MatchViewHandle, KitColours } from '../../render/match/view';
@@ -14,6 +16,7 @@ import type { SpatialMatch } from '../../sim/spatial/state';
 import { PERSONS, personOf, type SpatialSetup } from '../../sim/spatial/types';
 import tuning from '../../data/tuning/match3d.json';
 import { KEEPER_FILL, matchKits } from '../pitch2d';
+import { MatchTape } from './match3dTape';
 
 /** What a host is asked to show. `tier` null means 3D is not offered (Graphics: Off). */
 export interface ThreeChoice {
@@ -57,9 +60,7 @@ export class Match3D {
   private tier: QualityTier | null = null;
   private parent: HTMLElement | null = null;
   private source: { setup: SpatialSetup; ground: () => StadiumSnapshot } | null = null;
-  private readonly prevX = new Float64Array(22);
-  private readonly prevY = new Float64Array(22);
-  private readonly prevBall = new Float64Array(3);
+  private readonly tape = new MatchTape();
   private readonly f: MatchFrame3D = {
     px: new Float32Array(22),
     py: new Float32Array(22),
@@ -73,7 +74,9 @@ export class Match3D {
     ballState: 0,
     owner: -1,
     inHands: false,
+    overhead: false,
     matchMs: 0,
+    cues: [],
   };
 
   constructor(private readonly onFail: (message: string) => void) {
@@ -111,7 +114,7 @@ export class Match3D {
       this.drop();
       this.key = key;
       this.tier = choice.tier;
-      this.savePrev(m);
+      this.tape.reset(m);
     }
     this.source = { setup: m.setup, ground: choice.ground };
     if (this.status === 'idle') this.load(choice.tier, m.setup, choice.ground);
@@ -128,37 +131,18 @@ export class Match3D {
     this.handle?.pause();
   }
 
-  /** Keep the positions before the next engine step, to blend from. */
+  /** Keep the engine's state before its next step (the tape needs every step). */
   savePrev(m: SpatialMatch): void {
-    this.prevX.set(m.px);
-    this.prevY.set(m.py);
-    this.prevBall[0] = m.ball.x;
-    this.prevBall[1] = m.ball.y;
-    this.prevBall[2] = m.ball.z;
+    this.tape.capture(m);
   }
 
-  /** Draw the match as it stands at `viewMs`, between the step before and the engine's. */
+  /** Draw the match as it stood a moment before `viewMs` (the engine is at or past it). */
   show(m: SpatialMatch, viewMs: number): void {
+    this.tape.capture(m);
     const h = this.handle;
     if (!h || this.status !== 'ready') return;
-    const f = this.f;
-    const a = m.clockMs > viewMs ? Math.min(1, Math.max(0, 1 - (m.clockMs - viewMs) / m.stepMs)) : 1;
-    for (let i = 0; i < 22; i++) {
-      f.px[i] = this.prevX[i] + (m.px[i] - this.prevX[i]) * a;
-      f.py[i] = this.prevY[i] + (m.py[i] - this.prevY[i]) * a;
-      f.vx[i] = m.vx[i];
-      f.vy[i] = m.vy[i];
-      f.on[i] = m.on[i];
-      f.who[i] = m.who[i];
-    }
-    f.ballX = this.prevBall[0] + (m.ball.x - this.prevBall[0]) * a;
-    f.ballY = this.prevBall[1] + (m.ball.y - this.prevBall[1]) * a;
-    f.ballZ = this.prevBall[2] + (m.ball.z - this.prevBall[2]) * a;
-    f.ballState = m.ball.state;
-    f.owner = m.ball.owner;
-    f.inHands = m.onball.inHands;
-    f.matchMs = viewMs;
-    h.frame(f);
+    this.tape.frameAt(MatchTape.shown(viewMs), this.f);
+    h.frame(this.f);
   }
 
   /** Lets a new quality setting try again after a failure. */

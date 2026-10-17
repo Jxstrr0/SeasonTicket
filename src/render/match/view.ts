@@ -241,19 +241,26 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   const held = { x: 0, y: 0, z: 0 };
   const spinAxis = new Vector3();
   const spin = new Quaternion();
+  // A ball in the air keeps the spin it was struck with (backspin, slowly dying).
+  const airAxis = new Vector3();
+  let airRate = 0;
+  let inAir = false;
 
   const applyFrame = (f: MatchFrame3D): void => {
     const snap = snapNext;
     snapNext = false;
-    squads?.update(f, animDt, snap);
+    const dt = animDt;
+    squads?.update(f, dt, snap);
     animDt = 0;
 
     // The ball: in the keeper's hands, or where the engine has it.
     let bx = f.ballX - HALF_X;
     let bz = f.ballY - HALF_Z;
     let by = Math.max(R, f.ballZ + R);
-    if (f.inHands && f.owner >= 0 && squads) {
-      squads.hands(f.owner, held);
+    const carried = f.owner >= 0 && squads !== null && (f.inHands || f.overhead);
+    if (carried && squads) {
+      if (f.inHands) squads.hands(f.owner, held);
+      else squads.overhead(f.owner, held);
       bx = held.x;
       by = held.y;
       bz = held.z;
@@ -261,10 +268,19 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
     const dx = bx - lastBall.x;
     const dz = bz - lastBall.z;
     const d = Math.hypot(dx, dz);
-    if (!snap && d > 1e-4 && d < 30 && !f.inHands) {
+    const flying = !carried && by - R > 0.25;
+    if (!snap && !carried && d > 1e-4 && d < 30) {
       spinAxis.set(dz / d, 0, -dx / d);
-      ball.quaternion.premultiply(spin.setFromAxisAngle(spinAxis, d / R));
+      if (flying) {
+        if (!inAir) {
+          airAxis.copy(spinAxis).negate();
+          airRate = Math.min(20, (d / Math.max(dt, 1e-3)) * 0.7);
+        }
+        airRate *= Math.exp(-0.4 * dt);
+        ball.quaternion.premultiply(spin.setFromAxisAngle(airAxis, airRate * dt));
+      } else ball.quaternion.premultiply(spin.setFromAxisAngle(spinAxis, d / R));
     }
+    inAir = flying;
     ball.position.set(bx, by, bz);
     lastBall.copy(ball.position);
 
