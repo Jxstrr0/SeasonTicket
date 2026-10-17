@@ -462,6 +462,8 @@ const EPS = 1e-12;
 let cSide: Side = 0;
 const C_BX = 4, C_BY = 5, C_DEPTH = 6, C_ACROSS = 7, C_LINE = 8, C_RISK = 9, C_LOFT_OVER = 10, C_VIS = 11;
 let cAllow = true;
+/** Who passed the ball to the carrier, or -1: a return pass to him is worth less (see evalPass). */
+let cReturn = -1;
 
 function pushOption(kind: number, recv: number, x: number, y: number, lofted: number, weight: number, len: number, raw: number): void {
   const k = nOpt++;
@@ -500,6 +502,13 @@ function nearOpp2(m: SpatialMatch, j: number): number {
   }
   near2[s] = n2;
   return n2;
+}
+
+/** What a pass to j's feet keeps of its worth with a marker close to him (1 when nobody is within markWithin). */
+function markedF(m: SpatialMatch, j: number): number {
+  const n2 = nearOpp2(m, j);
+  if (n2 >= TH.markWithin * TH.markWithin) return 1;
+  return 1 - TH.markCost * (1 - Math.sqrt(n2) / TH.markWithin);
 }
 
 /** List a pass option. It is checked against the defence later, only if it could make the shortlist. */
@@ -544,7 +553,9 @@ function addPass(m: SpatialMatch, j: number, ax: number, ay: number, kind: numbe
   oTArr[k] = tArr;
   oTr[k] = tr;
   oLate[k] = lateF;
-  oUB[k] = ctrlHi * lateF * threatAt(side, ax, ay) * multHi * (kind === K_CROSS ? CR.valueMul : 1);
+  // Short of the line nobody is free in behind, so the return and marking discounts hold.
+  const ret = depth <= CV[C_LINE] ? (j === cReturn ? TH.returnMul : 1) * markedF(m, j) : 1;
+  oUB[k] = ctrlHi * lateF * threatAt(side, ax, ay) * multHi * ret * (kind === K_CROSS ? CR.valueMul : 1);
   oDone[k] = 0;
 }
 
@@ -562,9 +573,12 @@ function evalPass(m: SpatialMatch, k: number): void {
     : 1 - P.looseLoss * looseOf(m, j, v0, tArr, clamp(1 - Math.sqrt(CV[C_NEAR2]) / C.pressureWithin, 0, 1));
   const p = CV[C_PROD] * ctrl * oLate[k];
   const depth = depthOf(side, ax);
+  const behind = depth > CV[C_LINE] && CV[C_NEAR2] > TH.freeWithin * TH.freeWithin;
   let mult = TH.recvFwd;
-  if (depth > CV[C_LINE] && CV[C_NEAR2] > TH.freeWithin * TH.freeWithin) mult = TH.recvBehind;
+  if (behind) mult = TH.recvBehind;
   else if (oKind[k] === K_FEET && depth > CV[C_DEPTH] && nearOpp2(m, j) <= TH.pressedWithin * TH.pressedWithin) mult = TH.recvBack;
+  // Only a man found free in behind is worth his spot in full; a crossed-to runner is judged by his marker too.
+  if (!behind || oKind[k] === K_CROSS) mult *= (j === cReturn ? TH.returnMul : 1) * markedF(m, j);
   if (oKind[k] === K_CROSS) mult *= CR.valueMul;
   oRaw[k] = p * threatAt(side, ax, ay) * mult - (1 - p) * CV[C_RISK] * threatAt((1 - side) as Side, CV[C_LOSS_X], CV[C_LOSS_Y]);
   oDone[k] = 1;
@@ -649,6 +663,7 @@ function decide(m: SpatialMatch, i: number): void {
   // He reads the offside line with an error that shrinks with vision.
   CV[C_LINE] += m.rng.normalDet(0, (OF.readError * (99 - CV[C_VIS])) / 49);
   cAllow = ob.pressured || now >= ob.holdUntil;
+  cReturn = ob.lastRecv === i ? ob.lastRecvFrom : -1;
   nOpt = 0;
   const sp = ob.setPiece;
   // A penalty is a shot; so is a direct free kick in range that is worth one.
