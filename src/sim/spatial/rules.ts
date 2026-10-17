@@ -171,6 +171,7 @@ export function foulChance(m: SpatialMatch, f: number, v: number, base: number, 
   p *= FO.byThird[d < LENGTH / 3 ? 0 : d < (2 * LENGTH) / 3 ? 1 : 2];
   if (inOwnBox(fs, m.px[v], m.py[v])) p *= FO.ownBox;
   if (m.rules.yellow[f]) p *= FO.booked;
+  if (f < 11) p *= 1 - (1 - T.home.foulLean) * m.crowd;
   return p;
 }
 
@@ -233,6 +234,7 @@ export function foul(m: SpatialMatch, f: number, v: number, kind: number, canAdv
     const tactical = kind === FOUL_BEHIND && (m.clockMs < m.teams[vs].counterUntil || (fwd && depthOf(vs, x) >= CD.promisingDepth));
     let p = tactical ? CD.tactical : kind === FOUL_BEHIND ? CD.behind : CD.front;
     if (R.yellow[f]) p *= CD.booked;
+    if (fs === 0) p *= 1 - (1 - T.home.cardLean) * m.crowd;
     yellow = m.rng.chance(p);
   }
   // Advantage: never on a penalty or a sending-off.

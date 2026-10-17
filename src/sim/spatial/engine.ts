@@ -90,6 +90,7 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     setup,
     stepMs,
     stepS,
+    crowd: setup.crowd == null ? 0 : T.home.attendanceFloor + (1 - T.home.attendanceFloor) * Math.min(1, Math.max(0, setup.crowd)),
     subH,
     subN,
     steps: 0,

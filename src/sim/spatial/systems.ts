@@ -40,6 +40,8 @@ const ET_HALF_MS = MT.clock.extraHalfMinutes * 60000;
 const MAX_SUBS = MT.squad.maxSubs;
 const GC = T.pitch.goalCentreAcross;
 const WHISTLE = ['half', 'full', 'etHalf', 'etFull'] as const;
+/** The attributes home advantage lifts: technical and mental, not physical. */
+const HOME_ATTRS = [A_PAS, A_VIS, A_CMP, A_POS, A_DRI, A_TCK, A_HEA, A_KCK, A_FIN, A_CRS, A_REF, A_HAN, A_GKP, A_SPK];
 
 // ---------------------------------------------------------------------------
 // Players
@@ -59,6 +61,12 @@ export function loadPerson(m: SpatialMatch, i: number, w: number): void {
   b[o + A_KCK] = a.kck; b[o + A_PAC] = a.pac; b[o + A_AGG] = a.agg; b[o + A_FIN] = a.fin;
   b[o + A_CRS] = a.crs; b[o + A_REF] = a.ref; b[o + A_HAN] = a.han; b[o + A_GKP] = a.gkp;
   b[o + A_WRK] = a.wrk; b[o + A_SPK] = a.spk; b[o + A_DUR] = a.dur; b[o + A_STA] = a.sta;
+  const SS = T.skillSpread;
+  for (let k = 0; k < ATTRS; k++) b[o + k] = SS.pivot + SS.keep * (b[o + k] - SS.pivot);
+  if (i < 11 && m.crowd > 0) {
+    const up = T.home.attrPoints * m.crowd;
+    for (const k of HOME_ATTRS) b[o + k] = Math.min(99, b[o + k] + up);
+  }
   m.tight[i] = T.track.tightBase + (T.track.tightGain * a.mrk) / 99;
   const reaction = SO.reactionSlowest - (SO.reactionGain * (a.pos + a.mrk)) / 198;
   m.delay[i] = Math.min(RING - 1, Math.max(0, Math.round(reaction / m.stepS)));
