@@ -33,6 +33,14 @@ export interface OfficeSlot {
   name: string;
 }
 
+/** The newspaper's latest front page, for the TV. */
+export interface OfficeFrontPage {
+  paper: string;
+  edition: string;
+  lead: string;
+  more: string[];
+}
+
 export interface OfficeSnapshot {
   clubName: string;
   shortName: string;
@@ -63,6 +71,10 @@ export interface OfficeSnapshot {
   /** The ground seen through the window. */
   stadium: StadiumSnapshot;
   visitor: OfficeVisitorCall | null;
+  /** Null before the first edition: the TV shows the table alone. */
+  news: OfficeFrontPage | null;
+  /** Fan posts since the last edition, for the phone's badge. */
+  posts: number;
 }
 
 /** What the office asks the menus to do. */

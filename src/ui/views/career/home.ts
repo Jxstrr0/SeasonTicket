@@ -2,6 +2,8 @@
 import {
   C,
   LADDER_NAMES,
+  frontPage,
+  paperName,
   money,
   playerPayroll,
   playerName,
@@ -141,6 +143,18 @@ function renderLatestMail(career: Career): string {
   </section>`;
 }
 
+/** The latest front page, a tap from the paper. */
+function renderHeadline(career: Career): string {
+  const page = frontPage(career);
+  if (!page) return '';
+  const lead = page.items[0];
+  return `<section class="card">
+    <div class="card-title">${esc(paperName())} · ${esc(page.label)}</div>
+    <p><strong>${esc(lead.headline)}</strong></p>
+    <div class="row-actions"><button type="button" class="btn-secondary" data-action="tab" data-tab="news">Read the paper</button></div>
+  </section>`;
+}
+
 function renderOwner(career: Career): string {
   const t = userTeam(career);
   const books = userBooks(career);
@@ -162,6 +176,7 @@ export function renderHome(career: Career, ui: UiState): string {
     ${renderNextMatch(career)}
     ${renderAlerts(career)}
     ${renderLastMatch(career, ui)}
+    ${renderHeadline(career)}
     ${renderLatestMail(career)}
     ${renderOwner(career)}
   </div>`;

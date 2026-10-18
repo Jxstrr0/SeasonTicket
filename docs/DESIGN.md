@@ -384,6 +384,7 @@ Owner's decisions (2026-10-18):
 - The shootout is reduced to equal numbers after red cards. The side with more players leaves out its weakest takers, never its keeper.
 - The youth intake can take the squad past its usual 28 players. This is deliberate, a bonus that rewards investing in the academy; trim the squad by selling or releasing players if you need room.
 - Stage 6 (story layer), as answered on 2026-10-18 and listed in full in `docs/STAGE_6_EVENTS.md`: mood moves your team's match-day attributes by up to about 3%; a per-career story pace (Calm / Normal / Busy, default Normal); press conferences only for big matches and notable results; deadline day in tap-to-advance hours; the lenders are the only way to lose the club; rival owners are light characters; the tone is grounded with a touch of humour.
+- Newspaper and fan feed (Stage 6.2): one fictional paper, *The Valmere Courier*, prints a short edition every week, and made-up fans post about 4 times a week. Both are generated from templates on their own seeded stream, so they never change results. The office desk phone shows offers first and the fan feed when there are none.
 
 ---
 

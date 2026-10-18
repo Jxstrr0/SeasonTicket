@@ -1096,3 +1096,27 @@ body.office-mode .topbar { backdrop-filter: none; }
 .event-scene { max-height: calc(100dvh - 140px); overflow-y: auto; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
 .mail-body .event-card { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .mail-body .event-card > .card-title { display: none; }
+
+/* News (Stage 6.2): the Courier and the fan feed. */
+.news .segmented { margin-bottom: 12px; }
+.paper { background: #f3efe4; color: #1c1a16; border-radius: 10px; padding: 14px 16px; }
+.paper-mast { border-bottom: 3px double #1c1a16; padding-bottom: 6px; margin-bottom: 12px; text-align: center; }
+.paper-name { font-family: Georgia, "Times New Roman", serif; font-weight: 700; font-size: 1.6rem; letter-spacing: 0.02em; }
+.paper-edition { color: #5a5345; text-transform: uppercase; letter-spacing: 0.08em; }
+.story { padding: 8px 0; }
+.story-head { font-family: Georgia, "Times New Roman", serif; margin: 0 0 4px; font-size: 1.05rem; line-height: 1.25; }
+.story.lead .story-head { font-size: 1.5rem; }
+.story-body { margin: 0; color: #3a352c; }
+.story.mine .story-head::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #b8862b; margin-right: 6px; vertical-align: middle; }
+.story-grid { display: grid; gap: 4px 18px; border-top: 1px solid #c9c1ad; margin-top: 6px; padding-top: 6px; }
+@media (min-width: 640px) { .story-grid { grid-template-columns: 1fr 1fr; } }
+.story-grid .story { border-bottom: 1px solid #ddd5c2; }
+.paper-nav { justify-content: space-between; margin-top: 10px; }
+.paper-nav .btn-secondary { color: #1c1a16; border-color: #8f8672; background: transparent; }
+.paper-nav .btn-secondary:disabled { opacity: 0.4; }
+.fan-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.post { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; border-left: 4px solid var(--draw); }
+.post.tone-up { border-left-color: var(--win); }
+.post.tone-down { border-left-color: var(--loss); }
+.post-rival { background: rgba(239, 91, 91, 0.06); }
+.post-text { margin: 4px 0; }

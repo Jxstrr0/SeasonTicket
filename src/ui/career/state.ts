@@ -10,7 +10,7 @@ import atmosphere from '../../data/tuning/atmosphere.json';
 
 export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay';
 
-export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'stadium' | 'inbox' | 'league';
+export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'stadium' | 'inbox' | 'news' | 'league';
 
 export const HUB_TABS: readonly { id: HubTab; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -21,11 +21,13 @@ export const HUB_TABS: readonly { id: HubTab; label: string }[] = [
   { id: 'club', label: 'Club' },
   { id: 'stadium', label: 'Stadium' },
   { id: 'inbox', label: 'Inbox' },
+  { id: 'news', label: 'News' },
   { id: 'league', label: 'League' },
 ];
 
 export type MarketView = 'scout' | 'free' | 'bids';
 export type LeagueTab = 'table' | 'results' | 'playoffs';
+export type NewsView = 'paper' | 'feed';
 export type LivePanel = 'none' | 'subs' | 'tactics';
 /** The part of the ground picked on the Stadium tab. */
 export type StadiumPick = StandId | 'corners' | 'ground' | 'look';
@@ -283,6 +285,9 @@ export interface UiState {
   showAllEvents: boolean;
   staffRole: StaffRole | null;
   inboxOpen: string | null;
+  newsView: NewsView;
+  /** The edition shown (its weekIndex); null for the latest. */
+  newsEdition: number | null;
   stadiumPick: StadiumPick;
   stadiumView: StadiumView;
   /** True once the 3D stadium failed on this device; the plan shows instead. */
@@ -344,6 +349,8 @@ export function initialUi(): UiState {
     showAllEvents: false,
     staffRole: null,
     inboxOpen: null,
+    newsView: 'paper',
+    newsEdition: null,
     stadiumPick: 'west',
     stadiumView: 'model',
     stadium3dFailed: false,

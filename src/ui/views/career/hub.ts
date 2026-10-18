@@ -15,6 +15,7 @@ import { renderClub } from './club';
 import { renderStadium } from './stadium';
 import { renderInbox } from './inbox';
 import { renderLeague } from './league';
+import { renderNews } from './news';
 import { renderEventCard } from './story';
 
 /** The office scene: the visitor's event over the 3D room. */
@@ -168,6 +169,8 @@ function renderTab(career: Career, ui: UiState): string {
       return renderStadium(career, ui);
     case 'inbox':
       return renderInbox(career, ui);
+    case 'news':
+      return renderNews(career, ui);
     case 'league':
       return renderLeague(career, ui);
   }

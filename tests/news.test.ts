@@ -17,6 +17,7 @@ import {
 import { NEWS_TUNING, SOCIAL } from '../src/sim/data';
 import { Rng } from '../src/sim/rng';
 import { decodeSave, encodeSave, migrate } from '../src/game/save';
+import { esc } from '../src/ui/html';
 
 function newCareer(seed = 33): Career {
   const tier = C.tiers.order[1] as TierId;
@@ -148,5 +149,44 @@ describe('newspaper: one-off stories', () => {
   it('never posts as an official account', () => {
     const words = [...SOCIAL.handles.start, ...SOCIAL.handles.core, ...SOCIAL.handles.end].join(' ');
     expect(words).not.toMatch(/official|verified|admin/i);
+  });
+});
+
+describe('newspaper: screens', async () => {
+  const { initialUi } = await import('../src/ui/career/state');
+  const { renderNews } = await import('../src/ui/views/career/news');
+  const { renderHome } = await import('../src/ui/views/career/home');
+  const career = newCareer(6);
+  advanceCareer(career);
+  advanceCareer(career);
+
+  it('shows the latest paper with back issues, and the fan feed', () => {
+    const ui = initialUi();
+    const paper = renderNews(career, ui);
+    expect(paper).toContain(NEWS_TUNING.paper);
+    expect(paper).toContain(esc(frontPage(career)!.items[0].headline));
+    expect(paper).toMatch(/data-action="news-edition" data-week="\d+"/);
+    ui.newsView = 'feed';
+    const feed = renderNews(career, ui);
+    expect(feed).toContain(`@${socialFeed(career)[0].handle}`);
+  });
+
+  it('opens an older edition', () => {
+    const ui = initialUi();
+    const [latest, older] = newsEditions(career);
+    ui.newsEdition = older.weekIndex;
+    expect(renderNews(career, ui)).toContain(older.label);
+    expect(renderNews(career, ui)).not.toContain(`${latest.label} · latest`);
+  });
+
+  it('puts the lead headline on Home', () => {
+    expect(renderHome(career, initialUi())).toContain('Read the paper');
+  });
+
+  it('gives the office TV the front page', async () => {
+    const { buildOfficeSnapshot } = await import('../src/ui/career/office');
+    const snap = buildOfficeSnapshot(career);
+    expect(snap.news?.paper).toBe(NEWS_TUNING.paper);
+    expect(snap.news?.lead).toBe(frontPage(career)!.items[0].headline);
   });
 });

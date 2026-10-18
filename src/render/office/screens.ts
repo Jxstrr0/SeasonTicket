@@ -1,6 +1,6 @@
 /**
  * Canvas textures for everything in the office that shows club data: the
- * laptop (finances), the TV (league table), the whiteboard (formation), the
+ * laptop (finances), the TV (front page and table), the whiteboard (formation), the
  * phone's display and the framed crest. Each painter redraws its canvas from
  * the snapshot; the caller flags the texture for upload.
  */
@@ -139,7 +139,103 @@ export function paintTv(s: ScreenTexture, snap: OfficeSnapshot): void {
   ctx.textAlign = 'right';
   ctx.fillText(fitText(ctx, snap.weekLabel, w * 0.36), w - 28, 40);
   ctx.textAlign = 'left';
+  if (snap.news) {
+    paintFrontPage(ctx, snap, 20, 92, w * 0.6 - 30, h - 92 - 76);
+    paintMiniTable(ctx, snap, w * 0.6, 92, w * 0.4 - 20, h - 92 - 76);
+  } else paintTable(ctx, snap, w, h);
 
+  ctx.fillStyle = '#141b33';
+  ctx.fillRect(0, h - 64, w, 64);
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = `700 28px ${FONT}`;
+  ctx.fillText(fitText(ctx, snap.nextFixture ?? 'Season over', w - 56), 28, h - 32);
+  s.done();
+}
+
+/** Word-wraps into at most `lines` lines; the last one ends in an ellipsis if cut. */
+function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, lines: number): string[] {
+  const out: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/)) {
+    const next = line ? `${line} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth || !line) line = next;
+    else {
+      out.push(line);
+      line = word;
+      if (out.length === lines) break;
+    }
+  }
+  if (out.length < lines && line) out.push(line);
+  else if (out.length === lines) out[lines - 1] = fitText(ctx, `${out[lines - 1]} ${line}`, maxWidth);
+  return out;
+}
+
+function paintFrontPage(ctx: CanvasRenderingContext2D, snap: OfficeSnapshot, x: number, y: number, w: number, h: number): void {
+  const news = snap.news!;
+  ctx.fillStyle = '#f3efe4';
+  roundRect(ctx, x, y, w, h, 10);
+  ctx.fill();
+  const pad = 18;
+  ctx.fillStyle = '#1c1a16';
+  ctx.textAlign = 'center';
+  ctx.font = `700 34px Georgia, "Times New Roman", serif`;
+  ctx.fillText(fitText(ctx, news.paper, w - pad * 2), x + w / 2, y + 30);
+  ctx.fillStyle = '#5a5345';
+  ctx.font = `600 16px ${FONT}`;
+  ctx.fillText(fitText(ctx, news.edition.toUpperCase(), w - pad * 2), x + w / 2, y + 58);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#1c1a16';
+  ctx.fillRect(x + pad, y + 72, w - pad * 2, 2);
+  ctx.fillRect(x + pad, y + 77, w - pad * 2, 1);
+  ctx.font = `700 40px Georgia, "Times New Roman", serif`;
+  let ty = y + 112;
+  for (const line of wrap(ctx, news.lead, w - pad * 2, 3)) {
+    ctx.fillText(line, x + pad, ty);
+    ty += 46;
+  }
+  ctx.font = `600 22px Georgia, "Times New Roman", serif`;
+  ctx.fillStyle = '#3a352c';
+  for (const more of news.more) {
+    if (ty + 20 > y + h - 8) break;
+    ctx.fillStyle = '#c9c1ad';
+    ctx.fillRect(x + pad, ty - 14, w - pad * 2, 1);
+    ctx.fillStyle = '#3a352c';
+    ctx.fillText(fitText(ctx, more, w - pad * 2), x + pad, ty + 10);
+    ty += 40;
+  }
+}
+
+/** The top six (and us) in a narrow column beside the paper. */
+function paintMiniTable(ctx: CanvasRenderingContext2D, snap: OfficeSnapshot, x: number, y: number, w: number, h: number): void {
+  const rows = snap.table.slice(0, 6);
+  const user = snap.table.find((r) => r.user);
+  if (user && user.pos > 6) rows.push(user);
+  const rowH = Math.min(52, h / Math.max(rows.length, 1));
+  rows.forEach((r, i) => {
+    const ry = y + i * rowH;
+    if (r.user) {
+      ctx.fillStyle = snap.primary;
+      roundRect(ctx, x, ry, w, rowH - 6, 10);
+      ctx.fill();
+    } else if (i % 2 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(x, ry, w, rowH - 6);
+    }
+    const ink = r.user ? inkOn(snap.primary) : '#f4f5fa';
+    const mid = ry + (rowH - 6) / 2;
+    ctx.font = `700 26px ${FONT}`;
+    ctx.fillStyle = r.user ? ink : '#9aa3c2';
+    ctx.fillText(String(r.pos), x + 14, mid);
+    ctx.fillStyle = ink;
+    ctx.fillText(r.abbr, x + 64, mid);
+    ctx.textAlign = 'right';
+    ctx.font = `800 28px ${FONT}`;
+    ctx.fillText(String(r.points), x + w - 14, mid);
+    ctx.textAlign = 'left';
+  });
+}
+
+function paintTable(ctx: CanvasRenderingContext2D, snap: OfficeSnapshot, w: number, h: number): void {
   const rows = snap.table.slice(0, 6);
   const user = snap.table.find((r) => r.user);
   if (user && user.pos > 6) rows.push(user);
@@ -186,13 +282,6 @@ export function paintTv(s: ScreenTexture, snap: OfficeSnapshot): void {
       ctx.setLineDash([]);
     }
   });
-
-  ctx.fillStyle = '#141b33';
-  ctx.fillRect(0, h - 64, w, 64);
-  ctx.fillStyle = '#4ecdc4';
-  ctx.font = `700 28px ${FONT}`;
-  ctx.fillText(fitText(ctx, snap.nextFixture ?? 'Season over', w - 56), 28, h - 32);
-  s.done();
 }
 
 export function paintWhiteboard(s: ScreenTexture, snap: OfficeSnapshot): void {
@@ -258,8 +347,23 @@ export function paintPhone(s: ScreenTexture, snap: OfficeSnapshot): void {
     ctx.fillStyle = '#ffcf5a';
     ctx.fillText(`${snap.bids} BID${snap.bids === 1 ? '' : 'S'}`, w / 2, h / 2);
   } else {
+    // A little feed: three post cards and the count since the last edition.
     ctx.fillStyle = '#5fd39a';
-    ctx.fillText(snap.abbr, w / 2, h / 2);
+    ctx.font = `700 22px ${FONT}`;
+    ctx.fillText('FEED', w / 2, 28);
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = 'rgba(95, 211, 154, 0.18)';
+      roundRect(ctx, 12, 52 + i * 52, w - 24, 42, 8);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(95, 211, 154, 0.6)';
+      ctx.fillRect(22, 62 + i * 52, (w - 44) * (0.8 - i * 0.15), 6);
+      ctx.fillRect(22, 76 + i * 52, (w - 44) * 0.5, 6);
+    }
+    if (snap.posts > 0) {
+      ctx.fillStyle = '#5fd39a';
+      ctx.font = `700 26px ${FONT}`;
+      ctx.fillText(`${snap.posts} new`, w / 2, h - 30);
+    }
   }
   ctx.textAlign = 'left';
   s.done();
