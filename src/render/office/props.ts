@@ -265,6 +265,38 @@ export function buildProps(gltf: GLTF, tier: TierSettings, anisotropy: number): 
   credenza.receiveShadow = true;
   root.add(credenza);
 
+  // The radio on the credenza (Stage 7.2): tap to switch it on and off; the dial glows while it plays.
+  const radio = new Group();
+  radio.position.set(-1.78, 0.55, -4.7);
+  radio.rotation.y = 0.18;
+  const cream = own(new MeshStandardMaterial({ color: '#d9cdb4', roughness: 0.6, metalness: 0 }));
+  const radioBody = new Mesh(own(new RoundedBoxGeometry(0.36, 0.2, 0.13, 2, 0.025)), cream);
+  radioBody.position.y = 0.1;
+  radioBody.castShadow = true;
+  radio.add(radioBody);
+  const grille = new Mesh(own(new PlaneGeometry(0.15, 0.13)), own(new MeshStandardMaterial({ color: '#4a3a2c', roughness: 0.9, metalness: 0 })));
+  grille.position.set(-0.08, 0.1, 0.0655);
+  radio.add(grille);
+  const dialOff = own(new MeshStandardMaterial({ color: '#8a7a5c', roughness: 0.5, metalness: 0 }));
+  const dialOn = own(new MeshBasicMaterial({ color: '#ffc46b', toneMapped: false }));
+  const dial = new Mesh<PlaneGeometry, Material>(own(new PlaneGeometry(0.12, 0.05)), dialOff);
+  dial.position.set(0.09, 0.13, 0.0655);
+  radio.add(dial);
+  const knob = new Mesh(own(new SphereGeometry(0.022, 12, 8)), wood);
+  knob.position.set(0.09, 0.06, 0.066);
+  knob.scale.z = 0.5;
+  radio.add(knob);
+  const aerial = new Mesh(own(new BoxGeometry(0.006, 0.26, 0.006)), alu);
+  aerial.position.set(0.15, 0.31, -0.04);
+  aerial.rotation.z = -0.35;
+  radio.add(aerial);
+  root.add(radio);
+  hotspots.push({
+    id: 'radio',
+    hit: [radioBody, invisibleBox(0.5, 0.35, 0.3, -1.78, 0.7, -4.68)],
+    anchor: new Vector3(-1.78, 0.98, -4.66),
+  });
+
   const crestFrame = new Group();
   crestFrame.position.set(0.55, 1.65, -4.97);
   const frame = new Mesh(own(new BoxGeometry(0.74, 0.74, 0.04)), wood);
@@ -404,6 +436,7 @@ export function buildProps(gltf: GLTF, tier: TierSettings, anisotropy: number): 
       paintWhiteboard(boardTex, snap);
       paintPhone(phoneScreen, snap);
       led.visible = snap.bids > 0 || !!snap.deadline;
+      dial.material = snap.radio ? dialOn : dialOff;
       byLevel.forEach((items, lvl) => {
         for (const o of items) o.visible = snap.level >= lvl;
       });

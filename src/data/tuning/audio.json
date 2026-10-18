@@ -1,0 +1,50 @@
+{
+  "_about": "Sound outside the match engine's own crowd (Stage 7.2). mix: the starting volumes of the three sliders in the menu (0 to 1) and whether the sound starts muted. Crowd covers the match crowd and the office's room tone; effects the referee, the ball and the taps, knocks and rings; music the office radio. levels maps the old Off/Low/Medium/High setting onto the sliders for players who had it set.",
+  "mix": {
+    "muted": false,
+    "crowd": 0.65,
+    "effects": 0.65,
+    "music": 0.5
+  },
+  "oldLevels": {
+    "off": 0,
+    "low": 0.35,
+    "medium": 0.65,
+    "high": 1
+  },
+  "ui": {
+    "_about": "Made-in-code sounds (src/render/audio/synth.ts) and their gains. A tap sounds at most once per tapGapMs. The war-room clock ticks every tickMs. The press cameras fire shutterBurst clicks spread over shutterSpreadMs.",
+    "gain": {
+      "tap": 0.22,
+      "knock": 0.8,
+      "ring": 0.45,
+      "page": 0.5,
+      "shutter": 0.4,
+      "tick": 0.14
+    },
+    "tapGapMs": 60,
+    "tickMs": 1000,
+    "shutterBurst": 5,
+    "shutterSpreadMs": 1400
+  },
+  "office": {
+    "_about": "The office's sound. roomTone: the gain of the soft room air. crowd: on a home match week the match crowd's bed drifts in through the window, muffled below crowdLowpassHz. roomToneS is how long the made loop is.",
+    "roomTone": 0.12,
+    "roomToneS": 6,
+    "crowd": 0.18,
+    "crowdLowpassHz": 450,
+    "fadeS": 1.2
+  },
+  "radio": {
+    "_about": "The office radio's songs, played in turn (CC0, from OpenGameArt; see CREDITS.md). The radio's sound goes through a small speaker: below highpassHz and above lowpassHz is cut. gapS of quiet between songs.",
+    "tracks": [
+      "assets/audio/radio-cafe.mp3",
+      "assets/audio/radio-funk.mp3",
+      "assets/audio/radio-lofi.mp3"
+    ],
+    "gain": 0.55,
+    "highpassHz": 160,
+    "lowpassHz": 5200,
+    "gapS": 2.5
+  }
+}

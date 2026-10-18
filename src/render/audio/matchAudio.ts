@@ -5,12 +5,20 @@
  *
  * Two looping beds play under everything: the crowd's murmur, scaled by how full the ground
  * is, and a louder swell that rises as attacks near the box. One-shots (roars, oohs, boos,
- * whistles and kicks) go on top. Sounds load only when the first match-day screen asks for
- * them, and phones only let audio start after a tap, so `unlock` is called from tap handlers.
+ * whistles, kicks and chants) go on top. Sounds load only when the first match-day screen asks
+ * for them. It plays through the shared audio hub (hub.ts), which owns the context, the
+ * volume sliders and mute.
  */
 import tuning from '../../data/tuning/atmosphere.json';
+import { audioHub, firstSound, type Bus } from './hub';
 
 const T = tuning.sound;
+const EFFECTS = new Set<string>(T.effects);
+
+/** Whistles and the ball go on the effects slider; everything the crowd makes on the crowd's. */
+export function busOf(key: SoundKey): Bus {
+  return EFFECTS.has(key) ? 'effects' : 'crowd';
+}
 
 export type SoundKey = keyof typeof T.files;
 type LoopKey = keyof typeof T.loops;
@@ -24,100 +32,42 @@ export interface PlayOptions {
   far?: boolean;
 }
 
-/** Below this the start of a decoded file is the encoder's padding, not the recording. */
-const SILENT = 1e-4;
-
-type AudioCtor = typeof AudioContext;
-
-function audioContextClass(): AudioCtor | null {
-  const g = globalThis as { AudioContext?: AudioCtor; webkitAudioContext?: AudioCtor };
-  return g.AudioContext ?? g.webkitAudioContext ?? null;
-}
-
-/** First sample (in seconds) louder than the encoder's padding. */
-function firstSound(buf: AudioBuffer): number {
-  const x = buf.getChannelData(0);
-  for (let i = 0; i < x.length; i++) if (Math.abs(x[i]) > SILENT) return i / buf.sampleRate;
-  return 0;
-}
-
 export class MatchAudio {
-  private ctx: AudioContext | null = null;
-  private master: GainNode | null = null;
   private readonly buffers = new Map<SoundKey, AudioBuffer[]>();
   private loading: Promise<void> | null = null;
   private readonly beds = new Map<LoopKey, { src: AudioBufferSourceNode; gain: GainNode }>();
-  private level = 0;
   private crowd = 0.6;
+  /** The crowd's loudness on top of the ground's fill: a derby is louder. */
+  private boost = 1;
   private excite = 0;
   private paused = true;
   private duck = 1;
-  private failed = false;
   /** A match screen wants sound (between `prepare` and `stop`). */
   private active = false;
-
-  /** The browser can play sound at all. */
-  static get supported(): boolean {
-    return audioContextClass() !== null;
-  }
-
-  /** Volume 0 to 1 (0 stops everything). */
-  setLevel(level: number): void {
-    this.level = Math.max(0, Math.min(1, level));
-    if (this.level === 0) {
-      void this.ctx?.suspend().catch(() => undefined);
-      return;
-    }
-    this.ramp(this.master?.gain, this.level);
-    if (this.active) this.prepare();
-  }
-
-  /**
-   * Wake the audio context inside a tap: phones only let sound start in one, and after that
-   * it can be started and stopped freely. Off a match screen it goes straight back to sleep.
-   */
-  unlock(): void {
-    const ctx = this.context();
-    if (!ctx || ctx.state === 'running') return;
-    void ctx.resume().then(
-      () => {
-        if (!this.active) void ctx.suspend().catch(() => undefined);
-      },
-      () => undefined,
-    );
-  }
 
   /** A match screen opened: load the sounds (once) and let them play. */
   prepare(): void {
     this.active = true;
-    if (!this.context()) return;
+    if (!audioHub.context()) return;
+    audioHub.hold('match', true);
     void this.load();
     this.mixBeds();
   }
 
-  private context(): AudioContext | null {
-    if (this.level === 0 || this.failed) return null;
-    if (this.ctx) return this.ctx;
-    const Ctor = audioContextClass();
-    if (!Ctor) return null;
-    // On iPhones, follow the ring/silent switch and leave the owner's music playing.
-    const session = (navigator as { audioSession?: { type: string } }).audioSession;
-    if (session) session.type = 'ambient';
-    try {
-      this.ctx = new Ctor();
-    } catch {
-      this.failed = true;
-      return null;
-    }
-    this.master = this.ctx.createGain();
-    this.master.gain.value = this.level;
-    this.master.connect(this.ctx.destination);
-    return this.ctx;
+  /** The mix changed (unmuted, say): start again if a match screen is open. */
+  refresh(): void {
+    if (this.active) this.prepare();
   }
 
   /** How full the ground is (0 to 1): the bed's loudness. */
   setCrowd(share: number): void {
     this.crowd = Math.max(0, Math.min(1, share));
+    this.mixBeds();
+  }
+
+  /** How much louder than its fill the crowd is (1 normally, more at a derby). */
+  setBoost(boost: number): void {
+    this.boost = Math.max(0, boost);
     this.mixBeds();
   }
 
@@ -138,8 +88,7 @@ export class MatchAudio {
 
   /** Quieten the beds for a moment under a big one-shot (a goal's roar). */
   duckBeds(amount: number, seconds: number): void {
-    const ctx = this.ctx;
-    if (!ctx) return;
+    if (!this.active) return;
     this.duck = amount;
     this.mixBeds();
     window.setTimeout(() => {
@@ -149,9 +98,9 @@ export class MatchAudio {
   }
 
   play(key: SoundKey, opts: PlayOptions = {}): void {
-    const ctx = this.ctx;
-    const out = this.master;
-    if (!ctx || !out || this.level === 0 || ctx.state !== 'running') return;
+    const ctx = audioHub.context();
+    const out = audioHub.bus(busOf(key));
+    if (!ctx || !out || !this.active || ctx.state !== 'running' || !audioHub.audible(busOf(key))) return;
     const list = this.buffers.get(key);
     if (!list?.length) return;
     const buf = list[Math.floor(Math.random() * list.length)];
@@ -159,7 +108,7 @@ export class MatchAudio {
     src.buffer = buf;
     src.playbackRate.value = opts.rate ?? 1;
     const gain = ctx.createGain();
-    gain.gain.value = (T.gain[key] ?? 1) * (opts.gain ?? 1);
+    gain.gain.value = (T.gain[key] ?? 1) * (opts.gain ?? 1) * (busOf(key) === 'crowd' ? this.boost : 1);
     let node: AudioNode = src;
     if (opts.far) {
       const lp = ctx.createBiquadFilter();
@@ -191,54 +140,34 @@ export class MatchAudio {
       }
     }
     this.beds.clear();
-    void this.ctx?.suspend().catch(() => undefined);
-  }
-
-  /** The page went to the background: no sound until it comes back. */
-  sleep(hidden: boolean): void {
-    if (!this.ctx) return;
-    if (hidden) void this.ctx.suspend().catch(() => undefined);
-    else if (this.active && this.level > 0) void this.ctx.resume().catch(() => undefined);
+    audioHub.hold('match', false);
   }
 
   private load(): Promise<void> {
-    const ctx = this.ctx;
-    if (this.loading || !ctx) return this.loading ?? Promise.resolve();
-    const base = import.meta.env.BASE_URL;
-    const fetchOne = (path: string): Promise<AudioBuffer> =>
-      fetch(`${base}${path}`)
-        .then((r) => {
-          if (!r.ok) throw new Error(`${path}: ${r.status}`);
-          return r.arrayBuffer();
-        })
-        // The callback form works on older Safari as well as the promise form elsewhere.
-        .then(
-          (bytes) =>
-            new Promise<AudioBuffer>((ok, fail) => {
-              // Newer browsers also return a promise, which rejects alongside `fail`.
-              const p = ctx.decodeAudioData(bytes, ok, (err) => fail(err ?? new Error(`${path}: could not decode`))) as Promise<AudioBuffer> | undefined;
-              p?.catch(() => undefined);
-            }),
-        );
+    if (this.loading || !audioHub.context()) return this.loading ?? Promise.resolve();
     const keys = Object.keys(T.files) as SoundKey[];
     this.loading = Promise.all(
       keys.map((key) =>
-        Promise.all(T.files[key].map(fetchOne)).then(
+        Promise.all(T.files[key].map((path) => audioHub.load(path))).then(
           (list) => void this.buffers.set(key, list),
           (err: unknown) => console.warn('Match sound did not load:', err),
         ),
       ),
-    ).then(() => this.mixBeds());
+    ).then(() => {
+      // Try again next time for any that failed.
+      if (this.buffers.size < keys.length) this.loading = null;
+      this.mixBeds();
+    });
     return this.loading;
   }
 
   /** Start the looping beds once they have loaded, and set their gains. */
   private mixBeds(): void {
-    const ctx = this.ctx;
-    const out = this.master;
+    const ctx = audioHub.context();
+    const out = audioHub.bus('crowd');
     if (!ctx || !out || !this.active) return;
     const playing = !this.paused;
-    const crowd = T.crowdFloor + (1 - T.crowdFloor) * this.crowd;
+    const crowd = (T.crowdFloor + (1 - T.crowdFloor) * this.crowd) * this.boost;
     const want: Record<LoopKey, number> = {
       bed: T.gain.bed * crowd * (playing ? 1 : T.pausedBed) * (this.duck < 1 ? T.excite.bedDuck : 1),
       swell: playing ? T.gain.swell * crowd * this.excite * this.duck : 0,
@@ -261,14 +190,11 @@ export class MatchAudio {
         bed = { src, gain };
         this.beds.set(key, bed);
       }
-      this.ramp(bed.gain.gain, want[key]);
+      this.ramp(ctx, bed.gain.gain, want[key]);
     }
-    if (this.level > 0 && ctx.state !== 'running' && document.visibilityState !== 'hidden') void ctx.resume().catch(() => undefined);
   }
 
-  private ramp(param: AudioParam | undefined, value: number): void {
-    const ctx = this.ctx;
-    if (!param || !ctx) return;
+  private ramp(ctx: AudioContext, param: AudioParam, value: number): void {
     param.cancelScheduledValues(ctx.currentTime);
     param.setTargetAtTime(value, ctx.currentTime, T.fadeS / 3);
   }

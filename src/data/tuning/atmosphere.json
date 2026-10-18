@@ -1,19 +1,22 @@
 {
   "_about": "Match-day atmosphere (Stage 5.5): crowd and referee sound, the commentary ticker, weather on screen and evening kick-offs. All presentation: none of it changes a result. Sounds are CC0 recordings listed in CREDITS.md; gains are 0 to 1 before the owner's sound level.",
   "sound": {
-    "_about": "files: per sound, its variants (one is picked at random each time). loops: the length in seconds of each looping bed as baked by scripts/assets/build-audio.py. levels: the Sound setting in the menu. The bed's gain follows the crowd share (crowdFloor at an empty ground, 1 when full) and drops to pausedBed while the match is paused. Kicks only sound up to kicksUpToSpeed, so a fast-forward is not a rattle.",
+    "_about": "files: per sound, its variants (one is picked at random each time). loops: the length in seconds of each looping bed as baked by scripts/assets/build-audio.py. effects: the sounds on the Effects slider (the rest are on Crowd). The bed's gain follows the crowd share (crowdFloor at an empty ground, 1 when full) and drops to pausedBed while the match is paused. Kicks only sound up to kicksUpToSpeed, so a fast-forward is not a rattle.",
     "files": {
-      "bed": ["audio/bed.mp3"],
-      "swell": ["audio/swell.mp3"],
-      "roar": ["audio/roar-1.mp3", "audio/roar-2.mp3", "audio/roar-3.mp3"],
-      "ooh": ["audio/ooh-1.mp3", "audio/ooh-2.mp3"],
-      "groan": ["audio/groan.mp3"],
-      "boo": ["audio/boo.mp3"],
-      "whistle": ["audio/whistle.mp3"],
-      "whistleLong": ["audio/whistle-long.mp3"],
-      "whistleEnd": ["audio/whistle-end.mp3"],
-      "kick": ["audio/kick-1.mp3", "audio/kick-2.mp3"]
+      "bed": ["assets/audio/bed.mp3"],
+      "swell": ["assets/audio/swell.mp3"],
+      "roar": ["assets/audio/roar-1.mp3", "assets/audio/roar-2.mp3", "assets/audio/roar-3.mp3"],
+      "ooh": ["assets/audio/ooh-1.mp3", "assets/audio/ooh-2.mp3"],
+      "groan": ["assets/audio/groan.mp3"],
+      "boo": ["assets/audio/boo.mp3"],
+      "whistle": ["assets/audio/whistle.mp3"],
+      "whistleLong": ["assets/audio/whistle-long.mp3"],
+      "whistleEnd": ["assets/audio/whistle-end.mp3"],
+      "kick": ["assets/audio/kick-1.mp3", "assets/audio/kick-2.mp3"],
+      "chant": ["assets/audio/chant-1.mp3", "assets/audio/chant-2.mp3"],
+      "chantAway": ["assets/audio/chant-away.mp3"]
     },
+    "effects": ["whistle", "whistleLong", "whistleEnd", "kick"],
     "loops": { "bed": 40, "swell": 24 },
     "gain": {
       "bed": 0.5,
@@ -25,14 +28,24 @@
       "whistle": 0.6,
       "whistleLong": 0.65,
       "whistleEnd": 0.7,
-      "kick": 0.5
+      "kick": 0.5,
+      "chant": 0.6,
+      "chantAway": 0.3
     },
-    "levels": { "off": 0, "low": 0.35, "medium": 0.65, "high": 1 },
-    "defaultLevel": "medium",
     "crowdFloor": 0.3,
     "pausedBed": 0.45,
     "kicksUpToSpeed": 2,
     "fadeS": 0.6,
+    "chants": {
+      "_about": "Between the big moments the home end sings, and now and then the away end answers from the far side (muffled). The next chant comes everyS[0] to everyS[1] seconds of real play after the last, only while the swell is below maxExcite; awayShare of them are the away end's. At a derby (or against a rival) the crowd is derbyBoost (rivalBoost) louder and sings derbyEvery times as often. A fuller ground sings louder: gain scales from emptyGain at an empty ground to 1 when full.",
+      "everyS": [30, 70],
+      "maxExcite": 0.45,
+      "awayShare": 0.3,
+      "emptyGain": 0.35,
+      "derbyBoost": 1.25,
+      "rivalBoost": 1.12,
+      "derbyEvery": 0.6
+    },
     "excite": {
       "_about": "How loud the crowd swell gets: the side on the ball's depth (metres from its own goal) from `from` to `to` takes it from 0 to 1, the away side's attacks count `awayWeight` (the home end gets nervous, not loud). It rises over riseS and falls over fallS; a home goal holds it up for goalHoldS.",
       "from": 60,

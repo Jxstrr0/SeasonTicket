@@ -1,6 +1,6 @@
 # Stage 7: Polish and Launch (plan)
 
-**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 is built (see "Build notes").
+**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 and 7.2 are built (see "Build notes").
 
 **Done when (from CLAUDE.md):** ready to share publicly as a free web game.
 
@@ -88,6 +88,26 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 **Help.** A Help screen with 29 short answers in six groups (getting started, money and the lenders, players and transfers, match day, the club and the story, phone and settings), from `src/data/help/help.json`. Numbers in the answers (the wage cap, tax rates, the lenders' deadline, squad limits, the homegrown minimum) are filled from the tuning files, so they stay right after the balance pass. Tap a question to open it. It is reachable from the menu (Help, at the top) and from the title screen (How to play), and works the same with Graphics Off.
 
 **Tests.** `tests/tips.test.ts` (13 tests): every tip and hub tab is covered, the order of tips on a screen, once-only and reset, the stored record survives garbled storage, and every help answer is filled with no `{name}` left over and no "click" or "hover". Checked in the browser at 740 by 360 (plain menus) and 844 by 390 (3D office and match): every tip showed once, a second visit showed none, reset and No more tips worked, no console errors.
+
+### 7.2 Audio pass (built 2026-10-18)
+
+**A bug fixed first.** The match-day sounds from Stage 5.5 were asked for at the wrong address (`audio/...` instead of `assets/audio/...`), so on the live site the crowd, whistles and kicks never loaded. They now do, and a test checks that every sound file the game asks for exists.
+
+**One sound system.** Everything now plays through one shared audio context (`src/render/audio/hub.ts`), because phones allow only a few and only start one inside a tap. It has three volume buses, crowd, effects and music, and a mute. It runs while a scene needs it (the match, the office) and for three seconds after a one-off sound, and sleeps otherwise, so quiet menus cost no battery.
+
+**Settings.** The old Off/Low/Medium/High match sound is replaced by **Sound on** plus three sliders in the menu: **Crowd** (the match crowd and the office), **Effects** (whistle, ball, taps, knocks, the phone) and **Music** (the office radio). They are heard as you drag and kept per device (`seasonticket.audio`). A player who had the old setting keeps it: Off becomes muted, and Low/Medium/High set the crowd and effects sliders. The live match's **Sound** button now mutes and unmutes everything.
+
+**The office.** Soft room air (made in code, a six-second loop) whenever the office is on screen. On a home match week the match crowd drifts in through the window, muffled.
+
+**The radio.** A cream radio on the credenza under the TV, labelled **Radio**. Tap it to switch it on or off (also a switch in the menu); its dial glows while it plays and it remembers your choice (`seasonticket.radio`). It starts off. It plays three CC0 songs from OpenGameArt in turn (76, 66 and 97 seconds, each cut on a whole phrase and faded out) through a small-speaker filter. The songs only download when the radio is first switched on, and it only plays while the office is on screen. If sound is muted, switching the radio on says so.
+
+**Menu sounds.** Made in code, so they cost no download (`src/render/audio/synth.ts`): a soft wooden tap on every button, two knocks when a visitor arrives, a desk phone ringing for a new offer or deadline-day call, a page turning when the News tab opens, a few camera shutters when the press conference opens, and a wall clock ticking in the war room. They play on the effects slider. While a week is playing they wait, so the week's offers ring once at the end, not in a rush.
+
+**Match day.** Between the big moments the home end sings, every 30 to 70 seconds of play while the crowd isn't already roaring, and now and then (three in ten) the away end answers from across the ground, quieter and muffled. A fuller ground sings louder. At a derby the crowd is a quarter louder and sings more often; against a rival, a little louder. The same match always sings at the same moments, so a replay sounds like the live match. The chants are cut from the same CC0 stadium recordings as the crowd, from stretches with no words.
+
+**Size.** New sound files: 1.24 MB in all (three songs 0.94 MB, three chants 0.26 MB), under the 1.5 MB budget, loaded only by the scene that uses them. All the game's sound together is 2.36 MB.
+
+**Tests.** `tests/audio.test.ts` (14 tests): the made sounds are finite, never clip and are the same every time, and the room tone loops without a click; every sound file exists; the referee and ball are on the effects bus; chant timing, the away share, the derby boost and loudness by crowd; the mix is kept, carried over from the old setting, mended when garbled and survives blocked storage; the menu cues for visitors, offers, calls, the paper and the press. Checked in the browser at 740 by 360 and 844 by 390: the radio shows and plays, the sliders and mute work and are kept, the menu sounds play, no console errors.
 
 ## Owner's answers (2026-10-18)
 

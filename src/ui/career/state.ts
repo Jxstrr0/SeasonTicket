@@ -6,7 +6,8 @@
 import type { Crest, MatchMode, StandId, TierId } from '../../sim/career';
 import type { Position, StaffRole } from '../../sim/types';
 import { loadQuality, type QualitySetting } from '../../render/quality';
-import atmosphere from '../../data/tuning/atmosphere.json';
+import audioTuning from '../../data/tuning/audio.json';
+import type { Mix } from '../../render/audio/hub';
 
 export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay' | 'deadline' | 'help';
 
@@ -205,26 +206,58 @@ export function storeMatchCamera(key: string): void {
   }
 }
 
-/** The match-day sound level (Stage 5.5): kept per device, like the quality setting. */
-const SOUND_KEY = 'seasonticket.sound';
+/**
+ * The sound mix (Stage 7.2): mute and the three sliders, kept per device like the quality
+ * setting. Players who had the old Off/Low/Medium/High match sound keep it as the crowd and
+ * effects sliders.
+ */
+const AUDIO_KEY = 'seasonticket.audio';
+const OLD_SOUND_KEY = 'seasonticket.sound';
+const RADIO_KEY = 'seasonticket.radio';
 
-export type SoundSetting = keyof typeof atmosphere.sound.levels;
-export const SOUND_SETTINGS = Object.keys(atmosphere.sound.levels) as SoundSetting[];
+const level = (v: unknown, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : fallback);
 
-export function loadSound(): SoundSetting {
+export function loadMix(): Mix {
+  const base = audioTuning.mix;
   try {
-    const v = globalThis.localStorage?.getItem(SOUND_KEY);
-    const known = SOUND_SETTINGS.find((k) => k === v);
-    if (known) return known;
+    const raw = globalThis.localStorage?.getItem(AUDIO_KEY);
+    if (raw) {
+      const v = JSON.parse(raw) as Partial<Mix> | null;
+      if (v && typeof v === 'object') {
+        return { muted: v.muted === true, crowd: level(v.crowd, base.crowd), effects: level(v.effects, base.effects), music: level(v.music, base.music) };
+      }
+    }
+    const old = globalThis.localStorage?.getItem(OLD_SOUND_KEY) as keyof typeof audioTuning.oldLevels | null;
+    if (old && old in audioTuning.oldLevels) {
+      const lv = audioTuning.oldLevels[old];
+      return old === 'off' ? { ...base, muted: true } : { ...base, crowd: lv, effects: lv };
+    }
   } catch {
-    // Storage blocked: the default.
+    // Storage blocked or a bad record: the default.
   }
-  return atmosphere.sound.defaultLevel as SoundSetting;
+  return { ...base };
 }
 
-export function storeSound(level: SoundSetting): void {
+export function storeMix(mix: Mix): void {
   try {
-    globalThis.localStorage?.setItem(SOUND_KEY, level);
+    globalThis.localStorage?.setItem(AUDIO_KEY, JSON.stringify(mix));
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
+/** The office radio, on or off (off to begin with). */
+export function loadRadio(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(RADIO_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function storeRadio(on: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(RADIO_KEY, on ? '1' : '0');
   } catch {
     // Storage blocked: the choice lasts until the page closes.
   }
@@ -269,8 +302,10 @@ export interface UiState {
   sceneId: string | null;
   /** Graphics setting for this device ('off' means plain menus, no office). */
   quality: QualitySetting;
-  /** Match-day sound level for this device. */
-  sound: SoundSetting;
+  /** The sound mix for this device. */
+  mix: Mix;
+  /** The office radio is on. */
+  radio: boolean;
   /** The frame-rate readout on the 3D match, for this device. */
   showFps: boolean;
   /** First-time tips are on, for this device (the app keeps the record; this mirrors it for the menu). */
@@ -337,7 +372,8 @@ export function initialUi(): UiState {
     inOffice: false,
     sceneId: null,
     quality: loadQuality(),
-    sound: loadSound(),
+    mix: loadMix(),
+    radio: loadRadio(),
     showFps: loadShowFps(),
     tipsOn: true,
     squadPlayerId: null,

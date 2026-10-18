@@ -25,8 +25,13 @@ Every asset shipped with the game is listed here with its source and licence.
 | Sound: Metal whistle | [strongbot on Freesound](https://freesound.org/people/strongbot/sounds/568995/) | CC0 | The half-time and full-time whistles |
 | Sound: Soccer ball kick | [bittermelonheart on Freesound](https://freesound.org/people/bittermelonheart/sounds/555042/) | CC0 | Ball kicks |
 | Sound: Ball kick | [Nicolas4677 on Freesound](https://freesound.org/people/Nicolas4677/sounds/446639/) | CC0 | Ball kicks |
+| Sound: Stadium crowd reaction, general ambience (a second cut) | [itmightgetloud on Freesound](https://freesound.org/people/itmightgetloud/sounds/829454/) | CC0 | The home end's chants (Stage 7.2) |
+| Sound: Stadium crowd reaction, mood waves | [itmightgetloud on Freesound](https://freesound.org/people/itmightgetloud/sounds/829456/) | CC0 | The away end's chant, muffled by distance |
+| Music: Coffee House Bump | [OatCog on OpenGameArt](https://opengameart.org/content/coffee-house-bump) | CC0 | A song on the office radio |
+| Music: Funked Up | [joth on OpenGameArt](https://opengameart.org/content/funked-up) | CC0 | A song on the office radio |
+| Music: Chill lofi inspired | [omfgdude on OpenGameArt](https://opengameart.org/content/chill-lofi-inspired) | CC0 | A song on the office radio |
 
-All models were converted with the tools in `scripts/assets` (Meshopt geometry, KTX2 textures). The sounds were cut, levelled and encoded to MP3 by `scripts/assets/build-audio.py`.
+All models were converted with the tools in `scripts/assets` (Meshopt geometry, KTX2 textures). The sounds were cut, levelled and encoded to MP3 by `scripts/assets/build-audio.py`. The menus' taps, the visitor's knock, the phone's ring, the newspaper's page, the press cameras, the war-room clock and the office's room tone are made in code by the game itself (`src/render/audio/synth.ts`), with no recording.
 
 ## Libraries
 

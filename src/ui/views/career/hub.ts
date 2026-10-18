@@ -2,7 +2,7 @@
 import { C, LADDER_NAMES, type StoryPace, money, transferWindowOpen, userBooks, userFixture, userTeam, type Career } from '../../../sim/career';
 import { cls, each, esc } from '../../html';
 import { weekLabel } from '../../model';
-import { HUB_TABS, SOUND_SETTINGS, type HubTab, type SoundSetting, type UiState } from '../../career/state';
+import { HUB_TABS, type HubTab, type UiState } from '../../career/state';
 import { QUALITY_OPTIONS } from '../../../render/quality';
 import { MATCH_MODES } from './newCareer';
 import { renderCrest } from './crest';
@@ -89,8 +89,24 @@ function renderTopBar(career: Career, ui: UiState): string {
   </header>`;
 }
 
-const SOUND_LABELS: Record<SoundSetting, string> = { off: 'Off', low: 'Low', medium: 'Medium', high: 'High' };
-const SOUND_OPTIONS = SOUND_SETTINGS.map((id) => ({ id, label: SOUND_LABELS[id] }));
+const SLIDERS = [
+  { bus: 'crowd', label: 'Crowd', hint: 'the match crowd and the office' },
+  { bus: 'effects', label: 'Effects', hint: 'whistle, ball, taps, knocks and the phone' },
+  { bus: 'music', label: 'Music', hint: 'the office radio' },
+] as const;
+
+/** Mute, the three volume sliders and the office radio. */
+function renderSound(ui: UiState): string {
+  const mix = ui.mix;
+  return `<div class="card-title">Sound</div>
+    <label class="check"><input type="checkbox" data-change="mix-on"${mix.muted ? '' : ' checked'}> Sound on</label>
+    ${each(SLIDERS, (s) => {
+      const v = Math.round(mix[s.bus] * 100);
+      return `<label class="slider${mix.muted ? ' off' : ''}"><span class="slider-name">${esc(s.label)}</span><input type="range" min="0" max="100" step="5" value="${v}" data-change="mix-level" data-bus="${s.bus}" aria-label="${esc(s.label)} volume" aria-valuetext="${v}%"${mix.muted ? ' disabled' : ''}><span class="slider-hint small muted">${esc(s.hint)}</span></label>`;
+    })}
+    <label class="check"><input type="checkbox" data-change="radio-on"${ui.radio ? ' checked' : ''}> Office radio on</label>
+    <p class="muted small">Tap the radio on the office credenza to switch it on or off. On iPhones the ring/silent switch mutes the game.</p>`;
+}
 
 function renderMenu(career: Career, ui: UiState): string {
   if (!ui.menuOpen) return '';
@@ -110,11 +126,7 @@ function renderMenu(career: Career, ui: UiState): string {
     </div>
     <p class="muted small">Low runs best on older phones. Off uses the plain menus with no 3D office.</p>
     <label class="check"><input type="checkbox" data-change="show-fps"${ui.showFps ? ' checked' : ''}> Show the frame rate on the 3D match</label>
-    <div class="card-title">Match sound</div>
-    <div class="segmented" role="group">
-      ${each(SOUND_OPTIONS, (o) => `<button type="button" class="${cls('seg', o.id === ui.sound && 'on')}" data-action="set-sound" data-sound="${o.id}" aria-pressed="${o.id === ui.sound}">${esc(o.label)}</button>`)}
-    </div>
-    <p class="muted small">The crowd, the referee's whistle and the ball on match day. On iPhones the ring/silent switch mutes it.</p>
+    ${renderSound(ui)}
     <div class="card-title">Story pace</div>
     <div class="segmented" role="group">
       ${each(PACE_OPTIONS, (o) => `<button type="button" class="${cls('seg', o.id === career.story.pace && 'on')}" data-action="set-pace" data-pace="${o.id}" aria-pressed="${o.id === career.story.pace}">${esc(o.label)}</button>`)}

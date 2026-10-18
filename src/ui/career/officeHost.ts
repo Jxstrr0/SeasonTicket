@@ -7,6 +7,7 @@
 import type { Career } from '../../sim/career';
 import type { QualityTier } from '../../render/quality';
 import type { OfficeHandle, OfficePick } from '../../render/office';
+import type { OfficeSnapshot } from '../../render/office/types';
 import { buildOfficeSnapshot } from './office';
 
 type Status = 'idle' | 'loading' | 'ready' | 'failed';
@@ -21,6 +22,7 @@ export class OfficeHost {
   private readonly loading: HTMLDivElement;
   private readonly bar: HTMLSpanElement;
   private career: Career | null = null;
+  private radio = false;
 
   constructor(
     private readonly layer: HTMLElement,
@@ -45,8 +47,9 @@ export class OfficeHost {
   }
 
   /** Shows the office for this career at this tier, or hides it when career is null. */
-  sync(career: Career | null, tier: QualityTier | null): void {
+  sync(career: Career | null, tier: QualityTier | null, radio = false): void {
     this.career = career;
+    this.radio = radio;
     const want = !!career && !!tier && this.status !== 'failed';
     document.body.classList.toggle('office-mode', want);
     this.layer.classList.toggle('on', want);
@@ -58,9 +61,14 @@ export class OfficeHost {
     this.tier = tier;
     if (this.status === 'idle') this.load(tier);
     if (this.handle) {
-      this.handle.update(buildOfficeSnapshot(career));
+      this.handle.update(this.snapshot(career));
       this.handle.resume();
     }
+  }
+
+  /** The room's picture of the career, with this device's radio. */
+  private snapshot(career: Career): OfficeSnapshot {
+    return { ...buildOfficeSnapshot(career), radio: this.radio };
   }
 
   private load(tier: QualityTier): void {
@@ -86,7 +94,7 @@ export class OfficeHost {
         this.loading.hidden = true;
         // Sync again so the room shows the latest career, or pauses if the owner moved on.
         const on = this.layer.classList.contains('on');
-        if (on && this.career) handle.update(buildOfficeSnapshot(this.career));
+        if (on && this.career) handle.update(this.snapshot(this.career));
         else handle.pause();
       })
       .catch((err: unknown) => {
@@ -110,7 +118,7 @@ export class OfficeHost {
       this.onFail('The 3D office keeps stopping on this device, so the plain menus are showing. Try Graphics: Low in the menu.');
       return;
     }
-    if (this.layer.classList.contains('on')) this.sync(this.career, this.tier);
+    if (this.layer.classList.contains('on')) this.sync(this.career, this.tier, this.radio);
   }
 
   /** Throws the current office away (for a new quality tier). */
