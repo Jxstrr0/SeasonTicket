@@ -73,6 +73,7 @@ import { WeekPlayer } from '../../game/week';
 import { renderWeekRun, weekRunCount } from '../views/career/weekRun';
 import { parseSeed, randomSeed } from '../app';
 import { renderCareerTitle } from '../views/career/title';
+import { storeTitleSummary } from './titleSummary';
 import { MATCH_MODES, renderCrestPreview, renderNewCareer } from '../views/career/newCareer';
 import { careerWeekLabel, renderHub } from '../views/career/hub';
 import { renderLive } from '../views/career/live';
@@ -213,7 +214,7 @@ export class CareerApp {
   /** When a story answer or the deadline clock last moved: the second tap of a double tap must not answer what replaced it. */
   private lastStepAt = 0;
   /** When a tip card last closed: the rest of a double tap must not land on what was under it. */
-  private tipClosedAt = 0;
+  private tipClosedAt = -Infinity;
   /** First-time tips seen on this device, and the one showing now. */
   private tips = loadTips();
   private tipShown: TipId | null = null;
@@ -291,12 +292,14 @@ export class CareerApp {
   private refreshSummary(): void {
     const c = this.career;
     this.ui.title.saved = c ? { club: userTeam(c).name, season: c.season.league.season, crest: c.crest } : null;
+    storeTitleSummary(this.ui.title.saved);
   }
 
   private save(): void {
     // Half way through a week the career is not in a state to keep; it saves once settled.
     if (!this.career || this.weeks.playing) return;
     const ok = saveCareer(this.career);
+    if (ok) this.refreshSummary();
     if (!ok && !this.saveWarned) {
       this.saveWarned = true;
       this.ui.flash = { kind: 'error', text: 'This browser would not save the game. Use Menu → Save code to keep your progress.' };
@@ -605,9 +608,9 @@ export class CareerApp {
     const { ui, career } = this;
     switch (ui.screen) {
       case 'title':
-        return renderCareerTitle(ui);
+        return renderCareerTitle(ui.title);
       case 'new':
-        return ui.draft ? renderNewCareer(ui.draft) : renderCareerTitle(ui);
+        return ui.draft ? renderNewCareer(ui.draft) : renderCareerTitle(ui.title);
       case 'saveCode':
         return renderSaveCode(ui);
       case 'gameOver':
@@ -617,7 +620,7 @@ export class CareerApp {
       default:
         break;
     }
-    if (!career) return renderCareerTitle(ui);
+    if (!career) return renderCareerTitle(ui.title);
     if (ui.screen === 'live') return renderLive(career, ui);
     if (ui.screen === 'replay') return renderReplayScreen(career, ui);
     if (ui.screen === 'review') return renderReview(career);

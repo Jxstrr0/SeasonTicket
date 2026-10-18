@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview",
+    "check:first-load": "node scripts/check-first-load.mjs",
     "test": "vitest run --project unit",
     "test:perf": "vitest run --project perf",
     "test:slow": "vitest run --project slow",

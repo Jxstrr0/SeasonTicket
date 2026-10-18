@@ -7,7 +7,7 @@
  * Times are match ms as the 3D view shows them (behind the engine by the tape's lag).
  */
 import { ACT, CHANCE_GREAT, CHANCE_POST, CHANCE_SAVED, type ActionCue } from '../../render/match/types';
-import type { CameraKey } from '../../render/match/cameras';
+import type { CameraKey } from '../../render/match/cameraKeys';
 import tuning from '../../data/tuning/match3d.json';
 
 const R = tuning.replays;

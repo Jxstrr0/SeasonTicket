@@ -27,6 +27,7 @@ jobs:
       - run: npm test
       - run: npm run test:perf
       - run: npm run build
+      - run: npm run check:first-load
       - uses: actions/configure-pages@v5
         with:
           enablement: true
