@@ -58,6 +58,11 @@ export function movePlayers(m: SpatialMatch): void {
         if (cap < rc) cap = rc;
       }
     }
+    // Getting open: a sharp move into the space he has picked.
+    if (m.role[i] === ROLE.SHAPE && m.clockMs < m.attack.supBurst[i] && m.poss === (i < 11 ? 0 : 1)) {
+      const bc = m.top[i] * SPATIAL_TUNING.support.burst;
+      if (cap < bc) cap = bc;
+    }
     let top = m.top[i];
     if (i === owner) { cap *= MV.withBall; top *= MV.withBall; }
     if (cap > top) cap = top;

@@ -346,11 +346,12 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
     fog.near = look?.fog?.[1] ?? 650;
     fog.far = look?.fog?.[2] ?? 1500;
     if (night) {
-      sky.color.set('#c9d6ff');
-      sky.groundColor.set('#2a2a30');
-      sky.intensity = 0.25 + 0.6 * floodlights;
-      sun.color.set('#9fb3ff');
-      sun.intensity = 0.35;
+      const L = tuning.lights;
+      sky.color.set(L.skyColour);
+      sky.groundColor.set(L.groundColour);
+      sky.intensity = L.sky + L.skyPerLevel * floodlights;
+      sun.color.set(L.keyColour);
+      sun.intensity = L.key + L.keyPerLevel * floodlights;
     } else {
       // Rain, snow, wind and heat change the daylight; at night the floodlights win.
       if (weatherSky) scene.background = weatherSky;

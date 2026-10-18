@@ -246,3 +246,8 @@ export function currentLine(team: TeamState, steps: number): number {
 export function currentOffCap(team: TeamState, steps: number): number {
   return team.ring[(steps % RING) * ANCHORS + A_OFF_CAP];
 }
+
+/** How far up the pitch the players who stay behind the ball may go, this step. */
+export function currentBehindCap(team: TeamState, steps: number): number {
+  return team.ring[(steps % RING) * ANCHORS + A_BEHIND_CAP];
+}

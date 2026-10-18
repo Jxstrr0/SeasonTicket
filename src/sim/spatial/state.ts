@@ -261,6 +261,13 @@ export interface AttackState {
   boxSign: Float64Array;
   /** Per side: the box is being filled for a corner (corner zones, best headers). */
   boxCorner: Uint8Array;
+  /** Per player: his open spot as an offset from his shape spot, when he looks again, and a sharp move until supBurst. */
+  supX: Float64Array;
+  supY: Float64Array;
+  supNext: Float64Array;
+  supBurst: Float64Array;
+  /** Per side: getting open is on (a team-mate has the ball). */
+  supOn: Uint8Array;
 }
 
 /** Laws of the game (rules.ts): offside, fouls, advantage, cards, injuries and their stats. */

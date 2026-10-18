@@ -494,7 +494,8 @@ function decided(so: ShootoutState): Side | -1 {
 /** A shootout kick has just been struck by the player at index i (the outcome is settled at the strike). */
 export function shootoutKick(m: SpatialMatch, i: number, side: Side, scored: boolean, saved: boolean): void {
   const so = m.shootout;
-  if (!so) return;
+  // Only the first strike counts: a rebound the taker shoots again is not another kick.
+  if (!so || so.phase !== 1) return;
   so.kicks.push({ side, player: m.who[i], keeper: m.who[(1 - side) * 11], outcome: scored ? 'scored' : saved ? 'saved' : 'missed' });
   if (scored) so.score[side]++;
   so.taken[side]++;

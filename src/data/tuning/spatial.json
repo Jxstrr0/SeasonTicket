@@ -1,6 +1,6 @@
 {
   "_doc": "Spatial match engine starting values (docs/DESIGN.md section 17, appendix docs/history/STAGE_4_5_SKETCH_NOTES.md). Distances in metres, speeds in m/s, times in seconds unless the key ends in Ms. Five-value arrays are indexed by dial 1..5.",
-  "engineRev": 13,
+  "engineRev": 15,
   "pitch": {
     "length": 105,
     "width": 68,
@@ -650,7 +650,7 @@
     "every": 0.3
   },
   "shot": {
-    "_doc": "xG is the curve value for the distance to the goal centre (xgDist, xgVal) times the share of the goal the shooter sees compared with standing straight on at that distance. Goals come from the physics: aim error, blockers and the keeper, all settled when the ball is struck. valueMul (per mode) scales what a shot is worth when a player weighs it against passing or carrying; coarse calibrates it so both modes shoot as often.",
+    "_doc": "xG is the curve value for the distance to the goal centre (xgDist, xgVal) times the share of the goal the shooter sees compared with standing straight on at that distance. Goals come from the physics: aim error, blockers and the keeper, all settled when the ball is struck. valueMul (per mode) scales what a shot is worth when a player weighs it against passing or carrying; coarse calibrates it so both modes shoot as often. errBase (per mode) is the aiming error of a perfect finisher; it calibrates how often the shots go in.",
     "xgDist": [2, 6, 11, 16, 20, 25, 30, 40],
     "xgVal": [0.45, 0.28, 0.13, 0.06, 0.04, 0.026, 0.016, 0.007],
     "headerMul": 0.6,
@@ -681,7 +681,10 @@
     "highZ": 1.9,
     "headZ": 0.4,
     "postInset": [0.5, 2],
-    "errBase": 0.09,
+    "errBase": {
+      "fine": 0.105,
+      "coarse": 0.095
+    },
     "errFin": 0.12,
     "errPress0": 0.6,
     "errPressure": 1.25,
@@ -760,6 +763,38 @@
     "seconds": 2.5,
     "maxRunners": 2,
     "cooldown": 4
+  },
+  "support": {
+    "_doc": "Getting open: while a team-mate has the ball, each player in his shape within withinBall m of it looks again every everyMs (hard workers at the low end, plus up to jitterMs; coarseEvery times as long in coarse mode, to save time in the background matches, which also try only every coarseDirStep-th direction of the ring) for a better spot within reach m of his shape spot (behindReach for those who stay behind the ball), and no more than forward m further up the pitch: runs forward are the runs in behind and box filling. Candidates: where he is going, his shape spot, and a ring of directions at step m. Score: room from the nearest opponent (up to spaceCap m), a clear line from the ball (up to laneCap m), more threat than his shape spot (per threatScale), minus straying (wStray), being too close to the ball (under minPass m) and crowding a team-mate (within crowdWithin m). noise is how much chance is in the pick, cut by up to visionCut at vision 99. keep favours staying put. A move of more than burstOver m is made at burst x top speed for burstS seconds. A side easeLead goals up stops the extra running and keeps its shape.",
+    "withinBall": 40,
+    "everyMs": [1000, 1800],
+    "jitterMs": 600,
+    "coarseEvery": 2,
+    "coarseDirStep": 2,
+    "directions": 8,
+    "step": 6,
+    "reach": [8, 14],
+    "behindReach": 4,
+    "forward": 2,
+    "spaceCap": 8,
+    "laneCap": 5,
+    "laneFrom": 0.05,
+    "minPass": 8,
+    "threatScale": 0.05,
+    "wSpace": 1,
+    "wLane": 1.2,
+    "wThreat": 0.5,
+    "wStray": 0.4,
+    "wCrowd": 0.8,
+    "crowdWithin": 7,
+    "wShort": 0.8,
+    "noise": 0.5,
+    "visionCut": 0.7,
+    "keep": 0.1,
+    "burst": 0.75,
+    "burstS": 1.5,
+    "burstOver": 2,
+    "easeLead": 3
   },
   "box": {
     "_doc": "Filling the box when the ball is wide and deep, or held centrally at least centralFrom m up the pitch. zones: depth, then across offset from the goal centre towards the ball's side (near post, far post, penalty spot, cut-back, edge). count by mentality.",
