@@ -11,6 +11,7 @@ import { curveAt, generatePlayer, wageFor } from '../players';
 import type { Rng } from '../rng';
 import type { Player, Position, Team } from '../types';
 import { spendingLimits } from './books';
+import { reportTransfer } from './news';
 import type { Career } from './types';
 import {
   C,
@@ -224,6 +225,7 @@ export function bidForPlayer(career: Career, playerId: string, fee: number, year
 
   spend(books, 'transfers', fee);
   earn(career.books[seller.id], 'playerSales', fee);
+  reportTransfer(career, { playerId, name: playerName(player), fromId: seller.id, toId: career.userTeamId, fee, how: 'fee' });
   movePlayer(career, player, career.userTeamId);
   player.contract = { wage, years: clamp(Math.round(years), T.contractYears.min, T.contractYears.max) };
   addInbox(career, 'transfer', `Signed ${playerName(player)}`, `${playerName(player)} joins from ${seller.shortName} for ${money(fee)} on ${money(wage)} a season for ${player.contract.years} years.`);
@@ -239,6 +241,7 @@ export function signFreeAgent(career: Career, playerId: string, years: number): 
   if (room) return fail(room);
   const wage = wageDemand(career, player, career.userTeamId);
   if (wage > spendingLimits(career).maxWage) return fail(`His wage demand (${money(wage)}) is over the lenders' limit.`);
+  reportTransfer(career, { playerId, name: playerName(player), fromId: null, toId: career.userTeamId, fee: 0, how: 'free' });
   movePlayer(career, player, career.userTeamId);
   player.contract = { wage, years: clamp(Math.round(years), T.contractYears.min, T.contractYears.max) };
   addInbox(career, 'transfer', `Signed ${playerName(player)}`, `${playerName(player)} joins on a free, on ${money(wage)} a season.`);
@@ -277,6 +280,7 @@ export function loanIn(career: Career, playerId: string, wageShare: number = C.l
   if (fee > books.cash) return fail(`You have ${money(books.cash)} in the bank.`);
   spend(books, 'loanFees', fee);
   earn(career.books[parent.id], 'loanFees', fee);
+  reportTransfer(career, { playerId, name: playerName(player), fromId: parent.id, toId: career.userTeamId, fee, how: 'loan' });
   movePlayer(career, player, career.userTeamId);
   career.loansIn.push({ playerId, fromTeamId: parent.id, wageShare: share });
   addInbox(career, 'transfer', `${playerName(player)} on loan`, `${playerName(player)} joins from ${parent.shortName} until the end of the season. Fee ${money(fee)}; you pay ${Math.round(share * 100)}% of his wage.`);
@@ -344,6 +348,7 @@ function sellToAi(career: Career, player: Player, buyer: Team, fee: number, kind
   const seller = player.teamId ? career.books[player.teamId] : null;
   spend(career.books[buyer.id], 'transfers', fee);
   if (seller) earn(seller, 'playerSales', fee);
+  reportTransfer(career, { playerId: player.id, name: playerName(player), fromId: player.teamId, toId: buyer.id, fee, how: kind.startsWith('Forced') ? 'forced' : 'fee' });
   movePlayer(career, player, buyer.id);
   if (player.contract.years < 2) player.contract.years = 2;
   addInbox(career, 'transfer', `${playerName(player)} sold`, `${kind}: ${playerName(player)} joins ${buyer.shortName} for ${money(fee)}.`);
@@ -455,6 +460,7 @@ function aiDeals(career: Career, rng: Rng): void {
 function sellToAiSilently(career: Career, player: Player, buyer: Team, fee: number): void {
   if (player.teamId) earn(career.books[player.teamId], 'playerSales', fee);
   spend(career.books[buyer.id], 'transfers', fee);
+  reportTransfer(career, { playerId: player.id, name: playerName(player), fromId: player.teamId, toId: buyer.id, fee, how: 'fee' });
   movePlayer(career, player, buyer.id);
 }
 

@@ -24,7 +24,7 @@
       "choices": [
         { "id": "talk", "label": "Say you want him for years", "hint": "He'll be pleased. Renew his contract on the Squad screen while he's happy.", "result": "The agent sounds warm. \"We'll be waiting for your offer.\"", "effects": [{ "mood": 0.15 }] },
         { "id": "later", "label": "Talk in the off-season", "hint": "Keeps your options open. He may feel undervalued.", "result": "\"Fine. But don't leave it too long.\"", "effects": [{ "mood": -0.1 }] },
-        { "id": "hardball", "label": "Tell him nobody is bigger than the club", "hint": "Good for your image with the press, bad for the player.", "result": "The line goes quiet. The press love the quote.", "effects": [{ "mood": -0.25 }, { "press": 0.04 }] }
+        { "id": "hardball", "label": "Tell him nobody is bigger than the club", "hint": "Good for your image with the press, bad for the player.", "result": "The line goes quiet. The press love the quote.", "news": "{us} play hardball with {player}|The owner refuses to move on terms. The player's camp is said to be unimpressed.", "effects": [{ "mood": -0.25 }, { "press": 0.04 }] }
       ]
     },
     {
@@ -50,9 +50,9 @@
       "text": "{person} from the club's community office says the children's ward at {city} General has asked if some players could visit before the holidays. They're also raising money for a new play room.",
       "staff": "visit",
       "choices": [
-        { "id": "visit", "label": "Send players with presents", "hint": "Costs {half}. Fans and the press will notice.", "result": "A ward full of grins. One young fan made {coach} sign his cast.", "effects": [{ "cash": -0.5, "line": "operations" }, { "fans": 0.02 }, { "press": 0.05 }, { "squad": 0.02 }] },
-        { "id": "donate", "label": "Fund the whole play room", "hint": "Costs {amount}. A plaque with the club's name goes on the door.", "result": "The play room will carry the club crest. The local paper runs it on page three.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.03 }, { "press": 0.07 }] },
-        { "id": "no", "label": "Not this year", "hint": "Saves money. Looks cold.", "result": "{person} looks disappointed but says they understand.", "effects": [{ "press": -0.04 }, { "fans": -0.01 }] }
+        { "id": "visit", "label": "Send players with presents", "hint": "Costs {half}. Fans and the press will notice.", "result": "A ward full of grins. One young fan made {coach} sign his cast.", "news": "{us} players bring smiles to the children's ward|Presents, autographs and one signed cast. A good afternoon for the club.", "effects": [{ "cash": -0.5, "line": "operations" }, { "fans": 0.02 }, { "press": 0.05 }, { "squad": 0.02 }] },
+        { "id": "donate", "label": "Fund the whole play room", "hint": "Costs {amount}. A plaque with the club's name goes on the door.", "result": "The play room will carry the club crest. The local paper runs it on page three.", "news": "{us} fund a new hospital play room|The club crest will hang on the door. Money well spent, say staff at the ward.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.03 }, { "press": 0.07 }] },
+        { "id": "no", "label": "Not this year", "hint": "Saves money. Looks cold.", "result": "{person} looks disappointed but says they understand.", "news": "{us} turn down hospital visit|The club said the timing was wrong. Not everyone in {city} agrees.", "effects": [{ "press": -0.04 }, { "fans": -0.01 }] }
       ]
     },
     {
@@ -63,7 +63,7 @@
       "text": "{person}, chair of the {short} Supporters' Trust, brings a petition. \"Two thousand signatures. Families can't afford to come any more. Bring the prices down.\"",
       "staff": "listen",
       "choices": [
-        { "id": "cut", "label": "Cut prices by 10%", "hint": "Less money per ticket, more goodwill in the stands.", "result": "Applause at the next Trust meeting. Prices drop 10%.", "effects": [{ "price": -0.1 }, { "fans": 0.04 }, { "press": 0.02 }] },
+        { "id": "cut", "label": "Cut prices by 10%", "hint": "Less money per ticket, more goodwill in the stands.", "result": "Applause at the next Trust meeting. Prices drop 10%.", "news": "{us} cut ticket prices after fan complaints|A 10% drop. The supporters' trust called it 'a start, and a good one'.", "effects": [{ "price": -0.1 }, { "fans": 0.04 }, { "press": 0.02 }] },
         { "id": "listen", "label": "Promise a review in the summer", "hint": "Buys a little time.", "result": "{person} takes the promise, but says they'll be watching.", "effects": [{ "fans": 0.01 }, { "flag": "priceReview" }] },
         { "id": "firm", "label": "Explain the club needs the money", "hint": "Honest, but the fans won't like it.", "result": "{person} leaves unconvinced. There's talk of banners.", "effects": [{ "fans": -0.04 }] }
       ]
@@ -89,7 +89,7 @@
       "text": "{person} from the {city} Courier wants a long sit-down interview for the weekend edition. \"Your story, in your words. Where's the club going?\"",
       "staff": "short",
       "choices": [
-        { "id": "open", "label": "Give them an hour", "hint": "The press will like you more.", "result": "A two-page spread with a flattering photo. Mostly flattering.", "effects": [{ "press": 0.08 }, { "fans": 0.01 }] },
+        { "id": "open", "label": "Give them an hour", "hint": "The press will like you more.", "result": "A two-page spread with a flattering photo. Mostly flattering.", "news": "Inside {us}: the owner speaks|An hour with the owner, who talked plans, the squad and the coffee machine.", "effects": [{ "press": 0.08 }, { "fans": 0.01 }] },
         { "id": "short", "label": "Fifteen minutes, by phone", "hint": "A small lift.", "result": "A short piece. Polite, accurate, forgettable.", "effects": [{ "press": 0.03 }] },
         { "id": "no", "label": "Decline", "hint": "The paper won't forget it.", "result": "The weekend edition runs \"Owner too busy for {city}?\"", "effects": [{ "press": -0.06 }] }
       ]
@@ -117,7 +117,7 @@
       "text": "Councillor {person} has had complaints. \"Cars on every pavement around {stadium} on match days. The residents want something done, and so do I.\"",
       "staff": "promise",
       "choices": [
-        { "id": "shuttle", "label": "Pay for match-day shuttle buses", "hint": "Costs {amount}. The council will remember the favour.", "result": "Shuttle buses from the town centre. The councillor sends a thank-you note.", "effects": [{ "cash": -1, "line": "operations" }, { "press": 0.03 }, { "fans": 0.01 }, { "flag": "councilFriend" }] },
+        { "id": "shuttle", "label": "Pay for match-day shuttle buses", "hint": "Costs {amount}. The council will remember the favour.", "result": "Shuttle buses from the town centre. The councillor sends a thank-you note.", "news": "{us} lay on free shuttle buses|The council welcomes the move. Neighbours hope it means fewer cars on their drives.", "effects": [{ "cash": -1, "line": "operations" }, { "press": 0.03 }, { "fans": 0.01 }, { "flag": "councilFriend" }] },
         { "id": "promise", "label": "Promise to look into it", "hint": "Free, for now.", "result": "\"I'll hold you to that.\"", "effects": [{ "flag": "councilWaiting" }] },
         { "id": "no", "label": "Say parking is the council's problem", "hint": "Free. The council may make life harder later.", "result": "Councillor {person} leaves with a tight smile.", "effects": [{ "press": -0.03 }, { "flag": "councilAnnoyed" }] }
       ]
@@ -172,9 +172,9 @@
       "text": "Three defeats in a row. {person} from the Supporters' Trust is in reception. \"People are angry. They want to hear it from you.\"",
       "staff": "letter",
       "choices": [
-        { "id": "meet", "label": "Meet the fans in the club bar", "hint": "Brave. Could go either way, but usually helps.", "result": "Two hours of hard questions. They leave grudgingly respectful.", "effects": [{ "fans": 0.05 }, { "press": 0.03 }] },
+        { "id": "meet", "label": "Meet the fans in the club bar", "hint": "Brave. Could go either way, but usually helps.", "result": "Two hours of hard questions. They leave grudgingly respectful.", "news": "{us} owner faces the fans|A packed room, some hard questions and, by the end, a few handshakes.", "effects": [{ "fans": 0.05 }, { "press": 0.03 }] },
         { "id": "letter", "label": "Write an open letter", "hint": "A small lift.", "result": "The letter goes up on the club site. Some read it.", "effects": [{ "fans": 0.02 }] },
-        { "id": "silence", "label": "Let results do the talking", "hint": "Free, but the silence will be noticed.", "result": "No comment. The radio phone-in has a field day.", "effects": [{ "fans": -0.03 }, { "press": -0.03 }] }
+        { "id": "silence", "label": "Let results do the talking", "hint": "Free, but the silence will be noticed.", "result": "No comment. The radio phone-in has a field day.", "news": "Silence from the top at {us}|The owner has nothing to say about the bad run. The fans have plenty.", "effects": [{ "fans": -0.03 }, { "press": -0.03 }] }
       ]
     },
     {
@@ -203,7 +203,7 @@
       "staff": "pay",
       "choices": [
         { "id": "pay", "label": "Pay up", "hint": "Costs {amount}. Peace in our time.", "result": "The mascot does a celebratory cartwheel. Mostly successfully.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.01 }] },
-        { "id": "suit", "label": "Wear the suit yourself next match", "hint": "Free. The press will love it, or laugh at you.", "result": "You do a full lap of the pitch in the suit. The video goes round the whole of {city}.", "effects": [{ "press": 0.05 }, { "fans": 0.03 }] },
+        { "id": "suit", "label": "Wear the suit yourself next match", "hint": "Free. The press will love it, or laugh at you.", "result": "You do a full lap of the pitch in the suit. The video goes round the whole of {city}.", "news": "{us} mascot gets a new suit|The old one had seen better decades. The new one has working eyes.", "effects": [{ "press": 0.05 }, { "fans": 0.03 }] },
         { "id": "no", "label": "Refuse", "hint": "Free. The kids will miss the mascot.", "result": "The mascot strikes. A cardboard cut-out stands in. It is not the same.", "effects": [{ "fans": -0.02 }] }
       ]
     },
@@ -216,8 +216,8 @@
       "text": "{person} from the {city} Courier has photos of {player} leaving a club at 3am, two nights before the last match. \"Care to comment before we print?\"",
       "staff": "word",
       "choices": [
-        { "id": "fine", "label": "Fine him publicly", "hint": "Brings in {amount}. Discipline looks good; he'll sulk.", "result": "Fined and named. The paper calls it \"strong leadership\".", "effects": [{ "cash": 1, "line": "other" }, { "mood": -0.18 }, { "press": 0.04 }] },
-        { "id": "defend", "label": "Defend him: it was his day off", "hint": "He'll love you for it. The paper won't.", "result": "\"He's young, it was his day off.\" {first} won't forget it.", "effects": [{ "mood": 0.12 }, { "press": -0.05 }] },
+        { "id": "fine", "label": "Fine him publicly", "hint": "Brings in {amount}. Discipline looks good; he'll sulk.", "result": "Fined and named. The paper calls it \"strong leadership\".", "news": "{us} fine {player} after night out|The club confirmed the fine and said the matter is closed.", "effects": [{ "cash": 1, "line": "other" }, { "mood": -0.18 }, { "press": 0.04 }] },
+        { "id": "defend", "label": "Defend him: it was his day off", "hint": "He'll love you for it. The paper won't.", "result": "\"He's young, it was his day off.\" {first} won't forget it.", "news": "{us} back {player} after night out|'He did nothing wrong,' says the owner. Not everyone is convinced.", "effects": [{ "mood": 0.12 }, { "press": -0.05 }] },
         { "id": "word", "label": "A quiet word, no comment", "hint": "Small hits all round.", "result": "The photos run anyway. {first} looks sheepish all week.", "effects": [{ "mood": -0.04 }, { "press": -0.01 }] }
       ]
     },
@@ -232,7 +232,7 @@
       "text": "{person}, a producer, wants to film a behind-the-scenes series on {short} for the whole season. \"Cameras in the dressing room, the boardroom, your office. Real stories.\"",
       "staff": "no",
       "choices": [
-        { "id": "yes", "label": "Full access", "hint": "Earns {amount}. The players won't love the cameras.", "result": "The crew moves in on Monday. Someone already tripped over a cable.", "effects": [{ "cash": 1, "line": "tv" }, { "squad": -0.05 }, { "press": 0.05 }, { "fans": 0.02 }] },
+        { "id": "yes", "label": "Full access", "hint": "Earns {amount}. The players won't love the cameras.", "result": "The crew moves in on Monday. Someone already tripped over a cable.", "news": "Cameras get full access at {us}|A season-long documentary is in the works. The dressing room is said to be 'thrilled'. Mostly.", "effects": [{ "cash": 1, "line": "tv" }, { "squad": -0.05 }, { "press": 0.05 }, { "fans": 0.02 }] },
         { "id": "some", "label": "Matches and training only", "hint": "Earns {half}.", "result": "A tidier show, fewer secrets.", "effects": [{ "cash": 0.5, "line": "tv" }, { "press": 0.02 }] },
         { "id": "no", "label": "Decline", "hint": "The dressing room stays private.", "result": "\"Your loss.\" They go and film someone else.", "effects": [{ "squad": 0.02 }] }
       ]
@@ -262,7 +262,7 @@
       "text": "{person} turns 100 this month and has had a season ticket at {stadium} for 71 years. Their grandchildren ask if the club could do something special.",
       "staff": "shirt",
       "choices": [
-        { "id": "lead", "label": "Invite them to lead the team out", "hint": "Free. A moment everyone will remember.", "result": "{person} walks out to a standing ovation. Not a dry eye in the ground.", "effects": [{ "fans": 0.03 }, { "press": 0.04 }, { "squad": 0.02 }] },
+        { "id": "lead", "label": "Invite them to lead the team out", "hint": "Free. A moment everyone will remember.", "result": "{person} walks out to a standing ovation. Not a dry eye in the ground.", "news": "Oldest fan leads {us} out|At the {stadium}, a lifelong supporter walked out with the captain. Not a dry eye.", "effects": [{ "fans": 0.03 }, { "press": 0.04 }, { "squad": 0.02 }] },
         { "id": "shirt", "label": "Send a signed shirt", "hint": "Free. A kind gesture.", "result": "The shirt is framed above {person}'s favourite chair.", "effects": [{ "fans": 0.01 }] },
         { "id": "none", "label": "Send a card", "hint": "The bare minimum.", "result": "A nice card. The grandchildren had hoped for more.", "effects": [] }
       ]
@@ -292,7 +292,7 @@
       "text": "{person}, who played 400 games for the club, is retiring from coaching. Their family asks if {stadium} could host a testimonial match, with the proceeds going to the club's youth foundation.",
       "staff": "host",
       "choices": [
-        { "id": "host", "label": "Host it and cover the costs", "hint": "Costs {amount}. The fans will love it.", "result": "Twenty thousand turn up. Old heroes, slow legs, big cheers.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.04 }, { "press": 0.03 }] },
+        { "id": "host", "label": "Host it and cover the costs", "hint": "Costs {amount}. The fans will love it.", "result": "Twenty thousand turn up. Old heroes, slow legs, big cheers.", "news": "{us} host a testimonial for a club great|Old faces back at the {stadium} for one more game, and a full house.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.04 }, { "press": 0.03 }] },
         { "id": "split", "label": "Host it, split the gate", "hint": "Costs nothing, earns nothing.", "result": "A good day out. Everyone breaks even.", "effects": [{ "fans": 0.02 }] },
         { "id": "no", "label": "The pitch needs rest", "hint": "Free. Old fans will grumble.", "result": "The match moves to the local park. The club gets no credit.", "effects": [{ "fans": -0.02 }, { "press": -0.02 }] }
       ]

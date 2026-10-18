@@ -1,0 +1,207 @@
+{
+  "_about": "Newspaper templates (Stage 6.2). Each entry is \"Headline|Body\". Story kinds with warm/harsh lists use them when the press likes or dislikes the owner. Fills: {us} {club} {nick} {city} {stadium} {them} {themNick} {score} {venue} {scorer} {hero} {win} {lose} {wscore} {team} {n} {player} {from} {to} {fee} {pos} {pts} {leader} {gap} {crowd} {stage} {cup} {shield} {league} {text}.",
+  "result": {
+    "bigWin": {
+      "neutral": [
+        "{us} run riot against {them}|{scorer} led the way as {nick} beat {them} {score} {venue}. It could have been more.",
+        "{score}! {us} hand {them} a lesson|A ruthless afternoon for {nick}. {hero} was the pick of the players as {them} wilted.",
+        "{us} put {score} past {them}|{scorer} scored and {nick} never let up. It could have been worse for {them}."
+      ],
+      "warm": [
+        "Owner's vision pays off as {us} thrash {them}|A {score} win {venue}, and the board's patience is being rewarded. {hero} was outstanding."
+      ],
+      "harsh": [
+        "{us} win big, but questions remain|A {score} win over {them} is welcome. Whether it covers the cracks upstairs is another matter."
+      ]
+    },
+    "win": {
+      "neutral": [
+        "{us} see off {them}|{scorer} made the difference as {nick} won {score} {venue}.",
+        "Three points for {us}|A solid {score} win over {them}. {hero} was the standout.",
+        "{us} get the job done against {them}|Not always pretty, but {nick} won {score} {venue} and that's what counts.",
+        "{scorer} the hero for {us}|{nick} beat {them} {score}. The table looks a little kinder this morning."
+      ],
+      "warm": [
+        "{us} on the up after {them} win|Another {score} win, another sign the club is heading somewhere. {hero} was everywhere."
+      ],
+      "harsh": [
+        "{us} scrape past {them}|{score} on the scoreboard, but the performance won't silence the critics."
+      ]
+    },
+    "draw": {
+      "neutral": [
+        "Honours even between {us} and {them}|{score} {venue}. Neither side did quite enough.",
+        "{us} held by {them}|A {score} draw. {hero} tried to make something happen.",
+        "Point apiece for {us}|{nick} drew {score} with {them}. Fair, on the balance of play."
+      ],
+      "goalless": [
+        "Stalemate: {us} and {them} share a goalless draw|Ninety minutes, no goals, and plenty of yawning in the stands.",
+        "Nothing to separate {us} and {them}|A 0-0 {venue}. The keepers had the afternoon off, mostly."
+      ],
+      "harsh": [
+        "Another draw, another shrug for {us}|{score} with {them}. The fans want more than this."
+      ]
+    },
+    "loss": {
+      "neutral": [
+        "{us} beaten by {them}|{nick} lost {score} {venue}. Back to the training ground.",
+        "Defeat for {us} against {them}|{score}. {hero} was the only one to come out of it with much credit.",
+        "{them} too good for {us}|A {score} defeat {venue}. The coach will have words."
+      ],
+      "warm": [
+        "Setback for {us}, but no panic|A {score} defeat to {them}. The project is long term, the club insists."
+      ],
+      "harsh": [
+        "Pressure mounts at {us} after {them} defeat|{score}. Fans streamed out early, and the questions are getting louder.",
+        "{us} fall to {them}: is anyone in charge?|A {score} defeat {venue}. The owner was not available for comment."
+      ]
+    },
+    "bigLoss": {
+      "neutral": [
+        "{us} humbled by {them}|A {score} thrashing {venue}. Nobody in {us} colours will want to see the highlights.",
+        "Nightmare for {us}|{them} won {score} and it could have been worse. A long week ahead."
+      ],
+      "harsh": [
+        "Humiliation: {us} crushed {score} by {them}|The worst afternoon in years. Fans chanted for answers at the final whistle.",
+        "Embarrassing. {us} collapse against {them}|A {score} defeat. Somebody has to take responsibility."
+      ]
+    },
+    "playoffWin": {
+      "neutral": [
+        "{us} through! {them} beaten in the {stage}|{score} {venue}. {scorer} sends {nick} into the next round.",
+        "{stage} joy for {us}|{nick} beat {them} {score}. The {city} public is starting to believe."
+      ]
+    },
+    "playoffLoss": {
+      "neutral": [
+        "Heartbreak: {us} out of the playoffs|{them} won the {stage} {score}. Thanks for the ride, {us}.",
+        "{us} knocked out by {them}|A {score} defeat in the {stage} ends the season. Heads high, for most of them."
+      ]
+    },
+    "finalWin": {
+      "neutral": [
+        "CHAMPIONS! {us} win the {cup}|{score} against {them} in the final. {scorer} writes their name into {city} folklore.",
+        "Glory for {us}|{nick} lift the {cup} after beating {them} {score}. Parade route to be announced."
+      ]
+    },
+    "finalLoss": {
+      "neutral": [
+        "So close: {us} lose the final|{them} won {score}. Silver medals and sore hearts for {nick}."
+      ]
+    },
+    "shootoutWin": "{us} hold their nerve in the shootout|Level after extra time, {nick} won it on penalties.",
+    "shootoutLoss": "Penalty pain for {us}|Level after extra time, {nick} lost it from the spot."
+  },
+  "leader": [
+    "{team} go top|A win this week takes {team} to the top of the table on {pts} points.",
+    "New leaders: {team}|{team} sit top after this round, {gap}.",
+    "{team} take over at the summit|The view from the top suits them. {pts} points from their games so far."
+  ],
+  "leaderMine": [
+    "{us} top of the league!|{nick} lead the table on {pts} points. Enjoy it, {city}.",
+    "Top of the pile: {us} lead the way|{nick} are top on {pts} points. The rest are looking up."
+  ],
+  "roundBig": [
+    "{win} hit {lose} for {wscore}|The result of the round. {lose} will want to forget it quickly.",
+    "Rout of the week: {win} {wscore} {lose}|{win} were in no mood to be kind."
+  ],
+  "upset": [
+    "Shock: {win} stun {lose}|Nobody saw {wscore} coming. Least of all {lose}.",
+    "Upset of the round as {win} beat {lose}|The bookmakers are still recovering from {wscore}."
+  ],
+  "streakWin": [
+    "{team} make it {n} wins in a row|Nobody wants to play them right now.",
+    "Unstoppable {team}: {n} straight wins|The run goes on. Who stops them?"
+  ],
+  "streakWinMine": [
+    "{n} in a row for {us}!|The winning habit has taken hold. {city} is enjoying this.",
+    "{us} keep rolling: {n} straight wins|The dressing room is buzzing and the queue at the ticket office is longer."
+  ],
+  "streakLossMine": [
+    "{us} slump to {n} defeats in a row|Confidence is draining away. Something has to change.",
+    "{n} straight losses for {us}|The mood around the {stadium} is grim."
+  ],
+  "streakLossMineHarsh": [
+    "Crisis at {us}: {n} defeats in a row|The fans are asking whether the owner has a plan. So are we."
+  ],
+  "unbeatenMine": [
+    "{us} unbeaten in {n}|A run that's quietly turning heads."
+  ],
+  "hatTrick": [
+    "Hat-trick hero {player}|Three goals for {team} this week. The match ball is his.",
+    "{player} bags a hat-trick|{team} have a man in form."
+  ],
+  "hatTrickMine": [
+    "{player} hat-trick lights up {us}|Three goals and a match ball for {player}. {city} has a new favourite.",
+    "Treble for {player}|{us}'s forward helped himself to three. The shirt sales are already up."
+  ],
+  "milestone": [
+    "{player} reaches {n} goals|The {us} forward is having a season to remember.",
+    "{n} and counting for {player}|Another goal, another milestone for {us}'s top scorer."
+  ],
+  "signing": [
+    "{us} sign {player} for {fee}|The deal with {from} is done. Big expectations come with that price tag.",
+    "{player} joins {us}|A {fee} move from {from}. The fans have been waiting for this.",
+    "Done deal: {player} to {us}|{fee} to {from}, and a new face in {city}."
+  ],
+  "signingSmall": [
+    "{us} add {player}|{player} arrives from {from} for {fee}. A sensible piece of business.",
+    "{player} signs for {us}|A low-key {fee} arrival from {from}."
+  ],
+  "freeSigning": [
+    "{us} pick up {player} on a free|No fee, just wages. Could be a bargain.",
+    "Free agent {player} joins {us}|He'd been without a club. Now he has one."
+  ],
+  "loanSigning": [
+    "{player} joins {us} on loan|He arrives from {from} for the rest of the season."
+  ],
+  "sale": [
+    "{player} leaves {us} for {to}|A {fee} deal. Fans will have their say on social media.",
+    "{us} cash in on {player}|{to} pay {fee}. The books look better; the team sheet, maybe not."
+  ],
+  "saleForced": [
+    "Lenders force sale of {player}|{us} have had to let {player} go to {to} for {fee}. Hardly a good sign."
+  ],
+  "aiTransfer": [
+    "{to} sign {player} from {from}|A {fee} move.",
+    "{player} swaps {from} for {to}|The fee is {fee}."
+  ],
+  "playoffIn": [
+    "{us} climb into the playoff places|{pos} in the table. Hold on, and there's a shot at the {cup}."
+  ],
+  "playoffOut": [
+    "{us} slip out of the playoff places|Down to {pos}. Ground to make up."
+  ],
+  "promiseBroken": [
+    "Promise broken? {player} left on the bench|We hear {player} was promised more football at {us}. He hasn't had it.",
+    "Unrest at {us} as {player} feels let down|A promise made, a promise not kept, say those close to the player."
+  ],
+  "promiseBrokenSigning": [
+    "Coach still waiting for that signing|{us}'s head coach was promised reinforcements. None came."
+  ],
+  "money": [
+    "Money worries at {us}|The lenders are looking closely at the books. We understand spending is under review.",
+    "{us} finances under the spotlight|Sources say the club's lenders have stepped in. Fans fear what comes next."
+  ],
+  "stadium": [
+    "Work done at the {stadium}|{text}",
+    "New look for the {stadium}|{text}"
+  ],
+  "seasonChampion": [
+    "{team} win the {cup}|Champions of the {league}. Congratulations from all of us."
+  ],
+  "seasonShield": [
+    "{team} take the {shield}|Top of the table after thirty rounds. The best side over the long haul."
+  ],
+  "previewFavourite": [
+    "The Courier's tip: {team} for the Shield|On paper, nobody has a stronger squad. Paper doesn't play, of course.",
+    "Season preview: all eyes on {team}|The bookmakers' favourites, and it's easy to see why."
+  ],
+  "previewMine": [
+    "{us} tipped for {pos}|Our season preview puts {nick} {pos}. The owner will hope to prove us wrong. Or right.",
+    "Where will {us} finish? We say {pos}|That's our prediction for {nick}. Plenty can change by spring."
+  ],
+  "recordWin": [
+    "Biggest win of the season: {win} {wscore} {lose}|No side has won by more this year."
+  ]
+}

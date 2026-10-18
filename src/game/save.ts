@@ -7,7 +7,7 @@
  * that version up to the current one, so an old save is never thrown away.
  */
 import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
-import { CAREER_VERSION, fullCapacity, initialStadium, newStory, type Career, type Stadium } from '../sim/career';
+import { CAREER_VERSION, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
 import type { Team } from '../sim/types';
 
 export const SAVE_PREFIX = 'ST1:';
@@ -58,6 +58,11 @@ const MIGRATIONS: Record<number, Migration> = {
       books.ledger.income.other ??= 0;
       if (books.lastLedger) books.lastLedger.income.other ??= 0;
     }
+    return save;
+  },
+  /** Version 6 adds the newspaper and the social feed (Stage 6.2); the first edition comes next week. */
+  5: (save) => {
+    save.news = newNews();
     return save;
   },
 };

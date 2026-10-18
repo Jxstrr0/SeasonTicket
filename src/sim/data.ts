@@ -15,6 +15,9 @@ import stadiumTuningJson from '../data/tuning/stadium.json';
 import spatialTuningJson from '../data/tuning/spatial.json';
 import storyTuningJson from '../data/tuning/story.json';
 import everydayEventsJson from '../data/events/everyday.json';
+import newsTuningJson from '../data/tuning/news.json';
+import newspaperJson from '../data/news/newspaper.json';
+import socialJson from '../data/news/social.json';
 import type { Formation, NationId, Position, TeamColors } from './types';
 
 export interface NationDef {
@@ -75,6 +78,10 @@ export const STORY_TUNING = storyTuningJson;
 /** Every story event file, in order (src/data/events). */
 export const EVENT_FILES: readonly unknown[] = [everydayEventsJson];
 export const SPATIAL_TUNING = spatialTuningJson;
+export const NEWS_TUNING = newsTuningJson;
+/** Newspaper and social feed templates (src/data/news). */
+export const NEWSPAPER = newspaperJson;
+export const SOCIAL = socialJson;
 
 export type PlayersTuning = typeof playersTuningJson;
 export type MatchTuning = typeof matchTuningJson;
