@@ -10,6 +10,7 @@ import {
   createCareer,
   eventDef,
   openEvents,
+  ongoingStories,
   orderProject,
   ownerMemory,
   setTicketPrice,
@@ -282,5 +283,28 @@ describe('crises: saves and determinism', () => {
     expect(up.version).toBe(CAREER_VERSION);
     expect(up.story.gate).toBeNull();
     advanceCareer(up);
+  });
+});
+
+describe('crises: the Ongoing card', async () => {
+  const { renderClub } = await import('../src/ui/views/career/club');
+  const { renderHome } = await import('../src/ui/views/career/home');
+  it('lists promises, unfinished stories and the next home crowd, without spoiling surprises', () => {
+    const career = newCareer();
+    intoSeason(career);
+    expect(renderHome(career, { pendingConfirm: null } as never)).not.toContain('card-title">Ongoing');
+    const p = star(career);
+    answerEvent(career, startStoryEvent(career, 'transfer-request', p.id)!.id, 'refuse');
+    answerEvent(career, startStoryEvent(career, 'fan-protest')!.id, 'freeze');
+    answerEvent(career, startStoryEvent(career, 'floodlight-failure')!.id, 'early');
+    const list = ongoingStories(career);
+    expect(list.map((o) => o.kind).sort()).toEqual(['gate', 'promise', 'story']);
+    const story = list.find((o) => o.kind === 'story')!;
+    expect(story.detail).toContain(p.firstName);
+    expect(story.detail).not.toMatch(/\{\w+\}/);
+    const club = renderClub(career, { pendingConfirm: null } as never);
+    expect(club).toContain('Ongoing');
+    expect(club).toContain('No ticket price rise');
+    expect(renderHome(career, { pendingConfirm: null } as never)).toContain('card-title">Ongoing');
   });
 });

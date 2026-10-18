@@ -22,7 +22,7 @@ import type { UiState } from '../../career/state';
 import { renderMatchFeed } from '../matchFeed';
 import { resultNotes } from '../results';
 import { renderWaiting } from './story';
-import { rivalPill } from './parts';
+import { renderOngoing, rivalPill } from './parts';
 
 function ordinal(n: number): string {
   const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
@@ -177,6 +177,7 @@ export function renderHome(career: Career, ui: UiState): string {
     ${renderWaiting(career)}
     ${renderNextMatch(career)}
     ${renderAlerts(career)}
+    ${renderOngoing(career, true)}
     ${renderLastMatch(career, ui)}
     ${renderHeadline(career)}
     ${renderLatestMail(career)}

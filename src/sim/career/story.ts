@@ -86,7 +86,7 @@ export type Effect =
   | { owner: number }
   | { claim: boolean }
   /** Stage 6.5. Start a follow-up event in `weeks` weeks, about the same player, person and club. */
-  | { next: string; weeks: number }
+  | { next: string; weeks: number; note?: string }
   /** The player misses this many matches. */
   | { suspend: number }
   /** A club bids for the player at this share of his value. */
@@ -861,4 +861,71 @@ export function decisionsThisSeason(career: Career): StoryDecision[] {
 
 export function setStoryPace(career: Career, pace: StoryPace): void {
   if (STORY_PACES.includes(pace)) career.story.pace = pace;
+}
+
+// ---------------------------------------------------------------------------
+// Ongoing: promises and unfinished stories, for the Club screen
+// ---------------------------------------------------------------------------
+
+export interface OngoingStory {
+  kind: 'promise' | 'story' | 'gate';
+  title: string;
+  detail: string;
+  /** Weeks until it is settled, or null when it waits on a match. */
+  weeks: number | null;
+}
+
+/** Promises you have made and stories that are not over yet. Surprises ('later' consequences) stay hidden. */
+export function ongoingStories(career: Career): OngoingStory[] {
+  const out: OngoingStory[] = [];
+  const league = career.season.league;
+  const team = userTeam(career);
+  const coach = staffName(career, 'headCoach') ?? 'the head coach';
+  for (const t of [...career.story.timers].sort((a, b) => a.week - b.week || (a.id < b.id ? -1 : 1))) {
+    const weeks = Math.max(1, t.week - career.weekIndex);
+    const p = t.playerId ? league.players[t.playerId] : undefined;
+    const name = p ? `${p.firstName} ${p.lastName}` : '';
+    switch (t.kind) {
+      case 'starts': {
+        if (!p || p.teamId !== team.id) break;
+        const done = Math.max(0, (career.playerSeason[p.id]?.apps ?? 0) - t.baseline);
+        out.push({ kind: 'promise', title: `Games for ${name}`, detail: `You promised ${t.target}. ${Math.min(done, t.target)} so far.`, weeks });
+        break;
+      }
+      case 'signing':
+        out.push({ kind: 'promise', title: `A signing for ${coach}`, detail: signedSince(career, t.baseline) ? 'Done: you have signed someone.' : 'Any new player counts.', weeks });
+        break;
+      case 'wins': {
+        const won = career.season.standings.find((r) => r.teamId === team.id)?.won ?? 0;
+        out.push({ kind: 'promise', title: 'Wins for the fans', detail: `You promised ${t.target}. ${Math.min(Math.max(0, won - t.baseline), t.target)} so far.`, weeks });
+        break;
+      }
+      case 'price': {
+        const now = userBooks(career).ticketPrice;
+        out.push({ kind: 'promise', title: 'No ticket price rise', detail: now > t.baseline ? `Prices are above the ${money(t.baseline)} you promised. Put them back before the time is up.` : `Keep tickets at ${money(t.baseline)} or less.`, weeks });
+        break;
+      }
+      case 'next': {
+        const def = BY_ID.get(t.eventId);
+        if (!def) break;
+        if (t.playerId && (!p || p.teamId !== team.id)) break;
+        const ev = { playerId: t.playerId, person: t.person ?? null, amount: t.amount, teamId: t.teamId ?? null };
+        const fx = def.choices.find((c) => c.id === t.choiceId)?.effects.find((e): e is Extract<Effect, { next: string }> => 'next' in e && e.next === t.next);
+        out.push({ kind: 'story', title: fill(career, ev, def.title), detail: fill(career, ev, fx?.note ?? "This isn't over yet."), weeks });
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  for (const c of career.story.claims) {
+    const opp = league.teams.find((x) => x.id === c.opponentId);
+    if (opp) out.push({ kind: 'promise', title: `Beat ${opp.shortName}`, detail: 'You said so in public. The next meeting decides it.', weeks: null });
+  }
+  const g = career.story.gate;
+  if (g && career.phase === 'season' && g.week >= career.season.week) {
+    const pct = Math.round(Math.abs(g.share) * 100);
+    out.push({ kind: 'gate', title: g.share < 0 ? 'A smaller crowd next home game' : 'A bigger crowd next home game', detail: g.share < 0 ? `Expect about ${pct}% of the ground to be empty, on top of the usual.` : `About ${pct}% more of the ground will be full.`, weeks: null });
+  }
+  return out;
 }

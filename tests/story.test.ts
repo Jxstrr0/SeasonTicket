@@ -91,7 +91,11 @@ describe('story layer: events and effects', () => {
     const ev = { playerId: firstPlayer(career), person: 'A Visitor', amount: 50_000, teamId };
     for (const def of EVENTS) {
       const texts = [def.title, def.text, ...def.choices.flatMap((c) => [c.label, c.hint, c.result])];
-      for (const c of def.choices) for (const e of c.effects) if ('later' in e) texts.push(e.title, e.text);
+      for (const c of def.choices) for (const e of c.effects) {
+        if ('later' in e) texts.push(e.title, e.text);
+        if ('next' in e && e.note) texts.push(e.note);
+        if ('promise' in e) texts.push(...[e.kept, e.broken, e.news].filter((x): x is string => !!x));
+      }
       for (const t of texts) expect(fill(career, ev, t), `${def.id}: ${t}`).not.toMatch(/\{\w+\}/);
     }
   });

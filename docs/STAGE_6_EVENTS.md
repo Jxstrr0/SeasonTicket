@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.4 built; next is 6.5.
+**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.5 built; next is 6.6.
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -185,6 +185,30 @@ After a league-stage conference, the next week has none unless a derby, playoff 
 **Where you see it.** Club screen → Rivals: each derby and rivalry club, a heat bar, and its owner's name, temperament and feeling towards you. The market's player page names the selling club's owner. Tuning in `src/data/tuning/rivalry.json`.
 
 **Saves.** Save version 8 adds the owners. Older saves get them on load, drawn from the career seed, so the same save always gets the same owners.
+
+### 6.5 Crises and story chains (built 2026-10-18)
+
+**Chains.** A choice can start the next step of a story a few weeks later, about the same player, visitor and club (`{"next": id, "weeks": n}`). Follow-up steps are marked chain-only and never come up on their own. A follow-up is dropped if the player has left the club by then.
+
+**Ten storylines, 19 events,** in `src/data/events/crises.json`:
+- **Dressing-room row** about a star: drop him for a match, talk it out (it may flare up again: sell him, fine everyone, or a team-building trip), or back him.
+- **Transfer request** from an unhappy player: accept (a club bids close to his value), refuse (he sulks: sell at a discount, train with the reserves, or a bonus), or promise him games.
+- **Injury crisis** (4 or more out): fly in a specialist (every injury a week shorter), push them back early (2 weeks shorter, then a setback), or trust the kids.
+- **Sponsor scandal**: drop the shirt sponsor (press and fans like it), stand by them (they offer extra money to stay), or wait for the facts.
+- **Floodlight failure** before a home game: replace them, patch them (a stand closed), or move kick-off (a smaller crowd and grumpy fans).
+- **Fan protest** when fan mood is low: meet them and promise 3 wins in 6 weeks, promise no ticket price rise this season, or let them march (it can become a boycott: cut prices 15% or face empty seats).
+- **Building objections** while stadium work is under way: a community fund, lawyers and a hearing a month later, or slow the work by 4 weeks.
+- **Coach poaching** by another club's owner when your head coach is good: let him go for compensation (an interim takes over), give him a raise, or refuse (he may be unsettled later).
+- **The bank** when you are on the lenders' ladder: a recovery plan (2 more weeks), an expensive lunch (4 weeks), or a bluff (1 week, then they want to see the money, which can end with selling your best player).
+- **Naming-rights backlash** when the stadium carries a sponsor's name and the fans are unhappy.
+
+**New effects:** a suspension, a club bidding for a player at a share of his value, the head coach leaving, a change to the crowd at the next home match, dropping the shirt sponsor, delaying stadium work, more time from the lenders, and shorter injuries. **New promises:** win a number of games in a number of weeks, or hold ticket prices. Both are judged when the time is up, move fan mood, squad mood and press standing, and a broken one makes the paper.
+
+**Where you see it.** A new **Ongoing** card on the Club screen (and on Home when there is something in it) lists the promises you have made with how far along they are, stories that aren't finished with a one-line hint, and any change to the next home crowd. Delayed surprises from everyday events stay hidden.
+
+**Numbers.** In test careers (18 seasons, owner answering about 60% of events at random) there are **3 to 5 crisis steps a season** out of about 30 events. The big set pieces (sponsor scandal, floodlights, coach poaching) have long cooldowns, so each turns up in roughly every other season. The everyday pool runs dry late in a season, so more variety is the job of 6.7.
+
+**Saves.** Save version 9 adds the next-home-game crowd change. Chains and promises use the existing story timers.
 
 ## Owner's decisions (2026-10-18)
 
