@@ -274,7 +274,7 @@ function drawEvents(career: Career): void {
   const rng = careerRng(career, 'story');
   const w = weights(career);
   let n = rng.weighted([0, 1, 2, 3], (k) => w[k] ?? 0);
-  const room = T.pace.maxOpen - openEvents(career).length;
+  const room = T.pace.maxOpen[career.story.pace] - openEvents(career).length;
   n = Math.min(n, Math.max(0, room));
   for (let i = 0; i < n; i++) {
     const pool = EVENTS.filter((e) => eligible(career, e));

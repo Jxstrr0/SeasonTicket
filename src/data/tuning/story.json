@@ -1,12 +1,12 @@
 {
   "_about": "Stage 6 events and story layer: how often events come, deadlines, player mood, the press and how well the staff answer for you. Read by src/sim/career/story.ts. Events themselves live in src/data/events.",
   "pace": {
-    "_about": "Chance of 0, 1, 2 or 3 new events in a week, by story pace. 'window' is used instead in transfer-window weeks (pre-season and the mid-season window) and is scaled toward calm/busy by windowShift.",
+    "_about": "Chance of 0, 1, 2 or 3 new events in a week, by story pace. 'window' is used instead in transfer-window weeks (pre-season and the mid-season window) and is scaled toward calm/busy by windowShift. maxOpen: events waiting at once, by story pace (the owner set 4 as the most).",
     "calm": [0.45, 0.45, 0.1, 0],
     "normal": [0.08, 0.46, 0.34, 0.12],
     "busy": [0.03, 0.3, 0.42, 0.25],
     "windowExtra": { "calm": [0.35, 0.47, 0.18, 0], "normal": [0.04, 0.38, 0.4, 0.18], "busy": [0.02, 0.22, 0.44, 0.32] },
-    "maxOpen": 3
+    "maxOpen": { "calm": 3, "normal": 3, "busy": 4 }
   },
   "defaults": {
     "_about": "Event fields left out of the data. deadline is in weeks: the staff answer when the owner has not after that many weeks. cooldown: weeks before the same event can come again.",

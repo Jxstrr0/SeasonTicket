@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.7 built; Stage 6 is complete and waiting for the owner's verdict.
+**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.7 built. Stage 6 is complete and approved by the owner (2026-10-18: "it feels good").
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -239,9 +239,9 @@ With a full squad, only bids and silly calls come in, so every offer can be acce
 |---|---|---|---|
 | Calm | 0.62 | 24 (16 to 30) | 13 |
 | Normal (default) | 1.26 | 49 (44 to 55) | 4.6 |
-| Busy | 1.43 | 56 (50 to 64) | 3.3 |
+| Busy | 1.48 | 58 (52 to 66) | 3.9 |
 
-Normal now sits in the middle of the owner's "1 to 2 a week" (it was 1.00 before this pass). Busy is held back by the limit of 3 events waiting at once and by cooldowns; it gives fewer quiet weeks rather than many more decisions. A season on Normal brings at least 34 different events (38 on average), and no single event is more than 7% of a season's decisions.
+Normal now sits in the middle of the owner's "1 to 2 a week" (it was 1.00 before this pass). Busy is held back by cooldowns and the limit on events waiting at once (3 on Calm and Normal, 4 on Busy: the owner's choice after 6.7, with 4 as the most; it was 3 for all, which gave Busy 1.43 a week); it gives fewer quiet weeks rather than many more decisions. A season on Normal brings at least 34 different events (38 on average), and no single event is more than 7% of a season's decisions.
 
 **Rivalry events** were rarely seen (they only qualify in derby or rivalry weeks), so they now carry weight 2.5 when they do qualify.
 
