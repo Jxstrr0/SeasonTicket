@@ -96,6 +96,10 @@ function renderMenu(career: Career, ui: UiState): string {
   if (!ui.menuOpen) return '';
   const mode = career.delegation.matchMode;
   return `<div class="menu-sheet card" role="dialog" aria-label="Menu">
+    <div class="menu-row menu-top">
+      <button type="button" class="btn-secondary" data-action="help">Help</button>
+      <button type="button" class="btn-secondary" data-action="menu">Close</button>
+    </div>
     <div class="card-title">Match-day mode</div>
     <div class="segmented stack" role="group">
       ${each(MATCH_MODES, (m) => `<button type="button" class="${cls('seg', m.id === mode && 'on')}" data-action="set-mode" data-mode="${esc(m.id)}" aria-pressed="${m.id === mode}"><strong>${esc(m.label)}</strong><span class="small">${esc(m.hint)}</span></button>`)}
@@ -117,6 +121,10 @@ function renderMenu(career: Career, ui: UiState): string {
     </div>
     <p class="muted small">How often people bring you decisions. Normal is one or two a week, more in transfer windows.</p>
     <label class="check"><input type="checkbox" data-change="auto-lineup"${career.delegation.autoLineup ? ' checked' : ''}> Head coach picks the lineup each week</label>
+    <div class="card-title">Tips</div>
+    <label class="check"><input type="checkbox" data-change="tips-on"${ui.tipsOn ? ' checked' : ''}> Show first-time tips</label>
+    <div class="menu-row"><button type="button" class="btn-secondary" data-action="tips-reset">Show tips again</button></div>
+    <p class="muted small">A short tip the first time you open each screen. Show tips again brings back the ones you've seen.</p>
     <div class="menu-row">
       <button type="button" class="btn-secondary" data-action="save-code">Save code</button>
       <button type="button" class="btn-secondary" data-action="to-title">Quit to title</button>

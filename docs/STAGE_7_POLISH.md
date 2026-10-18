@@ -1,6 +1,6 @@
 # Stage 7: Polish and Launch (plan)
 
-**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end); one follow-up is open: where analytics go. Nothing in this plan is built yet.
+**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 is built (see "Build notes").
 
 **Done when (from CLAUDE.md):** ready to share publicly as a free web game.
 
@@ -77,6 +77,18 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 - **Saves:** a 10-season save loads in under 1 second and its save code stays under the current limit.
 - **Site size:** stays well under 1 GB (about 10 MB today).
 
+## Build notes
+
+### 7.1 First-time tips and Help (built 2026-10-18)
+
+**Tips.** 21 tips in `src/data/help/tips.json`: club pick and branding, a welcome, the office, a visitor's card, a press conference, each of the nine hub tabs (Squad to League), deadline day, match day, the 2D pitch and the 3D view, replays and the season review. A tip is a small card at the bottom-left corner with **Got it** and **No more tips**; it never blocks the screen. Each shows once per device: it counts as seen when you tap Got it or move to a screen where it no longer applies. The welcome is the exception: it follows you round the hub until you tap Got it, so a new owner doesn't miss it. On a screen with a visitor or press card, the card's tip comes before the screen's. Tips wait while the menu is open or a week is playing. A tap that lands within half a second of closing a tip is ignored, so a double tap on Got it never presses the button underneath.
+
+**Settings.** The menu has a **Tips** section: "Show first-time tips" on or off, and **Show tips again**, which clears the record. The record is kept in the browser (`seasonticket.tips`), not in the save, because tips belong to the person on the phone, not the career.
+
+**Help.** A Help screen with 29 short answers in six groups (getting started, money and the lenders, players and transfers, match day, the club and the story, phone and settings), from `src/data/help/help.json`. Numbers in the answers (the wage cap, tax rates, the lenders' deadline, squad limits, the homegrown minimum) are filled from the tuning files, so they stay right after the balance pass. Tap a question to open it. It is reachable from the menu (Help, at the top) and from the title screen (How to play), and works the same with Graphics Off.
+
+**Tests.** `tests/tips.test.ts` (13 tests): every tip and hub tab is covered, the order of tips on a screen, once-only and reset, the stored record survives garbled storage, and every help answer is filled with no `{name}` left over and no "click" or "hover". Checked in the browser at 740 by 360 (plain menus) and 844 by 390 (3D office and match): every tip showed once, a second visit showed none, reset and No more tips worked, no console errors.
+
 ## Owner's answers (2026-10-18)
 
 1. Tutorial: first-time tips on each screen and a Help page. No guided week.
@@ -85,13 +97,13 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 4. Install as an app: yes.
 5. Problem reports: Web3Forms, through the contact form already on the studio website; the game sends players there.
 6. Branding: use the Longlight logo and colours (see 7.6).
-7. Analytics: the owner asked where it would send. Open (follow-up B).
+7. Analytics: GoatCounter (follow-up B), answered 2026-10-18. The owner will send the site code.
 8. Launch extras: none.
 
 ## Open follow-ups
 
 - **A. Where the contact form sends.** Settled: the studio website's contact form (Web3Forms).
-- **B. Where analytics go.** Proposal: GoatCounter (free for small, non-commercial sites, open source, no cookies, so no consent banner). It counts page visits, plus a few game moments with no personal data: career started, season finished, club lost. Settings get a "Send anonymous play counts" switch, on by default, and the Credits screen says what is sent. Alternatives: Cloudflare Web Analytics (free, visits only), or none.
+- **B. Where analytics go.** Settled: GoatCounter, as proposed; waiting on the owner's site code, so it is built last in 7.5. The proposal was: GoatCounter (free for small, non-commercial sites, open source, no cookies, so no consent banner). It counts page visits, plus a few game moments with no personal data: career started, season finished, club lost. Settings get a "Send anonymous play counts" switch, on by default, and the Credits screen says what is sent. Alternatives: Cloudflare Web Analytics (free, visits only), or none.
 
 ## Questions for the owner (as asked)
 

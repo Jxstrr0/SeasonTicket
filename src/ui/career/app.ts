@@ -79,6 +79,8 @@ import { replayOf } from '../views/career/home';
 import { renderReview } from '../views/career/review';
 import { renderDeadline } from '../views/career/deadline';
 import { renderGameOver, renderSaveCode } from '../views/career/saves';
+import { renderHelp, renderTip } from '../views/career/help';
+import { loadTips, markSeen, nextTip, onScreenOf, storeTips, tipCandidates, tipsPaused, type TipId } from './tips';
 import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
 import type { HotspotId, OfficePick } from '../../render/office/types';
 import { OfficeHost } from './officeHost';
@@ -199,6 +201,11 @@ export class CareerApp {
   private lastForm = { name: '', at: 0 };
   /** When a story answer or the deadline clock last moved: the second tap of a double tap must not answer what replaced it. */
   private lastStepAt = 0;
+  /** When a tip card last closed: the rest of a double tap must not land on what was under it. */
+  private tipClosedAt = 0;
+  /** First-time tips seen on this device, and the one showing now. */
+  private tips = loadTips();
+  private tipShown: TipId | null = null;
   /** The 3D office sits behind the menus; the menus render into uiLayer. */
   private readonly uiLayer: HTMLElement;
   private readonly officeLayer: HTMLElement;
@@ -286,7 +293,10 @@ export class CareerApp {
   }
 
   private render(): void {
-    this.uiLayer.innerHTML = this.view() + (this.ui.weekRun ? renderWeekRun(this.ui.weekRun) : '');
+    this.ui.tipsOn = !this.tips.off;
+    const html = this.view() + (this.ui.weekRun ? renderWeekRun(this.ui.weekRun) : '');
+    const tip = this.pickTip(html);
+    this.uiLayer.innerHTML = tip ? html + renderTip(tip) : html;
     this.measureTopBar();
     this.syncOffice();
     this.syncStadium();
@@ -295,6 +305,28 @@ export class CareerApp {
     this.syncSound();
     this.syncFullscreen();
     this.scheduleWarm();
+  }
+
+  /** The first-time tip for what is on screen, if one is still unseen. */
+  private pickTip(html: string): TipId | null {
+    if (tipsPaused(this.ui)) return null;
+    const next = nextTip(this.tips, tipCandidates(this.ui, !!this.career, onScreenOf(html)));
+    // A tip that was showing and has gone (the owner moved on) counts as seen.
+    if (this.tipShown && this.tipShown !== next) {
+      markSeen(this.tips, this.tipShown);
+      storeTips(this.tips);
+    }
+    this.tipShown = next;
+    return next;
+  }
+
+  private closeTip(off: boolean): void {
+    if (this.tipShown) markSeen(this.tips, this.tipShown);
+    if (off) this.tips.off = true;
+    storeTips(this.tips);
+    this.tipShown = null;
+    this.tipClosedAt = performance.now();
+    this.render();
   }
 
   /** The browser's own full screen goes with the full-screen match and nothing else. */
@@ -491,8 +523,8 @@ export class CareerApp {
 
   private onOfficePick(p: OfficePick): void {
     if (!this.career || this.ui.screen !== 'hub' || this.weeks.playing) return;
-    // The tail of a double tap on a visitor's card that just closed.
-    if (performance.now() - this.lastStepAt < CONFIRM_GAP_MS) return;
+    // The tail of a double tap on a visitor's card or a tip that just closed.
+    if (performance.now() - Math.max(this.lastStepAt, this.tipClosedAt) < CONFIRM_GAP_MS) return;
     this.ui.flash = null;
     if (p.kind === 'mail') {
       const mail = this.career.inbox.find((m) => m.id === p.id);
@@ -531,6 +563,8 @@ export class CareerApp {
         return renderSaveCode(ui);
       case 'gameOver':
         return renderGameOver(career);
+      case 'help':
+        return renderHelp();
       default:
         break;
     }
@@ -615,6 +649,7 @@ export class CareerApp {
     const d = target.dataset;
     // While a week plays only "Stop" counts (it stops after this week).
     if (this.weeks.playing && action !== 'stop-sim') return;
+    if (performance.now() - this.tipClosedAt < CONFIRM_GAP_MS) return;
     if (d.confirm === '1') {
       const key = `${action}:${d.id ?? ''}`;
       if (this.ui.pendingConfirm !== key) {
@@ -679,6 +714,20 @@ export class CareerApp {
       case 'dismiss-flash':
         ui.flash = null;
         return this.render();
+      case 'tip-ok':
+        return this.closeTip(false);
+      case 'tips-off':
+        return this.closeTip(true);
+      case 'tips-reset':
+        this.tips = { off: false, seen: [] };
+        storeTips(this.tips);
+        this.tipShown = null;
+        ui.menuOpen = false;
+        ui.flash = { kind: 'ok', text: 'Tips will show again as you go.' };
+        return this.render();
+      case 'help':
+        if (ui.screen !== 'help') ui.returnTo = ui.screen;
+        return this.show('help');
     }
 
     const career = this.career;
@@ -1135,6 +1184,12 @@ export class CareerApp {
     if (el instanceof HTMLElement && el.dataset.draft) return this.onDraft(e);
     if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement) || this.weeks.playing) return;
     const kind = el.dataset.change;
+    if (kind === 'tips-on') {
+      // A device setting, like the frame rate.
+      this.tips.off = !(el as HTMLInputElement).checked;
+      storeTips(this.tips);
+      return;
+    }
     const career = this.career;
     if (!kind || !career) return;
     if (kind === 'show-fps') {

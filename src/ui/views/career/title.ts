@@ -33,6 +33,7 @@ export function renderCareerTitle(ui: UiState): string {
       <textarea id="import-code" name="code" class="field code-field" rows="3" placeholder="ST1:..." spellcheck="false" autocomplete="off">${esc(importText)}</textarea>
       <button type="submit" class="btn-secondary">Load code</button>
     </form>
+    <p class="center"><button type="button" class="btn-secondary" data-action="help">How to play</button></p>
     <p class="center small"><a class="link" href="#sandbox">League sandbox (watch a season, no club)</a></p>
     <p class="center small"><a class="link" href="#engine-lab">Engine lab (preview of the new match engine)</a></p>
   </main>`;

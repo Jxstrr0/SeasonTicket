@@ -1,0 +1,90 @@
+{
+  "_about": "First-time tips (Stage 7.1). Each tip shows once per device, the first time its screen or feature appears, until the owner taps Got it or moves on. Keys are fixed by src/ui/career/tips.ts; `order` lists them as a new owner usually meets them; which one shows first on a screen is set in tips.ts (the welcome, then a visitor or press card, then the screen itself). Text says tap, never click or hover.",
+  "order": ["new-club", "new-brand", "welcome", "office", "visitor", "press", "squad", "lineup", "market", "money", "club", "stadium", "inbox", "news", "league", "deadline", "live", "live-pitch", "live-3d", "replay", "review"],
+  "tips": {
+    "new-club": {
+      "title": "Pick your club",
+      "text": "Easy clubs have money and a good squad; hard ones have debt and an old stadium. You can rename and recolour any club on the next screen, so pick on difficulty, not the name."
+    },
+    "new-brand": {
+      "title": "Make it yours",
+      "text": "Name, city, colours and crest are all yours to change. They show on the kits, the stadium and the office. The homegrown rule can only be chosen now."
+    },
+    "welcome": {
+      "title": "Welcome, owner",
+      "text": "Each week you sort the club out, then play the match. The big button at the top moves you on: Next week, or Match day. Keep an eye on your cash: if it stays below zero the lenders step in, and they are the only way to lose the club."
+    },
+    "office": {
+      "title": "Your office",
+      "text": "Swipe to look around. Each labelled object opens a screen: Finances, News, Stadium, Tactics and more. The phone shows offers when there are any. Visitors come through the door, and the tabs along the top still work."
+    },
+    "visitor": {
+      "title": "Someone wants a word",
+      "text": "People bring you decisions: a player, a sponsor, the council, the fans. Each choice has a cost and a payoff. If you'd rather not, let the staff handle it, or leave it and they will when time runs out."
+    },
+    "press": {
+      "title": "Press conference",
+      "text": "Big matches and big results bring the press. Calm answers keep things steady, bold ones fire up the fans and squad but are remembered if you're wrong, and deflecting gives nothing away."
+    },
+    "squad": {
+      "title": "Your squad",
+      "text": "Tap a player for his ratings, contract and season. Contracts that run out at the season's end mean he leaves for nothing, so renew the ones you want to keep, or sell them while they're worth something."
+    },
+    "lineup": {
+      "title": "Lineup and tactics",
+      "text": "Tap a shirt, then a player, to change your eleven. Formation and the tactics sliders set how the team plays; the head coach can pick the lineup each week if you turn that on in the menu."
+    },
+    "market": {
+      "title": "The transfer market",
+      "text": "Buy players while a transfer window is open (pre-season and the mid-season break). Free agents can be signed at any time except the playoffs. Bids for your players land here too."
+    },
+    "money": {
+      "title": "The money",
+      "text": "Cash is what keeps you in charge. Wages and running costs come out every week; tickets, sponsors and TV money come in. Go over the wage cap and you pay luxury tax at the season's end. You can borrow or put in your own fortune."
+    },
+    "club": {
+      "title": "Running the club",
+      "text": "Set ticket prices, pick a shirt sponsor, hire staff and upgrade the youth academy here. Prices well above fair keep fans away and sour their mood."
+    },
+    "stadium": {
+      "title": "The stadium",
+      "text": "Tap a stand to see what you can build: more seats, boxes, a roof, floodlights. Bigger crowds bring more ticket money. Building takes weeks, and some work closes seats while it's going on."
+    },
+    "inbox": {
+      "title": "Inbox",
+      "text": "Staff reports, offers, results and anything the lenders send. Decisions waiting on you show here and on Home."
+    },
+    "news": {
+      "title": "The paper and the fans",
+      "text": "The Valmere Courier prints every week, and the fan feed shows what supporters think. Neither changes results, but they tell you how the club is seen."
+    },
+    "league": {
+      "title": "The league",
+      "text": "Thirty rounds, then the top six go into the playoffs for the Founders' Cup. Topping the table wins the Valmere Shield. Tap a result to see the match."
+    },
+    "deadline": {
+      "title": "Deadline day",
+      "text": "The window shuts tonight. Each tap moves the clock on an hour, and new calls come in: late bids, panic sales, free agents. Answer what matters; the staff handle the rest."
+    },
+    "live": {
+      "title": "Match day",
+      "text": "Press play to start. You can pause at any time to change the formation, tactics or make subs (five each). Hand the match to the head coach if you'd rather just watch."
+    },
+    "live-pitch": {
+      "title": "Watching on the pitch",
+      "text": "Your players and the ball, seen from above. Change the speed with the buttons; tactics and subs still work while you watch."
+    },
+    "live-3d": {
+      "title": "Watching in 3D",
+      "text": "The camera buttons change the view. Highlights shows 3D only for the big moments. If your phone struggles, lower Graphics in the menu."
+    },
+    "replay": {
+      "title": "Watch it again",
+      "text": "A played match can be watched again in 2D from its result. Nothing you do here changes the result."
+    },
+    "review": {
+      "title": "The season is over",
+      "text": "Here's how it went. When you go on to the off-season, players age, contracts end, the youth academy brings new players and pre-season begins."
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "_about": "The Help screen (Stage 7.1): short plain-language answers, grouped by topic. {words} in braces are filled from the tuning files by src/ui/career/help.ts so the numbers stay right after a balance change.",
+  "sections": [
+    {
+      "title": "Getting started",
+      "items": [
+        { "q": "What am I doing?", "a": "You own the club and run its football side too. Each week you sort out the squad, the money and whatever people bring you, then play the match. A season is {preseasonWeeks} pre-season weeks, 30 league rounds with a break in the middle, and the playoffs." },
+        { "q": "How do I move the week on?", "a": "The big button at the top right: Next week, or Match day when your team plays. Quick sim plays your match without you watching." },
+        { "q": "Does the game save?", "a": "Yes, after every action, in this browser. To move a career to another phone or keep a backup, open the menu and tap Save code, then paste that code on the title screen." },
+        { "q": "Where are the menus when I'm in the office?", "a": "The tabs along the top still work. The labelled office objects are shortcuts to the same screens: the laptop is Money, the phone is offers (or the fan feed when there are none), the TV is the paper, the window is the stadium, the whiteboard is the lineup, the clipboard is the squad and the trophy cabinet is the club. Visitors come through the door. Graphics Off in the menu turns the office off." }
+      ]
+    },
+    {
+      "title": "Money and the lenders",
+      "items": [
+        { "q": "How do I lose the club?", "a": "Only through the lenders. If your cash stays below zero, or you break a loan's conditions, they write to you and give you {deadlineWeeks} weeks to fix it. Miss it and they climb a step: a finance chief who caps spending, then a spending lock, then forced player sales, then receivership, which ends the career. Fall more than {receivership} into the red and receivership comes at once." },
+        { "q": "How do I get off the lenders' ladder?", "a": "Get your cash back above zero (and above any loan's minimum). After {goodWeeks} clean weeks in a row they step back down one level." },
+        { "q": "What is the wage cap?", "a": "A soft limit of {cap} on your player wages, averaged over the year. You can go over, but you pay luxury tax on every dollar over: {taxRate} the first time, {repeatTaxRate} if you were over last season too. Clubs under the cap share the tax." },
+        { "q": "Where does the money come from?", "a": "Tickets, food and drink, merchandise, the shirt sponsor, TV money, prize money and player sales. Wages, staff, running the club and interest go out every week." },
+        { "q": "Can I put my own money in?", "a": "Yes, on the Money screen. Your fortune depends on the difficulty and it is not endless. Money you put in stays in the club." },
+        { "q": "Should I borrow?", "a": "Loans are quick money, but you pay interest and some have conditions, such as keeping a minimum cash balance. Break the conditions and the lenders' ladder starts." }
+      ]
+    },
+    {
+      "title": "Players and transfers",
+      "items": [
+        { "q": "When can I buy players?", "a": "In the transfer windows: pre-season, and the mid-season break plus the week after. Free agents can be signed any week except the playoffs. A bid you asked for (a player wanting a move) can be accepted even when the window is shut." },
+        { "q": "How big can my squad be?", "a": "Up to {maxSquad} players. You can't sell or release below {minSquad}. If it ever drops below {fillTo} players or {minKeepers} keepers, the league tops it up with free agents on minimum deals." },
+        { "q": "What happens when a contract runs out?", "a": "The player leaves for nothing at the end of the season. Renew him on the Squad screen first, or sell him while he still has a year or more left." },
+        { "q": "What is the homegrown rule?", "a": "Chosen when the career starts. With it on, at least {homegrown} Valmeran players must start every match; the coach swaps players in if you're short." },
+        { "q": "Where do young players come from?", "a": "The youth academy sends 3 to 5 teenagers at the end of each season. A better academy and academy director bring better ones." },
+        { "q": "What do the staff do?", "a": "The head coach and assistant help players improve and run matches you hand over. The fitness coach speeds up injuries, the scout makes ratings of other clubs' players more accurate, and the academy director improves youth intake." }
+      ]
+    },
+    {
+      "title": "Match day",
+      "items": [
+        { "q": "What does mentality do?", "a": "How much the team risks. Attacking pushes more players forward and shoots more, but leaves space behind. Defensive sits deeper and is harder to score against." },
+        { "q": "What do the other tactics do?", "a": "Pressing chases the ball higher (tiring faster). The defensive line sets how high the back four stand. Width spreads the play. Tempo and directness set how quickly and how long the team passes. Counter-attacks break fast when you win the ball back. Time-wasting slows things down when you're ahead." },
+        { "q": "How many subs can I make?", "a": "Five, from a bench of nine, at any time. In the playoffs the five also cover extra time." },
+        { "q": "What are the match-day modes?", "a": "Full control: you make every change. Game plan + big calls: the coach runs the match and asks you at key moments. Coach decides: watch only. Change it from the menu, or hand over during a match." },
+        { "q": "How do the playoffs work?", "a": "The top six go through. First and second skip the first round. The higher seed hosts every tie. A draw goes to extra time, then penalties." },
+        { "q": "Why do my players get tired?", "a": "Energy drains through a match, faster with high pressing and tempo, and tired players play worse. They recover over the week." }
+      ]
+    },
+    {
+      "title": "The club and the story",
+      "items": [
+        { "q": "What does fan mood do?", "a": "Happy fans fill the stadium. Results, ticket prices, promises and your answers to the press move it." },
+        { "q": "What are visitors and events?", "a": "People who bring you decisions. Each choice has a cost and a payoff, and some lead to a follow-up weeks later. Let the staff handle it if you'd rather not decide. Story pace in the menu sets how often they come." },
+        { "q": "What happens if I break a promise?", "a": "Fans, players and the press remember. Promises you've made, and how far along they are, show on the Club screen under Ongoing." },
+        { "q": "Who are my rivals?", "a": "Clubs from your region are derby opponents, with bigger crowds and bigger swings in fan mood. Big results and words in the press make other rivalries too. The Club screen shows them." }
+      ]
+    },
+    {
+      "title": "Phone and settings",
+      "items": [
+        { "q": "The game is slow or my phone gets hot.", "a": "Open the menu and set Graphics to Low, or Off for the plain menus with no 3D." },
+        { "q": "There's no sound.", "a": "Check Match sound in the menu. On an iPhone the ring/silent switch mutes the game too." },
+        { "q": "Can I see the tips again?", "a": "Yes: open the menu and tap Show tips again. You can also turn them off there." }
+      ]
+    }
+  ]
+}
