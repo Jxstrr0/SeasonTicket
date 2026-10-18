@@ -21,6 +21,7 @@ import { matchSelection } from './selection';
 import { stadiumAttendance, weeklyStadium } from './stadium';
 import { weeklyNews } from './news';
 import { closePress, weeklyPress } from './press';
+import { closeDeadline, openDeadlineIfDue } from './deadline';
 import { crowdBoost, weeklyRivalry } from './rivalry';
 import { moodForm, storyGate, weeklyStory } from './story';
 import type { Career } from './types';
@@ -81,6 +82,7 @@ export function startUserMatch(career: Career): MatchState | null {
   const match = userFixture(career);
   if (!match) return null;
   closePress(career);
+  closeDeadline(career);
   if (career.liveMatch?.setup.matchId === match.id) {
     liveOf(career);
     return career.liveMatch;
@@ -110,6 +112,7 @@ export interface CareerWeek {
 export function prepareCareerWeek(career: Career): CareerWeek | null {
   if (career.phase !== 'season' || career.season.phase === 'complete') return null;
   closePress(career);
+  closeDeadline(career);
   weeklyBooks(career);
   ensureHeadCoach(career);
   const prep = prepareWeek(career.season, careerHooks(career));
@@ -159,6 +162,7 @@ export function settleCareerWeek(career: Career, week: CareerWeek, played: reado
     addInbox(career, 'season', `Season ${state.league.season} is over`, `${champion ? `${champion.shortName} are champions.` : 'The season is over.'} Review the year, then start the off-season.`);
   }
   weeklyStadium(career);
+  openDeadlineIfDue(career);
   return results;
 }
 
@@ -166,6 +170,7 @@ export function settleCareerWeek(career: Career, week: CareerWeek, played: reado
 export function advanceCareer(career: Career): MatchResult[] {
   if (career.phase === 'review' || career.phase === 'gameOver') return [];
   if (career.phase === 'preseason') {
+    closeDeadline(career);
     weeklyBooks(career);
     weeklyMarket(career);
     preseasonRecovery(career);
@@ -180,6 +185,7 @@ export function advanceCareer(career: Career): MatchResult[] {
       addInbox(career, 'season', 'Kick-off week', `The season starts now. ${userTeam(career).shortName} play this week.`);
     }
     weeklyStadium(career);
+    openDeadlineIfDue(career);
     return [];
   }
   const week = prepareCareerWeek(career);

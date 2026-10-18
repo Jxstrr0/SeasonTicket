@@ -442,6 +442,59 @@ export interface NewsState {
   shieldDone: boolean;
 }
 
+/** Deadline day (Stage 6.6): a call to the war room. */
+export type DeadlineKind = 'lateBid' | 'panicSale' | 'freeAgent' | 'hijack' | 'flavour';
+export type DeadlineStatus = 'open' | 'accepted' | 'declined' | 'lapsed';
+
+export interface DeadlineCall {
+  id: string;
+  kind: DeadlineKind;
+  /** The hour it came in, and the hour the clock lapses it. */
+  hour: number;
+  expires: number;
+  playerId: string | null;
+  /** The other club: the bidder, the seller, or the club being hijacked from. */
+  teamId: string | null;
+  /** The club about to sign the player (hijacks). */
+  rivalId: string | null;
+  /** What you'd pay or receive. */
+  fee: number;
+  /** The fee the rival agreed (hijacks). */
+  rivalFee: number;
+  person: string;
+  /** Which text variant (or which flavour call) to show. */
+  variant: number;
+  status: DeadlineStatus;
+  /** A late bid the owner has already pushed up once. */
+  raised: boolean;
+  /** One line on how it ended. */
+  result: string | null;
+  byStaff: boolean;
+}
+
+export interface DeadlineDeal {
+  dir: 'in' | 'out';
+  playerId: string;
+  name: string;
+  teamId: string | null;
+  fee: number;
+  hour: number;
+}
+
+export interface DeadlineDay {
+  /** "<season>-pre" or "<season>-mid": one war room per window. */
+  key: string;
+  hour: number;
+  calls: DeadlineCall[];
+  deals: DeadlineDeal[];
+  log: { hour: number; text: string }[];
+  /** The biggest deal between other clubs today, for the front page. */
+  elsewhere: { name: string; fromId: string | null; toId: string; fee: number } | null;
+  /** The staff finished the day (the owner left it to them, or never came in). */
+  byStaff: boolean;
+  closed: boolean;
+}
+
 export interface Career {
   version: number;
   seed: number;
@@ -484,6 +537,8 @@ export interface Career {
   owners: Record<string, RivalOwner>;
   /** The newspaper and social feed (Stage 6.2). */
   news: NewsState;
+  /** The war room for the last week of a transfer window (Stage 6.6), or the last one, closed. */
+  deadline: DeadlineDay | null;
   /** Counter for career-side ids (bids, debts, messages). */
   counter: number;
   gameOverReason: string | null;

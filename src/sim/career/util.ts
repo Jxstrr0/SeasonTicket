@@ -89,8 +89,11 @@ export function seasonWeek(career: Career): number {
 }
 
 export function transferWindowOpen(career: Career): boolean {
-  if (career.phase === 'preseason') return true;
-  return career.phase === 'season' && C.calendar.midSeasonWindow.includes(career.season.week);
+  const open = career.phase === 'preseason' || (career.phase === 'season' && C.calendar.midSeasonWindow.includes(career.season.week));
+  if (!open) return false;
+  // Deadline day shuts the window at 23:00, even with the rest of the week to play (deadline.ts).
+  const day = career.deadline;
+  return !(day?.closed && day.key === `${career.season.league.season}-${career.phase === 'preseason' ? 'pre' : 'mid'}`);
 }
 
 /** Free agents can sign any time except the review and the playoff run-in. */

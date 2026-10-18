@@ -24,6 +24,8 @@ import newspaperJson from '../data/news/newspaper.json';
 import pressTuningJson from '../data/tuning/press.json';
 import pressQuestionsJson from '../data/press/questions.json';
 import socialJson from '../data/news/social.json';
+import deadlineTuningJson from '../data/tuning/deadline.json';
+import deadlineJson from '../data/deadline.json';
 import type { Formation, NationId, Position, TeamColors } from './types';
 
 export interface NationDef {
@@ -94,6 +96,9 @@ export const RIVALRY_NEWS = rivalryNewsJson;
 export const PRESS_TUNING = pressTuningJson;
 /** Press conference questions and their news lines (src/data/press). */
 export const PRESS_QUESTIONS = pressQuestionsJson;
+/** Deadline day (Stage 6.6). */
+export const DEADLINE_TUNING = deadlineTuningJson;
+export const DEADLINE_TEXT = deadlineJson;
 
 export type PlayersTuning = typeof playersTuningJson;
 export type MatchTuning = typeof matchTuningJson;

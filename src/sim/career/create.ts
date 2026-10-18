@@ -14,7 +14,7 @@ import type { Career, ClubBooks, Crest, MatchMode, TierId } from './types';
 import { C, addInbox, clamp, emptyLedger, money, userTeam } from './util';
 import { ensureOwners } from './rivalry';
 
-export const CAREER_VERSION = 9;
+export const CAREER_VERSION = 10;
 
 export interface Branding {
   name: string;
@@ -89,6 +89,7 @@ export function createCareer(opts: NewCareerOptions): Career {
     history: [],
     story: newStory(),
     news: newNews(),
+    deadline: null,
     owners: {},
     counter: 0,
     gameOverReason: null,
