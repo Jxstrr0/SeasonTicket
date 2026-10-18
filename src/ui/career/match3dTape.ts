@@ -54,6 +54,9 @@ export class MatchTape {
   epoch = 0;
   private readonly tackles = new Float64Array(PERSONS);
 
+  /** How far (ms) the 3D view runs behind the engine. */
+  static readonly lagMs: number = A.lagMs;
+
   /** The 3D view's time for engine time `ms`. */
   static shown(ms: number): number {
     return ms - A.lagMs;

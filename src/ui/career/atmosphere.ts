@@ -106,11 +106,23 @@ export class Atmosphere {
     this.speed = speed;
     this.observe(m);
     this.sound.play(m, atMs, running, now);
-    this.ticker.show(atMs, now);
+    this.ticker.show(atMs, now, !running);
     while (this.goals.length && this.goals[0].ms <= atMs) {
       const g = this.goals.shift() as { side: Side };
       this.onGoal?.(g.side);
     }
+  }
+
+  /**
+   * Play is back on after a break (half-time, or before extra time): the engine kicked off
+   * at the whistle, so the referee's whistle and a line for it come from here.
+   */
+  kickOff(m: SpatialMatch): void {
+    if (m !== this.m) return;
+    this.observe(m);
+    const mo: Moment = { kind: 'kickoff', ms: m.clockMs, side: m.poss, resume: true };
+    this.sound.add([mo], this.speed);
+    this.ticker.add(m, [mo]);
   }
 
   /** The match was paused: just the murmur. */

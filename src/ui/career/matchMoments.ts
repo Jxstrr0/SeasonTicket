@@ -11,7 +11,7 @@ import { BALL_DEAD, RESTART_KICKOFF, type SpatialMatch } from '../../sim/spatial
 import type { ShotOutcome, Side, SpatialEvent } from '../../sim/spatial/types';
 
 export type Moment =
-  | { kind: 'kickoff'; ms: number; side: Side }
+  | { kind: 'kickoff'; ms: number; side: Side; /** Play back on after a break (half-time). */ resume?: boolean }
   | { kind: 'event'; ms: number; event: SpatialEvent }
   | { kind: 'shot'; ms: number; side: Side; player: number; xg: number; header: boolean; outcome: ShotOutcome; setPiece?: 'freeKick' | 'penalty' }
   | { kind: 'goal'; ms: number; side: Side; scorer: number; assist: number; ownGoal: boolean; header: boolean; score: [number, number] }

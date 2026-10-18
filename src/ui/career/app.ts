@@ -52,7 +52,7 @@ import { CLUBS, MATCH_TUNING } from '../../sim/data';
 import { seedNumber } from '../../sim/league';
 import type { MatchResult, Position, StaffRole, Tactics } from '../../sim/types';
 import { STAFF_ROLES } from '../../sim/types';
-import { coachInCharge, liveSubstitute, liveTactics, playToEnd, setCoachInCharge, stepLive, stepLiveView } from '../../game/matchday';
+import { coachInCharge, isBreak, liveSubstitute, liveTactics, playToEnd, setCoachInCharge, stepLive, stepLiveView } from '../../game/matchday';
 import { LiveHost } from './liveHost';
 import { Match3D, type PlayerCard, type ThreeChoice } from './match3d';
 import { ratingSoFar } from '../../sim/match/ratings';
@@ -89,6 +89,8 @@ const LEAGUE_TABS: readonly LeagueTab[] = ['table', 'results', 'playoffs'];
 const LIVE_PANELS: readonly LivePanel[] = ['none', 'subs', 'tactics'];
 /** A long gap between screen frames (tab hidden, phone locked) never plays the match on. */
 const PITCH_MAX_FRAME_S = 0.1;
+/** How long a break (half-time) lasts with the head coach in charge, in real ms. */
+const BREAK_MS = atmosphereTuning.break.coachS * 1000;
 const POSITIONS: readonly Position[] = ['GK', 'CB', 'FB', 'DM', 'CM', 'AM', 'W', 'ST'];
 const DIAL_KEYS = ['mentality', 'pressing', 'defensiveLine', 'width', 'tempo', 'directness', 'timeWasting'] as const;
 const TAKER_KEYS = ['penalties', 'freeKicks', 'corners'] as const;
@@ -168,6 +170,8 @@ export class CareerApp {
   private runToken = 0;
   private liveTimer: number | null = null;
   private liveRaf = 0;
+  /** The engine's clock at a break (half-time) that play has not come back on from yet. */
+  private breakAt: number | null = null;
   /** The 3D match, shared by the live screen and the replay so a match uses one WebGL context. */
   private readonly match3d = new Match3D((text) => {
     this.ui.match3dFailed = true;
@@ -1395,13 +1399,18 @@ export class CareerApp {
     live.panel = 'none';
     live.subOut = null;
     this.render();
+    this.resumeBreak(career);
     if (live.pitch) return this.livePitchLoop(career, token);
     const tick = (): void => {
       this.liveTimer = null;
       if (token !== this.runToken || this.career !== career || this.ui.screen !== 'live') return;
+      this.resumeBreak(career);
       let pause: string | null = null;
+      let brk = false;
       try {
-        pause = stepLive(career).pause;
+        const step = stepLive(career);
+        pause = step.pause;
+        brk = isBreak(step.events);
       } catch (err) {
         live.running = false;
         this.ui.flash = { kind: 'error', text: `The match stopped: ${errorText(err)}` };
@@ -1409,6 +1418,7 @@ export class CareerApp {
         return this.render();
       }
       const engine = liveOf(career);
+      if (brk && engine) this.breakAt = engine.m.clockMs;
       // A minute at a time: the minute's sounds all fall due at once, and the biggest play.
       if (engine) this.atmosphere.show(engine.m, engine.m.clockMs, true, 60, performance.now());
       const finished = !career.liveMatch || career.liveMatch.finished;
@@ -1419,7 +1429,8 @@ export class CareerApp {
         return this.render();
       }
       this.render();
-      this.liveTimer = window.setTimeout(tick, live.speed);
+      // With the head coach in charge, a break waits a moment before play goes on.
+      this.liveTimer = window.setTimeout(tick, brk ? Math.max(live.speed, BREAK_MS) : live.speed);
     };
     this.liveTimer = window.setTimeout(tick, live.speed);
   }
@@ -1432,6 +1443,8 @@ export class CareerApp {
   private livePitchLoop(career: Career, token: number): void {
     const live = this.ui.live;
     let last = 0;
+    // A break with the head coach in charge: play waits until then (real time).
+    let breakUntil = 0;
     const frame = (now: number): void => {
       this.liveRaf = 0;
       if (token !== this.runToken || this.career !== career || this.ui.screen !== 'live') return;
@@ -1439,10 +1452,20 @@ export class CareerApp {
       if (!engine) return;
       const dt = last ? Math.min((now - last) / 1000, PITCH_MAX_FRAME_S) : 0;
       last = now;
+      if (breakUntil) {
+        if (now < breakUntil) {
+          this.pitch.show(this.pitch.at, now, live.pitchSpeed, false);
+          this.liveRaf = requestAnimationFrame(frame);
+          return;
+        }
+        breakUntil = 0;
+        this.resumeBreak(career);
+      }
       // A goal replay in 3D holds the match where it is.
       const target = this.pitch.at + (this.match3d.holding ? 0 : dt * 1000 * live.pitchSpeed);
       let minute = false;
       let pause: string | null = null;
+      let brk = false;
       try {
         while (engine.m.clockMs < target && !engine.state.finished) {
           this.pitch.beforeStep();
@@ -1450,6 +1473,7 @@ export class CareerApp {
           if (step) {
             minute = true;
             pause = step.pause;
+            brk = isBreak(step.events);
             break;
           }
         }
@@ -1460,12 +1484,20 @@ export class CareerApp {
         return this.render();
       }
       this.pitch.show(target, now, live.pitchSpeed);
+      if (brk) {
+        this.breakAt = engine.m.clockMs;
+        this.pitch.breakCard(pause ? 'owner' : 'coach');
+        if (!pause) breakUntil = now + BREAK_MS;
+      }
       const finished = !career.liveMatch || career.liveMatch.finished;
       if (pause || finished) {
         live.running = false;
         live.pause = finished ? null : pause;
         this.save();
-        return this.render();
+        this.render();
+        // Let the 3D view, the sound and the ticker catch up to the moment play stopped.
+        this.pitch.settle();
+        return;
       }
       if (minute) this.render();
       this.liveRaf = requestAnimationFrame(frame);
@@ -1476,6 +1508,15 @@ export class CareerApp {
   private livePause(): void {
     if (!this.ui.live.running) return;
     this.stopLoops();
+    if (this.ui.live.pitch) this.pitch.settle();
+  }
+
+  /** Play is back on after a break: the referee's whistle (the engine kicked off at the break). */
+  private resumeBreak(career: Career): void {
+    const engine = liveOf(career);
+    if (this.breakAt === null || !engine) return;
+    if (engine.m.clockMs === this.breakAt) this.atmosphere.kickOff(engine.m);
+    this.breakAt = null;
   }
 
   private async liveContinue(): Promise<void> {

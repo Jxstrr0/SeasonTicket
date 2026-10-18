@@ -1,6 +1,6 @@
 /**
  * The commentary ticker over the pitch (Stage 5.5): one line at a time for the moments worth
- * a word (chances, goals, cards, penalties, whistles, shootout kicks), shown when the screen's
+ * a word (chances, goals, cards, penalties, whistles, play back on after a break, shootout kicks), shown when the screen's
  * clock reaches them. The wording is the match feed's own (src/data/commentary.json); which
  * line of several is used comes from the moment's time, never from the engine's random numbers.
  */
@@ -44,6 +44,9 @@ export function tickerLine(m: SpatialMatch, mo: Moment, lastFoul?: number): Tick
     text: describeAt(type as MatchEventType, params, hash(mo.ms, type.length)),
   });
   switch (mo.kind) {
+    // Only play back on after a break gets a word; the kick-offs after goals go unsaid.
+    case 'kickoff':
+      return mo.resume ? line(m.period === PERIOD.SECOND ? 'secondHalf' : 'extraTimeKickoff', mo.side, { team: team(mo.side), score: scoreText(m, m.score) }) : null;
     case 'shot': {
       if (mo.xg < T.minChanceXg && mo.outcome !== 'post' && mo.setPiece !== 'penalty') return null;
       const p = { player: nameOf(m, mo.player), team: team(mo.side), secondary: nameOf(m, m.who[(1 - mo.side) * 11]) };
@@ -138,8 +141,11 @@ export class Ticker {
     }
   }
 
-  /** Show what is due by the screen's match time `atMs` (real time `now`). */
-  show(atMs: number, now: number): void {
+  /**
+   * Show what is due by the screen's match time `atMs` (real time `now`). `stopped` (play
+   * is paused or on a break) shows the newest line due at once, and keeps it up.
+   */
+  show(atMs: number, now: number, stopped = false): void {
     // Lines long past (a fast-forward) are dropped; a big one is kept over small ones.
     const fresh = this.queue.filter((l) => l.ms <= atMs && atMs - l.ms <= T.staleMs);
     const waiting = this.queue.filter((l) => l.ms > atMs);
@@ -150,11 +156,14 @@ export class Ticker {
     }
     this.queue = [...due, ...waiting];
     const held = now - this.shownAt;
-    const next = this.queue[0];
+    let next = this.queue[0];
     const ready = next && next.ms <= atMs;
-    if (this.showing && held < (ready ? (this.showing.big ? T.showMs : T.minMs) : T.showMs)) return;
+    if (stopped && ready) {
+      while (this.queue.length > 1 && this.queue[1].ms <= atMs) this.queue.shift();
+      next = this.queue[0];
+    } else if (this.showing && held < (ready ? (this.showing.big ? T.showMs : T.minMs) : T.showMs)) return;
     if (!ready) {
-      if (this.showing) {
+      if (this.showing && !stopped) {
         this.showing = null;
         this.el.hidden = true;
       }
