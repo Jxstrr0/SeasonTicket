@@ -228,7 +228,7 @@ In plain terms:
 ### Planned world extras
 - A city view where your brand spreads as popularity grows (billboards, shirts, bars showing matches).
 - Press room after matches.
-- Transfer deadline day war room.
+- Transfer deadline day war room (built in Stage 6.6): on the last day of each window the owner moves a clock from 09:00 to 23:00 an hour at a time and answers late bids, panic sales, free agents, hijack chances and the odd silly call; the staff handle anything left. Details in `docs/STAGE_6_EVENTS.md`.
 - Supporters' fan zone that fills before kickoff.
 - Owner's box guests: VIPs you court for deals mid-match.
 - Newspaper and social feed reacting to your decisions.

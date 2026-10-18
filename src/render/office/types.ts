@@ -61,6 +61,8 @@ export interface OfficeSnapshot {
   formation: string;
   slots: OfficeSlot[];
   bids: number;
+  /** The war room clock ("14:00") while deadline day is on, with the calls waiting. */
+  deadline: { time: string; calls: number } | null;
   sponsorOffers: number;
   unread: number;
   trophies: OfficeTrophy[];

@@ -403,7 +403,7 @@ export function buildProps(gltf: GLTF, tier: TierSettings, anisotropy: number): 
       paintTv(tvScreen, snap);
       paintWhiteboard(boardTex, snap);
       paintPhone(phoneScreen, snap);
-      led.visible = snap.bids > 0;
+      led.visible = snap.bids > 0 || !!snap.deadline;
       byLevel.forEach((items, lvl) => {
         for (const o of items) o.visible = snap.level >= lvl;
       });

@@ -308,7 +308,7 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
       const door = labels.get('door');
       if (door) door.text.textContent = snap.unread > 0 ? `Inbox (${snap.unread})` : 'Inbox';
       const phone = labels.get('phone');
-      if (phone) phone.text.textContent = snap.bids > 0 ? `Offers (${snap.bids})` : 'Fan feed';
+      if (phone) phone.text.textContent = snap.deadline ? 'War room' : snap.bids > 0 ? `Offers (${snap.bids})` : 'Fan feed';
       const key = JSON.stringify(snap);
       if (key === lastKey) return;
       lastKey = key;

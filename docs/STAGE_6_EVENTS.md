@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.5 built; next is 6.6.
+**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.6 built; next is 6.7.
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -209,6 +209,25 @@ After a league-stage conference, the next week has none unless a derby, playoff 
 **Numbers.** In test careers (18 seasons, owner answering about 60% of events at random) there are **3 to 5 crisis steps a season** out of about 30 events. The big set pieces (sponsor scandal, floodlights, coach poaching) have long cooldowns, so each turns up in roughly every other season. The everyday pool runs dry late in a season, so more variety is the job of 6.7.
 
 **Saves.** Save version 9 adds the next-home-game crowd change. Chains and promises use the existing story timers.
+
+### 6.6 Deadline-day war room (built 2026-10-18)
+
+**When.** The last week of each transfer window (pre-season week 4, and the last week of the mid-season window) is deadline day. A notice arrives in the inbox and the phone in the office lights up as **War room**. Home shows a card with an **Enter the war room** button.
+
+**The clock.** The day runs from 09:00 to 23:00. The owner taps **Next hour** to move it on; each hour can bring calls, more of them late in the evening (about 10 calls a day, at most 12, never more than 3 waiting). Each call waits one to three hours and then lapses. At 23:00 the window shuts: the transfer market closes (free agents can still sign), the AI clubs do a last flurry of deals, and the paper prints a front page about your day with the biggest deal elsewhere. **Leave it to the staff** (or just playing the week) lets the staff answer everything left. The staff only sell, only at well over a player's value, never a starter, and never below 21 players; they never spend your money (about one sale in every two windows).
+
+**The calls,** with text in `src/data/deadline.json` and numbers in `src/data/tuning/deadline.json`:
+- **Late bid** for one of your players: accept, turn it down, or ask for more (about half the time they go up 8 to 20%; otherwise they hang up).
+- **Panic sale**: a club short of cash offers a decent player at 55 to 80% of his value.
+- **Free agent**: an agent offers a player for your weakest position, no fee.
+- **Hijack**: a rival (a club you have a rivalry with, if possible) is about to sign a player; beat their fee by 15% in the next hour or he signs for them.
+- **Silly calls** for a laugh: a famous player's "cousin", the fax machine, the reporter outside, pizza orders and more. They change nothing.
+
+With a full squad, only bids and silly calls come in, so every offer can be accepted.
+
+**The war room screen.** The clock and its buttons at the top; the calls on hold (with how long each has left, in orange when it lapses at the next hour); earlier calls folded away; and a whiteboard with cash, the most you can pay, wage room, squad size, ins and outs, and the players on offer.
+
+**Saves.** Save version 10 adds the deadline day. An old save in the last week of a window gets its war room when loaded.
 
 ## Owner's decisions (2026-10-18)
 

@@ -343,7 +343,15 @@ export function paintPhone(s: ScreenTexture, snap: OfficeSnapshot): void {
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   ctx.font = `700 34px ${FONT}`;
-  if (snap.bids > 0) {
+  if (snap.deadline) {
+    ctx.fillStyle = '#ff8a5a';
+    ctx.font = `700 22px ${FONT}`;
+    ctx.fillText('DEADLINE DAY', w / 2, h / 2 - 44);
+    ctx.font = `700 44px ${FONT}`;
+    ctx.fillText(snap.deadline.time, w / 2, h / 2);
+    ctx.font = `700 22px ${FONT}`;
+    ctx.fillText(snap.deadline.calls > 0 ? `${snap.deadline.calls} ON HOLD` : 'QUIET', w / 2, h / 2 + 44);
+  } else if (snap.bids > 0) {
     ctx.fillStyle = '#ffcf5a';
     ctx.fillText(`${snap.bids} BID${snap.bids === 1 ? '' : 'S'}`, w / 2, h / 2);
   } else {

@@ -413,6 +413,7 @@ label .field { color: var(--text); }
 .pill-ok, .pill-on { background: rgba(62, 207, 142, 0.18); color: var(--win); }
 .pill-warn { background: rgba(242, 215, 78, 0.18); color: var(--yellow); }
 .pill-off { color: var(--muted); }
+.pill-muted { color: var(--muted); opacity: 0.8; }
 .pill-finance, .pill-ladder { background: rgba(242, 193, 78, 0.16); color: var(--accent); }
 .pill-transfer, .pill-bid { background: rgba(78, 205, 196, 0.16); color: var(--accent-2); }
 .pill-match { background: rgba(62, 207, 142, 0.16); color: var(--win); }
@@ -1138,3 +1139,28 @@ body.office-mode .topbar { backdrop-filter: none; }
 .pill-story { background: rgba(242, 193, 78, 0.18); color: #f2c14e; }
 .pill-gate { background: rgba(240, 98, 98, 0.16); color: #f59a9a; }
 .rival-heat span { display: block; height: 100%; background: linear-gradient(90deg, #f2c14e, #f06262); }
+
+/* Deadline day (Stage 6.6): the war room. */
+.war-room { display: grid; gap: 12px; }
+.war-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.war-clock { font-size: 2.4rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; color: #ff8a5a; }
+.war-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.war-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (min-width: 700px) { .war-grid { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+.war-calls { display: grid; gap: 12px; min-width: 0; }
+.war-call { border-left: 3px solid rgba(255, 255, 255, 0.15); }
+.war-call p { margin: 6px 0; }
+.war-lateBid { border-left-color: var(--accent); }
+.war-panicSale, .war-freeAgent { border-left-color: var(--accent-2); }
+.war-hijack { border-left-color: #ff8a5a; }
+.war-done { opacity: 0.8; padding: 10px 16px; }
+.war-call-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.war-hurry { color: #ff8a5a; font-weight: 600; }
+.war-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.war-earlier { display: grid; gap: 8px; }
+.war-earlier summary { min-height: var(--tap); display: flex; align-items: center; color: var(--muted); cursor: pointer; }
+.war-earlier[open] summary { margin-bottom: 4px; }
+.war-earlier .war-call + .war-call { margin-top: 8px; }
+.war-board-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.war-list { margin: 2px 0 8px; padding-left: 18px; font-size: 0.9rem; }
+.war-card { border-left: 3px solid #ff8a5a; }

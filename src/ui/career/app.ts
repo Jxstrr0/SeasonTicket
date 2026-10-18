@@ -5,6 +5,10 @@
  * live here: the sim decides everything.
  */
 import {
+  advanceDeadlineHour,
+  answerDeadlineCall,
+  closeDeadline,
+  openDeadline,
   C,
   acceptBid,
   acceptSponsor,
@@ -73,6 +77,7 @@ import { renderLive } from '../views/career/live';
 import { renderReplayScreen } from '../views/career/replay';
 import { replayOf } from '../views/career/home';
 import { renderReview } from '../views/career/review';
+import { renderDeadline } from '../views/career/deadline';
 import { renderGameOver, renderSaveCode } from '../views/career/saves';
 import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
 import type { HotspotId, OfficePick } from '../../render/office/types';
@@ -500,6 +505,8 @@ export class CareerApp {
       this.ui.newsView = 'paper';
       this.ui.newsEdition = null;
     }
+    // On deadline day the phone is the war room.
+    if (p.id === 'phone' && this.career && openDeadline(this.career)) return this.show('deadline');
     if (p.id === 'phone' && this.career && this.career.incomingBids.length === 0) {
       this.ui.newsView = 'feed';
       return this.showTab('news');
@@ -525,6 +532,7 @@ export class CareerApp {
     if (ui.screen === 'live') return renderLive(career, ui);
     if (ui.screen === 'replay') return renderReplayScreen(career, ui);
     if (ui.screen === 'review') return renderReview(career);
+    if (ui.screen === 'deadline') return renderDeadline(career, ui);
     return renderHub(career, ui);
   }
 
@@ -749,6 +757,23 @@ export class CareerApp {
       }
       case 'close-scene':
         ui.sceneId = null;
+        break;
+
+      // Deadline day
+      case 'war-room':
+        return this.show('deadline');
+      case 'deadline-hour':
+        advanceDeadlineHour(career);
+        break;
+      case 'deadline-call': {
+        if (!d.id || (d.choice !== 'yes' && d.choice !== 'more' && d.choice !== 'no')) return;
+        const res = answerDeadlineCall(career, d.id, d.choice);
+        if (res.message) ui.flash = { kind: res.ok ? 'ok' : 'error', text: res.message };
+        break;
+      }
+      case 'deadline-staff':
+        closeDeadline(career);
+        ui.flash = { kind: 'ok', text: 'The staff saw the day out. The window has shut.' };
         break;
       case 'set-pace':
         if (d.pace === 'calm' || d.pace === 'normal' || d.pace === 'busy') setStoryPace(career, d.pace);
