@@ -8,7 +8,7 @@ import type { Position, StaffRole } from '../../sim/types';
 import { loadQuality, type QualitySetting } from '../../render/quality';
 import atmosphere from '../../data/tuning/atmosphere.json';
 
-export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay' | 'deadline';
+export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay' | 'deadline' | 'help';
 
 export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'stadium' | 'inbox' | 'news' | 'league';
 
@@ -273,6 +273,8 @@ export interface UiState {
   sound: SoundSetting;
   /** The frame-rate readout on the 3D match, for this device. */
   showFps: boolean;
+  /** First-time tips are on, for this device (the app keeps the record; this mirrors it for the menu). */
+  tipsOn: boolean;
   squadPlayerId: string | null;
   lineupSlot: number | null;
   marketView: MarketView;
@@ -337,6 +339,7 @@ export function initialUi(): UiState {
     quality: loadQuality(),
     sound: loadSound(),
     showFps: loadShowFps(),
+    tipsOn: true,
     squadPlayerId: null,
     lineupSlot: null,
     marketView: 'scout',
