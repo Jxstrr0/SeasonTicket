@@ -65,6 +65,14 @@ const MIGRATIONS: Record<number, Migration> = {
     save.news = newNews();
     return save;
   },
+  /** Version 7 adds press conferences (Stage 6.3): rivalry heat and promises to win, both empty. */
+  6: (save) => {
+    const story = save.story as Record<string, unknown>;
+    story.heat = {};
+    story.claims = [];
+    story.lastPress = -1;
+    return save;
+  },
 };
 
 export class SaveError extends Error {}

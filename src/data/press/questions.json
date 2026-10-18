@@ -1,0 +1,364 @@
+{
+  "_about": "Press conference questions (Stage 6.3, src/sim/career/press.ts). Each question has a phase (pre: before the next match, post: after this week's), the tag that brings it, and three answers: calm, bold and deflect. 'label' is what the owner says (the paper quotes it), 'reply' is how the room takes it. Effects: fans, squad (every player's mood), mood (the player the question is about), press, heat (rivalry with the opponent), claim (a promise to win the next match, judged after it). Fills: {us} {them} {city} {nick} {coach} {player} {first} {score} {stage} {cup} {n} {pos}. Every name here is made up.",
+  "questions": [
+    {
+      "id": "pre-derby-meaning", "phase": "pre", "tag": "derby",
+      "text": "It's {them} this week. What does a derby mean to you?",
+      "answers": {
+        "calm": { "label": "It matters to the fans, so it matters to us. We'll prepare like any other match.", "reply": "Sensible. Nobody will pin that one on a dressing-room wall.", "effects": [{ "press": 0.02 }, { "heat": -0.03 }] },
+        "bold": { "label": "This is our city. We'll remind {them} of that on Saturday.", "reply": "The pens move very fast. {them} will have read it by lunch.", "effects": [{ "fans": 0.03 }, { "squad": 0.02 }, { "heat": 0.08 }, { "claim": true }] },
+        "deflect": { "label": "Ask me after the match.", "reply": "A few groans. Not much of a headline in that.", "effects": [{ "press": -0.01 }] }
+      }
+    },
+    {
+      "id": "pre-derby-fans", "phase": "pre", "tag": "derby",
+      "text": "The {them} fans have been singing about you. Any message for them?",
+      "answers": {
+        "calm": { "label": "I hope they enjoy the game. Ours will be louder.", "reply": "A smile or two. It reads well.", "effects": [{ "press": 0.02 }, { "fans": 0.01 }] },
+        "bold": { "label": "They can sing. Their team can't play.", "reply": "Your fans will love it. Theirs will print it on a banner.", "effects": [{ "fans": 0.04 }, { "heat": 0.1 }, { "press": -0.01 }] },
+        "deflect": { "label": "I didn't hear it. Must have been a quiet day.", "reply": "Laughter round the room. Even the grumpy ones wrote it down.", "effects": [{ "press": 0.01 }, { "fans": 0.01 }, { "heat": 0.02 }] }
+      }
+    },
+    {
+      "id": "pre-derby-pressure", "phase": "pre", "tag": "derby",
+      "text": "Derby pressure is a different thing. Will your players cope?",
+      "answers": {
+        "calm": { "label": "They've played big games before. They'll be fine.", "reply": "The players will like that you backed them.", "effects": [{ "squad": 0.02 }, { "press": 0.01 }] },
+        "bold": { "label": "The pressure is on {them}. They're the ones who should be worried.", "reply": "Bold. It had better come off.", "effects": [{ "squad": 0.03 }, { "heat": 0.06 }, { "claim": true }] },
+        "deflect": { "label": "No pressure from me. I just pay the wages.", "reply": "It got a laugh, and the dressing room won't mind it.", "effects": [{ "press": 0.01 }, { "squad": 0.01 }] }
+      }
+    },
+    {
+      "id": "pre-top-decider", "phase": "pre", "tag": "top",
+      "text": "{us} against {them}, both near the top. Is this a title decider?",
+      "answers": {
+        "calm": { "label": "It's three points. Big ones, but there's a long way to go.", "reply": "Measured. The press like a measured owner.", "effects": [{ "press": 0.02 }, { "squad": 0.01 }] },
+        "bold": { "label": "We're going to win this league, and this is where we show it.", "reply": "That's tomorrow's back page, and it will follow you all week.", "effects": [{ "fans": 0.04 }, { "squad": 0.02 }, { "heat": 0.04 }, { "claim": true }] },
+        "deflect": { "label": "Ask me at the end of the season.", "reply": "Fair enough, but it won't sell papers.", "effects": [{ "press": -0.01 }] }
+      }
+    },
+    {
+      "id": "pre-top-favourites", "phase": "pre", "tag": "top",
+      "text": "The bookmakers make {them} favourites this week. Fair?",
+      "answers": {
+        "calm": { "label": "They've earned that. We'll try to change a few minds.", "reply": "Respectful, and it takes some pressure off the players.", "effects": [{ "press": 0.03 }, { "squad": 0.01 }] },
+        "bold": { "label": "The bookmakers are about to lose a lot of money.", "reply": "The room loves it. Someone asks if you've placed a bet.", "effects": [{ "fans": 0.03 }, { "squad": 0.03 }, { "claim": true }] },
+        "deflect": { "label": "I don't gamble. I bought a football club, so I've done enough of that.", "reply": "Big laugh. That one will be quoted for a while.", "effects": [{ "press": 0.03 }] }
+      }
+    },
+    {
+      "id": "pre-playoff-ready", "phase": "pre", "tag": "playoff",
+      "text": "The {stage} against {them}. Is the squad ready?",
+      "answers": {
+        "calm": { "label": "They've worked all season for this. We're ready.", "reply": "Calm words before a big night. The players will take it in.", "effects": [{ "squad": 0.03 }, { "press": 0.02 }] },
+        "bold": { "label": "We didn't come this far to go out to {them}.", "reply": "Fighting talk. The whole of {city} will hold you to it.", "effects": [{ "fans": 0.04 }, { "squad": 0.02 }, { "heat": 0.04 }, { "claim": true }] },
+        "deflect": { "label": "We'll find out on the night.", "reply": "Honest, if not exciting.", "effects": [{ "press": -0.01 }] }
+      }
+    },
+    {
+      "id": "pre-playoff-money", "phase": "pre", "tag": "playoff",
+      "text": "How much is a run in the {cup} worth to the club?",
+      "answers": {
+        "calm": { "label": "The money helps, but the players are thinking about football, and so am I.", "reply": "The right answer, and they know it.", "effects": [{ "press": 0.03 }] },
+        "bold": { "label": "A lot. And we intend to collect every cent of it.", "reply": "Some of the room winces. The fans don't mind.", "effects": [{ "fans": 0.02 }, { "squad": 0.02 }, { "press": -0.01 }] },
+        "deflect": { "label": "Ask the accountants. They've been smiling all week.", "reply": "A laugh, and nothing to use against you.", "effects": [{ "press": 0.01 }] }
+      }
+    },
+    {
+      "id": "pre-final-message", "phase": "pre", "tag": "final",
+      "text": "One match from the {cup}. What will you tell the players?",
+      "answers": {
+        "calm": { "label": "Enjoy it. Days like this don't come often.", "reply": "Warm words. The players will walk out a little lighter.", "effects": [{ "squad": 0.04 }, { "press": 0.02 }] },
+        "bold": { "label": "{city} wants a parade, and we're going to give it one.", "reply": "The city goes wild. If it goes wrong, it will be on every front page.", "effects": [{ "fans": 0.05 }, { "squad": 0.03 }, { "claim": true }] },
+        "deflect": { "label": "That's between me and them.", "reply": "Fair. The players appreciate it.", "effects": [{ "squad": 0.01 }] }
+      }
+    },
+    {
+      "id": "pre-rival-feud", "phase": "pre", "tag": "rival",
+      "text": "There's been bad blood with {them} after what's been said. Will you calm things down?",
+      "answers": {
+        "calm": { "label": "Things were said in the heat of it. I respect {them}.", "reply": "A peace offering. The press approve, some fans less so.", "effects": [{ "heat": -0.12 }, { "press": 0.03 }, { "fans": -0.01 }] },
+        "bold": { "label": "I meant every word.", "reply": "Here we go again. The paper will make a week of it.", "effects": [{ "heat": 0.08 }, { "fans": 0.03 }, { "press": -0.02 }, { "claim": true }] },
+        "deflect": { "label": "I'll let the football do the talking.", "reply": "Neither peace nor war. The room moves on.", "effects": [{ "heat": -0.02 }] }
+      }
+    },
+    {
+      "id": "pre-any-team", "phase": "pre", "tag": "anyPre",
+      "text": "Any team news ahead of {them}?",
+      "answers": {
+        "calm": { "label": "The coach picks the team. My job is to make sure there are good players to pick from.", "reply": "Proper, and it keeps the head coach on side.", "effects": [{ "press": 0.01 }, { "squad": 0.01 }] },
+        "bold": { "label": "Whoever plays, it will be too much for {them}.", "reply": "Confident. The players will read it, and so will {them}.", "effects": [{ "squad": 0.02 }, { "fans": 0.02 }, { "heat": 0.02 }, { "claim": true }] },
+        "deflect": { "label": "Nice try.", "reply": "A few laughs. Nobody expected an answer.", "effects": [] }
+      }
+    },
+    {
+      "id": "pre-any-crowd", "phase": "pre", "tag": "anyPre",
+      "text": "Do you want a big crowd behind the team for {them}?",
+      "answers": {
+        "calm": { "label": "Always. The fans make the difference in games like this.", "reply": "The supporters' groups will share that one.", "effects": [{ "fans": 0.02 }] },
+        "bold": { "label": "If you haven't got a ticket, you're going to regret it.", "reply": "A promise of a show. It had better be one.", "effects": [{ "fans": 0.03 }, { "press": -0.01 }, { "claim": true }] },
+        "deflect": { "label": "Ask the box office.", "reply": "A shrug from the room.", "effects": [{ "press": -0.01 }] }
+      }
+    },
+    {
+      "id": "pre-any-table", "phase": "pre", "tag": "anyPre",
+      "text": "{us} are {pos} in the table. Happy with that?",
+      "answers": {
+        "calm": { "label": "Happy with the work. There's more to come.", "reply": "Nothing to argue with.", "effects": [{ "press": 0.02 }] },
+        "bold": { "label": "We should be higher, and we will be.", "reply": "The players hear ambition. Some of them hear pressure.", "effects": [{ "fans": 0.02 }, { "squad": 0.01 }] },
+        "deflect": { "label": "I don't look at the table until the end.", "reply": "Nobody believes you, but it's a tidy answer.", "effects": [] }
+      }
+    },
+    {
+      "id": "post-bigwin-best", "phase": "post", "tag": "bigWin",
+      "text": "{score} against {them}. The best performance of the season?",
+      "answers": {
+        "calm": { "label": "A very good day. We'll enjoy it tonight and get back to work tomorrow.", "reply": "Grounded. The press like that after a big win.", "effects": [{ "press": 0.03 }, { "squad": 0.01 }] },
+        "bold": { "label": "The best in years. Anyone who wants to stop us will have to play a lot better than {them}.", "reply": "The fans will love it. {them} won't forget it.", "effects": [{ "fans": 0.04 }, { "squad": 0.03 }, { "heat": 0.04 }, { "press": -0.01 }] },
+        "deflect": { "label": "Ask the players. They did the work.", "reply": "The dressing room will hear that you gave them the credit.", "effects": [{ "squad": 0.03 }] }
+      }
+    },
+    {
+      "id": "post-bigwin-hero", "phase": "post", "tag": "bigWin", "subject": "hero",
+      "text": "{player} was outstanding. Is he the best in the league right now?",
+      "answers": {
+        "calm": { "label": "He's in great form. Long may it last.", "reply": "Praise without pressure. {first} will take it.", "effects": [{ "mood": 0.05 }, { "press": 0.02 }] },
+        "bold": { "label": "The best in the league, and he's not for sale. Not at any price.", "reply": "{first} is delighted. Agents everywhere just wrote his name down.", "effects": [{ "mood": 0.12 }, { "fans": 0.03 }] },
+        "deflect": { "label": "One game. Let's not get carried away.", "reply": "Fair, but {first} might have liked a kinder word.", "effects": [{ "mood": -0.04 }, { "press": 0.01 }] }
+      }
+    },
+    {
+      "id": "post-bigloss-explain", "phase": "post", "tag": "bigLoss",
+      "text": "{score}. How do you explain that?",
+      "answers": {
+        "calm": { "label": "We weren't good enough and I won't pretend otherwise. We'll put it right.", "reply": "Honest. The press respect it.", "effects": [{ "press": 0.04 }, { "squad": 0.01 }] },
+        "bold": { "label": "Unacceptable. If it happens again, some of them won't be wearing this shirt for long.", "reply": "The fans cheer it. The dressing room goes very quiet.", "effects": [{ "squad": -0.06 }, { "fans": 0.02 }, { "press": 0.01 }] },
+        "deflect": { "label": "I'm not going to talk about individuals tonight.", "reply": "The room wanted more. They'll write their own version.", "effects": [{ "press": -0.03 }] }
+      }
+    },
+    {
+      "id": "post-bigloss-coach", "phase": "post", "tag": "bigLoss",
+      "text": "Is {coach}'s job safe?",
+      "answers": {
+        "calm": { "label": "{coach} has my full support. One bad day doesn't change that.", "reply": "A vote of confidence. The players notice.", "effects": [{ "press": 0.02 }, { "squad": 0.02 }] },
+        "bold": { "label": "Everyone at this club is judged on results. Everyone.", "reply": "That will be read in the coach's office. And the dressing room.", "effects": [{ "squad": -0.03 }, { "fans": 0.02 }, { "press": 0.02 }] },
+        "deflect": { "label": "I'm not having that conversation in public.", "reply": "Which the paper will take as a no.", "effects": [{ "press": -0.02 }, { "squad": -0.01 }] }
+      }
+    },
+    {
+      "id": "post-upset-win", "phase": "post", "tag": "upsetWin",
+      "text": "Nobody gave {us} a chance against {them}. Did you?",
+      "answers": {
+        "calm": { "label": "I always believe in this team. Today they showed why.", "reply": "The players will like that.", "effects": [{ "squad": 0.03 }, { "press": 0.02 }] },
+        "bold": { "label": "I did. I'm not sure why anyone else didn't.", "reply": "A little smug, and the fans don't care.", "effects": [{ "fans": 0.04 }, { "heat": 0.03 }, { "press": 0.01 }] },
+        "deflect": { "label": "I had a feeling. Mostly in my stomach, but still.", "reply": "Laughter. A good day all round.", "effects": [{ "press": 0.02 }] }
+      }
+    },
+    {
+      "id": "post-upset-loss", "phase": "post", "tag": "upsetLoss",
+      "text": "Losing to {them}, of all teams. Embarrassing?",
+      "answers": {
+        "calm": { "label": "Disappointing. Credit to {them}, they wanted it more.", "reply": "Gracious. The press note it.", "effects": [{ "press": 0.04 }, { "heat": -0.03 }, { "squad": -0.01 }] },
+        "bold": { "label": "Embarrassing is the word. The players know it, and they'll hear it from me.", "reply": "The fans agree. The players won't enjoy Monday.", "effects": [{ "squad": -0.05 }, { "fans": 0.03 }] },
+        "deflect": { "label": "Any team in this league can beat anyone.", "reply": "True enough. Not much else to write.", "effects": [{ "press": -0.01 }] }
+      }
+    },
+    {
+      "id": "post-lossrun-crisis", "phase": "post", "tag": "lossRun",
+      "text": "That's {n} defeats in a row. Is this a crisis?",
+      "answers": {
+        "calm": { "label": "It's a bad run. Bad runs end. We stick together.", "reply": "Steady. The dressing room needed to hear it.", "effects": [{ "squad": 0.03 }, { "press": 0.02 }, { "fans": -0.01 }] },
+        "bold": { "label": "If the players don't turn it around, I'll find players who will.", "reply": "The fans like the anger. The players don't like the threat.", "effects": [{ "squad": -0.06 }, { "fans": 0.03 }] },
+        "deflect": { "label": "I don't use that word.", "reply": "The paper will use it for you.", "effects": [{ "press": -0.03 }, { "fans": -0.01 }] }
+      }
+    },
+    {
+      "id": "post-lossrun-fans", "phase": "post", "tag": "lossRun",
+      "text": "The fans are angry. What do you say to them?",
+      "answers": {
+        "calm": { "label": "They're right to be. They pay their money and they deserve better. We'll give it to them.", "reply": "It lands well in the stands.", "effects": [{ "fans": 0.04 }, { "press": 0.02 }] },
+        "bold": { "label": "Stick with us. This team will come good, and you'll want to say you were there.", "reply": "A promise. The fans will remember it, one way or another.", "effects": [{ "fans": 0.02 }, { "squad": 0.02 }] },
+        "deflect": { "label": "I hear them. I'm not making promises tonight.", "reply": "Cold comfort for the people in the stands.", "effects": [{ "fans": -0.02 }] }
+      }
+    },
+    {
+      "id": "post-winrun-far", "phase": "post", "tag": "winRun",
+      "text": "{n} wins in a row. How far can this team go?",
+      "answers": {
+        "calm": { "label": "One game at a time. It's a cliché because it's true.", "reply": "Safe, and nobody can say it's wrong.", "effects": [{ "press": 0.02 }, { "squad": 0.01 }] },
+        "bold": { "label": "All the way. Why not us?", "reply": "The fans start dreaming. So does the paper.", "effects": [{ "fans": 0.04 }, { "squad": 0.02 }, { "press": -0.01 }] },
+        "deflect": { "label": "I'm wearing the same socks until we lose. Don't ask me anything else.", "reply": "The room loves it. Expect a photo request.", "effects": [{ "press": 0.02 }, { "fans": 0.01 }] }
+      }
+    },
+    {
+      "id": "post-playoff-out", "phase": "post", "tag": "playoffOut",
+      "text": "Out of the {cup}. Was the season a failure?",
+      "answers": {
+        "calm": { "label": "No. We made the playoffs and we'll learn from tonight.", "reply": "Fair. The players will be grateful for it.", "effects": [{ "press": 0.04 }, { "squad": 0.02 }] },
+        "bold": { "label": "Going out is never good enough. There will be changes in the off-season.", "reply": "The dressing room has a long off-season to think about that.", "effects": [{ "squad": -0.05 }, { "fans": 0.03 }] },
+        "deflect": { "label": "Ask me when the dust settles.", "reply": "Understandable on a night like this.", "effects": [{ "press": -0.01 }] }
+      }
+    },
+    {
+      "id": "post-trophy", "phase": "post", "tag": "trophy",
+      "text": "{us} have won the {cup}! What does it mean?",
+      "answers": {
+        "calm": { "label": "Everything. To the players, the staff and every fan who stuck with us.", "reply": "Applause in the press room. That doesn't happen often.", "effects": [{ "fans": 0.05 }, { "squad": 0.03 }, { "press": 0.03 }] },
+        "bold": { "label": "It means this is just the start.", "reply": "The city loves it. Every rival just circled next season.", "effects": [{ "fans": 0.06 }, { "squad": 0.02 }] },
+        "deflect": { "label": "Give me a minute. I'm still soaked.", "reply": "Someone hands you a towel. Big laugh.", "effects": [{ "press": 0.03 }, { "fans": 0.02 }] }
+      }
+    },
+    {
+      "id": "post-derby-win", "phase": "post", "tag": "derbyWin",
+      "text": "Bragging rights to {us}. A message for the {them} fans?",
+      "answers": {
+        "calm": { "label": "Hard luck. See you next time.", "reply": "Gracious in victory. The press approve.", "effects": [{ "press": 0.03 }, { "heat": -0.02 }] },
+        "bold": { "label": "Get used to it.", "reply": "Three words, a lot of noise. {them} fans won't let it go.", "effects": [{ "fans": 0.05 }, { "heat": 0.08 }] },
+        "deflect": { "label": "I'll let our fans do the talking tonight.", "reply": "They will. Loudly.", "effects": [{ "fans": 0.02 }] }
+      }
+    },
+    {
+      "id": "post-derby-loss", "phase": "post", "tag": "derbyLoss",
+      "text": "Losing the derby. How does that feel?",
+      "answers": {
+        "calm": { "label": "It hurts. It's meant to. We'll be ready for the next one.", "reply": "Honest, and the fans feel the same.", "effects": [{ "press": 0.03 }, { "fans": 0.01 }] },
+        "bold": { "label": "They can enjoy it while it lasts. We won't forget it.", "reply": "A grudge, on the record. The next derby just got bigger.", "effects": [{ "heat": 0.08 }, { "fans": 0.02 }, { "squad": 0.01 }] },
+        "deflect": { "label": "I'm not talking about them tonight.", "reply": "Which says plenty.", "effects": [{ "press": -0.02 }] }
+      }
+    },
+    {
+      "id": "post-hattrick", "phase": "post", "tag": "hatTrick", "subject": "hatTrick",
+      "text": "A hat-trick for {player}. Where does he rank?",
+      "answers": {
+        "calm": { "label": "He's having a fine season. Credit to the coaches too.", "reply": "Praise shared around. Nobody minds.", "effects": [{ "mood": 0.06 }, { "press": 0.02 }] },
+        "bold": { "label": "He's the best striker in Valmere. Write that down.", "reply": "{first} is walking on air. Every agent in the country just took note.", "effects": [{ "mood": 0.12 }, { "fans": 0.03 }] },
+        "deflect": { "label": "He'll be the first to say the team made it easy.", "reply": "The team-mates like hearing it.", "effects": [{ "mood": 0.02 }, { "squad": 0.02 }] }
+      }
+    },
+    {
+      "id": "post-red-card", "phase": "post", "tag": "redCard", "subject": "redCard",
+      "text": "{player} was sent off. Did he let the team down?",
+      "answers": {
+        "calm": { "label": "He knows he got it wrong. He'll learn from it.", "reply": "Backing your player. {first} will be grateful.", "effects": [{ "mood": 0.04 }, { "press": 0.02 }] },
+        "bold": { "label": "Yes. He'll be fined, and he knows why.", "reply": "Strong, and public. {first} won't enjoy reading it.", "effects": [{ "mood": -0.12 }, { "squad": 0.01 }, { "press": 0.03 }] },
+        "deflect": { "label": "I haven't seen it again yet.", "reply": "Everyone has seen it again. The room smiles.", "effects": [{ "press": -0.02 }, { "mood": 0.02 }] }
+      }
+    },
+    {
+      "id": "post-any-referee", "phase": "post", "tag": "anyPost",
+      "text": "Were you happy with the referee against {them}?",
+      "answers": {
+        "calm": { "label": "Referees have a hard job. We move on.", "reply": "The league office will be pleased with you.", "effects": [{ "press": 0.03 }] },
+        "bold": { "label": "No. And I'll be writing to the league about it.", "reply": "The fans cheer. The league won't.", "effects": [{ "fans": 0.03 }, { "press": -0.03 }] },
+        "deflect": { "label": "I'd like to keep my money, thanks.", "reply": "Laughter. Everyone knows what you mean.", "effects": [{ "press": 0.02 }, { "fans": 0.01 }] }
+      }
+    },
+    {
+      "id": "post-any-spending", "phase": "post", "tag": "anyPost",
+      "text": "Will you put more money into the team?",
+      "answers": {
+        "calm": { "label": "We'll spend when it's right for the club, not to win a headline.", "reply": "Sensible. Some fans wanted more.", "effects": [{ "press": 0.03 }, { "fans": -0.01 }] },
+        "bold": { "label": "Whatever it takes. I didn't buy this club to finish mid-table.", "reply": "The fans love it. Every agent in Valmere just raised their prices.", "effects": [{ "fans": 0.04 }, { "squad": 0.02 }, { "press": -0.01 }] },
+        "deflect": { "label": "My accountant reads your paper, so no comment.", "reply": "A laugh, and no promise to hold you to.", "effects": [{ "press": 0.01 }] }
+      }
+    },
+    {
+      "id": "post-any-academy", "phase": "post", "tag": "anyPost",
+      "text": "Will we see more of the academy players?",
+      "answers": {
+        "calm": { "label": "When they're ready. The best ones won't be held back.", "reply": "Hard to argue with.", "effects": [{ "press": 0.02 }, { "fans": 0.01 }] },
+        "bold": { "label": "Yes. This club should be built on {city} kids.", "reply": "The fans love it. A few senior players shift in their seats.", "effects": [{ "fans": 0.03 }, { "press": 0.02 }, { "squad": -0.01 }] },
+        "deflect": { "label": "That's for the coaches.", "reply": "Fair. Not much of a story.", "effects": [] }
+      }
+    },
+    {
+      "id": "post-any-mood", "phase": "post", "tag": "anyPost",
+      "text": "How is the mood in the dressing room after {them}?",
+      "answers": {
+        "calm": { "label": "Good. They're a close group and they work hard for each other.", "reply": "The players will read that and nod.", "effects": [{ "squad": 0.02 }] },
+        "bold": { "label": "Hungry. Nobody here is satisfied yet.", "reply": "The fans like hungry.", "effects": [{ "fans": 0.02 }, { "squad": 0.01 }] },
+        "deflect": { "label": "You'd have to ask them. I just knock before I go in.", "reply": "A laugh. The players will like that one too.", "effects": [{ "press": 0.01 }, { "squad": 0.01 }] }
+      }
+    },
+    {
+      "id": "post-any-coach", "phase": "post", "tag": "anyPost",
+      "text": "Is {coach} still the right head coach for {us}?",
+      "answers": {
+        "calm": { "label": "Yes. We judge over a season, not a week.", "reply": "A clear vote of confidence. The coach will be glad of it.", "effects": [{ "press": 0.02 }, { "squad": 0.01 }] },
+        "bold": { "label": "Everyone here is judged on results. Me included.", "reply": "Honest, and a little chilly. The dressing room noticed.", "effects": [{ "fans": 0.02 }, { "squad": -0.02 }] },
+        "deflect": { "label": "I'm not doing that question.", "reply": "Which the room takes as an answer of sorts.", "effects": [{ "press": -0.01 }] }
+      }
+    },
+    {
+      "id": "post-any-learn", "phase": "post", "tag": "anyPost",
+      "text": "What did you learn about this team against {them}?",
+      "answers": {
+        "calm": { "label": "That they keep going. That's what I want to see.", "reply": "Simple and fair.", "effects": [{ "squad": 0.01 }, { "press": 0.01 }] },
+        "bold": { "label": "That there's a lot more in them, and I want all of it.", "reply": "Ambitious. The players feel the bar going up.", "effects": [{ "fans": 0.02 }, { "squad": 0.01 }] },
+        "deflect": { "label": "That the coffee in this room is still terrible.", "reply": "The best laugh of the afternoon.", "effects": [{ "press": 0.02 }] }
+      }
+    },
+    {
+      "id": "post-any-city", "phase": "post", "tag": "anyPost",
+      "text": "What does this club mean to {city} right now?",
+      "answers": {
+        "calm": { "label": "Everything. We try to remember that every day.", "reply": "Warm words. The local radio played them twice.", "effects": [{ "fans": 0.02 }, { "press": 0.01 }] },
+        "bold": { "label": "It should mean more, and we're going to make sure it does.", "reply": "Big talk, and the city likes big talk.", "effects": [{ "fans": 0.03 }] },
+        "deflect": { "label": "You'd have to ask {city}.", "reply": "A little flat for a question like that.", "effects": [{ "fans": -0.01 }] }
+      }
+    },
+    {
+      "id": "pre-any-prepare", "phase": "pre", "tag": "anyPre",
+      "text": "How have you prepared for {them}?",
+      "answers": {
+        "calm": { "label": "Same as every week. Work hard, respect the opponent.", "reply": "Nothing to see here, which is the point.", "effects": [{ "press": 0.01 }] },
+        "bold": { "label": "We know exactly how to beat {them}. Watch.", "reply": "That is going on the {them} dressing room wall.", "effects": [{ "squad": 0.01 }, { "heat": 0.03 }, { "claim": true }] },
+        "deflect": { "label": "I watched a lot of video. Mostly of my dog.", "reply": "Laughter. No one learned a thing.", "effects": [{ "press": 0.01 }] }
+      }
+    },
+    {
+      "id": "pre-any-respect", "phase": "pre", "tag": "anyPre",
+      "text": "What do you make of {them}?",
+      "answers": {
+        "calm": { "label": "Good side, well coached. We'll have to be at our best.", "reply": "Respectful. Their coach will appreciate it.", "effects": [{ "press": 0.02 }, { "heat": -0.02 }] },
+        "bold": { "label": "They're fine. We're better.", "reply": "Short, and it will be quoted all week.", "effects": [{ "fans": 0.02 }, { "heat": 0.04 }, { "claim": true }] },
+        "deflect": { "label": "I try not to think about other teams too much.", "reply": "A non-answer, politely given.", "effects": [] }
+      }
+    },
+    {
+      "id": "pre-any-pressure", "phase": "pre", "tag": "anyPre",
+      "text": "Is there pressure on the team this week?",
+      "answers": {
+        "calm": { "label": "There's always pressure at a club like this. It's a good thing.", "reply": "Measured. The players stay calm too.", "effects": [{ "squad": 0.01 }, { "press": 0.01 }] },
+        "bold": { "label": "The pressure is on {them}, not us.", "reply": "A jab, and it lands.", "effects": [{ "fans": 0.02 }, { "heat": 0.03 }] },
+        "deflect": { "label": "Only on the person who books the team bus.", "reply": "A laugh, and the subject changes.", "effects": [{ "press": 0.01 }] }
+      }
+    }
+  ],
+  "news": {
+    "bold": [
+      "\"{quote}\"|The {us} owner did not hold back at the press conference {context}.",
+      "{us} owner talks big {context}|\"{quote}\" Bold words. The whole league heard them.",
+      "Owner's fighting talk {context}|\"{quote}\" There's no taking that back now."
+    ],
+    "calm": [
+      "\"{quote}\"|The {us} owner kept a cool head at the press conference {context}.",
+      "Calm words from the {us} owner {context}|\"{quote}\" No drama, and that seemed to be the point."
+    ],
+    "deflect": [
+      "{us} owner gives little away {context}|Asked the questions everyone wanted asked, the owner offered: \"{quote}\"",
+      "Not much from the {us} owner {context}|\"{quote}\" The press room wanted more."
+    ],
+    "staff": [
+      "{assistant} faces the press for {us}|The owner sent the assistant coach to the press conference {context}. Nothing controversial was said."
+    ],
+    "claimKept": [
+      "{us} owner's words come good|The owner promised a win over {them}, and {nick} delivered {score}.",
+      "As promised: {us} beat {them}|\"Write it down,\" said the owner. The players did the rest, {score}."
+    ],
+    "claimBroken": [
+      "Owner's promise comes back to bite|Before the game the {us} owner promised a win over {them}. It ended {score}.",
+      "{us} owner left red-faced after {them}|Big words before the game. {score} after it. The press room will remember."
+    ]
+  }
+}

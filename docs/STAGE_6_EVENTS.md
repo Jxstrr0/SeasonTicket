@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan approved by the owner (2026-10-18). Steps 6.1 and 6.2 built; next is 6.3.
+**Status:** plan approved by the owner (2026-10-18). Steps 6.1, 6.2 and 6.3 built; next is 6.4.
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -150,6 +150,25 @@ Templates are in `src/data/news/newspaper.json` (several per story, so the same 
 **Where you see it.** A News tab (Paper / Fan feed, with "‹ Older" and "Newer ›" to read back issues). Home shows the lead headline with a "Read the paper" button. In the office, the TV shows the front page next to a mini table, and the desk phone shows the feed when there are no offers (with offers it still shows them, and tapping it opens the Market). Tapping the TV opens the paper; tapping the phone with no offers opens the feed.
 
 **Determinism and saves.** News has its own seeded stream, so it never changes a match or an event. Save version 6 adds `news` (the last 60 stories and 40 posts); older saves start with an empty paper. A full season adds about 5 KB to the save code.
+
+### 6.3 Press conferences (built 2026-10-18)
+
+**When.** At the end of a season week, a conference is called if the next match is big or this week's result was notable:
+
+- next match: a derby (same region), a playoff tie or the final, a top-of-the-table game (both clubs in the top 3, or the leader against the top 4, once 5 games are played), or a club whose rivalry heat is 0.35 or more;
+- result: a win or loss by 3 or more, a win over a club 6 or more places higher, or a loss to one 6 or more places lower (once 4 games are played), 3 losses or 4 wins in a row, a derby win or loss, a playoff exit, the trophy.
+
+After a league-stage conference, the next week has none unless a derby, playoff or final is coming. In test seasons that gives **8 to 16 conferences a year**.
+
+**Questions.** Two questions, or three when two or more triggers hit. Questions about the triggers come first, then one about a hat-trick or red card if there was one, then general ones. A question is not asked again within 14 weeks (when the general pool runs dry, the oldest one comes back). 37 questions in `src/data/press/questions.json`; tuning in `src/data/tuning/press.json`.
+
+**Answers.** Each question has a calm, a bold and a deflecting answer. Answers move fan mood, squad mood, one player's mood (questions about a player), press standing and rivalry heat. Some bold answers promise a win: after the match the promise is kept (a win: press, fans and squad up) or broken (a draw or a loss: all three down), with a mail and a paper story either way. The loudest quote you gave (bold, then calm, then deflect) makes the paper.
+
+**The assistant.** "Let {assistant} take it" answers every remaining question calmly, with the effects scaled by the assistant's quality. Questions still waiting when the next match is played (live or quick sim) are taken by the assistant.
+
+**Where you see it.** The reporter walks into the office like any other visitor, and the card is pinned in the inbox and on Home. The card shows "Question 1 of 2", the question, the three answers as quotes, and after each answer the room's reaction above the next question. The mail keeps the full transcript.
+
+**Saves.** Save version 7 adds rivalry heat, open promises and the week of the last conference; older saves start with none.
 
 ## Owner's decisions (2026-10-18)
 

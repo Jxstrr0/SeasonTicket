@@ -20,6 +20,7 @@ import { weeklyMarket } from './market';
 import { matchSelection } from './selection';
 import { stadiumAttendance, weeklyStadium } from './stadium';
 import { weeklyNews } from './news';
+import { closePress, weeklyPress } from './press';
 import { moodForm, weeklyStory } from './story';
 import type { Career } from './types';
 import { C, addInbox, userTeam } from './util';
@@ -77,6 +78,7 @@ export function userFixture(career: Career): ScheduledMatch | null {
 export function startUserMatch(career: Career): MatchState | null {
   const match = userFixture(career);
   if (!match) return null;
+  closePress(career);
   if (career.liveMatch?.setup.matchId === match.id) {
     liveOf(career);
     return career.liveMatch;
@@ -105,6 +107,7 @@ export interface CareerWeek {
  */
 export function prepareCareerWeek(career: Career): CareerWeek | null {
   if (career.phase !== 'season' || career.season.phase === 'complete') return null;
+  closePress(career);
   weeklyBooks(career);
   ensureHeadCoach(career);
   const prep = prepareWeek(career.season, careerHooks(career));
@@ -141,6 +144,7 @@ export function settleCareerWeek(career: Career, week: CareerWeek, played: reado
   fitnessRehab(career);
   weeklyMarket(career);
   weeklyStory(career);
+  weeklyPress(career);
   weeklyNews(career, results);
   if (checkLadder(career)) return results;
   career.weekIndex += 1;
