@@ -80,7 +80,7 @@ describe('story layer: a season', () => {
   });
 
   it('never leaves more open than the cap', () => {
-    expect(openEvents(career).length).toBeLessThanOrEqual(STORY_TUNING.pace.maxOpen);
+    expect(openEvents(career).length).toBeLessThanOrEqual(STORY_TUNING.pace.maxOpen.normal);
   });
 
   it('is the same story from the same seed and choices', () => {
