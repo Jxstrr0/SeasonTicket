@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan approved by the owner (2026-10-18). Steps 6.1, 6.2 and 6.3 built; next is 6.4.
+**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.4 built; next is 6.5.
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -169,6 +169,22 @@ After a league-stage conference, the next week has none unless a derby, playoff 
 **Where you see it.** The reporter walks into the office like any other visitor, and the card is pinned in the inbox and on Home. The card shows "Question 1 of 2", the question, the three answers as quotes, and after each answer the room's reaction above the next question. The mail keeps the full transcript.
 
 **Saves.** Save version 7 adds rivalry heat, open promises and the week of the last conference; older saves start with none.
+
+### 6.4 Rivalries, derbies and rival owners (built 2026-10-18)
+
+**Derbies.** Any game between two clubs from the same region is a derby. For your own club, a derby rival starts with a rivalry of 0.3 out of 1.
+
+**Rivalry heat.** Your rivalry with each club (0 to 1) grows from history: +0.05 for playing a derby, +0.06 for a win or loss by 3 or more, +0.18 for a playoff tie, +0.25 for the final, plus whatever your press answers and rivalry events add. Each week it fades by 1.5% of its value, so old grudges linger but cool. A club at 0.35 or more becomes a "Rivalry" even outside your region.
+
+**Match day.** Derbies fill 12% more of the ground (6% for a rivalry game), and a win or a loss moves fan mood 1.6 times as much. The fixture carries a Derby or Rivalry badge on Home and on the live scoreboard.
+
+**Rival owners.** Every other club has an owner with a name, one of four temperaments (Calm, Showman, Penny-pincher, Gambler) and a memory of you from -1 to 1. Their temperament, their memory and your rivalry move the price they ask for a player and the bids they make for yours: a Penny-pincher asks 12% more and bids 10% less, a Showman asks 5% more and bids 10% more, a Gambler asks 5% less; how they feel about you moves both by up to 6%; a hot rivalry adds up to 15% to what they ask. Buying from them, or accepting their bid, warms them; turning down a bid or beating them cools them, and knocking them out of the playoffs cools them a lot. Memory fades by 2% a week. After a derby or rivalry game the losing or winning owner sometimes has a word in the paper, in their temperament's voice.
+
+**Events.** Seven rivalry events in `src/data/events/rivalry.json`, for the week before a derby or rivalry game: a rival owner's jibe in the paper, a bet with the rival owner, a tapping-up of your star, a council worry about derby safety, a mural war, a ticket squeeze, and a dinner invitation. They can add rivalry heat, move the owner's memory, or make a public promise to win, judged like a press-conference promise. The rival owner walks into the office as a visitor. In test seasons a club with a derby sees **3 to 5 rivalry events and 2 to 5 owner stories a year**.
+
+**Where you see it.** Club screen → Rivals: each derby and rivalry club, a heat bar, and its owner's name, temperament and feeling towards you. The market's player page names the selling club's owner. Tuning in `src/data/tuning/rivalry.json`.
+
+**Saves.** Save version 8 adds the owners. Older saves get them on load, drawn from the career seed, so the same save always gets the same owners.
 
 ## Owner's decisions (2026-10-18)
 

@@ -1,4 +1,5 @@
 /** Small pieces shared by the career screens. */
+import { ownerOf, temperamentLabel, type Career, type RivalLevel } from '../../../sim/career';
 import { WORLD, isDomestic, nation } from '../../../sim/data';
 import type { Player, Position } from '../../../sim/types';
 import { cls, esc } from '../../html';
@@ -67,4 +68,21 @@ export function yearsSelect(name: string, current = 3, min = 1, max = 5): string
   const opts: string[] = [];
   for (let y = min; y <= max; y++) opts.push(option(String(y), `${y} year${y === 1 ? '' : 's'}`, String(current)));
   return `<select class="field" name="${esc(name)}">${opts.join('')}</select>`;
+}
+
+/** "Derby" or "Rivalry" next to a fixture. */
+export function rivalPill(level: RivalLevel | null): string {
+  if (!level) return '';
+  return level === 'derby' ? '<span class="pill pill-derby">Derby</span>' : '<span class="pill pill-rival">Rivalry</span>';
+}
+
+/** How a club's owner feels about you, in a word. */
+export function ownerFeeling(memory: number): string {
+  return memory >= 0.15 ? 'warm towards you' : memory <= -0.15 ? 'cold towards you' : 'neutral';
+}
+
+/** "Owner: Name · Showman, neutral" for a club, or '' if it has none. */
+export function ownerLine(career: Career, teamId: string | null | undefined): string {
+  const o = ownerOf(career, teamId);
+  return o ? `Owner: ${o.name} · ${temperamentLabel(o.temperament)}, ${ownerFeeling(o.memory)}` : '';
 }

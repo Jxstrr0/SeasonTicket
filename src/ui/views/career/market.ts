@@ -20,7 +20,7 @@ import type { Player } from '../../../sim/types';
 import { clubLabel, team } from '../../format';
 import { cls, each, esc } from '../../html';
 import { MARKET_PAGE, type UiState } from '../../career/state';
-import { available, confirmButton, nationName, playerFlags, positionFilter, yearsSelect } from './parts';
+import { available, confirmButton, nationName, ownerLine, playerFlags, positionFilter, yearsSelect } from './parts';
 
 const LOAN_SHARES = [C.loans.wageShare.min, C.loans.wageShare.default, C.loans.wageShare.max];
 
@@ -168,6 +168,7 @@ function renderTargetDetail(career: Career, p: Player): string {
       ${seller ? `<div><dt>Contract left</dt><dd>${p.contract.years} yr${p.contract.years === 1 ? '' : 's'}</dd></div>` : ''}
       ${role ? `<div><dt>At ${esc(seller?.shortName ?? '')}</dt><dd>${esc(role === 'starter' ? 'Starter' : role === 'rotation' ? 'Rotation' : 'Fringe')}</dd></div>` : ''}
     </dl>
+    ${seller ? `<p class="small">${esc(ownerLine(career, seller.id))}. Their temperament, how you have treated them and any rivalry move the price.</p>` : ''}
     <p class="muted small">Ratings are your head scout's estimate. A better scout narrows the range.</p>
     ${deal}
   </section>`;

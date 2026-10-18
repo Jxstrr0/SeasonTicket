@@ -180,3 +180,25 @@ describe('rivalries: events and saves', () => {
     advanceCareer(up);
   });
 });
+
+describe('rivalries: screens', async () => {
+  const { renderClub } = await import('../src/ui/views/career/club');
+  const { rivalPill, ownerLine } = await import('../src/ui/views/career/parts');
+  it('the Club screen lists the derby rivals with their owners', () => {
+    const career = newCareer();
+    const html = renderClub(career, { pendingConfirm: null } as never);
+    expect(html).toContain('Rivals');
+    expect(html).toContain('pill-derby');
+    const rival = rivalsOf(career)[0];
+    expect(html).toContain(career.owners[rival.teamId].name);
+  });
+
+  it('badges and owner lines read plainly', () => {
+    const career = newCareer();
+    expect(rivalPill('derby')).toContain('Derby');
+    expect(rivalPill(null)).toBe('');
+    const id = Object.keys(career.owners)[0];
+    expect(ownerLine(career, id)).toMatch(/^Owner: .+ · .+, neutral$/);
+    expect(ownerLine(career, career.userTeamId)).toBe('');
+  });
+});

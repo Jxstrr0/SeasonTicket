@@ -5,7 +5,7 @@
  * Everything here reads
  * career.liveMatch; the owner's changes go through src/game/matchday.ts.
  */
-import type { Career } from '../../../sim/career';
+import { fixtureBadge, type Career } from '../../../sim/career';
 import { MATCH_TUNING } from '../../../sim/data';
 import type { MatchState, SideState } from '../../../sim/match/state';
 import type { Player } from '../../../sim/types';
@@ -15,7 +15,7 @@ import { cls, each, esc } from '../../html';
 import { LIVE_SPEEDS, PITCH_SPEEDS, type UiState } from '../../career/state';
 import { renderEvent, renderStat, statRows, visibleEvents } from '../matchFeed';
 import { renderFormationPicker, renderTacticsPanel } from './lineup';
-import { confirmButton } from './parts';
+import { confirmButton, rivalPill } from './parts';
 
 const PERIOD_TEXT: Record<MatchState['period'], string> = {
   firstHalf: 'First half',
@@ -57,7 +57,7 @@ function renderScoreboard(career: Career, state: MatchState): string {
       ${pens}
     </div>
     <div class="sb-side away"><span class="sb-name">${clubLabel(away)}</span>${kit(away)}</div>
-    <div class="sb-meta muted small">${esc(PERIOD_TEXT[state.period])} · ${esc(weatherLabel(state.setup.weather))}</div>
+    <div class="sb-meta muted small">${esc(PERIOD_TEXT[state.period])} · ${esc(weatherLabel(state.setup.weather))} ${rivalPill(fixtureBadge(career, state.setup))}</div>
   </section>`;
 }
 
