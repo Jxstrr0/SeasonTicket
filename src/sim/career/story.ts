@@ -13,6 +13,7 @@ import type { Player, StaffRole } from '../types';
 import { fairPrice } from './books';
 import { squadRole } from './market';
 import { reportPromise, reportStory } from './news';
+import { PRESS_DEF, answerPress, pressView } from './press';
 import { INCOME_KEYS, SPENDING_KEYS } from './types';
 import type { Career, IncomeKey, SpendingKey, StoryDecision, StoryEvent, StoryPace, StoryState, StoryTimer, VisitorRole } from './types';
 import { C, addInbox, careerRng, clamp, earn, money, nextId, roundMoney, spend, squadOf, transferWindowOpen, userBooks, userTeam } from './util';
@@ -117,7 +118,7 @@ function allEffects(effects: readonly Effect[]): Effect[] {
 }
 
 export function eventDef(id: string): EventDef | undefined {
-  return BY_ID.get(id);
+  return id === PRESS_DEF.id ? PRESS_DEF : BY_ID.get(id);
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +137,9 @@ export function newStory(pace: StoryPace = 'normal'): StoryState {
     last: {},
     seasonCount: {},
     decisions: [],
+    heat: {},
+    claims: [],
+    lastPress: -1,
   };
 }
 
@@ -143,11 +147,11 @@ export function playerMood(career: Career, playerId: string): number {
   return career.story.mood[playerId] ?? M.neutral;
 }
 
-function setMood(career: Career, playerId: string, value: number): void {
+export function setMood(career: Career, playerId: string, value: number): void {
   career.story.mood[playerId] = round3(clamp(value, M.min, M.max));
 }
 
-function round3(x: number): number {
+export function round3(x: number): number {
   return Math.round(x * 1000) / 1000;
 }
 
@@ -382,7 +386,7 @@ function startEvent(career: Career, def: EventDef, rng: Rng, subject: Player | n
 // Text
 // ---------------------------------------------------------------------------
 
-function staffName(career: Career, role: StaffRole): string | null {
+export function staffName(career: Career, role: StaffRole): string | null {
   const league = career.season.league;
   for (const id of userTeam(career).staffIds) {
     const s = league.staff[id];
@@ -427,10 +431,13 @@ export interface EventView {
   answer: string | null;
   /** Who answers if the owner waves it off. */
   staffName: string;
+  /** A press conference: which question this is, and how the room took the last answer. */
+  press?: { index: number; total: number; reply: string | null };
 }
 
 /** What the screens show for an event. */
 export function eventView(career: Career, ev: StoryEvent): EventView | null {
+  if (ev.press) return pressView(career, ev);
   const def = BY_ID.get(ev.eventId);
   if (!def) return null;
   return {
@@ -458,7 +465,7 @@ function staffRoleFor(role: VisitorRole): StaffRole {
   return (T.staff.byRole as Record<string, StaffRole>)[role] ?? 'assistantCoach';
 }
 
-function staffQuality(career: Career, role: VisitorRole): number {
+export function staffQuality(career: Career, role: VisitorRole): number {
   const want = staffRoleFor(role);
   const league = career.season.league;
   for (const id of userTeam(career).staffIds) {
@@ -476,6 +483,7 @@ export function answerEvent(career: Career, eventRef: string, choiceId: string |
   const story = career.story;
   const ev = story.events.find((e) => e.id === eventRef);
   if (!ev || ev.answer !== null) return { ok: false, text: 'That has already been dealt with.' };
+  if (ev.press) return answerPress(career, ev, choiceId);
   const def = BY_ID.get(ev.eventId);
   if (!def) return { ok: false, text: 'That has already been dealt with.' };
   const staff = choiceId === null;
@@ -499,18 +507,18 @@ export function answerEvent(career: Career, eventRef: string, choiceId: string |
   return { ok: true, text: staff ? `${who} will deal with it.` : result };
 }
 
-interface Scale {
+export interface Scale {
   good: number;
   bad: number;
 }
-const NO_SCALE: Scale = { good: 1, bad: 1 };
+export const NO_SCALE: Scale = { good: 1, bad: 1 };
 
-function staffScale(q: number): Scale {
+export function staffScale(q: number): Scale {
   const s = T.staff;
   return { good: s.goodBase + s.goodGain * q, bad: Math.max(0, s.badBase - s.badGain * q) };
 }
 
-function scaled(delta: number, s: Scale): number {
+export function scaled(delta: number, s: Scale): number {
   return delta >= 0 ? delta * s.good : delta * s.bad;
 }
 

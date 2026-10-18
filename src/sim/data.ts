@@ -17,6 +17,8 @@ import storyTuningJson from '../data/tuning/story.json';
 import everydayEventsJson from '../data/events/everyday.json';
 import newsTuningJson from '../data/tuning/news.json';
 import newspaperJson from '../data/news/newspaper.json';
+import pressTuningJson from '../data/tuning/press.json';
+import pressQuestionsJson from '../data/press/questions.json';
 import socialJson from '../data/news/social.json';
 import type { Formation, NationId, Position, TeamColors } from './types';
 
@@ -82,6 +84,9 @@ export const NEWS_TUNING = newsTuningJson;
 /** Newspaper and social feed templates (src/data/news). */
 export const NEWSPAPER = newspaperJson;
 export const SOCIAL = socialJson;
+export const PRESS_TUNING = pressTuningJson;
+/** Press conference questions and their news lines (src/data/press). */
+export const PRESS_QUESTIONS = pressQuestionsJson;
 
 export type PlayersTuning = typeof playersTuningJson;
 export type MatchTuning = typeof matchTuningJson;

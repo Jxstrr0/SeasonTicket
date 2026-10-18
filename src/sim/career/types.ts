@@ -288,6 +288,30 @@ export interface StoryEvent {
   /** The choice made, once answered; 'staff' when the staff answered. */
   answer: string | null;
   mailId: string;
+  /** Set when the event is a press conference (Stage 6.3). */
+  press?: PressConference;
+}
+
+export type PressTone = 'calm' | 'bold' | 'deflect';
+
+/** A press conference: two or three questions, answered one at a time. */
+export interface PressConference {
+  /** The next match's opponent and fixture, for the questions before it. */
+  nextId: string | null;
+  nextMatchId: string | null;
+  /** This week's opponent, for the questions about the result. */
+  lastId: string | null;
+  tags: string[];
+  /** Text fills fixed when it was called: score, stage, run length, table position. */
+  vars: Record<string, string>;
+  questions: { id: string; playerId: string | null; tone: PressTone | null; staff: boolean }[];
+}
+
+/** A bold promise to win a match, judged once it is played. */
+export interface PressClaim {
+  matchId: string;
+  opponentId: string;
+  weekIndex: number;
 }
 
 /** A promise or a delayed consequence, checked when its week comes. */
@@ -338,6 +362,12 @@ export interface StoryState {
   seasonCount: Record<string, number>;
   /** Decisions this season and last (older ones are dropped at the rollover). */
   decisions: StoryDecision[];
+  /** Rivalry heat with each club by id, 0-1 (Stage 6.3; missing is 0). */
+  heat: Record<string, number>;
+  /** Promises to win, from press conferences. */
+  claims: PressClaim[];
+  /** Global week of the last press conference, or -1. */
+  lastPress: number;
 }
 
 export type NewsKind = 'result' | 'league' | 'streak' | 'record' | 'transfer' | 'table' | 'club' | 'money' | 'stadium' | 'season' | 'preview';

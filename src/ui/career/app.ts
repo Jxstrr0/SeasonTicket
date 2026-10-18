@@ -740,8 +740,11 @@ export class CareerApp {
       case 'event-choice': {
         if (!d.id || !d.choice) return;
         const res = answerEvent(career, d.id, d.choice === 'staff' ? null : d.choice);
-        ui.sceneId = null;
-        ui.flash = { kind: res.ok ? 'ok' : 'error', text: res.text };
+        // A press conference stays on screen until the last question is answered.
+        if (career.story.events.find((e) => e.id === d.id)?.answer !== null) {
+          ui.sceneId = null;
+          ui.flash = { kind: res.ok ? 'ok' : 'error', text: res.text };
+        } else if (!res.ok) ui.flash = { kind: 'error', text: res.text };
         break;
       }
       case 'close-scene':

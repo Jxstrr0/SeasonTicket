@@ -13,7 +13,7 @@ import { newStory } from './story';
 import type { Career, ClubBooks, Crest, MatchMode, TierId } from './types';
 import { C, addInbox, clamp, emptyLedger, money, userTeam } from './util';
 
-export const CAREER_VERSION = 6;
+export const CAREER_VERSION = 7;
 
 export interface Branding {
   name: string;

@@ -1,0 +1,29 @@
+{
+  "_about": "Press conferences (Stage 6.3, src/sim/career/press.ts). One is called in a week when the next match is big (derby, top-of-the-table, playoff, final, a heated rivalry) or this week's result was notable. Questions come from src/data/press/questions.json.",
+  "triggers": {
+    "_about": "bigMargin: goals for a big win or loss. upsetGap: table places between the clubs for an upset. lossRun / winRun: results in a row. top: both clubs in the top topPlaces (or the opponent leads and we are in the top topPlaces + 1) once topMinPlayed games are played. rivalHeat: heat with the next opponent that makes it a grudge match.",
+    "bigMargin": 3,
+    "upsetGap": 6,
+    "upsetMinPlayed": 4,
+    "lossRun": 3,
+    "winRun": 4,
+    "topPlaces": 3,
+    "topMinPlayed": 5,
+    "rivalHeat": 0.35
+  },
+  "_order": "Tags in the order their questions are asked; the first two found choose the conference's main questions.",
+  "order": ["final", "trophy", "playoffOut", "playoff", "derbyWin", "derbyLoss", "derby", "rival", "top", "bigLoss", "bigWin", "upsetLoss", "upsetWin", "lossRun", "winRun", "hatTrick", "redCard"],
+  "questions": { "few": 2, "many": 3, "manyFromTags": 2, "repeatWeeks": 14 },
+  "_minGap": "Weeks between league-stage conferences: one held this week means none next week unless the next match is a derby, a playoff or a final.",
+  "minGap": 2,
+  "deadline": 1,
+  "staffTone": "calm",
+  "toneHints": { "calm": "Calm", "bold": "Bold", "deflect": "Deflect" },
+  "claim": {
+    "_about": "A bold promise to win the next match. Kept (a win) or broken (a draw or a loss) when it has been played.",
+    "kept": { "press": 0.04, "fans": 0.03, "squad": 0.02 },
+    "broken": { "press": -0.05, "fans": -0.04, "squad": -0.02 }
+  },
+  "heat": { "_about": "Rivalry heat with each club, 0-1. Moves with what is said, and cools by drift a week.", "drift": 0.01, "max": 1 },
+  "news": { "quote": 42, "staff": 18, "claim": 50 }
+}

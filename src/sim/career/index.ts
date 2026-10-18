@@ -12,3 +12,4 @@ export * from './live';
 export * from './rollover';
 export * from './story';
 export * from './news';
+export * from './press';

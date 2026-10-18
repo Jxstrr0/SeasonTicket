@@ -1096,6 +1096,10 @@ body.office-mode .topbar { backdrop-filter: none; }
 .event-scene { max-height: calc(100dvh - 140px); overflow-y: auto; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
 .mail-body .event-card { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .mail-body .event-card > .card-title { display: none; }
+.press-q { font-size: 1.05em; font-weight: 600; margin: 8px 0 4px; }
+.press-q::before { content: "Q: "; opacity: 0.6; }
+.press-reply { margin: 6px 0 0; padding: 6px 10px; border-left: 3px solid rgba(167, 139, 250, 0.5); opacity: 0.9; }
+.press-answer .press-tone { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72em; opacity: 0.75; }
 
 /* News (Stage 6.2): the Courier and the fan feed. */
 .news .segmented { margin-bottom: 12px; }
