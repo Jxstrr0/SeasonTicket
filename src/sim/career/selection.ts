@@ -5,7 +5,7 @@
  * With auto-lineup on, the head coach picks everything.
  */
 import { MATCH_TUNING, formation as formationOf, isDomestic } from '../data';
-import { pickSelection } from '../coach';
+import { enforceHomegrown, pickSelection } from '../coach';
 import { headCoachOf, homegrownMinimumFor, teamById } from '../league';
 import { assignToSlots, slotAbility } from '../match/lineup';
 import type { Rng } from '../rng';
@@ -101,7 +101,6 @@ export function repairSelection(career: Career, selection: TeamSelection): TeamS
 export function matchSelection(career: Career, rng: Rng, opponent: Team): TeamSelection {
   if (career.delegation.autoLineup) {
     const pick = coachSelection(career, rng, opponent);
-    // Keep the user's chosen dials if they have a saved selection; the coach still picks the players.
     career.userSelection = pick;
     return structuredClone(pick);
   }
@@ -111,8 +110,27 @@ export function matchSelection(career: Career, rng: Rng, opponent: Team): TeamSe
     return coachSelection(career, rng, opponent);
   }
   const copy = structuredClone(selection);
+  meetHomegrownRule(career, copy);
   if (copy.tactics.manMarkTarget && !opponent.playerIds.includes(copy.tactics.manMarkTarget)) copy.tactics.manMarkTarget = null;
   return copy;
+}
+
+/**
+ * The homegrown rule holds for the owner's own pick too: short of Valmeran starters, the
+ * coach swaps the nearest ones in before kick-off (as the lineup screen warns). Only the
+ * match's copy changes; the saved lineup stays as the owner left it.
+ */
+function meetHomegrownRule(career: Career, selection: TeamSelection): void {
+  const minimum = homegrownMinimumFor(career.homegrownRule) ?? 0;
+  if (minimum <= 0) return;
+  const players = career.season.league.players;
+  const starters = selection.lineup.starters.slice();
+  const pool = squadOf(career, career.userTeamId).filter(available).map((p) => p.id);
+  enforceHomegrown(starters, pool, formationOf(selection.tactics.formationId), players, minimum);
+  if (starters.every((id, i) => id === selection.lineup.starters[i])) return;
+  selection.lineup = { starters, bench: selection.lineup.bench.filter((id) => !starters.includes(id)) };
+  // Refills the bench and moves set pieces off anyone who dropped out.
+  repairSelection(career, selection);
 }
 
 // ---------------------------------------------------------------------------

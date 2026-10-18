@@ -250,11 +250,19 @@ export function buildWeather(kind: MatchWeather, tier: QualityTier): WeatherView
   root.add(flags.root);
   const fwd = new Vector3();
   const box = W.box as [number, number, number];
+  let flagWait = 0;
   return {
     root,
     tick(dt, camera, bufferHeight) {
       flags.time.value += dt;
-      if (!fall) return true;
+      if (!fall) {
+        // Only the corner flags move: a few redraws a second is enough while the match is
+        // paused, and saves a phone drawing the whole ground 30 times a second for them.
+        flagWait += dt;
+        if (flagWait < 1 / 8) return false;
+        flagWait = 0;
+        return true;
+      }
       const u = fall.mat.uniforms;
       // Wrapped now and then so the shader's sums keep their precision on a long night.
       u.uTime.value = (u.uTime.value + dt) % 3600;

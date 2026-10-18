@@ -60,6 +60,9 @@ export class WeekPlayer {
     if (this.busy) throw new Error('A week is already being played');
     if (career.phase !== 'season') return advanceCareer(career);
     this.busy = true;
+    // If the week fails part way, the career goes back to how it was, so the next try
+    // doesn't pay the wages (or a loan's week) a second time.
+    const before = structuredClone(career);
     try {
       const week = prepareCareerWeek(career);
       if (!week) return advanceCareer(career);
@@ -77,6 +80,9 @@ export class WeekPlayer {
       this.early.clear();
       this.warmedWeek = -1;
       return settleCareerWeek(career, week, results);
+    } catch (err) {
+      restore(career, before);
+      throw err;
     } finally {
       this.busy = false;
     }
@@ -96,6 +102,12 @@ export class WeekPlayer {
     this.early.set(key, p);
     return p;
   }
+}
+
+/** Puts `career` back to `copy` in place, so everything holding the career sees it. */
+function restore(career: Career, copy: Career): void {
+  for (const key of Object.keys(career)) delete (career as unknown as Record<string, unknown>)[key];
+  Object.assign(career, copy);
 }
 
 /** Everything a background match is played from. */

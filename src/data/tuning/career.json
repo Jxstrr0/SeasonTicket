@@ -225,7 +225,7 @@
     "receivershipOverdraft": 4000000
   },
   "transfers": {
-    "_about": "Asking price = value x role factor x contract factor. Bids at or above asking are accepted, bids within counterShare get a counter at the midpoint, the rest are refused.",
+    "_about": "Asking price = value x role factor x contract factor. Bids at or above asking are accepted, bids within counterShare of asking get a counter at the midpoint (which then stands until the window shuts), the rest are refused.",
     "roleFactor": {
       "starter": 1.4,
       "rotation": 1.1,

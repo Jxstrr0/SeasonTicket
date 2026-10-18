@@ -8,7 +8,7 @@
 import { markingPair, teamShapeInfo } from '../sim/spatial/engine';
 import type { SpatialMatch } from '../sim/spatial/state';
 import { PERSONS, ROLE, personOf, type Side, type SpatialPlayer, type SpatialSetup } from '../sim/spatial/types';
-import { esc } from './html';
+import { esc, safeColor } from './html';
 
 /** A player's name by engine index (or '?'). */
 export function nameOf(m: SpatialMatch, w: number): string {
@@ -62,8 +62,10 @@ export function textOn(fill: string): string {
 
 /** Home wears its first colours; away switches to its second colours on a clash. */
 export function matchKits(setup: SpatialSetup): [Kit, Kit] {
-  const h = setup.home.colors;
-  const a = setup.away.colors;
+  // The colours come from the save (which may be an imported code): only plain hex gets through.
+  const clean = (c: { primary: string; secondary: string }) => ({ primary: safeColor(c.primary, '#223355'), secondary: safeColor(c.secondary, '#ffffff') });
+  const h = clean(setup.home.colors);
+  const a = clean(setup.away.colors);
   const home = { fill: h.primary, edge: h.secondary };
   let away = { fill: a.primary, edge: a.secondary };
   if (colourGap(home.fill, away.fill) < 110) away = { fill: a.secondary, edge: a.primary };

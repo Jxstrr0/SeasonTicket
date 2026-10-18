@@ -90,6 +90,8 @@ const LIVE_PANELS: readonly LivePanel[] = ['none', 'subs', 'tactics'];
 /** A long gap between screen frames (tab hidden, phone locked) never plays the match on. */
 const PITCH_MAX_FRAME_S = 0.1;
 /** How long a break (half-time) lasts with the head coach in charge, in real ms. */
+/** Taps closer together than this count as one (a double tap fires two clicks). */
+const CONFIRM_GAP_MS = 450;
 const BREAK_MS = atmosphereTuning.break.coachS * 1000;
 const POSITIONS: readonly Position[] = ['GK', 'CB', 'FB', 'DM', 'CM', 'AM', 'W', 'ST'];
 const DIAL_KEYS = ['mentality', 'pressing', 'defensiveLine', 'width', 'tempo', 'directness', 'timeWasting'] as const;
@@ -183,6 +185,9 @@ export class CareerApp {
   private readonly pitch = new LiveHost(this.match3d, this.atmosphere);
   /** Set after one failed save so the warning shows once. */
   private saveWarned = false;
+  /** When a confirm button was armed, and the last form sent: see CONFIRM_GAP_MS. */
+  private armedAt = 0;
+  private lastForm = { name: '', at: 0 };
   /** The 3D office sits behind the menus; the menus render into uiLayer. */
   private readonly uiLayer: HTMLElement;
   private readonly officeLayer: HTMLElement;
@@ -578,9 +583,12 @@ export class CareerApp {
       const key = `${action}:${d.id ?? ''}`;
       if (this.ui.pendingConfirm !== key) {
         this.ui.pendingConfirm = key;
+        this.armedAt = performance.now();
         this.render();
         return;
       }
+      // A quick double tap fires two clicks: the second must not confirm the first.
+      if (performance.now() - this.armedAt < CONFIRM_GAP_MS) return;
     }
     this.ui.pendingConfirm = null;
     if (action !== 'dismiss-flash' && action !== 'menu') this.ui.flash = null;
@@ -917,6 +925,7 @@ export class CareerApp {
       case 'live-skip':
         this.livePause();
         playToEnd(career);
+        this.pitch.jumped();
         ui.live.pause = null;
         ui.live.panel = 'none';
         break;
@@ -967,6 +976,10 @@ export class CareerApp {
     if (!(form instanceof HTMLFormElement) || !form.dataset.form) return;
     e.preventDefault();
     if (this.weeks.playing) return;
+    // The forms stay on screen after a submit, so a double tap would send the same one twice.
+    const now = performance.now();
+    if (form.dataset.form === this.lastForm.name && now - this.lastForm.at < CONFIRM_GAP_MS) return;
+    this.lastForm = { name: form.dataset.form, at: now };
     this.ui.pendingConfirm = null;
     this.ui.flash = null;
     try {
@@ -1004,9 +1017,15 @@ export class CareerApp {
         if (r.ok) this.ui.marketPlayerId = null;
         break;
       }
-      case 'ticket':
-        this.flashResult(setTicketPrice(career, numberField(form, 'price')));
+      case 'ticket': {
+        const price = numberField(form, 'price');
+        if (!Number.isFinite(price)) {
+          this.ui.flash = { kind: 'error', text: 'Enter a ticket price, such as 25.' };
+          break;
+        }
+        this.flashResult(setTicketPrice(career, price));
         break;
+      }
       case 'inject':
       case 'repay':
       case 'borrow': {
@@ -1344,10 +1363,10 @@ export class CareerApp {
     this.ui.live = { ...this.ui.live, running: false, panel: 'none', subOut: null, pause: null };
     const results = await this.playWeek();
     if (this.career !== career) return;
-    if (results) {
-      const line = userResultText(career, results);
-      if (line) this.ui.flash = { kind: 'ok', text: line };
-    }
+    // The week failed and the career is back where it was: nothing new to save.
+    if (!results) return this.render();
+    const line = userResultText(career, results);
+    if (line) this.ui.flash = { kind: 'ok', text: line };
     this.ui.resultsWeek = null;
     this.save();
     if (!this.followPhase()) this.render();
@@ -1362,8 +1381,9 @@ export class CareerApp {
     while (token === this.runToken && this.career === career) {
       const results = await this.playWeek(true);
       if (this.career !== career) return;
+      if (!results) break;
       this.save();
-      if (!results || phaseOf(career) !== 'season') break;
+      if (phaseOf(career) !== 'season') break;
     }
     if (this.career !== career) return;
     this.ui.simming = false;

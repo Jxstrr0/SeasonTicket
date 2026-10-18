@@ -131,7 +131,7 @@ function renderTargetDetail(career: Career, p: Player): string {
     const suggested = Math.round((counter ?? asking) / 1000);
     const bid = window
       ? `<form data-form="bid" data-id="${esc(p.id)}" class="deal-form">
-          <label>Fee ($k)<input class="field" type="number" name="fee" inputmode="numeric" min="0" step="5" value="${suggested}"></label>
+          <label>Fee ($k)<input class="field" type="number" name="fee" inputmode="numeric" min="0" step="any" value="${suggested}"></label>
           <label>Contract${yearsSelect('years', 3)}</label>
           <button type="submit">Make bid</button>
         </form>

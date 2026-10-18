@@ -76,7 +76,7 @@ function isHomegrown(player: Player): boolean {
 }
 
 /** Swaps foreign starters for the cheapest domestic replacements until the quota is met or the squad runs out. */
-function enforceHomegrown(starters: string[], available: string[], formation: Formation, players: Record<string, Player>, minimum: number): void {
+export function enforceHomegrown(starters: string[], available: string[], formation: Formation, players: Record<string, Player>, minimum: number): void {
   const domesticCount = () => starters.filter((id) => id !== '' && isHomegrown(players[id])).length;
   while (domesticCount() < minimum) {
     let bestSwap: { slot: number; inId: string; loss: number } | null = null;

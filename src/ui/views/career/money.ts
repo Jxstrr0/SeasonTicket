@@ -160,7 +160,7 @@ function renderDebts(career: Career): string {
         <div><strong>${esc(l.name)}</strong> <span class="muted small">${Math.round(d.rate * 100)}% · ${esc(money(d.weeklyPayment))}/wk · ${(d.weeksLeft / weeksPerSeason).toFixed(1)} seasons left</span></div>
         <div class="small">Owed ${esc(money(d.balance))}${d.minCash > 0 ? ` · keep ${esc(money(d.minCash))} in the bank` : ''}</div>
         <form data-form="repay" data-id="${esc(d.id)}" class="inline-form">
-          <label class="small">Repay ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="1" step="10" value="${Math.round(Math.min(d.balance, Math.max(0, books.cash)) / 1000)}"></label>
+          <label class="small">Repay ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="1" step="any" value="${Math.round(Math.min(d.balance, Math.max(0, books.cash)) / 1000)}"></label>
           <button type="submit" class="btn-secondary">Repay</button>
         </form>
       </li>`;
@@ -179,7 +179,7 @@ function renderBorrow(career: Career): string {
       const terms = `${Math.round(l.rate * 100)}% a year over ${l.seasons} seasons${l.minCashCondition > 0 ? `, keep ${money(l.minCashCondition)} in the bank` : ''}`;
       const form = o.available
         ? `<form data-form="borrow" data-id="${esc(l.id)}" class="inline-form">
-            <label class="small">Amount ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="${C.lenders.minLoan / 1000}" max="${o.max / 1000}" step="10" value="${Math.round(o.max / 1000)}"></label>
+            <label class="small">Amount ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="${C.lenders.minLoan / 1000}" max="${o.max / 1000}" step="any" value="${Math.round(o.max / 1000)}"></label>
             <button type="submit" class="btn-secondary">Borrow</button>
           </form>`
         : `<p class="muted small">${esc(o.reason ?? '')}</p>`;
@@ -199,7 +199,7 @@ function renderInject(career: Career): string {
     <p class="muted small">Your fortune is finite and money you put in never comes back. Minimum ${esc(money(C.owner.minInjection))}.</p>
     ${fortune >= C.owner.minInjection
       ? `<form data-form="inject" class="inline-form">
-          <label class="small">Amount ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="${C.owner.minInjection / 1000}" max="${Math.floor(fortune / 1000)}" step="10" value="${C.owner.minInjection / 1000}"></label>
+          <label class="small">Amount ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="${C.owner.minInjection / 1000}" max="${Math.floor(fortune / 1000)}" step="any" value="${C.owner.minInjection / 1000}"></label>
           <button type="submit">Put money in</button>
         </form>`
       : '<p class="warn small">Your fortune is spent.</p>'}

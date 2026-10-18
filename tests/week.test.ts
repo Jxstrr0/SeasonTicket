@@ -99,3 +99,16 @@ describe('playing a week in the background', () => {
     expect(b.weekIndex).toBe(before + 1);
   });
 });
+
+describe('a week that fails part way', () => {
+  it('leaves the career as it was, so the wages are not paid twice', async () => {
+    const career = inSeason(62);
+    const before = snapshot(career);
+    // A runner that hands back no result: settling the week finds a match missing.
+    const broken: MatchRunner = { kind: 'inThread', async run() { return []; }, dispose() {} };
+    const weeks = new WeekPlayer(() => broken);
+    await expect(weeks.playWeek(career)).rejects.toThrow();
+    expect(snapshot(career)).toEqual(before);
+    expect(weeks.playing).toBe(false);
+  });
+});
