@@ -13,6 +13,8 @@ import coachTuningJson from '../data/tuning/coach.json';
 import careerTuningJson from '../data/tuning/career.json';
 import stadiumTuningJson from '../data/tuning/stadium.json';
 import spatialTuningJson from '../data/tuning/spatial.json';
+import storyTuningJson from '../data/tuning/story.json';
+import everydayEventsJson from '../data/events/everyday.json';
 import type { Formation, NationId, Position, TeamColors } from './types';
 
 export interface NationDef {
@@ -69,6 +71,9 @@ export const SEASON_TUNING = seasonTuningJson;
 export const COACH_TUNING = coachTuningJson;
 export const CAREER_TUNING = careerTuningJson;
 export const STADIUM_TUNING = stadiumTuningJson;
+export const STORY_TUNING = storyTuningJson;
+/** Every story event file, in order (src/data/events). */
+export const EVENT_FILES: readonly unknown[] = [everydayEventsJson];
 export const SPATIAL_TUNING = spatialTuningJson;
 
 export type PlayersTuning = typeof playersTuningJson;

@@ -63,6 +63,8 @@ export function loadPerson(m: SpatialMatch, i: number, w: number): void {
   b[o + A_WRK] = a.wrk; b[o + A_SPK] = a.spk; b[o + A_DUR] = a.dur; b[o + A_STA] = a.sta;
   const SS = T.skillSpread;
   for (let k = 0; k < ATTRS; k++) b[o + k] = SS.pivot + SS.keep * (b[o + k] - SS.pivot);
+  const form = (i < 11 ? m.setup.home : m.setup.away).form;
+  if (form) for (let k = 0; k < ATTRS; k++) if (k !== A_AGG) b[o + k] = Math.min(99, b[o + k] * (1 + form));
   if (i < 11 && m.crowd > 0) {
     const up = T.home.attrPoints * m.crowd;
     for (const k of HOME_ATTRS) b[o + k] = Math.min(99, b[o + k] + up);

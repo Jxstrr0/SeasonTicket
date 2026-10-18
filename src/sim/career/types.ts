@@ -11,7 +11,7 @@ export type TierId = 'easy' | 'normal' | 'hard' | 'veryHard';
 export type CareerPhase = 'preseason' | 'season' | 'review' | 'gameOver';
 export type MatchMode = 'full' | 'bigCalls' | 'coach';
 
-export const INCOME_KEYS = ['tickets', 'concessions', 'merchandise', 'sponsors', 'namingRights', 'tv', 'merit', 'playoffs', 'playerSales', 'loanFees', 'luxuryShare', 'hospitality'] as const;
+export const INCOME_KEYS = ['tickets', 'concessions', 'merchandise', 'sponsors', 'namingRights', 'tv', 'merit', 'playoffs', 'playerSales', 'loanFees', 'luxuryShare', 'hospitality', 'other'] as const;
 export const SPENDING_KEYS = ['playerWages', 'staffWages', 'operations', 'matchday', 'transfers', 'loanFees', 'luxuryTax', 'interest', 'academy', 'severance', 'upgrades'] as const;
 export const FINANCING_KEYS = ['ownerInjection', 'borrowed', 'repaid'] as const;
 
@@ -134,7 +134,7 @@ export interface PlayerSeasonLine {
   reds: number;
 }
 
-export type InboxKind = 'info' | 'finance' | 'transfer' | 'bid' | 'staff' | 'youth' | 'ladder' | 'match' | 'season' | 'stadium';
+export type InboxKind = 'info' | 'finance' | 'transfer' | 'bid' | 'staff' | 'youth' | 'ladder' | 'match' | 'season' | 'stadium' | 'decision';
 
 export interface InboxMessage {
   id: string;
@@ -144,6 +144,8 @@ export interface InboxMessage {
   title: string;
   body: string;
   read: boolean;
+  /** The story event this message brings (src/sim/career/story.ts), answered or not. */
+  eventRef?: string;
 }
 
 export interface SeasonHistoryEntry {
@@ -262,6 +264,82 @@ export interface CareerReplays {
   round: Record<string, MatchReplay>;
 }
 
+export type StoryPace = 'calm' | 'normal' | 'busy';
+
+/** Who brings an event to the office. */
+export type VisitorRole = 'lender' | 'agent' | 'sponsor' | 'coach' | 'reporter' | 'player' | 'fans' | 'councillor' | 'vip' | 'staffer';
+
+/** An event waiting for the owner's answer (or answered, while its message is still kept). */
+export interface StoryEvent {
+  /** Instance id, also the inbox message's eventRef. */
+  id: string;
+  /** The event's id in src/data/events. */
+  eventId: string;
+  role: VisitorRole;
+  weekIndex: number;
+  /** Global week index at which the staff answer if the owner has not. */
+  deadlineWeek: number;
+  /** The player it is about, if any. */
+  playerId: string | null;
+  /** A made-up person in the story (a fan, a councillor), by name. */
+  person: string | null;
+  /** Money in the story, already scaled to the club. */
+  amount: number;
+  /** The choice made, once answered; 'staff' when the staff answered. */
+  answer: string | null;
+  mailId: string;
+}
+
+/** A promise or a delayed consequence, checked when its week comes. */
+export interface StoryTimer {
+  id: string;
+  /** Global week index it comes due. */
+  week: number;
+  kind: 'starts' | 'signing' | 'later';
+  /** The event and choice that set it, for its effects and text. */
+  eventId: string;
+  choiceId: string;
+  playerId: string | null;
+  amount: number;
+  /** For 'starts': apps the player had when promised. For 'signing': squad size then. */
+  baseline: number;
+  /** For 'starts': the apps he was promised. */
+  target: number;
+}
+
+export interface StoryDecision {
+  season: number;
+  weekIndex: number;
+  eventId: string;
+  choiceId: string;
+  /** Answered by the staff (the owner waved it off or let the deadline pass). */
+  staff: boolean;
+}
+
+/**
+ * The events and story layer (Stage 6): moods, the press, open events, promises and what
+ * the owner chose. All of it is seeded and headless like the rest of the career.
+ */
+export interface StoryState {
+  pace: StoryPace;
+  /** How the press sees the owner, 0-1 (0.5 neutral). */
+  press: number;
+  /** Sponsors' goodwill, 0-1 (0.5 neutral). Scales the next shirt offers. */
+  goodwill: number;
+  /** Mood of each player in the user's squad, 0-1; missing means neutral. */
+  mood: Record<string, number>;
+  events: StoryEvent[];
+  timers: StoryTimer[];
+  /** Flags set by choices, by name: the global week they were set. */
+  flags: Record<string, number>;
+  /** When each event last happened (global week), for cooldowns. */
+  last: Record<string, number>;
+  /** How many times each event happened this season. */
+  seasonCount: Record<string, number>;
+  /** Decisions this season and last (older ones are dropped at the rollover). */
+  decisions: StoryDecision[];
+}
+
 export interface Career {
   version: number;
   seed: number;
@@ -299,6 +377,7 @@ export interface Career {
   playerSeason: Record<string, PlayerSeasonLine>;
   inbox: InboxMessage[];
   history: SeasonHistoryEntry[];
+  story: StoryState;
   /** Counter for career-side ids (bids, debts, messages). */
   counter: number;
   gameOverReason: string | null;

@@ -36,6 +36,7 @@ function sideFrom(players: Record<string, Player>, team: Team, selection: TeamSe
     bench: bench.map(toSpatial),
     // The engine floors this at the minimum starting energy.
     energy: [...starters, ...bench].map((p) => p.condition),
+    ...(selection.form ? { form: selection.form } : {}),
   };
 }
 

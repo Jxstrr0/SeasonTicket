@@ -1,0 +1,301 @@
+{
+  "_about": "Everyday events (Stage 6.1). Format in docs/STAGE_6_EVENTS.md. Text fields fill {player}, {first}, {club}, {short}, {city}, {stadium}, {coach}, {assistant}, {person}, {amount}, {half}, {double}, {sponsor} and {opponent}. Effects: cash (x amount, with line), fans, mood (the player), squad, press, goodwill, flag, price (ticket price share), promise, later.",
+  "events": [
+    {
+      "id": "fringe-minutes",
+      "role": "player",
+      "when": { "phase": ["season"], "weekMin": 4, "subject": "benched" },
+      "title": "{player} wants to play",
+      "text": "{player} knocks on the door. \"I came here to play football, not to keep the bench warm. Give me a chance, or tell me straight if I'm not in your plans.\"",
+      "staff": "fight",
+      "choices": [
+        { "id": "promise", "label": "Promise him three starts", "hint": "He will expect 3 starts in the next 6 weeks. Keep your word or he'll take it badly.", "result": "{first} leaves smiling. The coach has been told.", "effects": [{ "mood": 0.2 }, { "promise": "starts", "weeks": 6, "target": 3 }] },
+        { "id": "fight", "label": "Tell him to fight for his place", "hint": "No promises. He won't love it.", "result": "{first} nods, jaw set. Training should be lively this week.", "effects": [{ "mood": -0.08 }] },
+        { "id": "plans", "label": "Say he's part of the plan", "hint": "A small lift, but words wear thin without minutes.", "result": "{first} seems reassured, for now.", "effects": [{ "mood": 0.08 }] }
+      ]
+    },
+    {
+      "id": "star-new-deal",
+      "role": "agent",
+      "when": { "subject": "starExpiring" },
+      "title": "{player}'s agent calls",
+      "text": "{player}'s agent wants to know where things stand. \"My client has a year left. He loves {city}, but other clubs are asking. Are we talking about a new deal or not?\"",
+      "staff": "later",
+      "choices": [
+        { "id": "talk", "label": "Say you want him for years", "hint": "He'll be pleased. Renew his contract on the Squad screen while he's happy.", "result": "The agent sounds warm. \"We'll be waiting for your offer.\"", "effects": [{ "mood": 0.15 }] },
+        { "id": "later", "label": "Talk in the off-season", "hint": "Keeps your options open. He may feel undervalued.", "result": "\"Fine. But don't leave it too long.\"", "effects": [{ "mood": -0.1 }] },
+        { "id": "hardball", "label": "Tell him nobody is bigger than the club", "hint": "Good for your image with the press, bad for the player.", "result": "The line goes quiet. The press love the quote.", "effects": [{ "mood": -0.25 }, { "press": 0.04 }] }
+      ]
+    },
+    {
+      "id": "sponsor-appearance",
+      "role": "sponsor",
+      "when": { "hasSponsor": true },
+      "amount": 60000,
+      "title": "{sponsor} wants the players",
+      "text": "{sponsor} are opening a new flagship store in {city} and want the squad there on Tuesday, signing shirts for two hours. They'll pay {amount} on top of the shirt deal.",
+      "staff": "two",
+      "choices": [
+        { "id": "squad", "label": "Send the whole squad", "hint": "Earns {amount}. The players would rather rest.", "result": "Queues round the block. The players smile through it.", "effects": [{ "cash": 1, "line": "sponsors" }, { "squad": -0.03 }, { "goodwill": 0.1 }, { "fans": 0.01 }] },
+        { "id": "two", "label": "Send two senior players", "hint": "Earns {half}. Everyone's happy enough.", "result": "Two players, a lot of selfies, a decent cheque.", "effects": [{ "cash": 0.5, "line": "sponsors" }, { "goodwill": 0.04 }] },
+        { "id": "no", "label": "Say no, the players need rest", "hint": "No money, and the sponsor will remember.", "result": "The sponsor's rep forces a smile. \"Of course. Another time.\"", "effects": [{ "goodwill": -0.12 }, { "squad": 0.02 }] }
+      ]
+    },
+    {
+      "id": "hospital-visit",
+      "role": "staffer",
+      "when": {},
+      "amount": 40000,
+      "title": "The children's ward asks for a visit",
+      "text": "{person} from the club's community office says the children's ward at {city} General has asked if some players could visit before the holidays. They're also raising money for a new play room.",
+      "staff": "visit",
+      "choices": [
+        { "id": "visit", "label": "Send players with presents", "hint": "Costs {half}. Fans and the press will notice.", "result": "A ward full of grins. One young fan made {coach} sign his cast.", "effects": [{ "cash": -0.5, "line": "operations" }, { "fans": 0.02 }, { "press": 0.05 }, { "squad": 0.02 }] },
+        { "id": "donate", "label": "Fund the whole play room", "hint": "Costs {amount}. A plaque with the club's name goes on the door.", "result": "The play room will carry the club crest. The local paper runs it on page three.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.03 }, { "press": 0.07 }] },
+        { "id": "no", "label": "Not this year", "hint": "Saves money. Looks cold.", "result": "{person} looks disappointed but says they understand.", "effects": [{ "press": -0.04 }, { "fans": -0.01 }] }
+      ]
+    },
+    {
+      "id": "ticket-complaint",
+      "role": "fans",
+      "when": { "priceOverFair": 1.08 },
+      "title": "Fans' group: tickets cost too much",
+      "text": "{person}, chair of the {short} Supporters' Trust, brings a petition. \"Two thousand signatures. Families can't afford to come any more. Bring the prices down.\"",
+      "staff": "listen",
+      "choices": [
+        { "id": "cut", "label": "Cut prices by 10%", "hint": "Less money per ticket, more goodwill in the stands.", "result": "Applause at the next Trust meeting. Prices drop 10%.", "effects": [{ "price": -0.1 }, { "fans": 0.04 }, { "press": 0.02 }] },
+        { "id": "listen", "label": "Promise a review in the summer", "hint": "Buys a little time.", "result": "{person} takes the promise, but says they'll be watching.", "effects": [{ "fans": 0.01 }, { "flag": "priceReview" }] },
+        { "id": "firm", "label": "Explain the club needs the money", "hint": "Honest, but the fans won't like it.", "result": "{person} leaves unconvinced. There's talk of banners.", "effects": [{ "fans": -0.04 }] }
+      ]
+    },
+    {
+      "id": "coach-wants-signing",
+      "role": "coach",
+      "when": { "window": true },
+      "title": "{coach} asks for a signing",
+      "text": "{coach} closes the door. \"We're one player short of something good. Get me someone who can make a difference this window and I'll do the rest.\"",
+      "staff": "think",
+      "choices": [
+        { "id": "back", "label": "Promise a signing", "hint": "Sign any player in the next 4 weeks, or {coach} will feel let down.", "result": "{coach} shakes your hand. \"That's all I needed to hear.\"", "effects": [{ "squad": 0.03 }, { "promise": "signing", "weeks": 4 }] },
+        { "id": "think", "label": "Say you'll see what the money allows", "hint": "No promises either way.", "result": "\"Fair enough. Don't take too long.\"", "effects": [] },
+        { "id": "no", "label": "Tell him to work with what he has", "hint": "Saves money. The dressing room hears about it.", "result": "{coach} says nothing for a moment. \"Understood.\"", "effects": [{ "squad": -0.04 }, { "press": -0.02 }] }
+      ]
+    },
+    {
+      "id": "reporter-exclusive",
+      "role": "reporter",
+      "when": {},
+      "title": "An interview request",
+      "text": "{person} from the {city} Courier wants a long sit-down interview for the weekend edition. \"Your story, in your words. Where's the club going?\"",
+      "staff": "short",
+      "choices": [
+        { "id": "open", "label": "Give them an hour", "hint": "The press will like you more.", "result": "A two-page spread with a flattering photo. Mostly flattering.", "effects": [{ "press": 0.08 }, { "fans": 0.01 }] },
+        { "id": "short", "label": "Fifteen minutes, by phone", "hint": "A small lift.", "result": "A short piece. Polite, accurate, forgettable.", "effects": [{ "press": 0.03 }] },
+        { "id": "no", "label": "Decline", "hint": "The paper won't forget it.", "result": "The weekend edition runs \"Owner too busy for {city}?\"", "effects": [{ "press": -0.06 }] }
+      ]
+    },
+    {
+      "id": "training-scuffle",
+      "role": "coach",
+      "when": { "phase": ["season"], "subject": "any" },
+      "amount": 20000,
+      "title": "A fight in training",
+      "text": "{coach} reports a scuffle between {player} and a team-mate after a hard tackle. \"It's sorted, mostly. But the lads are watching what we do.\"",
+      "staff": "coach",
+      "choices": [
+        { "id": "fine", "label": "Fine them both a week's wages", "hint": "Brings in {amount}. Sends a message, and stings.", "result": "Both fined. Training is very quiet the next day.", "effects": [{ "cash": 1, "line": "other" }, { "mood": -0.15 }, { "squad": -0.02 }, { "press": 0.02 }] },
+        { "id": "dinner", "label": "Take the squad out for dinner", "hint": "Costs {amount}. Clear the air.", "result": "By dessert the two of them are laughing about it.", "effects": [{ "cash": -1, "line": "operations" }, { "squad": 0.04 }, { "mood": 0.05 }] },
+        { "id": "coach", "label": "Leave it with the coach", "hint": "Nothing changes much.", "result": "{coach} handles it: extra running for everyone.", "effects": [{ "squad": -0.01 }] }
+      ]
+    },
+    {
+      "id": "council-parking",
+      "role": "councillor",
+      "when": {},
+      "amount": 80000,
+      "title": "The council and match-day parking",
+      "text": "Councillor {person} has had complaints. \"Cars on every pavement around {stadium} on match days. The residents want something done, and so do I.\"",
+      "staff": "promise",
+      "choices": [
+        { "id": "shuttle", "label": "Pay for match-day shuttle buses", "hint": "Costs {amount}. The council will remember the favour.", "result": "Shuttle buses from the town centre. The councillor sends a thank-you note.", "effects": [{ "cash": -1, "line": "operations" }, { "press": 0.03 }, { "fans": 0.01 }, { "flag": "councilFriend" }] },
+        { "id": "promise", "label": "Promise to look into it", "hint": "Free, for now.", "result": "\"I'll hold you to that.\"", "effects": [{ "flag": "councilWaiting" }] },
+        { "id": "no", "label": "Say parking is the council's problem", "hint": "Free. The council may make life harder later.", "result": "Councillor {person} leaves with a tight smile.", "effects": [{ "press": -0.03 }, { "flag": "councilAnnoyed" }] }
+      ]
+    },
+    {
+      "id": "vip-big-match",
+      "role": "vip",
+      "when": { "phase": ["season"], "homeNext": true },
+      "amount": 50000,
+      "title": "A guest for the directors' box",
+      "text": "{person}, who owns half the waterfront in {city}, would like the best seats for the {opponent} match, and a table for eight. \"Money's no object. Atmosphere is.\"",
+      "staff": "host",
+      "choices": [
+        { "id": "host", "label": "Roll out the red carpet", "hint": "Earns {amount} in hospitality.", "result": "{person} leaves with a signed ball and a smile. The cheque clears.", "effects": [{ "cash": 1, "line": "hospitality" }, { "goodwill": 0.03 }] },
+        { "id": "pitchside", "label": "Offer pitch-side seats with the fans", "hint": "Earns {half}. The fans like an owner who mixes.", "result": "{person} loves it. Sings along by the second half.", "effects": [{ "cash": 0.5, "line": "hospitality" }, { "fans": 0.02 }] },
+        { "id": "no", "label": "The box is full", "hint": "No money.", "result": "\"Another time, perhaps.\"", "effects": [] }
+      ]
+    },
+    {
+      "id": "unhappy-talk",
+      "role": "player",
+      "when": { "subject": "unhappy" },
+      "amount": 50000,
+      "title": "{player} is unhappy",
+      "text": "{player} looks tired of it all. \"I don't feel wanted here. I'm not asking to leave, not yet, but something has to change.\"",
+      "staff": "patient",
+      "choices": [
+        { "id": "promise", "label": "Promise him more football", "hint": "He'll expect 3 starts in 6 weeks.", "result": "{first} brightens a little. \"Thank you. I won't let you down.\"", "effects": [{ "mood": 0.2 }, { "promise": "starts", "weeks": 6, "target": 3 }] },
+        { "id": "bonus", "label": "Give him a loyalty bonus", "hint": "Costs {amount}. Money talks, for a while.", "result": "The bonus lands. {first} is smiling in training.", "effects": [{ "cash": -1, "line": "playerWages" }, { "mood": 0.25 }, { "squad": -0.01 }] },
+        { "id": "patient", "label": "Ask him to be patient", "hint": "Free. Might not be enough.", "result": "{first} shrugs. \"We'll see.\"", "effects": [{ "mood": -0.04 }] }
+      ]
+    },
+    {
+      "id": "winning-run-bonus",
+      "role": "player",
+      "when": { "phase": ["season"], "wonRun": 3, "subject": "captain" },
+      "amount": 120000,
+      "title": "The players want a bonus",
+      "text": "{player} speaks for the dressing room. \"Three wins on the bounce. The lads would like to see that rewarded, boss.\"",
+      "staff": "dinner",
+      "choices": [
+        { "id": "pay", "label": "Pay a win bonus", "hint": "Costs {amount}. The squad will run through walls.", "result": "Cheers from the dressing room. Someone puts music on.", "effects": [{ "cash": -1, "line": "playerWages" }, { "squad": 0.08 }] },
+        { "id": "dinner", "label": "Team dinner on the club", "hint": "Costs {half}. A nice gesture.", "result": "Steak for everyone. The fitness coach winces.", "effects": [{ "cash": -0.5, "line": "operations" }, { "squad": 0.04 }] },
+        { "id": "no", "label": "Winning is the bonus", "hint": "Free. They'll grumble.", "result": "\"Right you are, boss.\" Nobody's smiling.", "effects": [{ "squad": -0.05 }] }
+      ]
+    },
+    {
+      "id": "losing-run-fans",
+      "role": "fans",
+      "when": { "phase": ["season"], "lostRun": 3 },
+      "title": "The fans want answers",
+      "text": "Three defeats in a row. {person} from the Supporters' Trust is in reception. \"People are angry. They want to hear it from you.\"",
+      "staff": "letter",
+      "choices": [
+        { "id": "meet", "label": "Meet the fans in the club bar", "hint": "Brave. Could go either way, but usually helps.", "result": "Two hours of hard questions. They leave grudgingly respectful.", "effects": [{ "fans": 0.05 }, { "press": 0.03 }] },
+        { "id": "letter", "label": "Write an open letter", "hint": "A small lift.", "result": "The letter goes up on the club site. Some read it.", "effects": [{ "fans": 0.02 }] },
+        { "id": "silence", "label": "Let results do the talking", "hint": "Free, but the silence will be noticed.", "result": "No comment. The radio phone-in has a field day.", "effects": [{ "fans": -0.03 }, { "press": -0.03 }] }
+      ]
+    },
+    {
+      "id": "retro-kit",
+      "role": "staffer",
+      "when": { "phase": ["preseason"] },
+      "amount": 90000,
+      "title": "A retro kit idea",
+      "text": "{person} from the club shop has an idea: a limited run of the kit from the club's first ever season. \"The old-timers will love it, and the kids think it's cool now.\"",
+      "staff": "small",
+      "choices": [
+        { "id": "big", "label": "Order a big run", "hint": "Costs {amount} now. Could sell well later.", "result": "Boxes of retro shirts arrive at the shop.", "effects": [{ "cash": -1, "line": "operations" }, { "later": 6, "title": "The retro kit sold out", "text": "The retro shirts are gone. The shop made {double}.", "effects": [{ "cash": 2, "line": "merchandise" }, { "fans": 0.02 }] }] },
+        { "id": "small", "label": "A small test run", "hint": "Costs {half}. A safer bet.", "result": "A few hundred shirts go on sale.", "effects": [{ "cash": -0.5, "line": "operations" }, { "later": 6, "title": "Retro kit sales", "text": "The small run sold steadily. The shop made {amount}.", "effects": [{ "cash": 1, "line": "merchandise" }] }] },
+        { "id": "no", "label": "Not now", "hint": "No cost.", "result": "{person} puts the sketches back in the drawer.", "effects": [] }
+      ]
+    },
+    {
+      "id": "mascot-pay",
+      "role": "staffer",
+      "when": {},
+      "weight": 0.6,
+      "maxPerSeason": 1,
+      "amount": 8000,
+      "title": "The mascot wants a pay rise",
+      "text": "The person inside the club mascot has written to you, formally, on headed paper. They want a raise, a new costume fan, and \"respect\". There are threats of a strike before the next home match.",
+      "staff": "pay",
+      "choices": [
+        { "id": "pay", "label": "Pay up", "hint": "Costs {amount}. Peace in our time.", "result": "The mascot does a celebratory cartwheel. Mostly successfully.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.01 }] },
+        { "id": "suit", "label": "Wear the suit yourself next match", "hint": "Free. The press will love it, or laugh at you.", "result": "You do a full lap of the pitch in the suit. The video goes round the whole of {city}.", "effects": [{ "press": 0.05 }, { "fans": 0.03 }] },
+        { "id": "no", "label": "Refuse", "hint": "Free. The kids will miss the mascot.", "result": "The mascot strikes. A cardboard cut-out stands in. It is not the same.", "effects": [{ "fans": -0.02 }] }
+      ]
+    },
+    {
+      "id": "night-out",
+      "role": "reporter",
+      "when": { "phase": ["season"], "subject": "young" },
+      "amount": 30000,
+      "title": "{player} out late before a match",
+      "text": "{person} from the {city} Courier has photos of {player} leaving a club at 3am, two nights before the last match. \"Care to comment before we print?\"",
+      "staff": "word",
+      "choices": [
+        { "id": "fine", "label": "Fine him publicly", "hint": "Brings in {amount}. Discipline looks good; he'll sulk.", "result": "Fined and named. The paper calls it \"strong leadership\".", "effects": [{ "cash": 1, "line": "other" }, { "mood": -0.18 }, { "press": 0.04 }] },
+        { "id": "defend", "label": "Defend him: it was his day off", "hint": "He'll love you for it. The paper won't.", "result": "\"He's young, it was his day off.\" {first} won't forget it.", "effects": [{ "mood": 0.12 }, { "press": -0.05 }] },
+        { "id": "word", "label": "A quiet word, no comment", "hint": "Small hits all round.", "result": "The photos run anyway. {first} looks sheepish all week.", "effects": [{ "mood": -0.04 }, { "press": -0.01 }] }
+      ]
+    },
+    {
+      "id": "documentary",
+      "role": "vip",
+      "when": {},
+      "maxPerSeason": 1,
+      "cooldown": 40,
+      "amount": 200000,
+      "title": "A documentary crew wants in",
+      "text": "{person}, a producer, wants to film a behind-the-scenes series on {short} for the whole season. \"Cameras in the dressing room, the boardroom, your office. Real stories.\"",
+      "staff": "no",
+      "choices": [
+        { "id": "yes", "label": "Full access", "hint": "Earns {amount}. The players won't love the cameras.", "result": "The crew moves in on Monday. Someone already tripped over a cable.", "effects": [{ "cash": 1, "line": "tv" }, { "squad": -0.05 }, { "press": 0.05 }, { "fans": 0.02 }] },
+        { "id": "some", "label": "Matches and training only", "hint": "Earns {half}.", "result": "A tidier show, fewer secrets.", "effects": [{ "cash": 0.5, "line": "tv" }, { "press": 0.02 }] },
+        { "id": "no", "label": "Decline", "hint": "The dressing room stays private.", "result": "\"Your loss.\" They go and film someone else.", "effects": [{ "squad": 0.02 }] }
+      ]
+    },
+    {
+      "id": "pitch-storm",
+      "role": "staffer",
+      "when": { "phase": ["season"] },
+      "amount": 70000,
+      "title": "The storm wrecked the pitch",
+      "text": "{person}, the head groundskeeper, is close to tears. Last night's storm flooded half the pitch at {stadium}. \"I can patch it, or we can do it properly.\"",
+      "staff": "patch",
+      "choices": [
+        { "id": "relay", "label": "Re-lay the damaged half", "hint": "Costs {amount}. A perfect surface.", "result": "New turf goes down overnight. {person} sleeps for the first time in days.", "effects": [{ "cash": -1, "line": "operations" }, { "squad": 0.02 }] },
+        { "id": "patch", "label": "Patch it up", "hint": "Costs {half}. A bit bumpy.", "result": "The pitch is playable. The players complain about the bounce.", "effects": [{ "cash": -0.5, "line": "operations" }, { "squad": -0.01 }] },
+        { "id": "nothing", "label": "It'll dry out", "hint": "Free. The players won't be happy.", "result": "It does not dry out quickly. Training moves to the car park.", "effects": [{ "squad": -0.04 }, { "fans": -0.01 }] }
+      ]
+    },
+    {
+      "id": "oldest-fan",
+      "role": "fans",
+      "when": {},
+      "maxPerSeason": 1,
+      "cooldown": 30,
+      "weight": 0.7,
+      "title": "The oldest season-ticket holder",
+      "text": "{person} turns 100 this month and has had a season ticket at {stadium} for 71 years. Their grandchildren ask if the club could do something special.",
+      "staff": "shirt",
+      "choices": [
+        { "id": "lead", "label": "Invite them to lead the team out", "hint": "Free. A moment everyone will remember.", "result": "{person} walks out to a standing ovation. Not a dry eye in the ground.", "effects": [{ "fans": 0.03 }, { "press": 0.04 }, { "squad": 0.02 }] },
+        { "id": "shirt", "label": "Send a signed shirt", "hint": "Free. A kind gesture.", "result": "The shirt is framed above {person}'s favourite chair.", "effects": [{ "fans": 0.01 }] },
+        { "id": "none", "label": "Send a card", "hint": "The bare minimum.", "result": "A nice card. The grandchildren had hoped for more.", "effects": [] }
+      ]
+    },
+    {
+      "id": "youngster-boots",
+      "role": "player",
+      "when": { "subject": "young" },
+      "amount": 25000,
+      "weight": 0.7,
+      "title": "{player} has a boot offer",
+      "text": "{player} is buzzing. A sports brand wants him as the face of their new boot, but they want him to film adverts on two training days.",
+      "staff": "allow",
+      "choices": [
+        { "id": "allow", "label": "Let him do it, on his day off", "hint": "He'll be thrilled. The club gets {amount} for image rights.", "result": "{first} films the advert on his day off. The posters go up in {city}.", "effects": [{ "mood": 0.15 }, { "cash": 1, "line": "merchandise" }] },
+        { "id": "training", "label": "Allow it on training days", "hint": "Earns {double}. {coach} won't like it.", "result": "Two training days lost. The advert is very shiny.", "effects": [{ "mood": 0.18 }, { "cash": 2, "line": "merchandise" }, { "squad": -0.02 }] },
+        { "id": "no", "label": "Tell him to focus on football", "hint": "He'll be gutted.", "result": "{first} goes quiet. The brand signs someone else.", "effects": [{ "mood": -0.15 }] }
+      ]
+    },
+    {
+      "id": "ex-player-testimonial",
+      "role": "vip",
+      "when": { "phase": ["preseason"] },
+      "maxPerSeason": 1,
+      "amount": 60000,
+      "title": "A testimonial for a club legend",
+      "text": "{person}, who played 400 games for the club, is retiring from coaching. Their family asks if {stadium} could host a testimonial match, with the proceeds going to the club's youth foundation.",
+      "staff": "host",
+      "choices": [
+        { "id": "host", "label": "Host it and cover the costs", "hint": "Costs {amount}. The fans will love it.", "result": "Twenty thousand turn up. Old heroes, slow legs, big cheers.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.04 }, { "press": 0.03 }] },
+        { "id": "split", "label": "Host it, split the gate", "hint": "Costs nothing, earns nothing.", "result": "A good day out. Everyone breaks even.", "effects": [{ "fans": 0.02 }] },
+        { "id": "no", "label": "The pitch needs rest", "hint": "Free. Old fans will grumble.", "result": "The match moves to the local park. The club gets no credit.", "effects": [{ "fans": -0.02 }, { "press": -0.02 }] }
+      ]
+    }
+  ]
+}

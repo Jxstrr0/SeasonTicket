@@ -15,6 +15,7 @@ import { ensureHeadCoach, makeSponsorOffers, refillStaffPool, staffInRole, tickN
 import { endLoans, generateFreeAgent, movePlayer } from './market';
 import { repairSelection } from './selection';
 import { summerStadium } from './stadium';
+import { rolloverStory } from './story';
 import type { Career, SeasonHistoryEntry } from './types';
 import { C, addInbox, careerRng, clamp, emptyLedger, ledgerTotals, playerName, squadOf, userBooks, userTeam } from './util';
 
@@ -352,6 +353,7 @@ function startNewSeason(career: Career): void {
   career.phase = 'preseason';
   career.preseasonWeek = 1;
   if (career.userSelection) repairSelection(career, career.userSelection);
+  rolloverStory(career);
   if (!userBooks(career).sponsor) career.sponsorOffers = makeSponsorOffers(career);
   addInbox(career, 'season', `Season ${league.season} pre-season`, `Four weeks to sort the squad before ${userTeam(career).shortName} kick off. The transfer window is open.`);
 }

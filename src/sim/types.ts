@@ -190,6 +190,8 @@ export interface Lineup {
 export interface TeamSelection {
   lineup: Lineup;
   tactics: Tactics;
+  /** Match-day form from squad mood: every attribute but aggression moves by this share (about ±0.03). None for AI clubs. */
+  form?: number;
 }
 
 // ---------------------------------------------------------------------------

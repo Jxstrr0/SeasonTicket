@@ -19,6 +19,7 @@ import { clearLive, finishLive, liveOf, startLive } from './live';
 import { weeklyMarket } from './market';
 import { matchSelection } from './selection';
 import { stadiumAttendance, weeklyStadium } from './stadium';
+import { moodForm, weeklyStory } from './story';
 import type { Career } from './types';
 import { C, addInbox, userTeam } from './util';
 
@@ -43,8 +44,13 @@ export function setBackgroundEngine(fn: Background | null): void {
 export function careerHooks(career: Career, live = false): SeasonHooks {
   const userId = career.userTeamId;
   return {
-    select: (rng, team, players, headCoach, opts) =>
-      team.id === userId ? matchSelection(career, rng, opts.opponent) : pickSelection(rng, team, players, headCoach, opts),
+    select: (rng, team, players, headCoach, opts) => {
+      if (team.id !== userId) return pickSelection(rng, team, players, headCoach, opts);
+      const selection = matchSelection(career, rng, opts.opponent);
+      const form = moodForm(career, selection.lineup.starters);
+      if (form) selection.form = form;
+      return selection;
+    },
     attendance: (rng, home, away, playoff) => {
       const base = stadiumAttendance(career, home, attendanceShare(rng, home, away, playoff));
       if (home.id !== userId) return base;
@@ -133,6 +139,7 @@ export function settleCareerWeek(career: Career, week: CareerWeek, played: reado
   clearLive(career);
   fitnessRehab(career);
   weeklyMarket(career);
+  weeklyStory(career);
   if (checkLadder(career)) return results;
   career.weekIndex += 1;
   const state = career.season;
@@ -153,6 +160,7 @@ export function advanceCareer(career: Career): MatchResult[] {
     weeklyBooks(career);
     weeklyMarket(career);
     preseasonRecovery(career);
+    weeklyStory(career);
     if (checkLadder(career)) return [];
     career.weekIndex += 1;
     career.preseasonWeek += 1;
