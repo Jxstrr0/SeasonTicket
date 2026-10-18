@@ -104,6 +104,31 @@ Each step ships a playable build to Pages, like Stage 5.
 - Save growth: no more than 15 KB compressed after five seasons, compared with a Stage 5 save.
 - Event text: loaded with the career screens (JSON, a few hundred KB at most), no new 3D assets except visitor outfit colours. A newspaper or phone prop, if added, comes from CC0 sources and is listed in `CREDITS.md`.
 
+## Build notes
+
+### 6.1 Event core (built 2026-10-18)
+
+**Event data format.** Events live in `src/data/events/*.json` (6.1 ships `everyday.json`, 21 events). Each event:
+
+- `id` (unique), `role` (the visitor who walks in: player, agent, coach, sponsor, reporter, fans, councillor, vip, staffer and the older office roles; labels and outfits are in `src/data/tuning/office.json`).
+- `when`: conditions. `phase` (preseason/season), `weekMin`/`weekMax`, `window`, `subject` (who the event is about: any, benched, starExpiring, unhappy, young, captain), `hasSponsor`, `priceOverFair`, `homeNext`, `lostRun`/`wonRun`, `fansBelow`/`fansAbove`, `pressBelow`/`pressAbove`, `flag`/`noFlag`.
+- Optional `amount` (written for a mid-sized club, scaled by market size), `deadline`, `cooldown`, `maxPerSeason`, `weight` (defaults in `story.json`).
+- `title`, `text`, and per-choice `label`, `hint`, `result`, all filled from `{player}`, `{first}`, `{club}`, `{city}`, `{coach}`, `{amount}`, `{half}`, `{double}`, `{sponsor}`, `{opponent}` and the rest listed in the file's `_about`.
+- `staff`: the choice the staff make if the owner doesn't answer by the deadline.
+- `choices[].effects`: `cash` (times `amount`, booked to a named income or spending line), `fans`, `mood` (the subject player), `squad`, `press`, `goodwill`, `flag`, `price` (ticket price share), `promise` (starts or a signing, with weeks and a target; broken promises hit mood and press), `later` (effects that land some weeks later).
+
+The loader checks every event on start: known role, the staff choice exists, ids are unique, and cash lines are real ledger lines.
+
+**How a week works.** After the week's matches, a seeded draw (its own stream, so the story never changes match results) picks 0 to 3 events from the pace table, more in transfer windows, with at most 3 open at once. An event is eligible when its conditions hold, its cooldown has passed, it hasn't hit its season limit and a subject can be found. Each new event sends a Decision mail. At the deadline the relevant staff member answers with the event's staff choice; a better-rated staff member gets more of the good effects and less of the bad. Money is never scaled.
+
+**Mood, press and goodwill.** Player mood drifts toward a target set by playing time against squad role and by recent results. On match day the starting eleven's average mood moves every attribute (not aggression) by up to ±3%. This applies to your club only, so AI-vs-AI matches and the engine fingerprints are unchanged. Press standing nudges fan mood each week; sponsor goodwill scales the next sponsor offers by up to ±10%. All three drift back toward neutral.
+
+**Where you see it.** A visitor walks into the office for the first open decision; tapping them (or the inbox) opens the scene over the office with its choices and a "Let {staff} handle it" button. In plain menus, Home shows the first waiting decision and links to the rest, and the inbox pins decision mails with a "Waiting on you" tag. The Club screen has a Standing card (dressing room, press, sponsor goodwill), player pages show mood, and the menu has the Story pace setting (Calm / Normal / Busy).
+
+**Saves.** Save version 5 adds `story` (open and past events, timers, press, goodwill, pace) and an `other` income line. Older saves migrate with a fresh story.
+
+**Numbers so far.** A headless season with a scripted owner gets about 28 decisions across 16 different events (about 0.8 a week). That is below the 6.7 target of 25+ decisions from 20+ events at under 8% each, because 6.1 has only 21 events; the 6.1 test uses looser limits (20 decisions, 12 kinds, 15% each) until 6.7 fills the pool.
+
 ## Owner's decisions (2026-10-18)
 
 1. **Mood affects matches:** yes, up to about ±3% (a happy squad plays a little better, an unhappy one a little worse).
