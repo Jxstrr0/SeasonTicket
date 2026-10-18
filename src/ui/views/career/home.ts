@@ -11,6 +11,7 @@ import {
   userBooks,
   userFixture,
   userTeam,
+  fixtureBadge,
   type Career,
 } from '../../../sim/career';
 import type { MatchReplay, ScheduledMatch } from '../../../sim/types';
@@ -21,6 +22,7 @@ import type { UiState } from '../../career/state';
 import { renderMatchFeed } from '../matchFeed';
 import { resultNotes } from '../results';
 import { renderWaiting } from './story';
+import { rivalPill } from './parts';
 
 function ordinal(n: number): string {
   const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
@@ -53,7 +55,7 @@ function renderNextMatch(career: Career): string {
   const live = career.liveMatch?.setup.matchId === fixture.id;
   const stage = fixture.stage === 'league' ? `Round ${fixture.round}` : stageLabel(fixture.stage);
   return `<section class="card next-match">
-    <div class="card-title">${esc(stage)} · ${home ? 'Home' : 'Away'}</div>
+    <div class="card-title">${esc(stage)} · ${home ? 'Home' : 'Away'} ${rivalPill(fixtureBadge(career, fixture))}</div>
     <div class="next-opp">${kit(opp)}<strong>${esc(opp.name)}</strong>${place ? `<span class="muted small">${esc(place)} in the table</span>` : ''}</div>
     <div class="row-actions">
       <button type="button" data-action="match-day">${live ? 'Back to match' : 'Go to match day'}</button>

@@ -17,11 +17,15 @@ import {
   userTeam,
   type Career,
   squadMood,
+  ownerOf,
+  rivalsOf,
+  temperamentLabel,
 } from '../../../sim/career';
 import { STAFF_ROLES, type StaffMember, type StaffRole } from '../../../sim/types';
 import { cls, each, esc } from '../../html';
 import type { UiState } from '../../career/state';
-import { confirmButton } from './parts';
+import { confirmButton, ownerFeeling, rivalPill } from './parts';
+import { kit, team } from '../../format';
 
 const ROLE_HELP: Record<StaffRole, string> = {
   headCoach: 'Picks the team and tactics when you delegate, makes the in-game calls, and drives player development.',
@@ -169,10 +173,34 @@ function renderStanding(career: Career): string {
   </section>`;
 }
 
+/** Your derby and rivalry clubs: how hot it is and who owns them. */
+function renderRivals(career: Career): string {
+  const rivals = rivalsOf(career);
+  const league = career.season.league;
+  const body = rivals.length
+    ? `<ul class="rival-list">${each(rivals, (r) => {
+        const t = team(league, r.teamId);
+        const o = ownerOf(career, r.teamId);
+        const owner = o ? `${o.name} · ${temperamentLabel(o.temperament)}, ${ownerFeeling(o.memory)}` : '';
+        return `<li>
+          <div class="rival-top">${kit(t)}<strong>${esc(t.shortName)}</strong>${rivalPill(r.level)}</div>
+          <div class="rival-heat" role="img" aria-label="Rivalry heat ${Math.round(r.heat * 100)}%"><span style="width:${Math.round(r.heat * 100)}%"></span></div>
+          ${owner ? `<div class="muted small">Owner: ${esc(owner)}</div>` : ''}
+        </li>`;
+      })}</ul>`
+    : '<p class="muted">No rivals yet.</p>';
+  return `<section class="card">
+    <div class="card-title">Rivals</div>
+    ${body}
+    <p class="muted small">Derbies are games against clubs from your region. Big results, playoff ties and what you say to the press build a rivalry with anyone. Derbies and rivalry games draw bigger crowds and swing the fans harder.</p>
+  </section>`;
+}
+
 export function renderClub(career: Career, ui: UiState): string {
   return `<div class="club-grid">
     <div>
       ${renderStanding(career)}
+      ${renderRivals(career)}
       ${renderTickets(career)}
       ${renderSponsor(career, ui)}
       ${renderAcademy(career, ui)}

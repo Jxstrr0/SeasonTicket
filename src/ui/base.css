@@ -1124,3 +1124,12 @@ body.office-mode .topbar { backdrop-filter: none; }
 .post.tone-down { border-left-color: var(--loss); }
 .post-rival { background: rgba(239, 91, 91, 0.06); }
 .post-text { margin: 4px 0; }
+
+/* Stage 6.4: derbies and rivals */
+.pill-derby { background: rgba(240, 98, 98, 0.2); color: #ff9c9c; font-weight: 600; }
+.pill-rival { background: rgba(242, 160, 78, 0.18); color: #ffc48a; }
+.card-title .pill, .sb-meta .pill { vertical-align: middle; margin-left: 4px; }
+.rival-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; }
+.rival-top { display: flex; align-items: center; gap: 8px; }
+.rival-heat { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); margin: 6px 0 4px; overflow: hidden; }
+.rival-heat span { display: block; height: 100%; background: linear-gradient(90deg, #f2c14e, #f06262); }
