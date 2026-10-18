@@ -10,7 +10,7 @@ import { defaultNames, homeNationId, makeIdFactory } from '../names';
 import { curveAt, generatePlayer, wageFor } from '../players';
 import type { Rng } from '../rng';
 import type { Player, Position, Team } from '../types';
-import { spendingLimits } from './books';
+import { repayDebt, spendingLimits } from './books';
 import { reportTransfer } from './news';
 import type { Career } from './types';
 import { OWNER_MEMORY, bidFactor, ownerMemory, sellFactor } from './rivalry';
@@ -465,6 +465,7 @@ export function weeklyMarket(career: Career): void {
   if (freeAgentsOpen(career)) aiFreeSignings(career);
   forcedSale(career);
   emergencyFill(career);
+  aiEmergencyFill(career);
 }
 
 function maybeIncomingBid(career: Career, rng: Rng): void {
@@ -539,19 +540,37 @@ function sellToAiSilently(career: Career, player: Player, buyer: Team, fee: numb
   movePlayer(career, player, buyer.id);
 }
 
-/** AI clubs under their target size sign the best free agent they can use. */
+/**
+ * AI clubs under their target size sign the best free agent they can use, and any club with
+ * room signs a free agent who would walk into its starting eleven, richest club first, so
+ * good players do not sit unsigned.
+ */
 function aiFreeSignings(career: Career): void {
   const league = career.season.league;
-  for (const team of league.teams) {
-    if (team.id === career.userTeamId) continue;
+  const pool = () => league.freeAgentIds.map((id) => league.players[id]).filter((p): p is Player => !!p);
+  const sign = (team: Team, p: Player) => {
+    movePlayer(career, p, team.id);
+    p.contract = { wage: wageFor(p), years: 1 + (p.age < 30 ? 1 : 0) };
+  };
+  const teams = league.teams
+    .filter((t) => t.id !== career.userTeamId)
+    .sort((a, b) => career.books[b.id].cash - career.books[a.id].cash || (a.id < b.id ? -1 : 1));
+  for (const team of teams) {
     while (team.playerIds.length < C.aiSquads.targetSize && team.playerIds.length < T.maxSquad) {
-      const squad = squadOf(career, team.id);
-      const needGk = goalkeepers(squad) < T.minGoalkeepers;
-      const pool = league.freeAgentIds.map((id) => league.players[id]).filter((p): p is Player => !!p && (!needGk || p.position === 'GK'));
-      if (pool.length === 0) break;
-      const best = pool.sort((a, b) => b.overall - a.overall)[0];
-      movePlayer(career, best, team.id);
-      best.contract = { wage: wageFor(best), years: 1 + (best.age < 30 ? 1 : 0) };
+      const needGk = goalkeepers(squadOf(career, team.id)) < T.minGoalkeepers;
+      const best = pool()
+        .filter((p) => !needGk || p.position === 'GK')
+        .sort((a, b) => b.overall - a.overall)[0];
+      if (!best) break;
+      sign(team, best);
+    }
+  }
+  for (const team of teams) {
+    while (team.playerIds.length < T.maxSquad) {
+      const eleventh = squadOf(career, team.id).map((p) => p.overall).sort((a, b) => b - a)[10] ?? 0;
+      const best = pool().filter((p) => p.position !== 'GK').sort((a, b) => b.overall - a.overall)[0];
+      if (!best || best.overall < eleventh + C.aiSquads.starterMargin) break;
+      sign(team, best);
     }
   }
 }
@@ -575,11 +594,19 @@ function forcedSale(career: Career): void {
   if (!buyer) return;
   ladder.lastForcedSaleWeek = career.weekIndex;
   sellToAi(career, player, buyer, fee, 'Forced sale by the lenders');
+  // The lenders take their cut of the fee against the dearest loans first, out of whatever cash there is.
+  const books = userBooks(career);
+  let take = Math.min(fee * L.forcedSaleToLenders, Math.max(0, books.cash));
+  for (const debt of books.debts.slice().sort((a, b) => b.rate - a.rate)) {
+    if (take <= 0) break;
+    const part = Math.min(take, debt.balance);
+    if (repayDebt(career, debt.id, part).ok) take -= part;
+  }
 }
 
 /**
  * Keeps the user's squad playable: below the floor (or short of goalkeepers)
- * the league assigns free agents on one-year minimum deals, generating new
+ * the league assigns free agents on one-year deals at their market wage, generating new
  * ones if the pool runs dry. A documented safety net, not a tactic.
  */
 export function emergencyFill(career: Career): void {
@@ -587,18 +614,49 @@ export function emergencyFill(career: Career): void {
   const signed: string[] = [];
   for (let guard = 0; guard < 30; guard++) {
     const squad = squadOf(career, career.userTeamId);
-    const needGk = goalkeepers(squad) < T.minGoalkeepers;
-    if (!needGk && squad.length >= T.emergencyFillTo) break;
-    const pool = league.freeAgentIds.map((id) => league.players[id]).filter((p): p is Player => !!p && (!needGk || p.position === 'GK'));
-    let player = pool.sort((a, b) => b.overall - a.overall)[0];
+    const needGk = goalkeepers(squad) < T.minGoalkeepers || !squad.some((p) => p.position === 'GK' && fit(p));
+    if (!needGk && squad.length >= T.emergencyFillTo && squad.filter(fit).length >= T.emergencyFitMin) break;
+    // Nobody the other clubs wanted: from the middle of the pool, on the wage he is worth.
+    const pool = league.freeAgentIds
+      .map((id) => league.players[id])
+      .filter((p): p is Player => !!p && fit(p) && (!needGk || p.position === 'GK'))
+      .sort((a, b) => b.overall - a.overall || (a.id < b.id ? -1 : 1));
+    let player = pool[Math.floor(pool.length * T.emergencyFillPick)];
     if (!player) player = generateFreeAgent(career, needGk ? 'GK' : rngPosition(career, guard));
     movePlayer(career, player, career.userTeamId);
-    player.contract = { wage: T.minWage, years: 1 };
+    player.contract = { wage: wageFor(player), years: 1 };
     signed.push(playerName(player));
   }
   if (signed.length > 0) {
-    addInbox(career, 'transfer', 'Emergency signings', `Your squad was too thin to play, so the league placed ${signed.join(', ')} with you on one-year minimum deals.`);
+    addInbox(career, 'transfer', 'Emergency signings', `Your squad was too thin to play, so the league placed ${signed.join(', ')} with you on one-year deals.`);
   }
+}
+
+/**
+ * The same safety net for the AI clubs, which only sign in the free-agent windows: short of
+ * fit players to name a side, a club signs the best fit free agents it can use.
+ */
+function aiEmergencyFill(career: Career): void {
+  const league = career.season.league;
+  for (const team of league.teams) {
+    if (team.id === career.userTeamId) continue;
+    for (let guard = 0; guard < 30; guard++) {
+      const squad = squadOf(career, team.id);
+      const needGk = !squad.some((p) => p.position === 'GK' && fit(p));
+      if (!needGk && squad.filter(fit).length >= T.emergencyFitMin) break;
+      let player = league.freeAgentIds
+        .map((id) => league.players[id])
+        .filter((p): p is Player => !!p && fit(p) && (!needGk || p.position === 'GK'))
+        .sort((a, b) => b.overall - a.overall || (a.id < b.id ? -1 : 1))[0];
+      if (!player) player = generateFreeAgent(career, needGk ? 'GK' : rngPosition(career, guard));
+      movePlayer(career, player, team.id);
+      player.contract = { wage: wageFor(player), years: 1 };
+    }
+  }
+}
+
+function fit(p: Player): boolean {
+  return p.injuryWeeks <= 0 && p.suspensionMatches <= 0;
 }
 
 function rngPosition(career: Career, salt: number): Position {

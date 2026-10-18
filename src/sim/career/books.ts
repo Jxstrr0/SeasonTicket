@@ -5,6 +5,7 @@
  * from the ladder lenders or get into ladder trouble. AI owners quietly top
  * up their clubs so the league stays whole (a documented simplification).
  */
+import { CLUBS } from '../data';
 import { teamById } from '../league';
 import type { MatchResult, ScheduledMatch, Team } from '../types';
 import { boxUpkeep, concessionsBonus, hospitalityPerMatch, merchandiseMultiplier, sponsorMultiplier, tvBonus } from './stadium';
@@ -49,7 +50,7 @@ export function staffPayroll(career: Career, teamId: string): number {
 }
 
 export function operationsCost(team: Team): number {
-  return C.operations.base + C.operations.perSeat * team.stadiumCapacity;
+  return C.operations.base + C.operations.perMarket * team.marketSize + C.operations.perSeat * team.stadiumCapacity;
 }
 
 export function merchandiseIncome(team: Team): number {
@@ -222,6 +223,7 @@ export function borrowOptions(career: Career): BorrowOption[] {
     if (l.needsClean && career.ladder.level > 0) reason = 'Only lends to clubs in good standing.';
     else if (max < C.lenders.minLoan) reason = 'Your existing debt is already at their limit.';
     else if (career.ladder.level >= 4) reason = 'Nobody lends to a club in forced sales.';
+    else if (career.ladder.level >= C.lenders.noNewLoansFromLevel) reason = "The lenders' finance chief won't allow new borrowing.";
     return { lender: l, max, available: reason === null, reason };
   });
 }
@@ -317,6 +319,36 @@ export function settleSeason(career: Career): void {
   };
   bump(state.shieldWinnerId, f.title);
   bump(state.championId, f.playoffTitle);
+  settleBaseMood(career);
+}
+
+/**
+ * The season moves what each club's fans expect to feel (Stage 7.3): a high finish lifts the
+ * baseline their mood drifts back to and a low one sinks it, more again for finishing above or
+ * below the squad's strength rank. It also eases back toward the club's own starting baseline,
+ * so a few bad years hurt without the fans walking away for good.
+ */
+function settleBaseMood(career: Career): void {
+  const f = C.fans.season;
+  const rows = career.season.standings;
+  const teams = career.season.league.teams;
+  const n = rows.length;
+  if (n < 2) return;
+  const strength = teams.slice().sort((a, b) => b.squadQuality - a.squadQuality || (a.id < b.id ? -1 : 1)).map((t) => t.id);
+  rows.forEach((row, i) => {
+    const books = career.books[row.teamId];
+    if (!books) return;
+    const start = CLUBS.find((c) => c.id === row.teamId)?.fanMood ?? books.baseFanMood;
+    const place = 1 - (2 * i) / (n - 1);
+    const beat = (strength.indexOf(row.teamId) - i) / (n - 1);
+    let base = books.baseFanMood + f.finish * place + f.expectation * beat;
+    base += (start - base) * f.revert;
+    books.baseFanMood = round3(clamp(base, f.min, f.max));
+  });
+}
+
+function round3(x: number): number {
+  return Math.round(x * 1000) / 1000;
 }
 
 function playoffPrizes(career: Career): Map<string, number> {
@@ -373,14 +405,15 @@ export function updateLadder(career: Career): boolean {
     if (ladder.level === 0) {
       climb(career, 1);
     } else if (ladder.deadlineWeek === null) {
-      ladder.deadlineWeek = career.weekIndex + L.deadlineWeeks;
+      ladder.deadlineWeek = career.weekIndex + ladderDeadlineWeeks(career);
     } else if (career.weekIndex >= ladder.deadlineWeek) {
       climb(career, ladder.level + 1);
     }
   } else {
-    ladder.deadlineWeek = null;
+    if (ladder.level > 0) ladder.goodWeeks += 1;
+    // A week or two back in the black does not stop the lenders' clock.
+    if (ladder.level === 0 || ladder.goodWeeks >= L.clearWeeks) ladder.deadlineWeek = null;
     if (ladder.level > 0) {
-      ladder.goodWeeks += 1;
       if (ladder.goodWeeks >= L.goodWeeksToRecover) {
         ladder.level -= 1;
         ladder.goodWeeks = 0;
@@ -391,18 +424,32 @@ export function updateLadder(career: Career): boolean {
   return ladder.level >= 5;
 }
 
+/** How long the lenders give a club in breach before climbing a rung; shorter at harder clubs. */
+export function ladderDeadlineWeeks(career: Career): number {
+  return C.tiers[career.tier].deadlineWeeks;
+}
+
+/** How many seasons the lenders remember forcing sales: back there within this and the club is gone. */
+export function rescueMemory(career: Career): number {
+  return C.tiers[career.tier].rescueMemorySeasons;
+}
+
 function climb(career: Career, level: number): void {
   const L = C.ladder;
   const ladder = career.ladder;
-  ladder.level = Math.min(5, level);
-  ladder.deadlineWeek = career.weekIndex + L.deadlineWeeks;
-  const fix = `Get your cash above zero${userBooks(career).debts.some((d) => d.minCash > 0) ? ' and above your loan conditions' : ''} within ${L.deadlineWeeks} weeks.`;
+  const season = career.season.league.season;
+  // The lenders rescue a club once; back in forced sales within a few seasons, they call in the receivers.
+  const again = level === 4 && ladder.rescueSeason !== null && season - ladder.rescueSeason < rescueMemory(career);
+  if (level === 4 && !again) ladder.rescueSeason = season;
+  ladder.level = Math.min(5, again ? 5 : level);
+  ladder.deadlineWeek = career.weekIndex + ladderDeadlineWeeks(career);
+  const fix = `Get your cash above zero${userBooks(career).debts.some((d) => d.minCash > 0) ? ' and above your loan conditions' : ''} within ${ladderDeadlineWeeks(career)} weeks, and keep it there for ${L.clearWeeks} weeks in a row.`;
   const text: Record<number, string> = {
     1: `The lenders have written to you. ${fix}`,
     2: `The lenders have put their own finance chief into your office. Transfer fees are capped at ${money(L.cfo.maxFee)} and wages at ${money(L.cfo.maxWage)}. ${fix}`,
     3: `Spending lock: no transfer fees, no upgrades, no new staff, and wages at most ${money(L.lockMaxWage)}. ${fix}`,
-    4: `Forced sales: the lenders will sell a player every ${L.forcedSaleEveryWeeks} weeks until the books recover. ${fix}`,
-    5: 'The club has gone into receivership.',
+    4: `Forced sales: the lenders will sell a player every ${L.forcedSaleEveryWeeks} weeks until the books recover. They will only do this once: back in forced sales within ${rescueMemory(career)} seasons and the club goes into receivership. ${fix}`,
+    5: again ? 'The lenders will not rescue the club a second time. The club has gone into receivership.' : 'The club has gone into receivership.',
   };
   addInbox(career, 'ladder', LADDER_NAMES[ladder.level], text[ladder.level] ?? '');
 }

@@ -1,5 +1,6 @@
 {
-  "_about": "Press conferences (Stage 6.3, src/sim/career/press.ts). One is called in a week when the next match is big (derby, top-of-the-table, playoff, final, a heated rivalry) or this week's result was notable. Questions come from src/data/press/questions.json.",
+  "_about": "Press conferences (Stage 6.3, src/sim/career/press.ts). One is called in a week when the next match is big (derby, top-of-the-table, playoff, final, a heated rivalry) or this week's result was notable. Questions come from src/data/press/questions.json. answerPressShare: the share of an answer's press effect that lands (Stage 7.3), so a run of calm answers cannot lift the press standing above where results put it.",
+  "answerPressShare": 0.5,
   "triggers": {
     "_about": "bigMargin: goals for a big win or loss. upsetGap: table places between the clubs for an upset. lossRun / winRun: results in a row. top: both clubs in the top topPlaces (or the opponent leads and we are in the top topPlaces + 1) once topMinPlayed games are played. rivalHeat: heat with the next opponent that makes it a grudge match.",
     "bigMargin": 3,

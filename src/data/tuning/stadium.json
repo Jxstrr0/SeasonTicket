@@ -230,10 +230,10 @@
   "demand": {
     "_about": "How many people want to come, in seats. Starts at the club's original capacity, grows when fans are happy and the team wins, shrinks when they are not. Attendance share = engine share x demand / capacity (plus roof and board bonuses), clamped, so a bigger ground only fills if the demand is there.",
     "moodGrowth": 0.22,
-    "moodPivot": 0.55,
+    "moodPivot": 0.62,
     "titleGrowth": 0.04,
     "minOfStart": 0.6,
-    "maxOfStart": 3.0,
+    "maxOfStart": 1.8,
     "videoBoardAttendance": 0.01
   },
   "projects": {

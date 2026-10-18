@@ -118,6 +118,8 @@ export interface LadderState {
   deadlineWeek: number | null;
   goodWeeks: number;
   lastForcedSaleWeek: number | null;
+  /** League season in which the club last went into forced sales; the lenders only rescue once in a while. */
+  rescueSeason: number | null;
 }
 
 export interface Delegation {

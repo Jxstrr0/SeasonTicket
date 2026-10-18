@@ -90,6 +90,11 @@ const MIGRATIONS: Record<number, Migration> = {
     openDeadlineIfDue(save as unknown as Career);
     return save;
   },
+  /** Version 11 remembers when the lenders last forced sales (Stage 7.3): an old save starts with a clean record. */
+  10: (save) => {
+    (save.ladder as Record<string, unknown>).rescueSeason = null;
+    return save;
+  },
 };
 
 export class SaveError extends Error {}

@@ -3,6 +3,7 @@ import {
   C,
   LADDER_NAMES,
   deadlinePassed,
+  inBreach,
   frontPage,
   paperName,
   money,
@@ -79,7 +80,9 @@ function alerts(career: Career): string[] {
   if (career.ladder.level > 0) {
     const deadline = career.ladder.deadlineWeek;
     const left = deadline === null ? null : Math.max(0, deadline - career.weekIndex);
-    out.push(`Lenders: ${LADDER_NAMES[career.ladder.level]}.${left !== null ? ` ${left} week${left === 1 ? '' : 's'} to get back in good standing.` : ''}`);
+    const clear = Math.max(0, C.ladder.clearWeeks - career.ladder.goodWeeks);
+    const clock = left === null ? '' : inBreach(career) ? ` ${left} week${left === 1 ? '' : 's'} to get back in good standing.` : ` Stay out of the red ${clear} more week${clear === 1 ? '' : 's'} to lift the deadline.`;
+    out.push(`Lenders: ${LADDER_NAMES[career.ladder.level]}.${clock}`);
   }
   const payroll = playerPayroll(career, career.userTeamId);
   if (payroll > C.wageCap.cap) out.push(`Wages are ${money(payroll - C.wageCap.cap)} over the cap. You pay luxury tax on the season average.`);
