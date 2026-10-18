@@ -160,6 +160,12 @@ These target a mid-range phone (about a 2022 Android) at Medium.
 3. **Audio:** free recorded (CC0) crowd, whistle and ball sounds, each listed in `CREDITS.md`. Synthesized sound is only a stopgap where no good recording exists yet.
 4. **Cameras:** broadcast is the default, with owner's box, behind the goal and overhead as one-tap presets (step 5.3).
 
+Owner's decisions on 5.4 (2026-10-18):
+
+5. **Shape and full screen** both start off. Each device remembers the owner's last choice.
+6. **Line colour:** gold (`overlay.colour` in `src/data/tuning/match3d.json`).
+7. **What the lines show:** the shape without the ball, as the players actually stand, so a 4-3-3 draws as 4-5-1 when the wingers drop back.
+
 ## Simplifications
 
 - **Kicks, touches, tackles and dives** are approximated: the moves are procedural bone bends on top of the running clips, not captured animations. Celebrations are arm and body poses on top of the engine's own runs, not set-piece celebrations such as knee slides.
