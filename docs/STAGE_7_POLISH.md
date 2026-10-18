@@ -1,6 +1,6 @@
 # Stage 7: Polish and Launch (plan)
 
-**Status:** plan written 2026-10-18, waiting for the owner's answers to the questions at the end. Nothing in this plan is built yet.
+**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end); two follow-ups are open: where the contact form sends, and where analytics go. Nothing in this plan is built yet.
 
 **Done when (from CLAUDE.md):** ready to share publicly as a free web game.
 
@@ -22,17 +22,15 @@ The work in CLAUDE.md is: tutorial, audio pass, balance pass, performance pass, 
 
 Each step ships a playable build to Pages, like Stages 5 and 6.
 
-1. **7.1 First season guide (tutorial).**
-   - A short guided first week for new careers, told by the assistant coach (see question 1): the office, the phone, the laptop, the TV, the inbox; setting the line-up; ticket price; playing the first match.
-   - It is a run of small cards pointing at one thing at a time. It can be skipped at any step and replayed from settings.
-   - First-time tips: the first time you open a screen (transfers, contracts, the stadium, finances, deadline day, a press conference), one card explains it in two or three lines.
+1. **7.1 First-time tips and Help (tutorial).** The owner chose tips and a Help screen, with no guided week.
+   - First-time tips: the first time you open a screen or meet a feature (the office and each object in it, the squad, line-up and tactics, transfers, contracts, the stadium, finances, a visitor, a press conference, the newspaper, deadline day, match day and its viewers), one card explains it in two or three lines. Tips can be turned off, and reset from settings to see them again.
    - A **Help** screen: short plain-language answers ("How do I lose the club?", "What is the wage cap?", "What does mentality do?"), reachable from settings and the plain menus.
    - It works the same with graphics Off.
 2. **7.2 Audio pass.**
    - The office: a soft room tone, and match-day crowd noise drifting in through the window.
    - Taps and feedback: a soft tap on buttons, a knock when a visitor arrives, a phone ring for offers and deadline-day calls, a page turn for the newspaper, camera clicks at a press conference, a clock tick in the war room.
    - Match day: home and away chants and a louder crowd at derbies.
-   - Music: see question 2.
+   - Music: office only (the owner's answer). A radio on the office shelf plays a few CC0 tracks; tap it to switch on or off. Off at first, and it remembers your choice. No music on match day or in the menus outside the office.
    - Settings: a volume control for each of crowd, effects and music, plus mute. iPhone's silent switch still applies.
    - All sounds CC0, listed in `CREDITS.md`, cut and compressed with the existing `build-audio.py`. They load per scene, not up front.
 3. **7.3 Balance pass.**
@@ -48,13 +46,14 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
    - Performance budgets are not weakened without the owner's OK.
 5. **7.5 Safety net and finish.**
    - **Crash screen:** if something breaks, the game shows a calm screen with "Copy save code" and "Reload" instead of a blank page. The save is never lost to a crash.
-   - **Report a problem:** copies the game version, the device and the save code, ready to paste wherever the owner wants reports to go (question 5).
-   - **Install as an app:** see question 4.
+   - **Contact form:** a "Report a problem or send feedback" form inside the game (the owner's answer). It sends a message, the game version, the device, and optionally the save code. Where it sends is open (follow-up A).
+   - **Install as an app:** yes (the owner's answer). "Add to Home Screen" gives the Longlight icon and full-screen play, and the game works offline after the first visit. When an update is ready the game says so and offers "Reload".
    - **Text and screens:** a read-through of every player-facing line for typos, tone and consistency; empty states ("No offers yet"); a check of every screen at the smallest phone size.
    - **Version number** shown in settings, with a short "What's new".
 6. **7.6 Credits and title screen.**
    - An in-game Credits screen built from the same list as `CREDITS.md` (assets, sources, licences, libraries), with Longlight Interactive at the top.
-   - A title screen and a link preview (the picture and text that appear when the link is shared in a chat app). See question 6.
+   - **Branding** (the owner's logo and colours): the Longlight mark is a copper half-sun resting on a bar, on purple (or on near-black with a purple bar). Colours sampled from the owner's pictures: Longlight purple `#6F45B8`, deep purple `#583696`, copper sun `#C2826A`, ink `#1C1820`, warm paper `#E1DED7`, white. Wide, spaced capitals for headings.
+   - A title screen: the Longlight mark and "presents", then the Season Ticket name over a slow camera move around your stadium at dusk (the plain-menu version uses a still picture in the same colours). The app icon and link preview (the picture and text shown when the link is shared in a chat app) use the mark.
    - A test that every file in `public/assets` is listed in `CREDITS.md`.
 7. **7.7 Launch audit.**
    - The large audit and fix round: several reviewers across the sim, the saves, the UI, the 3D scenes and the deploy, each finding checked before it is fixed.
@@ -63,7 +62,7 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 
 ## Tests (how "done when" is checked)
 
-- **New player:** a scripted browser run follows the guide from career start to the end of the first match, and the guide can be skipped and replayed.
+- **New player:** a scripted browser run from career start to the end of the first match sees each first-time tip once, never twice, and sees them again after "Reset tips".
 - **Long careers:** the 10-season careers in 7.3 run in the slow suite and check the targets agreed in question 3.
 - **No dead ends:** the two-season browser run in 7.7 finishes with no console errors, and every screen it visits fits a 740 by 360 screen.
 - **Crash safety:** a test forces an error mid-week and checks that the save is intact and the crash screen offers the save code.
@@ -78,7 +77,23 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 - **Saves:** a 10-season save loads in under 1 second and its save code stays under the current limit.
 - **Site size:** stays well under 1 GB (about 10 MB today).
 
-## Questions for the owner
+## Owner's answers (2026-10-18)
+
+1. Tutorial: first-time tips on each screen and a Help page. No guided week.
+2. Music: office only.
+3. Losing the club: the proposal below is fine for now.
+4. Install as an app: yes.
+5. Problem reports: a contact form in the game.
+6. Branding: use the Longlight logo and colours (see 7.6).
+7. Analytics: the owner asked where it would send. Open (follow-up B).
+8. Launch extras: none.
+
+## Open follow-ups
+
+- **A. Where the contact form sends.** The game is a static site on GitHub Pages, which cannot receive messages by itself, so the form needs a free form service that forwards each message to the studio's email. Proposal: Web3Forms or Formspree (free tiers, no server to run). The owner signs up with the studio email and gives us the form's public key; the key can sit in the repo safely. The save code is long, so it goes in as an attachment field and is cut if it is over the service's limit.
+- **B. Where analytics go.** Proposal: GoatCounter (free for small, non-commercial sites, open source, no cookies, so no consent banner). It counts page visits, plus a few game moments with no personal data: career started, season finished, club lost. Settings get a "Send anonymous play counts" switch, on by default, and the Credits screen says what is sent. Alternatives: Cloudflare Web Analytics (free, visits only), or none.
+
+## Questions for the owner (as asked)
 
 1. **Tutorial style.** Proposal: a guided first week told by your assistant coach (small cards pointing at one thing at a time, skippable, replayable), plus first-time tips on each screen and a Help screen. The alternatives are tips only, with no guided week, or a separate practice career.
 2. **Music.** Proposal: a radio on the office shelf that plays a few CC0 tracks when tapped, off at first, and no music on match day (the crowd is the soundtrack). The alternatives are a title-screen theme, or no music at all.
