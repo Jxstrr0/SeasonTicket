@@ -224,6 +224,8 @@ describe('3D match replays', () => {
   const hl = new Director();
   const played: { r: Replay; inside: boolean; hl: boolean }[] = [];
   let longest = 0;
+  // Every cue of the match (the tape keeps only the last few seconds).
+  const all: ActionCue[] = [];
   const take = (d: Director, ms: number, idle: boolean, isHl: boolean): void => {
     for (let r = d.due(ms, idle); r; r = idle ? d.due(ms, idle) : null) {
       // Every take lies on the tape when the replay starts.
@@ -234,6 +236,7 @@ describe('3D match replays', () => {
   for (let k = 0; k < 200_000 && !spatialFinished(m); k++) {
     stepSpatial(m);
     tape.capture(m);
+    for (const c of tape.cues) if (all.length === 0 || c.id > all[all.length - 1].id) all.push(c);
     const shown = MatchTape.shown(m.clockMs);
     const shootout = m.period >= PERIOD.SHOOTOUT;
     full.scan(tape.cues, shootout, false);
@@ -264,7 +267,7 @@ describe('3D match replays', () => {
   it('replays big chances and great saves, and in highlights mode every big moment from its build-up', () => {
     const big = m.shotLog.filter((s) => s.outcome !== 'goal' && (s.xg >= tuning.replays.bigChanceXg || s.outcome === 'post'));
     const saved = m.shotLog.filter((s) => s.outcome === 'saved' && s.xg >= tuning.replays.greatSaveXg);
-    const great = tape.cues.filter((c) => c.kind === ACT.CHANCE && (c.flag & CHANCE_GREAT) !== 0);
+    const great = all.filter((c) => c.kind === ACT.CHANCE && (c.flag & CHANCE_GREAT) !== 0);
     // Only saves are great saves, and only the better chances among them.
     for (const c of great) expect(c.flag & CHANCE_SAVED).toBe(CHANCE_SAVED);
     expect(great.length).toBeLessThanOrEqual(saved.length);
@@ -283,7 +286,7 @@ describe('3D match replays', () => {
 
   it('replays a great save', () => {
     // A match with keepers at full stretch.
-    const g = createSpatial(setupWithBench(), 'g4', 'fine');
+    const g = createSpatial(setupWithBench(), 'g5', 'fine');
     const t = new MatchTape();
     const d = new Director();
     const saves: Replay[] = [];

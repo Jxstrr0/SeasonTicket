@@ -15,8 +15,8 @@ import { emptyChanceCounts, emptyTeamStats, ensurePlayerStats, type MatchContext
 const T = MATCH_TUNING;
 const SIDES: readonly Side[] = ['home', 'away'];
 
-/** Validates both line-ups, builds the state and emits the kickoff event. */
-export function createMatch(setup: MatchSetup, ctx: MatchContext): MatchState {
+/** Validates both line-ups, builds the state and emits the kickoff event. `kickoff` is the side that kicks off (the spatial engine's coin toss). */
+export function createMatch(setup: MatchSetup, ctx: MatchContext, kickoff: Side = 'home'): MatchState {
   for (const side of SIDES) validateSelection(setup, side, ctx);
   const rng = new Rng(setup.seed);
   const state: MatchState = {
@@ -30,7 +30,7 @@ export function createMatch(setup: MatchSetup, ctx: MatchContext): MatchState {
     homeScore: 0,
     awayScore: 0,
     halfTimeScore: { home: 0, away: 0 },
-    possession: 'home',
+    possession: kickoff,
     events: [],
     home: createSide(setup.homeId, setup.home, setup.aiControlled.home, ctx),
     away: createSide(setup.awayId, setup.away, setup.aiControlled.away, ctx),
@@ -38,7 +38,7 @@ export function createMatch(setup: MatchSetup, ctx: MatchContext): MatchState {
     shootout: null,
     finished: false,
   };
-  emitEvent(state, ctx, rng, { type: 'kickoff', side: 'home', params: { secondary: ctx.teams[setup.homeId].stadiumName } });
+  emitEvent(state, ctx, rng, { type: 'kickoff', side: kickoff, params: { secondary: ctx.teams[setup.homeId].stadiumName } });
   state.rngState = rng.getState();
   return state;
 }

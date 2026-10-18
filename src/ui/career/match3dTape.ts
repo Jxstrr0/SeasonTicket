@@ -334,7 +334,8 @@ export class MatchTape {
       const y = y0 + (path[o + 1] - y0) * u;
       const z = Math.max(0, z0 + (path[o + 2] - z0) * u);
       const j = ob.shotEventPlayer;
-      if (ob.shotEventKind === 2) this.cue(ACT.DIVE, j, when(k), x, y, z, 1, 0, t + A.keeperReactMs);
+      // A shot from close in can reach him before he could react: the dive starts no later than the save.
+      if (ob.shotEventKind === 2) this.cue(ACT.DIVE, j, when(k), x, y, z, 1, 0, Math.min(when(k), t + A.keeperReactMs));
       else this.cue(ACT.BLOCK, j, when(k), x, y, z, 1);
       return;
     }
@@ -348,7 +349,7 @@ export class MatchTape {
       const y = path[o + 1];
       const z = path[o + 2];
       if (Math.abs(y - GC) <= MOUTH && z <= A.diveHighest) {
-        this.cue(ACT.DIVE, keeper, when(k), x <= 0 ? 0 : LENGTH, y, z, 1, 2, t + A.keeperReactMs);
+        this.cue(ACT.DIVE, keeper, when(k), x <= 0 ? 0 : LENGTH, y, z, 1, 2, Math.min(when(k), t + A.keeperReactMs));
       }
       return;
     }

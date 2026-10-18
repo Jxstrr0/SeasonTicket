@@ -635,6 +635,9 @@
       "setPiece": 0.9
     }
   },
+  "kickoff": {
+    "tossHomeChance": 0.5
+  },
   "shootout": {
     "kicksEach": 5,
     "scoreBase": 0.76,

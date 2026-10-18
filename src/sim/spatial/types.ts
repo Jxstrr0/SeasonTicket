@@ -186,6 +186,8 @@ export interface SpatialResume {
   score: [number, number];
   poss: Side;
   sides: [SpatialResumeSide, SpatialResumeSide];
+  /** The match's kick-off tosses (matchToss of its own seed), so the halves still to come kick off as they would have. */
+  toss?: [Side, Side];
 }
 
 export interface SpatialResumeSide {

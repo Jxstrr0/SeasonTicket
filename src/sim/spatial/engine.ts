@@ -72,6 +72,22 @@ function newTeam(side: Side, tactics: Tactics): TeamState {
   };
 }
 
+/**
+ * The coin tosses for kick-off, as the first two draws of the match's own Rng: who kicks off
+ * the first half, then who kicks off the first half of extra time (drawn up front so a
+ * restarted match can work them out from the seed). The other side kicks off each second half.
+ */
+function drawToss(rng: Rng): [Side, Side] {
+  const first: Side = rng.chance(MATCH_TUNING.kickoff.tossHomeChance) ? 0 : 1;
+  const extra: Side = rng.chance(MATCH_TUNING.kickoff.tossHomeChance) ? 0 : 1;
+  return [first, extra];
+}
+
+/** The kick-off tosses a match with this seed makes (see drawToss). */
+export function matchToss(seed: string): [Side, Side] {
+  return drawToss(new Rng(`spatial:${seed}`));
+}
+
 /** Start a match. `actions` (from a record) are applied at their times, for replays. */
 export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMode = 'fine', actions: SpatialAction[] = []): SpatialMatch {
   const stepMs = mode === 'fine' ? T.time.fineStepMs : T.time.coarseStepMs;
@@ -83,6 +99,8 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     if (s.players.length !== 11) throw new Error('Each side needs eleven players');
     if ((s.bench?.length ?? 0) > BENCH_MAX) throw new Error(`A bench holds at most ${BENCH_MAX}`);
   }
+  const rng = new Rng(`spatial:${seed}`);
+  const toss = drawToss(rng);
   const m: SpatialMatch = {
     rev: T.engineRev,
     seed,
@@ -95,7 +113,8 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
     subN,
     steps: 0,
     clockMs: 0,
-    rng: new Rng(`spatial:${seed}`),
+    rng,
+    toss,
     period: PERIOD.FIRST,
     periodStart: 0,
     added: -1,
@@ -163,7 +182,7 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
   resolveMarker(m, m.teams[0]);
   resolveMarker(m, m.teams[1]);
   initOnBall(m);
-  kickoff(m, 0);
+  kickoff(m, toss[0]);
   return m;
 }
 
@@ -175,6 +194,7 @@ export function createSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
 export function resumeSpatial(setup: SpatialSetup, seed: string, mode: SpatialMode, r: SpatialResume): SpatialMatch {
   if (r.period >= PERIOD.DONE) throw new Error('The match is finished');
   const m = createSpatial(setup, seed, mode);
+  if (r.toss) m.toss = [r.toss[0], r.toss[1]];
   const R = m.rules;
   m.at.fill(-1);
   m.used.fill(0);
@@ -256,6 +276,7 @@ export function resumeSpatial(setup: SpatialSetup, seed: string, mode: SpatialMo
   m.steps = Math.round(m.clockMs / m.stepMs);
   m.nextSecond = m.clockMs + 1000;
   m.added = r.added;
+  // The side that had the ball kicks off; the halves still to come follow the original tosses.
   kickoff(m, r.poss);
   return m;
 }
