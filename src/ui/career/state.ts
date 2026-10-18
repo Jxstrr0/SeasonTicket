@@ -8,7 +8,7 @@ import type { Position, StaffRole } from '../../sim/types';
 import { loadQuality, type QualitySetting } from '../../render/quality';
 import atmosphere from '../../data/tuning/atmosphere.json';
 
-export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay';
+export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay' | 'deadline';
 
 export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'stadium' | 'inbox' | 'news' | 'league';
 

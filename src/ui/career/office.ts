@@ -3,7 +3,7 @@
  * that reads the career for the office, so the render code never touches the
  * sim.
  */
-import { C, LADDER_NAMES, coachSelection, eventView, frontPage, openEvents, paperName, lastHomeCrowd, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
+import { C, LADDER_NAMES, coachSelection, deadlineView, openDeadline, eventView, frontPage, openEvents, paperName, lastHomeCrowd, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
 import { WORLD, formation as formationOf } from '../../sim/data';
 import officeTuning from '../../data/tuning/office.json';
 import type { OfficeFrontPage, OfficeSnapshot, OfficeTrophy, OfficeVisitorCall } from '../../render/office/types';
@@ -114,6 +114,7 @@ export function buildOfficeSnapshot(career: Career): OfficeSnapshot {
     formation,
     slots,
     bids: career.incomingBids.length,
+    deadline: openDeadline(career) ? { time: deadlineView(career)!.time, calls: openDeadline(career)!.calls.filter((c) => c.status === 'open').length } : null,
     sponsorOffers: career.sponsorOffers.length,
     unread: unreadCount(career),
     trophies,

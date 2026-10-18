@@ -208,6 +208,9 @@ function sellable(career: Career, team: Team, level: number, min: number, taken:
 
 type Builder = (career: Career, day: DeadlineDay, rng: Rng, call: DeadlineCall) => DeadlineCall | null;
 
+/** No room for another signing: only calls that sell or amuse. */
+const squadFull = (career: Career): boolean => squadOf(career, career.userTeamId).length >= C.transfers.maxSquad;
+
 const BUILD: Record<DeadlineKind, Builder> = {
   lateBid: (career, day, rng, call) => {
     const taken = busy(day);
@@ -220,6 +223,7 @@ const BUILD: Record<DeadlineKind, Builder> = {
     return { ...call, playerId: player.id, teamId: rng.pick(options.slice(0, 4)).id, fee };
   },
   panicSale: (career, day, rng, call) => {
+    if (squadFull(career)) return null;
     const taken = busy(day);
     const level = starterLevel(career);
     const max = canPay(career);
@@ -235,7 +239,7 @@ const BUILD: Record<DeadlineKind, Builder> = {
     return { ...call, playerId: pick.p.id, teamId: pick.p.teamId, fee: pick.fee };
   },
   freeAgent: (career, _day, rng, call) => {
-    if (squadOf(career, career.userTeamId).length >= C.transfers.maxSquad) return null;
+    if (squadFull(career)) return null;
     const squad = squadOf(career, career.userTeamId);
     const best = (pos: Position) => Math.max(0, ...squad.filter((p) => p.position === pos).map((p) => p.overall));
     const weakest = POSITIONS.slice().sort((a, b) => best(a) - best(b))[0];
@@ -243,6 +247,7 @@ const BUILD: Record<DeadlineKind, Builder> = {
     return { ...call, playerId: player.id };
   },
   hijack: (career, day, rng, call) => {
+    if (squadFull(career)) return null;
     const taken = busy(day);
     const level = starterLevel(career);
     const max = canPay(career);

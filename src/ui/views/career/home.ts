@@ -2,6 +2,7 @@
 import {
   C,
   LADDER_NAMES,
+  deadlinePassed,
   frontPage,
   paperName,
   money,
@@ -23,6 +24,7 @@ import { renderMatchFeed } from '../matchFeed';
 import { resultNotes } from '../results';
 import { renderWaiting } from './story';
 import { renderOngoing, rivalPill } from './parts';
+import { renderDeadlineCard } from './deadline';
 
 function ordinal(n: number): string {
   const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
@@ -40,7 +42,7 @@ function renderNextMatch(career: Career): string {
     const left = C.calendar.preseasonWeeks - career.preseasonWeek + 1;
     return `<section class="card">
       <div class="card-title">Pre-season</div>
-      <p>${left} week${left === 1 ? '' : 's'} until round 1. The transfer window is open: build the squad, sort the sponsor and set ticket prices.</p>
+      <p>${left} week${left === 1 ? '' : 's'} until round 1. ${deadlinePassed(career) ? 'The transfer window has shut; free agents can still sign.' : 'The transfer window is open: build the squad, sort the sponsor and set ticket prices.'}</p>
     </section>`;
   }
   if (career.phase !== 'season') return '';
@@ -174,6 +176,7 @@ function renderOwner(career: Career): string {
 export function renderHome(career: Career, ui: UiState): string {
   if (ui.reportOpen) return renderLastMatch(career, ui);
   return `<div class="home-grid">
+    ${renderDeadlineCard(career)}
     ${renderWaiting(career)}
     ${renderNextMatch(career)}
     ${renderAlerts(career)}

@@ -172,6 +172,27 @@ describe('deadline day: the calls', () => {
     expect(userBooks(career).cash).toBe(cash);
   });
 
+  it('a full squad only gets calls it can act on', () => {
+    const career = newCareer(13);
+    while (career.preseasonWeek < C.calendar.preseasonWeeks - 1) week(career);
+    const league = career.season.league;
+    const user = league.teams.find((t) => t.id === career.userTeamId)!;
+    for (const team of league.teams) {
+      if (team === user) continue;
+      while (user.playerIds.length < C.transfers.maxSquad && team.playerIds.length > C.transfers.minSquad + 2) {
+        const id = team.playerIds.pop()!;
+        league.players[id].teamId = user.id;
+        user.playerIds.push(id);
+      }
+    }
+    expect(user.playerIds.length).toBe(C.transfers.maxSquad);
+    week(career);
+    while (openDeadline(career)) advanceDeadlineHour(career);
+    const kinds = career.deadline!.calls.map((c) => c.kind);
+    expect(kinds.length).toBeGreaterThan(0);
+    expect(kinds.every((k) => k === 'lateBid' || k === 'flavour')).toBe(true);
+  });
+
   it('answers to a closed call are refused', () => {
     const { career, call } = withCall('lateBid');
     answerDeadlineCall(career, call.id, 'no');
