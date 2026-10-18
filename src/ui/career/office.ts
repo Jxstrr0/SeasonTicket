@@ -123,6 +123,8 @@ export function buildOfficeSnapshot(career: Career): OfficeSnapshot {
     stadiumName: team.stadiumName,
     stadium: buildStadiumSnapshot(career, crestSvg),
     visitor: officeVisitor(career),
+    // The radio is this device's, not the career's: the office host sets it.
+    radio: false,
     news: frontPageSnapshot(career),
     posts: career.news.posts.filter((p) => p.weekIndex === career.weekIndex - 1).length,
   };

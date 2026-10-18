@@ -4,7 +4,7 @@
  */
 import type { StadiumSnapshot } from '../stadium/types';
 
-export type HotspotId = 'laptop' | 'phone' | 'tv' | 'window' | 'whiteboard' | 'clipboard' | 'door' | 'cabinet';
+export type HotspotId = 'laptop' | 'phone' | 'tv' | 'window' | 'whiteboard' | 'clipboard' | 'door' | 'cabinet' | 'radio';
 
 export interface OfficeTableRow {
   pos: number;
@@ -77,6 +77,8 @@ export interface OfficeSnapshot {
   news: OfficeFrontPage | null;
   /** Fan posts since the last edition, for the phone's badge. */
   posts: number;
+  /** The radio on the credenza is playing (its dial glows). */
+  radio: boolean;
 }
 
 /** What the office asks the menus to do. */

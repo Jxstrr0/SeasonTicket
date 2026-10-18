@@ -5,8 +5,10 @@
  *
  * The crowd is the home crowd: a home goal brings the roar, an away goal a groan with the
  * away end cheering in the distance. Which variant of a sound plays, and whether a home
- * crowd boos a foul, never touch the engine's random numbers.
+ * crowd boos a foul, never touch the engine's random numbers. Between the big moments the home
+ * end sings, and the away end sometimes answers; a derby is louder and sings more (Stage 7.2).
  */
+import { audioHub } from '../../render/audio/hub';
 import { MatchAudio, type PlayOptions, type SoundKey } from '../../render/audio/matchAudio';
 import { LENGTH, depthOf, type SpatialMatch } from '../../sim/spatial/state';
 import tuning from '../../data/tuning/atmosphere.json';
@@ -91,6 +93,26 @@ export function soundsFor(mo: Moment): SoundCue[] {
   }
 }
 
+/** A derby, a match against a rival, or neither: how worked up the crowd is. */
+export type Rivalry = 'derby' | 'rival' | null;
+
+/** The next chant: how many seconds of play until it, and whether the away end sings it. */
+export function nextChant(atMs: number, rivalry: Rivalry): { inS: number; away: boolean } {
+  const C = T.chants;
+  const gap = C.everyS[0] + (C.everyS[1] - C.everyS[0]) * hash(atMs + 17);
+  return { inS: gap * (rivalry === 'derby' ? C.derbyEvery : 1), away: hash(atMs + 29) < C.awayShare };
+}
+
+/** How much louder than its fill the crowd is. */
+export function crowdBoost(rivalry: Rivalry): number {
+  return rivalry === 'derby' ? T.chants.derbyBoost : rivalry === 'rival' ? T.chants.rivalBoost : 1;
+}
+
+/** A chant's loudness for a ground this full (0 to 1). */
+export function chantGain(crowd: number): number {
+  return T.chants.emptyGain + (1 - T.chants.emptyGain) * Math.max(0, Math.min(1, crowd));
+}
+
 /** How loud the swell wants to be with the match as it stands (0 to 1). */
 export function exciteOf(m: SpatialMatch): number {
   const E = T.excite;
@@ -102,27 +124,33 @@ export function exciteOf(m: SpatialMatch): number {
 export class MatchSound {
   private readonly audio = new MatchAudio();
   private queue: SoundCue[] = [];
-  private level = 0;
   private excite = 0;
+  private crowd = 0.6;
+  private rivalry: Rivalry = null;
+  /** Seconds of play until the next chant, and whose it is. */
+  private chantIn = 0;
+  private chantAway = false;
   private holdUntil = 0;
   private lastNow = 0;
   private lastWhistle = 0;
   private match: SpatialMatch | null = null;
 
-  /** Volume 0 (off) to 1. */
-  setLevel(level: number): void {
-    this.level = level;
-    this.audio.setLevel(level);
-    if (level === 0) this.queue.length = 0;
+  /** The mix changed: pick up an unmuted sound, or drop what was waiting. */
+  refresh(): void {
+    if (!this.on) this.queue.length = 0;
+    this.audio.refresh();
   }
 
+  /** Whether any match sound would be heard. */
   get on(): boolean {
-    return this.level > 0;
+    return audioHub.audible('crowd') || audioHub.audible('effects');
   }
 
-  /** Call from a tap: phones only start sound inside one. */
-  unlock(): void {
-    this.audio.unlock();
+  /** A derby or a rival's visit: a louder crowd that sings more. */
+  setRivalry(rivalry: Rivalry): void {
+    if (rivalry === this.rivalry) return;
+    this.rivalry = rivalry;
+    this.audio.setBoost(crowdBoost(rivalry));
   }
 
   /** A match screen opened: load the sounds and let them play. */
@@ -135,9 +163,13 @@ export class MatchSound {
     this.queue.length = 0;
     this.excite = 0;
     this.holdUntil = 0;
+    const next = nextChant(m.clockMs, this.rivalry);
+    this.chantIn = next.inS / 2;
+    this.chantAway = next.away;
     if (m !== this.match) {
       this.match = m;
-      this.audio.setCrowd(m.setup.crowd ?? 0.6);
+      this.crowd = m.setup.crowd ?? 0.6;
+      this.audio.setCrowd(this.crowd);
     }
   }
 
@@ -179,10 +211,23 @@ export class MatchSound {
       }
       this.audio.play(c.key, c);
     }
+    this.chant(atMs, now, dt);
     const want = now < this.holdUntil ? 1 : exciteOf(m);
     const tau = want > this.excite ? T.excite.riseS : T.excite.fallS;
     this.excite += (want - this.excite) * (dt > 0 ? 1 - Math.exp(-dt / tau) : 0);
     this.audio.setExcitement(this.excite);
+  }
+
+  /** Counts down to the next chant and starts it when the game is quiet enough. */
+  private chant(atMs: number, now: number, dt: number): void {
+    this.chantIn -= dt;
+    if (this.chantIn > 0 || now < this.holdUntil || this.excite > T.chants.maxExcite) return;
+    const gain = chantGain(this.crowd);
+    if (this.chantAway) this.audio.play('chantAway', { gain, far: true, pan: hash(atMs) < 0.5 ? -0.5 : 0.5 });
+    else this.audio.play('chant', { gain });
+    const next = nextChant(atMs, this.rivalry);
+    this.chantIn = next.inS;
+    this.chantAway = next.away;
   }
 
   /** The match is paused: just the murmur. */
@@ -195,10 +240,5 @@ export class MatchSound {
     this.queue.length = 0;
     this.lastNow = 0;
     this.audio.stop();
-  }
-
-  /** The page was hidden or shown. */
-  sleep(hidden: boolean): void {
-    this.audio.sleep(hidden);
   }
 }

@@ -1,12 +1,19 @@
-"""Download the CC0 Freesound recordings and bake the match-day sounds (Stage 5.5).
+"""Download the CC0 Freesound recordings and bake the match-day sounds (Stage 5.5), the
+crowd's chants and the office radio's songs (Stage 7.2).
 
-Usage: python3 build-audio.py <source-dir>
+Usage: python3 build-audio.py <source-dir> [name ...]
+
+With names, only those files are baked (the rest stay as they are).
 
 Needs ffmpeg (with libmp3lame) on the PATH and numpy. The previews land in
 <source-dir>/audio/<id>.mp3; the baked files go to public/assets/audio/ with the
 names src/data/tuning/atmosphere.json lists. Each piece is cut from its recording,
 faded, levelled, and (for the two looping beds) given a baked crossfade so the
 loop has no seam. Everything is mono MP3: the game pans the kicks itself.
+
+The radio's songs come from OpenGameArt (CC0) and land in <source-dir>/oga/. They are
+cut to a whole number of their own phrases and faded out, made mono at 22 kHz and
+encoded small: the game plays them through a small speaker anyway.
 """
 import os
 import subprocess
@@ -22,6 +29,7 @@ SOURCES = {
     206003: ('habbis92', '206003_878508'),
     829454: ('itmightgetloud', '829454_3625328'),
     829455: ('itmightgetloud', '829455_3625328'),
+    829456: ('itmightgetloud', '829456_3625328'),
     494352: ('Sandermotions', '494352_1402315'),
     494362: ('Sandermotions', '494362_1402315'),
     612131: ('felix.blume', '612131_1661766'),
@@ -52,9 +60,24 @@ PIECES = {
     'whistle-end': dict(cut=[(568995, 0.65, 1.35), (568995, 6.65, 7.45), (568995, 12.65, 13.6)], gap=0.3, fade=(0.005, 0.1), peak=-3),
     'kick-1': dict(cut=(555042, 0, 0.35), fade=(0.001, 0.15), peak=-1),
     'kick-2': dict(cut=(446639, 0, 0.35), fade=(0.001, 0.15), peak=-1),
+    # Stage 7.2: the home end singing (the most tonal stretch of the stadium recording,
+    # clear of the swell's), and the away end across the ground, muffled by distance.
+    'chant-1': dict(cut=(829454, 240, 258), fade=(1.5, 3), rms=-18),
+    'chant-2': dict(cut=(829454, 222, 238), fade=(1.5, 3), rms=-18),
+    'chant-away': dict(cut=(829456, 0, 14), fade=(1.5, 3), lowpass=1800, rms=-20),
 }
 
-KBPS = {'bed': 64, 'swell': 64}
+# The office radio (Stage 7.2): OpenGameArt file -> (name, start s, end s, fade-out s).
+OGA = 'https://opengameart.org/sites/default/files/'
+SONGS = {
+    'radio-cafe': ('little_cafe_0.wav', 0, 76.8, 2.5),
+    'radio-funk': ('Funked%20Up.mp3', 0, 66.3, 1.5),
+    'radio-lofi': ('ChillLofi.ogg', 0, 97.2, 2.5),
+}
+SONG_RATE = 22050
+SONG_KBPS = 32
+
+KBPS = {'bed': 64, 'swell': 64, 'chant-1': 48, 'chant-2': 48, 'chant-away': 40}
 
 
 def fetch(src, fid):
@@ -93,21 +116,60 @@ def bake_loop(x, seconds):
     return body
 
 
-def encode(x, name, kbps):
+def lowpass(x, hz, rate=RATE):
+    """Two passes of a one-pole low-pass: a far-off sound loses its edge."""
+    a = 1 - np.exp(-2 * np.pi * hz / rate)
+    for _ in range(2):
+        y = np.empty_like(x)
+        acc = 0.0
+        for i, v in enumerate(x):
+            acc += a * (v - acc)
+            y[i] = acc
+        x = y
+    return x
+
+
+def encode(x, name, kbps, rate=RATE):
     path = os.path.join(OUT, name + '.mp3')
     pcm = np.clip(x, -1, 1).astype(np.float32).tobytes()
-    subprocess.run(['ffmpeg', '-v', 'quiet', '-y', '-f', 'f32le', '-ar', str(RATE), '-ac', '1', '-i', '-',
+    subprocess.run(['ffmpeg', '-v', 'quiet', '-y', '-f', 'f32le', '-ar', str(rate), '-ac', '1', '-i', '-',
                     '-c:a', 'libmp3lame', '-b:a', f'{kbps}k', '-map_metadata', '-1', path],
                    input=pcm, check=True)
     return os.path.getsize(path)
 
 
+def song(src, name, spec):
+    file, a, b, fout = spec
+    path = os.path.join(src, 'oga', file.replace('%20', '_'))
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        subprocess.run(['curl', '-sSfL', '-o', path, OGA + file], check=True)
+        print('fetched', file)
+    raw = subprocess.run(['ffmpeg', '-v', 'quiet', '-i', path, '-ac', '1', '-ar', str(SONG_RATE), '-af', 'lowpass=f=6500',
+                          '-f', 'f32le', '-'], check=True, capture_output=True).stdout
+    x = np.frombuffer(raw, np.float32).astype(np.float64)[int(a * SONG_RATE):int(b * SONG_RATE)]
+    n = int(fout * SONG_RATE)
+    x = x.copy()
+    x[-n:] *= np.linspace(1, 0, n) ** 2
+    x *= 10 ** (-16 / 20) / np.sqrt(np.mean(x ** 2))
+    x *= min(1, 0.95 / np.max(np.abs(x)))
+    size = encode(x, name, SONG_KBPS, SONG_RATE)
+    print(f'{name:13s} {len(x) / SONG_RATE:5.1f} s {size / 1024:6.0f} kB')
+    return size
+
+
 def main():
     src = sys.argv[1]
+    only = set(sys.argv[2:])
     os.makedirs(OUT, exist_ok=True)
     cache = {}
     total = 0
+    for name, spec in SONGS.items():
+        if not only or name in only:
+            total += song(src, name, spec)
     for name, p in PIECES.items():
+        if only and name not in only:
+            continue
         cuts = p['cut'] if isinstance(p['cut'], list) else [p['cut']]
         parts = []
         for fid, a, b in cuts:
@@ -120,6 +182,8 @@ def main():
                 parts.append(np.zeros(int(p.get('gap', 0) * RATE)))
             parts.append(seg)
         x = np.concatenate(parts)
+        if 'lowpass' in p:
+            x = lowpass(x, p['lowpass'])
         if 'loop' in p:
             x = bake_loop(x, p['loop'])
         if 'rms' in p:

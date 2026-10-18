@@ -1,5 +1,6 @@
 export const ROOT: string;
 export function readSource(rel: string): string;
+export function fileSize(rel: string): number;
 export function writeSource(rel: string, text: string): void;
 export function listSources(relDir: string, ext?: string): string[];
 export function envFlag(name: string): boolean;

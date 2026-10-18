@@ -53,6 +53,8 @@ import {
   type TierId,
   answerEvent,
   setStoryPace,
+  fixtureBadge,
+  userFixture,
 } from '../../sim/career';
 import { CLUBS, MATCH_TUNING } from '../../sim/data';
 import { seedNumber } from '../../sim/league';
@@ -89,7 +91,12 @@ import { ReplayHost } from './replayHost';
 import { Atmosphere, nightMatch } from './atmosphere';
 import atmosphereTuning from '../../data/tuning/atmosphere.json';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, storeShowFps, storeSound, SOUND_SETTINGS, type SoundSetting, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { audioHub, type Bus, type Mix } from '../../render/audio/hub';
+import { UiSounds } from '../../render/audio/uiSounds';
+import { OfficeAudio } from '../../render/audio/officeAudio';
+import { cuesFor, type CueState } from './uiSound';
+import { officeVisitor } from './office';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, storeShowFps, storeMix, storeRadio, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -165,7 +172,7 @@ function userResultText(career: Career, results: readonly MatchResult[]): string
 }
 
 /** Where each object in the office leads. */
-const HOTSPOT_TABS: Record<HotspotId, HubTab> = {
+const HOTSPOT_TABS: Record<Exclude<HotspotId, 'radio'>, HubTab> = {
   laptop: 'money',
   phone: 'market',
   tv: 'news',
@@ -193,6 +200,10 @@ export class CareerApp {
   });
   /** The crowd's sound and the commentary ticker, shared like the 3D view. */
   private readonly atmosphere = new Atmosphere();
+  private readonly uiSounds = new UiSounds();
+  private readonly officeAudio = new OfficeAudio();
+  /** What was on screen at the last render, for the menus' sounds. */
+  private cues: CueState | null = null;
   private readonly pitch = new LiveHost(this.match3d, this.atmosphere);
   /** Set after one failed save so the warning shows once. */
   private saveWarned = false;
@@ -256,9 +267,9 @@ export class CareerApp {
     document.addEventListener('visibilitychange', () => {
       const hidden = document.visibilityState === 'hidden';
       if (hidden) this.save();
-      this.atmosphere.sound.sleep(hidden);
+      audioHub.sleep(hidden);
     });
-    this.atmosphere.sound.setLevel(atmosphereTuning.sound.levels[this.ui.sound]);
+    audioHub.setMix(this.ui.mix);
     this.render();
   }
 
@@ -303,6 +314,7 @@ export class CareerApp {
     this.syncReplay();
     this.syncPitch();
     this.syncSound();
+    this.syncUiSound(html);
     this.syncFullscreen();
     this.scheduleWarm();
   }
@@ -362,12 +374,39 @@ export class CareerApp {
   private syncSound(): void {
     const { ui, career } = this;
     const live = ui.screen === 'live' && !!career?.liveMatch;
+    // A derby's crowd is louder and sings more.
+    const fixture = live ? career?.liveMatch?.setup : career && ui.screen === 'replay' && ui.replayId ? findMatch(career.season, ui.replayId) : null;
+    if (career && fixture) this.atmosphere.sound.setRivalry(fixtureBadge(career, fixture));
     if (live && !ui.live.pitch) {
       const m = career ? liveOf(career)?.m : null;
       if (m) this.atmosphere.attach(null, m);
       return;
     }
     if (!live && ui.screen !== 'replay') this.atmosphere.stop();
+  }
+
+  /** The menus' knocks, rings, pages and cameras for what just appeared, and the war room's clock. */
+  private syncUiSound(html: string): void {
+    const { ui, career } = this;
+    const hub = !!career && ui.screen === 'hub';
+    const day = career ? openDeadline(career) : null;
+    const on = onScreenOf(html);
+    const next: CueState = {
+      visitor: on.event || (hub && ui.inOffice && !!career && officeVisitor(career) !== null),
+      press: on.press,
+      bids: career?.incomingBids.length ?? 0,
+      calls: day ? day.calls.filter((c) => c.status === 'open').length : 0,
+      news: hub && !ui.inOffice && ui.tab === 'news',
+    };
+    // A week playing brings its offers in a rush; one ring at the end is enough.
+    if (!this.weeks.playing) {
+      for (const cue of cuesFor(this.cues, next)) {
+        if (cue === 'cameras') this.uiSounds.cameras();
+        else this.uiSounds.play(cue);
+      }
+      this.cues = next;
+    }
+    this.uiSounds.ticking(ui.screen === 'deadline' && !!day);
   }
 
   /** The card for a player tapped in the live 3D match: how he is doing so far. */
@@ -518,7 +557,10 @@ export class CareerApp {
       const tabs = this.uiLayer.querySelector('.career-tabs');
       this.officeLayer.style.top = tabs ? `${Math.round(tabs.getBoundingClientRect().bottom)}px` : '0';
     }
-    this.office.sync(on ? career : null, on ? this.officeTier() : null);
+    this.office.sync(on ? career : null, on ? this.officeTier() : null, this.ui.radio);
+    // The crowd drifts in through the window on a home match week.
+    const f = on && career && career.phase !== 'preseason' ? userFixture(career) : null;
+    this.officeAudio.set(on, !!f && f.homeId === career?.userTeamId, this.ui.radio);
   }
 
   private onOfficePick(p: OfficePick): void {
@@ -537,6 +579,13 @@ export class CareerApp {
         return this.render();
       }
       return this.openMail(p.id);
+    }
+    if (p.id === 'radio') {
+      this.ui.radio = !this.ui.radio;
+      storeRadio(this.ui.radio);
+      // A muted game has nothing to play the radio through.
+      if (this.ui.radio && this.ui.mix.muted) this.ui.flash = { kind: 'ok', text: 'The radio is on, but sound is muted. Turn sound on in the menu.' };
+      return this.render();
     }
     // The TV is the paper; the phone is the fan feed unless a bid is waiting.
     if (p.id === 'tv') {
@@ -605,22 +654,24 @@ export class CareerApp {
     return false;
   }
 
-  /** The Sound button turns the sound off and back on at the level it had. */
-  private soundBack: SoundSetting | null = null;
-
-  private toggleSound(): void {
-    if (this.ui.sound !== 'off') return this.setSound('off');
-    const fallback = atmosphereTuning.sound.defaultLevel as SoundSetting;
-    this.setSound(this.soundBack ?? (fallback === 'off' ? 'medium' : fallback));
+  /** A new sound mix: kept for this device, and heard straight away. */
+  private setMix(mix: Mix, keep = true): void {
+    this.ui.mix = mix;
+    if (keep) storeMix(mix);
+    audioHub.setMix(mix);
+    // This runs inside a tap or a slider's move, so the sound can start now.
+    audioHub.unlock();
+    this.atmosphere.sound.refresh();
+    this.officeAudio.refresh();
   }
 
-  private setSound(level: SoundSetting): void {
-    if (this.ui.sound !== 'off') this.soundBack = this.ui.sound;
-    this.ui.sound = level;
-    storeSound(level);
-    this.atmosphere.sound.setLevel(atmosphereTuning.sound.levels[level]);
-    // This runs inside the tap, so the sound can start now.
-    this.atmosphere.sound.unlock();
+  /** A sound slider moved or was let go. */
+  private slideMix(el: HTMLInputElement, keep: boolean): void {
+    const bus = el.dataset.bus as Bus | undefined;
+    if (bus !== 'crowd' && bus !== 'effects' && bus !== 'music') return;
+    const v = Number(el.value) / 100;
+    if (!Number.isFinite(v)) return;
+    this.setMix({ ...this.ui.mix, [bus]: v }, keep);
   }
 
   private stopLoops(): void {
@@ -642,9 +693,10 @@ export class CareerApp {
 
   private onClick(e: Event): void {
     // Phones only let sound start inside a tap.
-    this.atmosphere.sound.unlock();
+    audioHub.unlock();
     const target = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-action]') : null;
     if (!target || (target instanceof HTMLButtonElement && target.disabled)) return;
+    this.uiSounds.play('tap');
     const action = target.dataset.action ?? '';
     const d = target.dataset;
     // While a week plays only "Stop" counts (it stops after this week).
@@ -756,14 +808,8 @@ export class CareerApp {
         ui.inOffice = d.quality !== 'off';
         return this.render();
       case 'live-sound':
-        this.toggleSound();
+        this.setMix({ ...this.ui.mix, muted: !this.ui.mix.muted });
         return this.render();
-      case 'set-sound': {
-        const level = SOUND_SETTINGS.find((k) => k === d.sound);
-        if (!level) return;
-        this.setSound(level);
-        return this.render();
-      }
       case 'set-mode':
         if (isMode(d.mode)) career.delegation.matchMode = d.mode;
         break;
@@ -1184,6 +1230,17 @@ export class CareerApp {
     if (el instanceof HTMLElement && el.dataset.draft) return this.onDraft(e);
     if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement) || this.weeks.playing) return;
     const kind = el.dataset.change;
+    if (kind === 'mix-level') return this.slideMix(el as HTMLInputElement, true);
+    if (kind === 'mix-on') {
+      // Device settings, like the frame rate.
+      this.setMix({ ...this.ui.mix, muted: !(el as HTMLInputElement).checked });
+      return this.render();
+    }
+    if (kind === 'radio-on') {
+      this.ui.radio = (el as HTMLInputElement).checked;
+      storeRadio(this.ui.radio);
+      return this.syncOffice();
+    }
     if (kind === 'tips-on') {
       // A device setting, like the frame rate.
       this.tips.off = !(el as HTMLInputElement).checked;
@@ -1232,6 +1289,8 @@ export class CareerApp {
   /** New-career fields: update the draft and the crest preview without a full re-render, so the keyboard stays up. */
   private onDraft(e: Event): void {
     const el = e.target;
+    // A sound slider is heard as it moves; it is kept when let go.
+    if (el instanceof HTMLInputElement && el.dataset.change === 'mix-level') return this.slideMix(el, false);
     const draft = this.ui.draft;
     if (!draft || !(el instanceof HTMLInputElement || el instanceof HTMLSelectElement)) return;
     const key = el.dataset.draft;

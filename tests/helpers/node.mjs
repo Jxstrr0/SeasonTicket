@@ -3,7 +3,7 @@
  * counting garbage collections. Plain JavaScript so the TypeScript program (which also
  * covers the browser code) does not need Node's global types.
  */
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PerformanceObserver } from 'node:perf_hooks';
@@ -13,6 +13,12 @@ export const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 export function readSource(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
+}
+
+/** A file's size in bytes, or -1 if it is not there. */
+export function fileSize(rel) {
+  const p = join(ROOT, rel);
+  return existsSync(p) ? statSync(p).size : -1;
 }
 
 export function writeSource(rel, text) {

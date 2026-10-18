@@ -61,9 +61,9 @@ function renderScoreboard(career: Career, state: MatchState): string {
   </section>`;
 }
 
-/** Sound on or off during the match (the level itself is set on the office's Home tab). */
+/** Sound on or off during the match (the volumes are set in the menu). */
 function soundButton(ui: UiState): string {
-  const on = ui.sound !== 'off';
+  const on = !ui.mix.muted;
   return `<button type="button" class="${cls('btn-secondary', on && 'on')}" data-action="live-sound" aria-pressed="${on}" aria-label="Match sound">${on ? 'Sound on' : 'Sound off'}</button>`;
 }
 

@@ -70,6 +70,7 @@ const LABELS: Record<HotspotId, string> = {
   clipboard: 'Squad',
   door: 'Inbox',
   cabinet: 'Trophies',
+  radio: 'Radio',
 };
 
 interface Label {
@@ -309,6 +310,8 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
       if (door) door.text.textContent = snap.unread > 0 ? `Inbox (${snap.unread})` : 'Inbox';
       const phone = labels.get('phone');
       if (phone) phone.text.textContent = snap.deadline ? 'War room' : snap.bids > 0 ? `Offers (${snap.bids})` : 'Fan feed';
+      const radio = labels.get('radio');
+      if (radio) radio.text.textContent = snap.radio ? 'Radio (on)' : 'Radio';
       const key = JSON.stringify(snap);
       if (key === lastKey) return;
       lastKey = key;

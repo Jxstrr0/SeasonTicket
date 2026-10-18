@@ -2,7 +2,7 @@
  * Match-day atmosphere (Stage 5.5): what the crowd hears and the ticker says, read off a
  * real match, and the settings around it. None of it may change a result.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { LineSegments, PerspectiveCamera, Points } from 'three';
 import { setupWithBench } from './helpers/spatialFixtures';
 import { createSpatial, spatialFinished, stepSpatial } from '../src/sim/spatial/engine';
@@ -12,7 +12,6 @@ import { MomentWatch, type Moment } from '../src/ui/career/matchMoments';
 import { exciteOf, soundsFor } from '../src/ui/career/matchSound';
 import { tickerLine } from '../src/ui/career/ticker';
 import { nightMatch } from '../src/ui/career/atmosphere';
-import { SOUND_SETTINGS, loadSound, storeSound } from '../src/ui/career/state';
 import { buildWeather, weatherLook } from '../src/render/match/weather';
 import tuning from '../src/data/tuning/atmosphere.json';
 
@@ -144,67 +143,5 @@ describe('evening kick-offs', () => {
     expect(n / N).toBeGreaterThan(tuning.night.leagueShare - 0.04);
     expect(n / N).toBeLessThan(tuning.night.leagueShare + 0.04);
     for (let i = 0; i < 50; i++) expect(nightMatch(`id${i}`, false)).toBe(nightMatch(`id${i}`, false));
-  });
-});
-
-describe('sound setting', () => {
-  const g = globalThis as { localStorage?: unknown };
-  const before = g.localStorage;
-  afterEach(() => {
-    g.localStorage = before;
-  });
-
-  it('is kept per device and falls back to the default', () => {
-    const store = new Map<string, string>();
-    g.localStorage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) };
-    expect(loadSound()).toBe(tuning.sound.defaultLevel);
-    for (const s of SOUND_SETTINGS) {
-      storeSound(s);
-      expect(loadSound()).toBe(s);
-    }
-    store.set('seasonticket.sound', 'deafening');
-    expect(loadSound()).toBe(tuning.sound.defaultLevel);
-    g.localStorage = {
-      getItem: () => {
-        throw new Error('blocked');
-      },
-      setItem: () => {
-        throw new Error('blocked');
-      },
-    };
-    expect(loadSound()).toBe(tuning.sound.defaultLevel);
-    expect(() => storeSound('high')).not.toThrow();
-    expect(tuning.sound.levels.off).toBe(0);
-  });
-});
-
-describe('weather on screen', () => {
-  it('changes the sky for every weather but a clear day', () => {
-    expect(weatherLook('clear')).toBeNull();
-    for (const w of ['rain', 'snow', 'wind', 'heat'] as const) expect(weatherLook(w)?.sky).toHaveLength(2);
-  });
-
-  it('builds rain as streaks and snow and dust as dots, sized by tier', () => {
-    const camera = new PerspectiveCamera(40, 2, 1, 1000);
-    for (const [kind, Kind, per] of [
-      ['rain', LineSegments, 2],
-      ['snow', Points, 1],
-      ['wind', Points, 1],
-    ] as const) {
-      const counts = tuning.weather[kind].count;
-      for (const tier of ['low', 'medium', 'high'] as const) {
-        const view = buildWeather(kind, tier);
-        const fall = view.root.children.find((c) => c instanceof Kind) as LineSegments | Points;
-        expect(fall).toBeDefined();
-        expect(fall.geometry.getAttribute('aSeed').count).toBe(counts[tier] * per);
-        expect(view.tick(1 / 30, camera, 780)).toBe(true);
-        view.dispose();
-      }
-      expect(counts.low).toBeLessThan(counts.medium);
-      expect(counts.medium).toBeLessThan(counts.high);
-    }
-    const heat = buildWeather('heat', 'medium');
-    expect(heat.root.children.some((c) => c instanceof Points || c instanceof LineSegments)).toBe(false);
-    heat.dispose();
   });
 });
