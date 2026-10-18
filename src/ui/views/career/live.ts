@@ -61,6 +61,12 @@ function renderScoreboard(career: Career, state: MatchState): string {
   </section>`;
 }
 
+/** Sound on or off during the match (the level itself is set on the office's Home tab). */
+function soundButton(ui: UiState): string {
+  const on = ui.sound !== 'off';
+  return `<button type="button" class="${cls('btn-secondary', on && 'on')}" data-action="live-sound" aria-pressed="${on}" aria-label="Match sound">${on ? 'Sound on' : 'Sound off'}</button>`;
+}
+
 function renderControls(career: Career, ui: UiState, state: MatchState): string {
   if (state.finished) {
     return `<section class="card notice">
@@ -88,6 +94,7 @@ function renderControls(career: Career, ui: UiState, state: MatchState): string 
     ${live.pitch && ui.quality !== 'off' && !ui.match3dFailed ? `<button type="button" class="${cls('btn-secondary', ui.match3d && 'on')}" data-action="match-3d" aria-pressed="${ui.match3d}">3D</button>` : ''}
     ${live.pitch && ui.quality !== 'off' && !ui.match3dFailed && ui.match3d ? `<button type="button" class="${cls('btn-secondary', ui.highlights && 'on')}" data-action="match-highlights" aria-pressed="${ui.highlights}" aria-label="Highlights: 3D for the big moments only">Highlights</button>` : ''}
     ${live.pitch ? `<button type="button" class="btn-secondary" data-action="live-full" aria-label="Full screen: the match fills the screen">Full screen</button>` : ''}
+    ${soundButton(ui)}
     ${coachToggle}
     ${confirmButton(ui, 'live-skip', 'end', 'Skip to the end')}
     <button type="button" class="btn-secondary" data-action="live-leave">Office</button>
@@ -192,6 +199,7 @@ function renderFull(career: Career, ui: UiState, state: MatchState, S: SideState
         <button type="button" class="btn-secondary" data-action="live-pitch-speed" data-x="${next.x}" aria-label="Speed ${esc(now.label)}: tap for ${esc(next.label)}">${esc(now.label)}</button>
         <button type="button" class="btn-secondary" data-action="live-panel" data-panel="subs"${locked ? ' disabled' : ''}>Subs · ${left}</button>
         <button type="button" class="btn-secondary" data-action="live-panel" data-panel="tactics"${locked ? ' disabled' : ''}>Tactics</button>
+        ${soundButton(ui)}
         <button type="button" class="btn-secondary" data-action="live-full" aria-label="Exit full screen">Exit</button>
       </nav>`;
   const drawer = panel === 'none'

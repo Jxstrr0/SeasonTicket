@@ -18,6 +18,16 @@ export function describe(eventType: MatchEventType, params: CommentaryParams, rn
   return fillPlaceholders(template, params);
 }
 
+/**
+ * The same, with the template picked by `u` (0 to 1) instead of the match Rng: for screens
+ * that word the match as it is shown (the commentary ticker), which must never draw on it.
+ */
+export function describeAt(eventType: MatchEventType, params: CommentaryParams, u: number): string {
+  const options = usableTemplates(templatesFor(eventType, params.variant), params);
+  const template = options[Math.min(options.length - 1, Math.floor(Math.max(0, u) * options.length))];
+  return fillPlaceholders(template, params);
+}
+
 /** A variant ("chance" + "blocked") has its own lines; otherwise the event type's lines are used. */
 function templatesFor(eventType: MatchEventType, variant: string | number | undefined): string[] {
   const keys = variant === undefined ? [eventType] : [`${eventType}:${variant}`, eventType];

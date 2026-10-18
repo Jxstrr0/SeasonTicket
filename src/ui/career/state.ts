@@ -6,6 +6,7 @@
 import type { Crest, MatchMode, StandId, TierId } from '../../sim/career';
 import type { Position, StaffRole } from '../../sim/types';
 import { loadQuality, type QualitySetting } from '../../render/quality';
+import atmosphere from '../../data/tuning/atmosphere.json';
 
 export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay';
 
@@ -202,6 +203,31 @@ export function storeMatchCamera(key: string): void {
   }
 }
 
+/** The match-day sound level (Stage 5.5): kept per device, like the quality setting. */
+const SOUND_KEY = 'seasonticket.sound';
+
+export type SoundSetting = keyof typeof atmosphere.sound.levels;
+export const SOUND_SETTINGS = Object.keys(atmosphere.sound.levels) as SoundSetting[];
+
+export function loadSound(): SoundSetting {
+  try {
+    const v = globalThis.localStorage?.getItem(SOUND_KEY);
+    const known = SOUND_SETTINGS.find((k) => k === v);
+    if (known) return known;
+  } catch {
+    // Storage blocked: the default.
+  }
+  return atmosphere.sound.defaultLevel as SoundSetting;
+}
+
+export function storeSound(level: SoundSetting): void {
+  try {
+    globalThis.localStorage?.setItem(SOUND_KEY, level);
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
 export const LIVE_SPEEDS: readonly { ms: number; label: string }[] = [
   { ms: 700, label: '1x' },
   { ms: 350, label: '2x' },
@@ -219,6 +245,8 @@ export interface UiState {
   inOffice: boolean;
   /** Graphics setting for this device ('off' means plain menus, no office). */
   quality: QualitySetting;
+  /** Match-day sound level for this device. */
+  sound: SoundSetting;
   squadPlayerId: string | null;
   lineupSlot: number | null;
   marketView: MarketView;
@@ -277,6 +305,7 @@ export function initialUi(): UiState {
     tab: 'home',
     inOffice: false,
     quality: loadQuality(),
+    sound: loadSound(),
     squadPlayerId: null,
     lineupSlot: null,
     marketView: 'scout',

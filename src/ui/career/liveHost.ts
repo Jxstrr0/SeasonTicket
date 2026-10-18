@@ -11,7 +11,9 @@
 import type { SpatialMatch } from '../../sim/spatial/state';
 import { clockLabel } from '../../sim/spatial/systems';
 import { PitchView, goalBanner } from '../pitch2d';
+import type { Atmosphere } from './atmosphere';
 import type { Match3D, ThreeChoice } from './match3d';
+import { MatchTape } from './match3dTape';
 
 const BANNER_MS = 2500;
 
@@ -28,7 +30,10 @@ export class LiveHost {
   private bannerUntil = 0;
   private clockText = '';
 
-  constructor(private readonly three: Match3D) {
+  constructor(
+    private readonly three: Match3D,
+    private readonly atmosphere: Atmosphere,
+  ) {
     this.el = document.createElement('div');
     this.el.className = 'live-pitch';
     this.el.innerHTML = `<canvas aria-label="Top-down view of the match"></canvas>
@@ -50,6 +55,7 @@ export class LiveHost {
     const slot = m ? root.querySelector('[data-slot="live-2d"]') : null;
     if (!slot || !m) {
       this.three.detach(this.el);
+      this.atmosphere.detach(this.el);
       this.el.remove();
       return;
     }
@@ -64,6 +70,7 @@ export class LiveHost {
       this.bannerUntil = 0;
       this.banner.hidden = true;
     }
+    this.atmosphere.attach(this.el, m);
     if (choice?.want && choice.tier) this.three.attach(this.el, this.canvas, key, m, choice);
     else this.three.detach(this.el);
     this.fit();
@@ -74,10 +81,14 @@ export class LiveHost {
     if (!this.m) return;
     this.view?.savePrev(this.m);
     this.three.savePrev(this.m);
+    this.atmosphere.observe(this.m);
   }
 
-  /** Draw the match at `toMs` (no further than the engine has played). */
-  show(toMs: number, now: number): void {
+  /**
+   * Draw the match at `toMs` (no further than the engine has played). `speed` (match
+   * seconds per real second) is given while the match is playing.
+   */
+  show(toMs: number, now: number, speed?: number): void {
     const m = this.m;
     if (!m || !this.view) return;
     this.viewMs = Math.min(toMs, m.clockMs);
@@ -91,7 +102,10 @@ export class LiveHost {
       this.bannerUntil = 0;
       this.banner.hidden = true;
     }
-    if (!this.three.show(m, this.viewMs)) this.view.draw(m, this.viewMs);
+    const in3d = this.three.show(m, this.viewMs);
+    if (!in3d) this.view.draw(m, this.viewMs);
+    // The 3D view runs a little behind the engine; the sound and ticker keep to what is shown.
+    if (speed !== undefined) this.atmosphere.show(m, in3d ? MatchTape.shown(this.viewMs) : this.viewMs, true, speed, now);
     const text = clockLabel(m);
     if (text !== this.clockText) this.clock.textContent = this.clockText = text;
   }

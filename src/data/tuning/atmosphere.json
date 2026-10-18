@@ -1,0 +1,121 @@
+{
+  "_about": "Match-day atmosphere (Stage 5.5): crowd and referee sound, the commentary ticker, weather on screen and evening kick-offs. All presentation: none of it changes a result. Sounds are CC0 recordings listed in CREDITS.md; gains are 0 to 1 before the owner's sound level.",
+  "sound": {
+    "_about": "files: per sound, its variants (one is picked at random each time). loops: the length in seconds of each looping bed as baked by scripts/assets/build-audio.py. levels: the Sound setting in the menu. The bed's gain follows the crowd share (crowdFloor at an empty ground, 1 when full) and drops to pausedBed while the match is paused. Kicks only sound up to kicksUpToSpeed, so a fast-forward is not a rattle.",
+    "files": {
+      "bed": ["audio/bed.mp3"],
+      "swell": ["audio/swell.mp3"],
+      "roar": ["audio/roar-1.mp3", "audio/roar-2.mp3", "audio/roar-3.mp3"],
+      "ooh": ["audio/ooh-1.mp3", "audio/ooh-2.mp3"],
+      "groan": ["audio/groan.mp3"],
+      "boo": ["audio/boo.mp3"],
+      "whistle": ["audio/whistle.mp3"],
+      "whistleLong": ["audio/whistle-long.mp3"],
+      "whistleEnd": ["audio/whistle-end.mp3"],
+      "kick": ["audio/kick-1.mp3", "audio/kick-2.mp3"]
+    },
+    "loops": { "bed": 40, "swell": 24 },
+    "gain": {
+      "bed": 0.5,
+      "swell": 0.75,
+      "roar": 0.95,
+      "ooh": 0.8,
+      "groan": 0.7,
+      "boo": 0.55,
+      "whistle": 0.6,
+      "whistleLong": 0.65,
+      "whistleEnd": 0.7,
+      "kick": 0.5
+    },
+    "levels": { "off": 0, "low": 0.35, "medium": 0.65, "high": 1 },
+    "defaultLevel": "medium",
+    "crowdFloor": 0.3,
+    "pausedBed": 0.45,
+    "kicksUpToSpeed": 2,
+    "fadeS": 0.6,
+    "excite": {
+      "_about": "How loud the crowd swell gets: the side on the ball's depth (metres from its own goal) from `from` to `to` takes it from 0 to 1, the away side's attacks count `awayWeight` (the home end gets nervous, not loud). It rises over riseS and falls over fallS; a home goal holds it up for goalHoldS.",
+      "from": 60,
+      "to": 96,
+      "awayWeight": 0.5,
+      "riseS": 0.7,
+      "fallS": 2.6,
+      "goalHoldS": 12,
+      "bedDuck": 0.55
+    },
+    "chance": {
+      "_about": "A shot that misses: the home crowd's 'ooh' grows with its expected goals (minXg upwards), louder still off the woodwork; an away chance gets a smaller gasp.",
+      "minXg": 0.05,
+      "homeGain": [0.45, 1],
+      "awayGain": 0.4,
+      "awayMinXg": 0.12,
+      "postGain": 1
+    },
+    "awayRoar": 0.22,
+    "kickPan": 0.6
+  },
+  "ticker": {
+    "_about": "The one-line commentary over the pitch: each line shows for showMs (shorter while another waits), lines older than staleMs are dropped, and at most `queue` wait.",
+    "showMs": 4200,
+    "minMs": 1500,
+    "staleMs": 9000,
+    "queue": 3,
+    "minChanceXg": 0.04
+  },
+  "night": {
+    "_about": "Which matches kick off in the evening under the floodlights: a fixed share of league rounds picked from the fixture id (so it never changes for a match), and every playoff.",
+    "leagueShare": 0.35,
+    "playoffs": true
+  },
+  "weather": {
+    "_about": "Weather on screen. Particle counts are per quality tier; box is the size (metres) of the volume of rain or snow kept around the camera. Sky, fog and light settings per weather blend over the day or night look.",
+    "box": [70, 34, 70],
+    "rain": {
+      "count": { "low": 900, "medium": 2200, "high": 4500 },
+      "speed": 16,
+      "length": 0.75,
+      "opacity": 0.32,
+      "colour": "#c8d4e4",
+      "sky": ["#5d6875", "#9aa5b1"],
+      "fog": ["#8a949e", 260, 900],
+      "sun": 0.9,
+      "skyLight": 1.05
+    },
+    "snow": {
+      "count": { "low": 700, "medium": 1700, "high": 3500 },
+      "speed": 1.4,
+      "size": 0.16,
+      "drift": 0.9,
+      "opacity": 0.85,
+      "colour": "#ffffff",
+      "sky": ["#9aa3ad", "#d7dde3"],
+      "fog": ["#c4cbd3", 220, 800],
+      "sun": 1.0,
+      "skyLight": 1.25
+    },
+    "wind": {
+      "count": { "low": 160, "medium": 380, "high": 800 },
+      "speed": 9,
+      "size": 0.09,
+      "opacity": 0.55,
+      "colour": "#8a7a5a",
+      "sky": ["#6f8aa6", "#c9d6e2"]
+    },
+    "heat": {
+      "sky": ["#8fb3d6", "#f1e6cf"],
+      "fog": ["#eadfca", 380, 1300],
+      "sun": 3.0,
+      "sunColour": "#ffe6bf",
+      "skyLight": 1.6
+    },
+    "_flags": "Corner flags: how hard they wave (calm on a still day, windy in the wind; rain is halfway), and the pole height and flag size in metres.",
+    "flags": { "calm": 0.25, "windy": 1, "height": 1.5, "size": [0.45, 0.32] },
+    "slant": { "rain": 0.12, "snow": 0.25, "wind": 0.55 }
+  },
+  "crowdJump": {
+    "_about": "The home crowd jumping after a home goal: height in metres, bounces per second, and how long it lasts.",
+    "height": 0.28,
+    "rate": 2.2,
+    "seconds": 8
+  }
+}

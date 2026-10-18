@@ -134,6 +134,31 @@ Each step ends with a deploy and a short report.
   - Phones that allow it also hide the browser's bars (Android Chrome does; iPhone Safari does not, and the layout fills the page there anyway). The choice is remembered per device (off at first).
 - **Fix:** the grass in the stadium model is raised 10 cm over the ground, so since 5.1 the players, the ball and the soft shadows under them stood 10 cm into it (the shadows were hidden). Everything on the pitch now stands on the grass.
 
+## What 5.5 shipped
+
+- **Files:**
+  - `src/ui/career/matchMoments.ts` watches the engine and hands over what just happened: whistles, fouls, cards, shots, goals, kicks of the ball and shootout kicks. It only reads the engine's logs, so sound and commentary can never change a result.
+  - `src/ui/career/matchSound.ts` turns those moments into sounds; `src/render/audio/matchAudio.ts` is the Web Audio mixer that plays them.
+  - `src/ui/career/ticker.ts` writes the commentary line; `src/ui/career/atmosphere.ts` ties sound, ticker and the crowd's jump together and picks evening kick-offs.
+  - `src/render/match/weather.ts` draws the rain, snow and blown dust, and the corner flags.
+  - Tuning is in `src/data/tuning/atmosphere.json`. The sounds are in `public/assets/audio/`, built by `scripts/assets/build-audio.py` from CC0 Freesound recordings (listed in `CREDITS.md`).
+- **Crowd sound.** The crowd is the home crowd:
+  - A murmur plays all match, louder the fuller the ground, with a swell that rises as either side gets near goal (the home side's attacks count double).
+  - A home goal brings a roar, the beds dip under it and the noise stays up for a while. An away goal gets a groan, with the away end cheering in the distance.
+  - Chances get an "ooh" that grows with how good the chance was, louder off the woodwork. Fouls by the away side sometimes get boos, and home bookings always do. A penalty, a red card and every shootout kick get their own reaction.
+- **Referee and ball.** A short whistle for fouls, offside and kick-offs after goals, two blasts at half-time and three at full time. Ball kicks are heard at the slowest speed (2x live, 1x in a replay), panned left or right with the ball. They are dropped at faster speeds so a fast-forward isn't a rattle.
+- **Timing.** Each sound and ticker line plays when the screen's own clock reaches its moment, so in 3D (which runs a little behind the engine) the roar lands with the ball crossing the line, not before. At most three sounds start in one frame, the biggest first.
+- **Sound setting.** "Match sound" on the office's Home tab (Off, Low, Medium, High; Medium at first), remembered per device. A **Sound on / Sound off** button on the live screen, in full screen and on the replay screen mutes it and brings it back at the same level. Phones only allow sound after a tap, so it starts on the first tap on a match screen. On iPhones the ring/silent switch mutes it, and music already playing keeps playing.
+- **Commentary ticker.** One line at a time over the pitch (2D and 3D, live and replay), with a stripe in the side's kit colour: good chances, saves, the woodwork, goals, cards, penalties, injuries, substitutions, the whistles and shootout kicks. Goals and the result stand out in bold. The wording is the match feed's own, and which line of several is picked comes from the moment's time, never the engine's random numbers, so a replay says the same thing. Lines from a fast-forward that are long past are dropped.
+- **Weather in 3D.** The match's weather (the engine already uses it for fatigue) now shows:
+  - Rain falls as streaks, snow as soft flakes, and wind blows dust along the pitch. Each comes with its own sky, fog and light. Heat is a warm, hazy sky and bright sun.
+  - The particles live in a box of air kept in front of the camera and move on the graphics chip, one draw call each. Their count is set per quality tier (rain: 900, 2,200 or 4,500 drops).
+  - Four yellow corner flags stand on the pitch and wave: hardly at all on a still day, harder in rain and hardest in the wind.
+- **Evening kick-offs.** About a third of league matches and every playoff kick off under the floodlights. Which ones is fixed from the match id, so a match and its replay always agree. The floodlights upgrade sets how bright the pitch is.
+- **The crowd jumps** (in 3D) for a home goal: the home stands bounce for about eight seconds, each fan a little out of step.
+- **Crowd density** follows the attendance, as since Stage 4: a small crowd leaves empty seats and a quieter murmur.
+- **Full time.** The final whistle's step doesn't move the match clock, and the screens stop the moment the match ends (with the 3D view still 0.4 s behind). Both would have swallowed the full-time whistle and its ticker line, so once a match is over everything still waiting plays, and the crowd carries on until the owner leaves.
+
 ## Budgets
 
 These target a mid-range phone (about a 2022 Android) at Medium.
@@ -172,3 +197,9 @@ Owner's decisions on 5.4 (2026-10-18):
 - **The body is one shared build.** Height and build don't vary by player yet.
 - **Shirt numbers and names** are not painted on the kits. The tap card (step 5.4) and the 2D view show who's who.
 - **The shape overlay** draws the lines the team defends in, even while it attacks; in possession the same groups are joined where the players stand.
+- **Heat** has no shimmer (heat haze is the sky, fog and light only), and **rain** doesn't make the grass look wet: the pitch material has no shine to change.
+- **Corner flags** wave from a simple wave in a shader, not cloth physics. They don't move with the ball, and snow doesn't settle on the pitch.
+- **The crowd's jump** is the stands' instanced fans bouncing in a shader; they don't wave arms or scarves.
+- **The crowd is the home crowd.** Away fans are only heard as a distant cheer for their goals and a few shootout reactions.
+- **The second half** starts straight after the half-time whistle (the engine has no break), so there is no separate kick-off whistle for it.
+- **The headless test browser** can't decode MP3, so the automated screen checks play silently; sound was checked from the files and by counting the sounds started.

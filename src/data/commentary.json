@@ -137,6 +137,10 @@
     "Blocked! {player} could not find a way through for {team}.",
     "{assist} tees up {player}, but the shot is charged down."
   ],
+  "chance:post": [
+    "Off the woodwork! {player} so nearly scores for {team}.",
+    "{player} rattles the post. {team} are inches away."
+  ],
   "chance:offTarget": [
     "{player} shoots from the edge of the box and it flies wide.",
     "{player} has a sight of goal but drags it off target.",
