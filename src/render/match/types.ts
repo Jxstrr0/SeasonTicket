@@ -43,14 +43,15 @@ export const ACT = {
   /**
    * A shot that did not go in (Stage 5.3): nobody acts on it, it marks a moment for a replay.
    * x and y are where it was hit from, power its expected goals, and flag the shooting side
-   * plus CHANCE_SAVED or CHANCE_POST.
+   * plus CHANCE_SAVED (and CHANCE_GREAT for a great save) or CHANCE_POST.
    */
   CHANCE: 13,
 } as const;
 
-/** Added to a CHANCE cue's flag: the keeper saved it, or it hit the woodwork. */
+/** Added to a CHANCE cue's flag: the keeper saved it, it hit the woodwork, or it was a great save. */
 export const CHANCE_SAVED = 2;
 export const CHANCE_POST = 4;
+export const CHANCE_GREAT = 8;
 
 export interface ActionCue {
   /** Rises by one per cue, so the view can tell new ones. */

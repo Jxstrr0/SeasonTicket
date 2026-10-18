@@ -6,7 +6,7 @@ import type { StadiumSnapshot } from '../src/render/stadium/types';
 import tuning from '../src/data/tuning/match3d.json';
 import { createSpatial, spatialFinished, stepSpatial } from '../src/sim/spatial/engine';
 import { MatchTape } from '../src/ui/career/match3dTape';
-import { ACT, CHANCE_POST, CHANCE_SAVED, type ActionCue, type MatchFrame3D } from '../src/render/match/types';
+import { ACT, CHANCE_GREAT, CHANCE_POST, CHANCE_SAVED, type ActionCue, type MatchFrame3D } from '../src/render/match/types';
 import { Move, Pose, env, goalRole, keys } from '../src/render/match/actions';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { CAMERA_PRESETS, MatchCamera, ownersBox } from '../src/render/match/cameras';
@@ -261,10 +261,15 @@ describe('3D match replays', () => {
     expect(longest).toBeGreaterThanOrEqual(tuning.replays.keepS * 1000 - 600);
   });
 
-  it('replays big chances, and in highlights mode every big moment from its build-up', () => {
+  it('replays big chances and great saves, and in highlights mode every big moment from its build-up', () => {
     const big = m.shotLog.filter((s) => s.outcome !== 'goal' && (s.xg >= tuning.replays.bigChanceXg || s.outcome === 'post'));
-    const chances = of('chance', false);
-    expect(chances.length).toBeLessThanOrEqual(big.length);
+    const saved = m.shotLog.filter((s) => s.outcome === 'saved' && s.xg >= tuning.replays.greatSaveXg);
+    const great = tape.cues.filter((c) => c.kind === ACT.CHANCE && (c.flag & CHANCE_GREAT) !== 0);
+    // Only saves are great saves, and only the better chances among them.
+    for (const c of great) expect(c.flag & CHANCE_SAVED).toBe(CHANCE_SAVED);
+    expect(great.length).toBeLessThanOrEqual(saved.length);
+    const chances = [...of('chance', false), ...of('save', false)];
+    expect(chances.length).toBeLessThanOrEqual(big.length + great.length);
     const moments = played.filter((p) => p.hl);
     expect(of('goal', true).length).toBe(m.goalLog.length);
     expect(moments.length).toBeGreaterThan(of('chance', false).length + m.goalLog.length);
@@ -273,7 +278,29 @@ describe('3D match replays', () => {
       expect(p.r.takes[0]).toMatchObject({ camera: 'preset', rate: 1 });
     }
     const seconds = moments.reduce((n, p) => n + p.r.takes.reduce((s, t) => s + (t.to - t.from) / t.rate, 0), 0) / 1000;
-    console.log(`replays: ${of('goal', false).length} goals, ${chances.length} of ${big.length} big chances; highlights: ${moments.length} moments, ${Math.round(seconds)} s in 3D`);
+    console.log(`replays: ${of('goal', false).length} goals, ${chances.length} of ${big.length} big chances and ${great.length} great saves (of ${saved.length} saves of ${tuning.replays.greatSaveXg} xG or more); highlights: ${moments.length} moments, ${Math.round(seconds)} s in 3D`);
+  });
+
+  it('replays a great save', () => {
+    // A match with keepers at full stretch.
+    const g = createSpatial(setupWithBench(), 'g4', 'fine');
+    const t = new MatchTape();
+    const d = new Director();
+    const saves: Replay[] = [];
+    while (!spatialFinished(g)) {
+      stepSpatial(g);
+      t.capture(g);
+      d.scan(t.cues, false, false);
+      for (let r = d.due(MatchTape.shown(g.clockMs), false); r; r = null) if (r.kind === 'save') saves.push(r);
+    }
+    expect(saves.length).toBeGreaterThan(0);
+    for (const r of saves) {
+      const shot = g.shotLog.find((s) => Math.abs(s.ms - r.atMs) <= g.stepMs);
+      expect(shot?.outcome).toBe('saved');
+      expect(shot!.xg).toBeGreaterThanOrEqual(tuning.replays.greatSaveXg);
+      expect(r.takes[0]).toMatchObject({ camera: 'goal' });
+      expect(r.takes[0].rate).toBeLessThan(1);
+    }
   });
 
   it('skips the shootout and starts a waiting replay once the match stands still', () => {
@@ -295,6 +322,10 @@ describe('3D match replays', () => {
     expect(replayFor(shot(1, 0, 0.05, 1), false)).toBeNull();
     expect(replayFor(shot(1, 0, 0.05, 1), true)).toBeNull();
     expect(replayFor(shot(1, 0, 0.05, 1 + CHANCE_SAVED), true)?.takes.length).toBe(1);
+    const save = replayFor(shot(1, 0, 0.12, 1 + CHANCE_SAVED + CHANCE_GREAT), false);
+    expect(save?.kind).toBe('save');
+    expect(save?.takes.length).toBe(1);
+    expect(replayFor(shot(1, 0, 0.12, 1 + CHANCE_SAVED), false)).toBeNull();
     const post = replayFor(shot(1, 0, 0.05, CHANCE_POST), false);
     expect(post?.takes.length).toBe(1);
     expect(post?.takes[0].end).toBe(-1);
