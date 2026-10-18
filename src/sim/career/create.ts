@@ -14,7 +14,7 @@ import type { Career, ClubBooks, Crest, MatchMode, TierId } from './types';
 import { C, addInbox, clamp, emptyLedger, money, userTeam } from './util';
 import { ensureOwners } from './rivalry';
 
-export const CAREER_VERSION = 8;
+export const CAREER_VERSION = 9;
 
 export interface Branding {
   name: string;

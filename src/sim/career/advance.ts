@@ -22,7 +22,7 @@ import { stadiumAttendance, weeklyStadium } from './stadium';
 import { weeklyNews } from './news';
 import { closePress, weeklyPress } from './press';
 import { crowdBoost, weeklyRivalry } from './rivalry';
-import { moodForm, weeklyStory } from './story';
+import { moodForm, storyGate, weeklyStory } from './story';
 import type { Career } from './types';
 import { C, addInbox, userTeam } from './util';
 
@@ -55,7 +55,8 @@ export function careerHooks(career: Career, live = false): SeasonHooks {
       return selection;
     },
     attendance: (rng, home, away, playoff) => {
-      const base = Math.min(1, stadiumAttendance(career, home, attendanceShare(rng, home, away, playoff)) + crowdBoost(career, home.id, away.id));
+      const boost = crowdBoost(career, home.id, away.id) + storyGate(career, home.id, career.season.week);
+      const base = Math.max(0, Math.min(1, stadiumAttendance(career, home, attendanceShare(rng, home, away, playoff)) + boost));
       if (home.id !== userId) return base;
       return priceAdjustedShare(base, career.books[userId].ticketPrice, fairPrice(home));
     },

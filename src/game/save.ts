@@ -79,6 +79,11 @@ const MIGRATIONS: Record<number, Migration> = {
     ensureOwners(save as unknown as Career);
     return save;
   },
+  /** Version 9 adds the crowd change for the next home match (Stage 6.5). */
+  8: (save) => {
+    (save.story as Record<string, unknown>).gate = null;
+    return save;
+  },
 };
 
 export class SaveError extends Error {}

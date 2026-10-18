@@ -16,6 +16,7 @@ import spatialTuningJson from '../data/tuning/spatial.json';
 import storyTuningJson from '../data/tuning/story.json';
 import everydayEventsJson from '../data/events/everyday.json';
 import rivalryEventsJson from '../data/events/rivalry.json';
+import crisesEventsJson from '../data/events/crises.json';
 import rivalryNewsJson from '../data/news/rivalry.json';
 import rivalryTuningJson from '../data/tuning/rivalry.json';
 import newsTuningJson from '../data/tuning/news.json';
@@ -81,7 +82,7 @@ export const CAREER_TUNING = careerTuningJson;
 export const STADIUM_TUNING = stadiumTuningJson;
 export const STORY_TUNING = storyTuningJson;
 /** Every story event file, in order (src/data/events). */
-export const EVENT_FILES: readonly unknown[] = [everydayEventsJson, rivalryEventsJson];
+export const EVENT_FILES: readonly unknown[] = [everydayEventsJson, rivalryEventsJson, crisesEventsJson];
 export const SPATIAL_TUNING = spatialTuningJson;
 export const NEWS_TUNING = newsTuningJson;
 /** Newspaper and social feed templates (src/data/news). */
