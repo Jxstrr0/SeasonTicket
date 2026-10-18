@@ -24,6 +24,6 @@
     "kept": { "press": 0.04, "fans": 0.03, "squad": 0.02 },
     "broken": { "press": -0.05, "fans": -0.04, "squad": -0.02 }
   },
-  "heat": { "_about": "Rivalry heat with each club, 0-1. Moves with what is said, and cools by drift a week.", "drift": 0.01, "max": 1 },
+  "heat": { "_about": "Rivalry heat from answers is capped here; it cools in rivalry.json.", "max": 1 },
   "news": { "quote": 42, "staff": 18, "claim": 50 }
 }

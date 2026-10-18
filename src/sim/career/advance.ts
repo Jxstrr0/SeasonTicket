@@ -21,6 +21,7 @@ import { matchSelection } from './selection';
 import { stadiumAttendance, weeklyStadium } from './stadium';
 import { weeklyNews } from './news';
 import { closePress, weeklyPress } from './press';
+import { crowdBoost, weeklyRivalry } from './rivalry';
 import { moodForm, weeklyStory } from './story';
 import type { Career } from './types';
 import { C, addInbox, userTeam } from './util';
@@ -54,7 +55,7 @@ export function careerHooks(career: Career, live = false): SeasonHooks {
       return selection;
     },
     attendance: (rng, home, away, playoff) => {
-      const base = stadiumAttendance(career, home, attendanceShare(rng, home, away, playoff));
+      const base = Math.min(1, stadiumAttendance(career, home, attendanceShare(rng, home, away, playoff)) + crowdBoost(career, home.id, away.id));
       if (home.id !== userId) return base;
       return priceAdjustedShare(base, career.books[userId].ticketPrice, fairPrice(home));
     },
@@ -144,6 +145,7 @@ export function settleCareerWeek(career: Career, week: CareerWeek, played: reado
   fitnessRehab(career);
   weeklyMarket(career);
   weeklyStory(career);
+  weeklyRivalry(career);
   weeklyPress(career);
   weeklyNews(career, results);
   if (checkLadder(career)) return results;

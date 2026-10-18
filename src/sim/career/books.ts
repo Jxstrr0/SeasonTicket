@@ -10,6 +10,7 @@ import type { MatchResult, ScheduledMatch, Team } from '../types';
 import { boxUpkeep, concessionsBonus, hospitalityPerMatch, merchandiseMultiplier, sponsorMultiplier, tvBonus } from './stadium';
 import type { Career, ClubBooks, Debt } from './types';
 import { C, WEEKS_PER_YEAR, addInbox, clamp, earn, finance, ledgerTotals, money, nextId, roundMoney, spend, userBooks } from './util';
+import { fanSwing } from './rivalry';
 
 type Lender = (typeof C.lenders.list)[number];
 
@@ -137,7 +138,8 @@ export function settleMatch(career: Career, match: ScheduledMatch, result: Match
   const outcome = (teamId: string) => (result.winnerId === null ? 'draw' : result.winnerId === teamId ? 'win' : 'loss');
   for (const team of [home, away]) {
     const f = C.fans;
-    let mood = team.fanMood + f[outcome(team.id)];
+    const result_ = outcome(team.id);
+    let mood = team.fanMood + f[result_] * (result_ === 'draw' ? 1 : fanSwing(career, home.id, away.id));
     if (team.id === home.id && team.id === career.userTeamId) {
       const over = career.books[team.id].ticketPrice / fairPrice(team) - 1;
       if (over > 0) mood -= (over / 0.1) * f.pricePenaltyPerOverFair;

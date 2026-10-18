@@ -1,0 +1,34 @@
+{
+  "_about": "Rivalries and derbies (Stage 6.4, docs/STAGE_6_EVENTS.md). Heat is how much your club and another club dislike each other, 0 to 1. A derby is a club from the same region; derbies start with derbyBase heat on top of what history adds.",
+  "rivalHeat": 0.35,
+  "derbyBase": 0.3,
+  "derby": {
+    "_about": "Derby day: share of capacity added at the home ground (never past a full house), and the win or loss fan-mood change multiplied. rivalCrowdBoost is for your games against a non-derby rival.",
+    "crowdBoost": 0.12,
+    "rivalCrowdBoost": 0.06,
+    "fanSwing": 1.6
+  },
+  "heat": {
+    "_about": "Heat added after you play a club, and the weekly cool-down. bigResult is for a win or loss by bigMargin or more; knockout is a playoff tie, final the final. drift is the share of heat that fades each week.",
+    "derbyPlayed": 0.05,
+    "bigMargin": 3,
+    "bigResult": 0.06,
+    "knockout": 0.18,
+    "final": 0.25,
+    "drift": 0.015,
+    "max": 1
+  },
+  "owners": {
+    "_about": "AI club owners. Temperament sets how they price players they sell you (sellFactor) and how much they bid for yours (bidFactor). Memory (-1 to 1) is how they feel about you: each step of it moves prices by priceEffect. Rivals ask more: asking price x (1 + heat x rivalPremium).",
+    "temperaments": {
+      "calm": { "weight": 3, "label": "Calm", "sellFactor": 1.0, "bidFactor": 1.0 },
+      "showman": { "weight": 2, "label": "Showman", "sellFactor": 1.05, "bidFactor": 1.1 },
+      "pennyPincher": { "weight": 2, "label": "Penny-pincher", "sellFactor": 1.12, "bidFactor": 0.9 },
+      "gambler": { "weight": 1, "label": "Gambler", "sellFactor": 0.95, "bidFactor": 1.06 }
+    },
+    "memory": { "accept": 0.1, "reject": -0.03, "buy": 0.06, "beaten": -0.04, "knockedOut": -0.12, "drift": 0.02 },
+    "priceEffect": 0.06,
+    "rivalPremium": 0.15
+  },
+  "news": { "_about": "Paper weight of a rival owner's reaction after a derby or rivalry game, and the chance one is printed.", "weight": 38, "chance": 0.7 }
+}

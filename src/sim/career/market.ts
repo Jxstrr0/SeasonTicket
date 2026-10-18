@@ -13,6 +13,7 @@ import type { Player, Position, Team } from '../types';
 import { spendingLimits } from './books';
 import { reportTransfer } from './news';
 import type { Career } from './types';
+import { OWNER_MEMORY, bidFactor, ownerMemory, sellFactor } from './rivalry';
 import {
   C,
   addInbox,
@@ -62,6 +63,12 @@ export function squadRole(career: Career, player: Player): SquadRole {
 export function askingPrice(career: Career, player: Player): number {
   const contract = curveAt(T.contractFactor as [number, number][], player.contract.years);
   return roundMoney(player.value * T.roleFactor[squadRole(career, player)] * contract, 5000);
+}
+
+/** What the selling club's owner asks of you: the asking price, moved by their temperament, their memory of you and your rivalry. */
+export function userAskingPrice(career: Career, player: Player): number {
+  const base = askingPrice(career, player);
+  return player.teamId ? roundMoney(base * sellFactor(career, player.teamId), 5000) : base;
 }
 
 /** League position of a club right now (1-based), or the middle of the table before a ball is kicked. */
@@ -209,7 +216,7 @@ export function bidForPlayer(career: Career, playerId: string, fee: number, year
   const books = userBooks(career);
   if (fee > books.cash) return fail(`You have ${money(books.cash)} in the bank.`);
 
-  const asking = askingPrice(career, player);
+  const asking = userAskingPrice(career, player);
   const standing = career.counters[playerId];
   const target = Math.min(asking, standing ?? Infinity);
   if (fee < target) {
@@ -225,6 +232,7 @@ export function bidForPlayer(career: Career, playerId: string, fee: number, year
 
   spend(books, 'transfers', fee);
   earn(career.books[seller.id], 'playerSales', fee);
+  ownerMemory(career, seller.id, OWNER_MEMORY.buy);
   reportTransfer(career, { playerId, name: playerName(player), fromId: seller.id, toId: career.userTeamId, fee, how: 'fee' });
   movePlayer(career, player, career.userTeamId);
   player.contract = { wage, years: clamp(Math.round(years), T.contractYears.min, T.contractYears.max) };
@@ -382,11 +390,14 @@ export function acceptBid(career: Career, bidId: string): DealResult {
   const blocked = canLose(career, player);
   if (blocked) return fail(blocked);
   const buyer = teamById(career.season.league, bid.fromTeamId);
+  ownerMemory(career, buyer.id, OWNER_MEMORY.accept);
   sellToAi(career, player, buyer, bid.fee, 'Bid accepted');
   return { ok: true, message: `${playerName(player)} sold to ${buyer.shortName} for ${money(bid.fee)}.` };
 }
 
 export function rejectBid(career: Career, bidId: string): void {
+  const bid = career.incomingBids.find((b) => b.id === bidId);
+  if (bid) ownerMemory(career, bid.fromTeamId, OWNER_MEMORY.reject);
   career.incomingBids = career.incomingBids.filter((b) => b.id !== bidId);
 }
 
@@ -417,10 +428,11 @@ function maybeIncomingBid(career: Career, rng: Rng): void {
   if (squad.length === 0) return;
   const player = rng.weighted(squad, (p) => Math.pow(Math.max(1, p.overall - 35), 2));
   const share = rng.float(T.incomingBidShare.min, T.incomingBidShare.max);
-  const fee = roundMoney(player.value * share, 5000);
+  let fee = roundMoney(player.value * share, 5000);
   const options = buyers(career, career.userTeamId, fee);
   if (options.length === 0) return;
   const buyer = rng.pick(options.slice(0, 4));
+  fee = roundMoney(fee * bidFactor(career, buyer.id), 5000);
   career.incomingBids.push({ id: nextId(career, 'bid'), playerId: player.id, fromTeamId: buyer.id, fee, expiresWeek: career.weekIndex + T.bidExpiryWeeks });
   addInbox(career, 'bid', `Bid for ${playerName(player)}`, `${buyer.shortName} offer ${money(fee)} for ${playerName(player)}. It lapses in ${T.bidExpiryWeeks} weeks.`);
 }
