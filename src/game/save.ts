@@ -7,7 +7,7 @@
  * that version up to the current one, so an old save is never thrown away.
  */
 import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
-import { CAREER_VERSION, ensureOwners, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
+import { CAREER_VERSION, ensureOwners, openDeadlineIfDue, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
 import type { Team } from '../sim/types';
 
 export const SAVE_PREFIX = 'ST1:';
@@ -82,6 +82,12 @@ const MIGRATIONS: Record<number, Migration> = {
   /** Version 9 adds the crowd change for the next home match (Stage 6.5). */
   8: (save) => {
     (save.story as Record<string, unknown>).gate = null;
+    return save;
+  },
+  /** Version 10 adds deadline day (Stage 6.6); a save already in a window's last week gets its war room now. */
+  9: (save) => {
+    save.deadline = null;
+    openDeadlineIfDue(save as unknown as Career);
     return save;
   },
 };

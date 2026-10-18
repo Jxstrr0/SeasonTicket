@@ -14,3 +14,4 @@ export * from './story';
 export * from './news';
 export * from './press';
 export * from './rivalry';
+export * from './deadline';

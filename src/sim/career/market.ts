@@ -174,7 +174,7 @@ function neededKeeper(career: Career, player: Player): boolean {
 }
 
 /** Whether the user can lose this player without breaking the squad rules. */
-function canLose(career: Career, player: Player): string | null {
+export function canLose(career: Career, player: Player): string | null {
   const squad = squadOf(career, career.userTeamId);
   if (squad.length <= T.userMinSquad) return `You need at least ${T.userMinSquad} players.`;
   if (player.position === 'GK' && goalkeepers(squad) <= T.minGoalkeepers) return `You need at least ${T.minGoalkeepers} goalkeepers.`;
@@ -197,24 +197,10 @@ function roomToSign(career: Career): string | null {
  * his wage demand for `years` seasons.
  */
 export function bidForPlayer(career: Career, playerId: string, fee: number, years: number): DealResult {
-  const league = career.season.league;
-  const player = league.players[playerId];
-  if (!player || !player.teamId || player.teamId === career.userTeamId) return fail('That player is not at another club.');
-  if (!transferWindowOpen(career)) return fail('The transfer window is shut.');
-  const room = roomToSign(career);
-  if (room) return fail(room);
-  const seller = teamById(league, player.teamId);
-  if (seller.playerIds.length <= T.minSquad) return fail(`${seller.shortName} have too few players to sell.`);
-  if (neededKeeper(career, player)) return fail(`${seller.shortName} won't sell a keeper they need.`);
-  if (career.loansIn.some((l) => l.playerId === playerId)) return fail('He is already with you on loan.');
-
-  const wage = wageDemand(career, player, career.userTeamId);
-  const limits = spendingLimits(career);
-  if (limits.locked && fee > 0) return fail('The spending lock forbids transfer fees.');
-  if (fee > limits.maxFee) return fail(`The lenders cap fees at ${money(limits.maxFee)}.`);
-  if (wage > limits.maxWage) return fail(`His wage demand (${money(wage)}) is over the lenders' limit.`);
-  const books = userBooks(career);
-  if (fee > books.cash) return fail(`You have ${money(books.cash)} in the bank.`);
+  const player = career.season.league.players[playerId];
+  const blocked = buyBlocked(career, player, fee);
+  if (blocked) return fail(blocked);
+  const seller = teamById(career.season.league, player.teamId!);
 
   const asking = userAskingPrice(career, player);
   const standing = career.counters[playerId];
@@ -230,14 +216,48 @@ export function bidForPlayer(career: Career, playerId: string, fee: number, year
     return fail(`${seller.shortName} turned it down. They value him far higher.`);
   }
 
-  spend(books, 'transfers', fee);
+  return completeBuy(career, player, fee, years);
+}
+
+/** Why the user can't buy this player for this fee now, or null. */
+function buyBlocked(career: Career, player: Player | undefined, fee: number): string | null {
+  if (!player || !player.teamId || player.teamId === career.userTeamId) return 'That player is not at another club.';
+  if (!transferWindowOpen(career)) return 'The transfer window is shut.';
+  const room = roomToSign(career);
+  if (room) return room;
+  const seller = teamById(career.season.league, player.teamId);
+  if (seller.playerIds.length <= T.minSquad) return `${seller.shortName} have too few players to sell.`;
+  if (neededKeeper(career, player)) return `${seller.shortName} won't sell a keeper they need.`;
+  if (career.loansIn.some((l) => l.playerId === player.id)) return 'He is already with you on loan.';
+  const wage = wageDemand(career, player, career.userTeamId);
+  const limits = spendingLimits(career);
+  if (limits.locked && fee > 0) return 'The spending lock forbids transfer fees.';
+  if (fee > limits.maxFee) return `The lenders cap fees at ${money(limits.maxFee)}.`;
+  if (wage > limits.maxWage) return `His wage demand (${money(wage)}) is over the lenders' limit.`;
+  const books = userBooks(career);
+  if (fee > books.cash) return `You have ${money(books.cash)} in the bank.`;
+  return null;
+}
+
+function completeBuy(career: Career, player: Player, fee: number, years: number): DealResult {
+  const seller = teamById(career.season.league, player.teamId!);
+  const wage = wageDemand(career, player, career.userTeamId);
+  spend(userBooks(career), 'transfers', fee);
   earn(career.books[seller.id], 'playerSales', fee);
   ownerMemory(career, seller.id, OWNER_MEMORY.buy);
-  reportTransfer(career, { playerId, name: playerName(player), fromId: seller.id, toId: career.userTeamId, fee, how: 'fee' });
+  reportTransfer(career, { playerId: player.id, name: playerName(player), fromId: seller.id, toId: career.userTeamId, fee, how: 'fee' });
   movePlayer(career, player, career.userTeamId);
   player.contract = { wage, years: clamp(Math.round(years), T.contractYears.min, T.contractYears.max) };
   addInbox(career, 'transfer', `Signed ${playerName(player)}`, `${playerName(player)} joins from ${seller.shortName} for ${money(fee)} on ${money(wage)} a season for ${player.contract.years} years.`);
   return { ok: true, message: `${playerName(player)} has signed.` };
+}
+
+/** A deal already agreed at this fee (deadline day): the usual checks, no haggling. */
+export function buyAtFee(career: Career, playerId: string, fee: number, years: number): DealResult {
+  const player = career.season.league.players[playerId];
+  const blocked = buyBlocked(career, player, fee);
+  if (blocked) return fail(blocked);
+  return completeBuy(career, player, fee, years);
 }
 
 export function signFreeAgent(career: Career, playerId: string, years: number): DealResult {
@@ -345,7 +365,7 @@ export function renewContract(career: Career, playerId: string, years: number): 
 }
 
 /** Clubs that could afford a fee, richest first. */
-function buyers(career: Career, exceptTeamId: string, fee: number): Team[] {
+export function buyers(career: Career, exceptTeamId: string, fee: number): Team[] {
   return career.season.league.teams
     .filter((t) => t.id !== exceptTeamId && t.id !== career.userTeamId)
     .filter((t) => t.playerIds.length < T.maxSquad && career.books[t.id].cash * T.aiMaxFeeShareOfCash >= fee)
@@ -393,6 +413,32 @@ export function acceptBid(career: Career, bidId: string): DealResult {
   ownerMemory(career, buyer.id, OWNER_MEMORY.accept);
   sellToAi(career, player, buyer, bid.fee, 'Bid accepted');
   return { ok: true, message: `${playerName(player)} sold to ${buyer.shortName} for ${money(bid.fee)}.` };
+}
+
+/** Sells your player to a club at an agreed fee (a deadline-day late bid). */
+export function sellAtFee(career: Career, playerId: string, buyerId: string, fee: number): DealResult {
+  const player = career.season.league.players[playerId];
+  if (!player || player.teamId !== career.userTeamId) return fail('He is no longer yours to sell.');
+  if (!transferWindowOpen(career)) return fail('The transfer window is shut.');
+  const blocked = canLose(career, player);
+  if (blocked) return fail(blocked);
+  const buyer = teamById(career.season.league, buyerId);
+  if (buyer.playerIds.length >= T.maxSquad) return fail(`${buyer.shortName} have no room left.`);
+  ownerMemory(career, buyer.id, OWNER_MEMORY.accept);
+  sellToAi(career, player, buyer, fee, 'Deadline deal');
+  return { ok: true, message: `${playerName(player)} sold to ${buyer.shortName} for ${money(fee)}.` };
+}
+
+/** One AI club buys another's player (a deadline-day hijack or the late flurry). */
+export function aiTransfer(career: Career, player: Player, buyer: Team, fee: number, rng: Rng): void {
+  const wage = wageDemand(career, player, buyer.id);
+  sellToAiSilently(career, player, buyer, fee);
+  player.contract = { wage, years: rng.int(2, 4) };
+}
+
+/** One more round of AI deals (deadline day's last-minute flurry). */
+export function aiDealsRound(career: Career, rng: Rng): void {
+  aiDeals(career, rng);
 }
 
 export function rejectBid(career: Career, bidId: string): void {

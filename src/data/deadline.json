@@ -1,0 +1,159 @@
+{
+  "_about": "Deadline-day text (Stage 6.6, src/sim/career/deadline.ts). Fills: {player} {first} {pos} {club} (the other club) {rival} (the club trying a hijack) {fee} {wage} {person} (the caller) {short} (your club) {hour}. Each list is drawn from at random. Callers' gender is never stated.",
+  "open": {
+    "pre": "The pre-season window shuts tonight at 23:00. The war room is set up: phones charged, whiteboard wiped, coffee on. Take the calls yourself, or leave it to the staff.",
+    "mid": "The mid-season window shuts tonight at 23:00. The war room is set up: phones charged, whiteboard wiped, coffee on. Take the calls yourself, or leave it to the staff."
+  },
+  "lateBid": {
+    "title": ["Late bid for {player}", "{club} want {player}", "Bid in for {player}"],
+    "text": [
+      "{person} from {club} is on the line: {fee} for {player}, today only.",
+      "{club} have come in late for {player}. {fee}, and they want an answer before they look elsewhere.",
+      "\"We both know how today works,\" says {person} at {club}. {fee} for {player}."
+    ],
+    "yes": "Accept {fee}",
+    "more": "Ask for more",
+    "no": "Turn it down",
+    "accepted": "{player} is off to {club} for {fee}.",
+    "raised": "{club} sigh, then go up to {fee}. Their offer stands for another hour.",
+    "walked": "{club} won't go higher and hang up.",
+    "declined": "You tell {club} {player} isn't for sale.",
+    "lapsed": "{club} gave up waiting and moved on.",
+    "failed": "The deal for {player} fell through: {reason}"
+  },
+  "panicSale": {
+    "title": ["{club} need cash", "Bargain at {club}?", "{club} are selling"],
+    "text": [
+      "{club} have bills to pay. {person} offers {player} ({pos}) for {fee}, well under his value, if it's done tonight.",
+      "{person} at {club} sounds tired: \"{player}, {fee}, no haggling. We need the money by midnight.\"",
+      "A fire sale at {club}: {player} ({pos}) is yours for {fee}. He'd want {wage} a season."
+    ],
+    "yes": "Buy for {fee}",
+    "no": "Pass",
+    "accepted": "{player} joins from {club} for {fee}.",
+    "declined": "You pass on {player}.",
+    "lapsed": "{club} found a buyer elsewhere, or got tired of waiting.",
+    "failed": "The deal for {player} fell through: {reason}"
+  },
+  "freeAgent": {
+    "title": ["An agent calls about {player}", "Free agent: {player}", "{player} is available"],
+    "text": [
+      "{person}, an agent, has a {pos} without a club: {player}. No fee, {wage} a season, and he can be at the training ground tomorrow.",
+      "\"I've got just the player for you,\" says {person}. {player} ({pos}) is a free agent and wants {wage} a season.",
+      "{person} represents {player}, a {pos} who's been training alone for weeks. He's yours for {wage} a season."
+    ],
+    "yes": "Sign him",
+    "no": "No thanks",
+    "accepted": "{player} signs on a free.",
+    "declined": "You tell {person} you're covered at {pos}.",
+    "lapsed": "{person} has taken {player} elsewhere.",
+    "failed": "{player} can't sign: {reason}"
+  },
+  "hijack": {
+    "title": ["{rival} close in on {player}", "Hijack chance: {player}", "{player} is about to sign for {rival}"],
+    "text": [
+      "Word from the scouts: {rival} are about to sign {player} ({pos}) from {club} for {fee}. {club} would take more from you. Move now or he's gone.",
+      "{player} is having his medical at {rival} as we speak. {club} would rather sell to you at {beat}.",
+      "{person} at {club} tips you off: {rival} have agreed {fee} for {player}. Beat it, at {beat}, in the next hour and he's yours."
+    ],
+    "yes": "Gazump them at {beat}",
+    "no": "Let it go",
+    "accepted": "You snatch {player} from under {rival}'s noses for {beat}.",
+    "declined": "{player} signs for {rival}.",
+    "lapsed": "Too late: {player} signs for {rival}.",
+    "gone": "{rival}'s deal for {player} collapsed in the end.",
+    "failed": "You couldn't beat {rival} to {player}: {reason}"
+  },
+  "flavour": [
+    {
+      "title": "A cousin calls",
+      "text": "{person} says they're the cousin of a famous international and that he'd love to play for {short}. The famous international has never heard of {short}.",
+      "yes": "Take a number",
+      "no": "Hang up",
+      "yesResult": "You write the number on a napkin. The napkin goes in the bin at midnight.",
+      "noResult": "You hang up. The phone rings again straight away. You don't answer."
+    },
+    {
+      "title": "Fax machine",
+      "text": "Someone has faxed a transfer request to the war room. Nobody knew the club still had a fax machine.",
+      "yes": "Read it",
+      "no": "Unplug it",
+      "yesResult": "It's from a youth player asking for a move to the first team. Bold. You pass it to the academy.",
+      "noResult": "The fax machine goes quiet. A historic moment for the club."
+    },
+    {
+      "title": "Reporter outside",
+      "text": "A reporter from the local paper is outside the window with a sign saying \"ANY NEWS?\"",
+      "yes": "Wave",
+      "no": "Close the blinds",
+      "yesResult": "Tomorrow's paper: \"Owner waves, refuses to deny anything.\"",
+      "noResult": "The blinds come down. The sign now says \"PLEASE\"."
+    },
+    {
+      "title": "Pizza order",
+      "text": "{person} from the kit room asks what everyone wants on the pizzas. It's going to be a long night.",
+      "yes": "Order for everyone",
+      "no": "Just coffee",
+      "yesResult": "Morale in the war room rises. So does the bill, slightly.",
+      "noResult": "The staff drink their fourth coffee in silence."
+    },
+    {
+      "title": "Wrong number",
+      "text": "A caller asks if this is the bakery. It is not the bakery.",
+      "yes": "Take their order anyway",
+      "no": "Say it's a wrong number",
+      "yesResult": "You promise them a sourdough by Friday. Someone will have to deal with that.",
+      "noResult": "They apologise and hang up. A rare easy call today."
+    },
+    {
+      "title": "Video highlights",
+      "text": "{person}, an agent, has emailed a highlights reel of a winger. Every clip is the same goal from different angles.",
+      "yes": "Watch it",
+      "no": "Delete it",
+      "yesResult": "It's a very good goal. It is also, you notice, against a team of under-12s.",
+      "noResult": "Deleted. The agent emails it again within a minute."
+    },
+    {
+      "title": "The head coach pops in",
+      "text": "{coach} pops in to say they'd \"love a left-footer\" and leaves again before anyone can ask who.",
+      "yes": "Ask the scouts",
+      "no": "Carry on",
+      "yesResult": "The scouts produce a list of left-footers. It's long. Nobody reads it.",
+      "noResult": "You carry on. The head coach sends a text: \"or a right-footer, either is fine\"."
+    },
+    {
+      "title": "Rival owner's text",
+      "text": "{person} sends a text from another club: \"Busy day? 😄\". It's hard to tell if they mean it kindly.",
+      "yes": "Reply with a thumbs up",
+      "no": "Leave them on read",
+      "yesResult": "The reply comes back: \"👍\". Diplomacy.",
+      "noResult": "They stay on read. You feel a small, petty satisfaction."
+    }
+  ],
+  "closed": {
+    "title": "The window has shut",
+    "busy": "The window shut at 23:00. In: {ins}. Out: {outs}.",
+    "quiet": "The window shut at 23:00 with no business done.",
+    "staff": "The staff ran the war room for you."
+  },
+  "frontPage": {
+    "busy": [
+      "Deadline day: {short} do business|{short} were busy as the window shut. In: {ins}. Out: {outs}. {elsewhere}",
+      "Late, late show at {short}|The phones never stopped at {short} last night. In: {ins}. Out: {outs}. {elsewhere}"
+    ],
+    "ins": [
+      "{short} strengthen as the window shuts|{short} added to the squad on deadline day. In: {ins}. {elsewhere}",
+      "{short} bring in reinforcements|Deadline day at {short}: in came {ins}. Nobody left. {elsewhere}"
+    ],
+    "outs": [
+      "{short} cash in on deadline day|{short} sold as the window shut. Out: {outs}. Nobody came in. {elsewhere}",
+      "Goodbyes at {short}|{short} let players go on deadline day. Out: {outs}. {elsewhere}"
+    ],
+    "quiet": [
+      "Quiet deadline day for {short}|No ins and no outs at {short} as the window shut. {elsewhere}",
+      "{short} stand still|The window shut without any business at {short}. {elsewhere}"
+    ],
+    "elsewhere": "Elsewhere: {player} moved from {from} to {to} for {fee}.",
+    "nothingElsewhere": "Elsewhere it was a quiet night."
+  }
+}

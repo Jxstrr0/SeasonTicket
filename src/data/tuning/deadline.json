@@ -1,0 +1,53 @@
+{
+  "_about": "Deadline day (Stage 6.6, src/sim/career/deadline.ts). The last week of each transfer window opens a war room: a clock from startHour to endHour that the owner moves on one hour at a time. Each hour may bring calls; each call lapses when the clock reaches its expiry. Text lives in src/data/deadline.json.",
+  "startHour": 9,
+  "endHour": 23,
+  "calls": {
+    "_about": "perHour: chance of a call in an hour, by the hour it starts from (busier late). second: chance of another call in the same hour. maxTotal: calls in one day. maxOpen: calls waiting at once. The first hour always brings one.",
+    "perHour": [[9, 0.55], [12, 0.45], [16, 0.6], [19, 0.75], [21, 0.9]],
+    "second": 0.25,
+    "maxTotal": 12,
+    "maxOpen": 3
+  },
+  "kinds": {
+    "_about": "Relative chance of each kind of call. expires: hours a call waits before it lapses.",
+    "lateBid": { "weight": 3, "expires": 2 },
+    "panicSale": { "weight": 2, "expires": 2 },
+    "freeAgent": { "weight": 1.5, "expires": 3 },
+    "hijack": { "weight": 1.5, "expires": 1 },
+    "flavour": { "weight": 1.2, "expires": 1 }
+  },
+  "lateBid": {
+    "_about": "A club bids for one of your players. share: fee as a share of his value. more: asking for more succeeds with this chance and lifts the fee by a share in raise; a failed ask ends the call.",
+    "share": { "min": 0.95, "max": 1.45 },
+    "more": { "chance": 0.55, "raise": { "min": 0.08, "max": 0.2 } }
+  },
+  "panicSale": {
+    "_about": "A club short of cash offers a player cheap. share: fee as a share of value. minOverall: the player must be at least this close to your average starter (negative means below).",
+    "share": { "min": 0.55, "max": 0.8 },
+    "minOverall": -3,
+    "years": 3
+  },
+  "freeAgent": {
+    "_about": "An agent offers a free agent for your weakest position. quality: generatePlayer quality (0 to 1).",
+    "quality": { "min": 0.3, "max": 0.55 },
+    "years": 2
+  },
+  "hijack": {
+    "_about": "Another club is about to sign a player from a third club for fee; you can beat them to it at fee x beat. If you don't, they sign him when the call lapses.",
+    "share": { "min": 0.9, "max": 1.2 },
+    "beat": 1.15,
+    "minOverall": -2,
+    "years": 3
+  },
+  "staff": {
+    "_about": "When the owner leaves the staff to it (or never opens the war room): they accept a late bid only at fee >= value x acceptShare for a player outside the starting eleven while the squad is bigger than keepSquad, and never spend the owner's money.",
+    "acceptShare": 1.3,
+    "keepSquad": 21
+  },
+  "flurry": {
+    "_about": "Extra rounds of AI deals as the window shuts.",
+    "rounds": 2
+  },
+  "frontPageWeight": 70
+}
