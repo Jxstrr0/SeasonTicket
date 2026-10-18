@@ -571,10 +571,15 @@ function likes(ctx: Ctx, big: boolean): number {
 }
 
 /** A line the feed hasn't shown lately, if there is one. */
-function fresh(ctx: Ctx, list: readonly string[], vars: Vars = {}): string {
+/** The lines in list not posted lately (or the whole list if every one has been). */
+function unused(ctx: Ctx, list: readonly string[], vars: Vars = {}): string[] {
   const recent = new Set([...ctx.posts, ...ctx.career.news.posts.slice(0, S.freshWindow)].map((p) => p.text));
-  const unused = list.filter((t) => !recent.has(cap(fillText(t, { ...ctx.base, ...vars }))) && !recent.has(fillText(t, { ...ctx.base, ...vars })));
-  return ctx.rng.pick(unused.length ? unused : list);
+  const left = list.filter((t) => !recent.has(cap(fillText(t, { ...ctx.base, ...vars }))) && !recent.has(fillText(t, { ...ctx.base, ...vars })));
+  return left.length ? left : [...list];
+}
+
+function fresh(ctx: Ctx, list: readonly string[], vars: Vars = {}): string {
+  return ctx.rng.pick(unused(ctx, list, vars));
 }
 
 function fanPost(ctx: Ctx, kind: PostKind, text: string, vars: Vars, tone: SocialPost['tone'], from: Team = userTeam(ctx.career), big = false): void {
@@ -593,12 +598,13 @@ function socialPosts(ctx: Ctx): void {
     const vars = resultVars(ctx, m);
     const tone = m.kind === 'win' || m.kind === 'bigWin' ? 'up' : m.kind === 'draw' ? 'flat' : 'down';
     const big = m.kind === 'bigWin' || m.kind === 'bigLoss';
-    const pool = [...F[m.kind]];
+    const pool = unused(ctx, F[m.kind], vars);
     for (let i = 0; i < 2 && pool.length; i++) fanPost(ctx, 'fan', pool.splice(rng.int(0, pool.length - 1), 1)[0], vars, tone, t, big && i === 0);
     if (rng.chance(S.rivalChance)) {
       const oppWon = m.kind === 'loss' || m.kind === 'bigLoss';
-      const text = oppWon ? rng.pick(SOCIAL.rival.slice(0, 3)) : SOCIAL.rival[3];
-      fanPost(ctx, 'rival', text, { ...vars, score: score(m.them, m.us) }, oppWon ? 'down' : 'flat', team(career, m.oppId));
+      const side = oppWon ? 'won' : m.kind === 'draw' ? 'drew' : 'lost';
+      const rivalVars = { ...vars, score: score(m.them, m.us) };
+      fanPost(ctx, 'rival', fresh(ctx, SOCIAL.rival[side], rivalVars), rivalVars, oppWon ? 'down' : 'flat', team(career, m.oppId));
     }
   }
   if (transferWindowOpen(career) && rng.chance(S.rumourChanceWindow)) rumour(ctx);

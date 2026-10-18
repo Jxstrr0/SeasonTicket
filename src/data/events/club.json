@@ -1,0 +1,394 @@
+{
+  "_about": "Club-life events (Stage 6.7): the training ground, the community, the backroom and the odd light moment. Same format and fills as everyday.json.",
+  "events": [
+    {
+      "id": "training-camp",
+      "role": "coach",
+      "when": { "phase": ["preseason"] },
+      "amount": 120000,
+      "maxPerSeason": 1,
+      "title": "{coach} wants a training camp",
+      "text": "{coach} has found a camp in the hills: two weeks of altitude, good pitches and no distractions. \"We'd start the season fitter than anyone. It isn't cheap.\"",
+      "staff": "local",
+      "choices": [
+        { "id": "camp", "label": "Book the camp", "hint": "Costs {amount}. The squad will be sharper and closer.", "result": "The squad flies out. The photos from the hills look good.", "effects": [{ "cash": -1, "line": "operations" }, { "squad": 0.04 }] },
+        { "id": "local", "label": "Train at home with a few extra days", "hint": "Costs {half}. A smaller lift.", "result": "Double sessions at the training ground. The players grumble, then get on with it.", "effects": [{ "cash": -0.5, "line": "operations" }, { "squad": 0.015 }] },
+        { "id": "no", "label": "No budget for it", "hint": "No cost. {coach} won't hide the disappointment.", "result": "{coach} nods slowly and goes back to the cones.", "effects": [{ "squad": -0.02 }] }
+      ]
+    },
+    {
+      "id": "data-analyst",
+      "role": "coach",
+      "when": { "phase": ["season"], "weekMin": 5 },
+      "amount": 70000,
+      "maxPerSeason": 1,
+      "cooldown": 30,
+      "title": "{coach} wants an analyst",
+      "text": "{coach} has a laptop open: \"Every club above us has an analyst. Someone to cut the video, track the numbers, find the patterns. I'm doing it at midnight myself.\"",
+      "staff": "part",
+      "choices": [
+        { "id": "hire", "label": "Hire one full time", "hint": "Costs {amount}. The squad likes being told what to expect.", "result": "The new analyst arrives with three monitors and a lot of opinions.", "effects": [{ "cash": -1, "line": "staffWages" }, { "squad": 0.03 }] },
+        { "id": "part", "label": "A student, part time", "hint": "Costs {half}. Some help.", "result": "A student from the university starts on Monday. Keen, slightly scared.", "effects": [{ "cash": -0.5, "line": "staffWages" }, { "squad": 0.01 }] },
+        { "id": "no", "label": "Trust your eyes", "hint": "No cost. {coach} goes back to midnight video.", "result": "\"Right. More coffee, then.\"", "effects": [{ "squad": -0.01 }] }
+      ]
+    },
+    {
+      "id": "captain-meeting",
+      "role": "player",
+      "when": { "phase": ["season"], "lostRun": 2, "subject": "captain" },
+      "maxPerSeason": 1,
+      "cooldown": 12,
+      "title": "{player} asks for a players-only meeting",
+      "text": "{player}, the senior man in the dressing room, stops you in the corridor. \"Two bad results. Let the lads have the room to themselves for an hour. No staff, no owner. We'll sort it.\"",
+      "staff": "allow",
+      "choices": [
+        { "id": "allow", "label": "Give them the room", "hint": "Trusting the players usually pays off. He'll appreciate it.", "result": "The door stays shut for ninety minutes. Raised voices, then laughter.", "effects": [{ "squad": 0.03 }, { "mood": 0.1 }] },
+        { "id": "join", "label": "Say the owner should be there", "hint": "They'll hear you, but it's not what he asked for.", "result": "You speak first. The players listen politely. It isn't quite the same.", "effects": [{ "squad": 0.01 }, { "mood": -0.06 }] },
+        { "id": "no", "label": "The coach runs this dressing room", "hint": "Backs {coach}; {first} feels overruled.", "result": "{first} shrugs. \"Your call.\"", "effects": [{ "mood": -0.1 }] }
+      ]
+    },
+    {
+      "id": "homesick",
+      "role": "player",
+      "when": { "phase": ["season"], "weekMin": 3, "subject": "any" },
+      "amount": 25000,
+      "weight": 0.8,
+      "title": "{player} is homesick",
+      "text": "{coach} has noticed {player} going quiet in training. It turns out he hasn't seen his family in months, and the new flat still has no curtains.",
+      "staff": "days",
+      "choices": [
+        { "id": "family", "label": "Fly his family over", "hint": "Costs {amount}. He'll remember it.", "result": "His family land on Thursday. {first} scores in training on Friday.", "effects": [{ "cash": -1, "line": "operations" }, { "mood": 0.2 }] },
+        { "id": "days", "label": "Give him a few days at home", "hint": "No cost. He misses training; a small lift.", "result": "{first} comes back rested and with a suitcase of home cooking.", "effects": [{ "mood": 0.1 }, { "squad": -0.005 }] },
+        { "id": "settle", "label": "Tell him he'll settle in", "hint": "No cost. It may not help.", "result": "{first} nods. The curtains remain a problem.", "effects": [{ "mood": -0.06 }] }
+      ]
+    },
+    {
+      "id": "social-gaffe",
+      "role": "reporter",
+      "when": { "subject": "young" },
+      "weight": 0.8,
+      "title": "{player}'s late-night post",
+      "text": "{player} posted a video at 1am ranking the club's away kits. He called the current one \"a traffic cone\". {person} from the Courier would like a comment.",
+      "staff": "laugh",
+      "choices": [
+        { "id": "laugh", "label": "Laugh it off", "hint": "The fans will enjoy it. The kit maker won't.", "result": "\"He's not wrong about the orange,\" you say. The clip does the rounds.", "news": "{us} owner sees the funny side|The owner laughed off a young player's verdict on the away kit. The kit maker declined to comment.", "effects": [{ "fans": 0.02 }, { "goodwill": -0.04 }, { "mood": 0.05 }] },
+        { "id": "delete", "label": "Have him delete it and apologise", "hint": "Keeps the sponsors happy; he'll feel told off.", "result": "The video comes down. The apology is very formal.", "effects": [{ "goodwill": 0.02 }, { "mood": -0.08 }] },
+        { "id": "fine", "label": "Fine him a week's wages", "hint": "Firm. The press will call it heavy-handed.", "result": "Fined. Somehow the video now has twice the views.", "effects": [{ "mood": -0.15 }, { "press": -0.02 }] }
+      ]
+    },
+    {
+      "id": "fan-podcast",
+      "role": "reporter",
+      "when": {},
+      "weight": 0.9,
+      "cooldown": 14,
+      "title": "The fan podcast wants you",
+      "text": "{person} hosts \"Full Time at {stadium}\", the fans' podcast. They'd love an hour with the owner. \"No script. The fans want to hear from you.\"",
+      "staff": "assistant",
+      "choices": [
+        { "id": "go", "label": "Go on and take every question", "hint": "The fans like an owner who turns up. The press will pick at your answers.", "result": "Ninety minutes, three hard questions and one about the pies. The fans approve.", "effects": [{ "fans": 0.03 }, { "press": -0.01 }] },
+        { "id": "assistant", "label": "Send {assistant} instead", "hint": "A safe hour of talk.", "result": "{assistant} talks about pressing for forty minutes. The listeners are split.", "effects": [{ "fans": 0.005 }] },
+        { "id": "no", "label": "Decline politely", "hint": "Nothing lost, though they'll mention it.", "result": "The next episode opens with \"we did ask\".", "effects": [{ "fans": -0.01 }] }
+      ]
+    },
+    {
+      "id": "owner-award",
+      "role": "reporter",
+      "when": { "pressAbove": 0.58 },
+      "maxPerSeason": 1,
+      "cooldown": 30,
+      "title": "You're up for an award",
+      "text": "{person} rings from the Courier: you've been shortlisted for Club Executive of the Year at the regional sports awards. Black tie, long speeches, small trophy.",
+      "staff": "send",
+      "choices": [
+        { "id": "go", "label": "Go, and prepare a speech", "hint": "Good for your standing with the press.", "result": "You don't win, but your speech gets the biggest laugh of the night.", "effects": [{ "press": 0.04 }] },
+        { "id": "send", "label": "Send {assistant}", "hint": "A little goodwill.", "result": "{assistant} accepts the runner-up certificate with great dignity.", "effects": [{ "press": 0.01 }] },
+        { "id": "no", "label": "Awards aren't your thing", "hint": "The paper may call it aloof.", "result": "The Courier notes your absence in one dry sentence.", "effects": [{ "press": -0.02 }] }
+      ]
+    },
+    {
+      "id": "kit-delay",
+      "role": "staffer",
+      "when": { "phase": ["preseason"] },
+      "amount": 40000,
+      "maxPerSeason": 1,
+      "title": "The new kit is stuck",
+      "text": "{person} from the kit room has bad news: the new home shirts are sitting in a warehouse three countries away. \"They say two weeks. They said two weeks last week.\"",
+      "staff": "old",
+      "choices": [
+        { "id": "rush", "label": "Pay for express delivery", "hint": "Costs {amount}. The shirts arrive for the opener.", "result": "The boxes arrive with a day to spare. The shop opens on time.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.01 }] },
+        { "id": "old", "label": "Start in last season's kit", "hint": "No cost. Some fans will moan.", "result": "The team starts in last year's shirts. Nobody on the pitch minds.", "effects": [{ "fans": -0.01 }] },
+        { "id": "print", "label": "Get a local printer to make a batch", "hint": "Costs {half}. A story the fans will like.", "result": "A printer in {city} works through the night. The shirts are a slightly different green.", "news": "{us} rescued by local printer|A kit delay was solved by a small firm in the city, who worked through the night.", "effects": [{ "cash": -0.5, "line": "operations" }, { "fans": 0.02 }, { "press": 0.01 }] }
+      ]
+    },
+    {
+      "id": "kitman-retires",
+      "role": "staffer",
+      "when": { "phase": ["season"], "weekMin": 8 },
+      "amount": 20000,
+      "maxPerSeason": 1,
+      "cooldown": 80,
+      "weight": 0.6,
+      "title": "The kit manager is retiring",
+      "text": "{person} has washed the club's shirts for thirty-one years and is retiring at the end of the month. The players want to do something.",
+      "staff": "do",
+      "choices": [
+        { "id": "do", "label": "Throw a proper send-off", "hint": "Costs {amount}. The squad and the fans will love it.", "result": "A guard of honour before the next home match. {person} cries, and so do several players.", "news": "{us} say goodbye to kit manager after 31 years|A guard of honour, a standing ovation and a framed shirt.", "effects": [{ "cash": -1, "line": "operations" }, { "squad": 0.02 }, { "fans": 0.02 }] },
+        { "id": "card", "label": "A card and a cake in the canteen", "hint": "No real cost.", "result": "Everyone signs the card. The cake is gone in four minutes.", "effects": [{ "squad": 0.005 }] }
+      ]
+    },
+    {
+      "id": "groundsman-mower",
+      "role": "staffer",
+      "when": {},
+      "amount": 45000,
+      "weight": 0.7,
+      "cooldown": 40,
+      "title": "The groundsman wants a new mower",
+      "text": "{person}, the head groundsman, has the old mower in pieces on the workshop floor. \"She's done. Twenty years. I can keep the pitch right for you, but not with this.\"",
+      "staff": "fix",
+      "choices": [
+        { "id": "buy", "label": "Buy the best one", "hint": "Costs {amount}. A pitch the players will love.", "result": "The new mower arrives with a bow on it. {person} is quietly delighted.", "effects": [{ "cash": -1, "line": "operations" }, { "squad": 0.01 }] },
+        { "id": "fix", "label": "Repair the old one", "hint": "Costs {half}. It'll do.", "result": "The old mower coughs back into life. For now.", "effects": [{ "cash": -0.5, "line": "operations" }] },
+        { "id": "no", "label": "Make it last the season", "hint": "No cost. The pitch may suffer.", "result": "{person} sighs and reaches for the spanner.", "effects": [{ "squad": -0.01 }] }
+      ]
+    },
+    {
+      "id": "school-visit",
+      "role": "fans",
+      "when": { "phase": ["season"] },
+      "weight": 0.9,
+      "title": "A school asks for a visit",
+      "text": "{person}, a teacher at a primary school in {city}, has written: their class has been doing a project on {short} all term. Could a couple of players drop in?",
+      "staff": "two",
+      "choices": [
+        { "id": "squad", "label": "Send the whole first team", "hint": "The fans and the press will love it. A tiring afternoon.", "result": "Thirty children, twenty-five players, one very loud assembly.", "news": "{us} players surprise school class|The whole first team turned up at a {city} primary school.", "effects": [{ "fans": 0.03 }, { "press": 0.02 }, { "squad": -0.01 }] },
+        { "id": "two", "label": "Send two players", "hint": "A nice afternoon for everyone.", "result": "Two players, a lot of drawings, and one question about their salary.", "effects": [{ "fans": 0.01 }] },
+        { "id": "no", "label": "Send signed photos instead", "hint": "Easy, but a bit cold.", "result": "The photos go up on the classroom wall. It isn't the same.", "effects": [] }
+      ]
+    },
+    {
+      "id": "away-coaches",
+      "role": "fans",
+      "when": { "phase": ["season"], "awayNext": true, "weekMin": 3 },
+      "amount": 30000,
+      "weight": 0.9,
+      "cooldown": 12,
+      "title": "Help the away fans travel",
+      "text": "{person} from the travelling supporters' club asks if the club can pay for coaches to the {opponent} game. \"It's a long way and a work day. We'd fill a whole end with your help.\"",
+      "staff": "half",
+      "choices": [
+        { "id": "pay", "label": "Pay for the coaches", "hint": "Costs {amount}. The fans won't forget it.", "result": "Twelve coaches leave at dawn. The away end is full and loud.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.04 }, { "squad": 0.01 }] },
+        { "id": "half", "label": "Pay half the cost", "hint": "Costs {half}. A good gesture.", "result": "Six coaches go. They make enough noise for twelve.", "effects": [{ "cash": -0.5, "line": "matchday" }, { "fans": 0.015 }] },
+        { "id": "no", "label": "Not this time", "hint": "No cost. The regulars will travel anyway.", "result": "{person} says they understand. They don't, really.", "effects": [{ "fans": -0.01 }] }
+      ]
+    },
+    {
+      "id": "fan-tifo",
+      "role": "fans",
+      "when": { "phase": ["season"], "homeNext": true, "fansAbove": 0.5 },
+      "amount": 25000,
+      "weight": 0.8,
+      "cooldown": 15,
+      "title": "The fans want a giant banner",
+      "text": "{person} unrolls a sketch across your desk: a banner that would cover the whole home end before the {opponent} match. \"We've raised half. Could the club cover the rest?\"",
+      "staff": "half",
+      "choices": [
+        { "id": "all", "label": "Pay for all of it", "hint": "Costs {amount}. A big moment at the next home match.", "result": "The banner goes up as the teams walk out. The photos are everywhere.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.03 }, { "gate": 0.02 }] },
+        { "id": "half", "label": "Cover the other half", "hint": "Costs {half}.", "result": "The banner is finished on the morning of the match. The paint is still a bit wet.", "effects": [{ "cash": -0.5, "line": "matchday" }, { "fans": 0.02 }] },
+        { "id": "no", "label": "No budget for banners", "hint": "No cost. They'll make a smaller one.", "result": "They make a smaller banner. It says \"WE PAID FOR THIS OURSELVES\".", "effects": [{ "fans": -0.01 }] }
+      ]
+    },
+    {
+      "id": "walkout-song",
+      "role": "fans",
+      "when": {},
+      "weight": 0.6,
+      "maxPerSeason": 1,
+      "cooldown": 40,
+      "title": "A row over the walk-out song",
+      "text": "The fans' forum is at war. Half want to keep the old walk-out song, half want something from this century. {person} from the forum wants the owner to decide.",
+      "staff": "vote",
+      "choices": [
+        { "id": "old", "label": "Keep the classic", "hint": "The older fans will be pleased.", "result": "The classic stays. The comment section does not calm down.", "effects": [{ "fans": 0.005 }] },
+        { "id": "new", "label": "Pick something new", "hint": "The younger fans will be happy, the old guard won't.", "result": "The new song gets a mixed reception. By the third home game people are singing along.", "effects": [{ "fans": -0.005 }, { "press": 0.005 }] },
+        { "id": "vote", "label": "Let the fans vote", "hint": "Everyone gets a say.", "result": "Twelve thousand votes. The classic wins by 41. Someone demands a recount.", "effects": [{ "fans": 0.015 }] }
+      ]
+    },
+    {
+      "id": "community-pitch",
+      "role": "councillor",
+      "when": {},
+      "amount": 80000,
+      "weight": 0.8,
+      "cooldown": 30,
+      "maxPerSeason": 1,
+      "title": "A pitch for the community",
+      "text": "Councillor {person} has a plan: an all-weather pitch on the old car park across the river, for local kids' teams. The council will match whatever the club puts in.",
+      "staff": "half",
+      "choices": [
+        { "id": "fund", "label": "Fund it properly", "hint": "Costs {amount}. The city and the press will love it.", "result": "Spades go into the ground a month later. Your name is on the plaque.", "news": "{us} fund new community pitch|The club and the council are building an all-weather pitch for local youth teams.", "effects": [{ "cash": -1, "line": "academy" }, { "fans": 0.03 }, { "press": 0.03 }] },
+        { "id": "half", "label": "Put in half", "hint": "Costs {half}. A smaller pitch, still a good thing.", "result": "A smaller pitch, but the kids don't mind.", "effects": [{ "cash": -0.5, "line": "academy" }, { "fans": 0.01 }, { "press": 0.01 }] },
+        { "id": "no", "label": "Not this year", "hint": "No cost. The council will remember.", "result": "Councillor {person} says the door stays open. It sounds like a door closing.", "effects": [{ "press": -0.02 }] }
+      ]
+    },
+    {
+      "id": "night-noise",
+      "role": "councillor",
+      "when": { "phase": ["season"], "homeNext": true },
+      "amount": 35000,
+      "weight": 0.7,
+      "cooldown": 20,
+      "title": "Neighbours complain about noise",
+      "text": "Councillor {person} has a stack of letters from the houses behind the stadium: late-night traffic, horns, singing in the street. \"I'm on your side, but I need to give them something.\"",
+      "staff": "stewards",
+      "choices": [
+        { "id": "fund", "label": "Pay for better parking and buses", "hint": "Costs {amount}. The problem goes away.", "result": "Extra buses and a new car park layout. The letters stop.", "effects": [{ "cash": -1, "line": "operations" }, { "press": 0.01 }] },
+        { "id": "stewards", "label": "More stewards on the streets", "hint": "Costs {half}. Mostly works.", "result": "Stewards in yellow jackets politely ask fans to sing more quietly. It half works.", "effects": [{ "cash": -0.5, "line": "matchday" }] },
+        { "id": "no", "label": "It's a football ground; it was here first", "hint": "No cost. The press will paint it as arrogant.", "result": "The local paper runs a photo of a grumpy neighbour.", "effects": [{ "press": -0.03 }, { "fans": 0.01 }] }
+      ]
+    },
+    {
+      "id": "pitch-wedding",
+      "role": "vip",
+      "when": {},
+      "amount": 30000,
+      "weight": 0.6,
+      "cooldown": 30,
+      "title": "A wedding on the pitch",
+      "text": "{person}, a lifelong fan, wants to get married in the centre circle. \"My grandfather proposed at the old ground. It has to be here.\" They'll pay {amount} for the day.",
+      "staff": "yes",
+      "choices": [
+        { "id": "yes", "label": "Say yes and charge the fee", "hint": "Earns {amount}. The groundsman will be nervous.", "result": "The vows go well. The groundsman stands guard over the penalty spot.", "effects": [{ "cash": 1, "line": "hospitality" }] },
+        { "id": "free", "label": "Host it for free", "hint": "No money, but the fans will love the story.", "result": "The photos go everywhere. The club shop sells out of mugs.", "news": "Fan marries in the centre circle at {stadium}|The club hosted a lifelong supporter's wedding on the pitch, free of charge.", "effects": [{ "fans": 0.02 }, { "press": 0.02 }] },
+        { "id": "no", "label": "The pitch is for football", "hint": "No money and no risk.", "result": "\"The car park, perhaps?\" They don't take you up on it.", "effects": [] }
+      ]
+    },
+    {
+      "id": "celebrity-fan",
+      "role": "vip",
+      "when": { "phase": ["season"] },
+      "amount": 20000,
+      "weight": 0.7,
+      "cooldown": 20,
+      "title": "A famous fan?",
+      "text": "{person}, a singer with a hit on the radio right now, told a talk show they've \"always supported {short}\". Nobody at the club has ever seen them at a match.",
+      "staff": "ticket",
+      "choices": [
+        { "id": "box", "label": "Invite them to the directors' box", "hint": "Costs {amount} in hospitality. Good for the club's profile.", "result": "{person} turns up in the scarf, waves to the cameras and leaves at half-time.", "effects": [{ "cash": -1, "line": "matchday" }, { "goodwill": 0.04 }, { "press": 0.01 }] },
+        { "id": "ticket", "label": "Send them a season ticket", "hint": "A small gesture.", "result": "A thank-you post with the ticket gets more likes than anything the club has ever posted.", "effects": [{ "goodwill": 0.02 }] },
+        { "id": "no", "label": "Real fans pay at the gate", "hint": "The regulars will enjoy it.", "result": "The fans' forum has a field day.", "effects": [{ "fans": 0.01 }] }
+      ]
+    },
+    {
+      "id": "friendly-offer",
+      "role": "owner",
+      "when": { "phase": ["preseason"], "otherClub": true },
+      "amount": 50000,
+      "maxPerSeason": 1,
+      "title": "{owner} proposes a friendly",
+      "text": "{owner}, who owns {rival}, calls about a pre-season friendly at {stadium}. \"Good run-out for both sides. We'll split the gate.\"",
+      "staff": "yes",
+      "choices": [
+        { "id": "yes", "label": "Agree and split the gate", "hint": "Earns {amount}. {owner} will be pleased.", "result": "A sunny afternoon, a decent crowd, and nobody gets hurt.", "effects": [{ "cash": 1, "line": "tickets" }, { "owner": 0.06 }] },
+        { "id": "all", "label": "Ask for the whole gate", "hint": "Earns {double} if they agree, but {owner} won't like being squeezed.", "result": "{owner} agrees through gritted teeth.", "effects": [{ "cash": 2, "line": "tickets" }, { "owner": -0.08 }] },
+        { "id": "no", "label": "Your pre-season is planned", "hint": "No money.", "result": "\"Another time, then.\"", "effects": [{ "owner": -0.02 }] }
+      ]
+    },
+    {
+      "id": "owner-legends",
+      "role": "owner",
+      "when": { "phase": ["season"], "weekMin": 10, "otherClub": true },
+      "amount": 30000,
+      "maxPerSeason": 1,
+      "cooldown": 30,
+      "weight": 0.7,
+      "title": "A legends match for charity",
+      "text": "{owner} of {rival} suggests a charity match between the two clubs' former players. \"Old legs, good cause. And the owners play the last ten minutes.\"",
+      "staff": "yes",
+      "choices": [
+        { "id": "play", "label": "Agree, and you'll play", "hint": "Costs {amount}. The fans will love it, and {owner} will too.", "result": "You come on for the last ten minutes and touch the ball twice. The crowd cheers both times.", "news": "{us} owner plays in charity legends match|The owner came off the bench and, by most accounts, survived.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.03 }, { "owner": 0.08 }, { "press": 0.01 }] },
+        { "id": "yes", "label": "Agree, but stay in the stands", "hint": "Costs {half}. A nice day out.", "result": "A good crowd, a good cause, and a lot of grey hair on the pitch.", "effects": [{ "cash": -0.5, "line": "operations" }, { "fans": 0.01 }, { "owner": 0.04 }] },
+        { "id": "no", "label": "The calendar is too full", "hint": "No cost.", "result": "{owner} says they'll ask someone else.", "effects": [{ "owner": -0.03 }] }
+      ]
+    },
+    {
+      "id": "physio-kit",
+      "role": "staffer",
+      "when": { "phase": ["season"], "injuredAtLeast": 1 },
+      "amount": 60000,
+      "weight": 0.8,
+      "cooldown": 25,
+      "maxPerSeason": 1,
+      "title": "The physio wants new equipment",
+      "text": "{person}, the head physio, has a brochure for a recovery suite: an ice chamber, a pool and a lot of blinking lights. \"With this, the lads on the table get back sooner.\"",
+      "staff": "no",
+      "choices": [
+        { "id": "buy", "label": "Buy the full suite", "hint": "Costs {amount}. Every injured player back a week sooner.", "result": "The suite is installed in a week. The players queue to try the ice chamber, once.", "effects": [{ "cash": -1, "line": "operations" }, { "heal": 1 }, { "squad": 0.01 }] },
+        { "id": "no", "label": "Make do with the old room", "hint": "No cost.", "result": "{person} puts the brochure on the noticeboard, pointedly.", "effects": [] }
+      ]
+    },
+    {
+      "id": "local-business",
+      "role": "sponsor",
+      "when": {},
+      "amount": 40000,
+      "weight": 0.8,
+      "cooldown": 20,
+      "title": "A local firm wants in",
+      "text": "{person} runs a family bakery chain in {city} and wants their name on the pitch-side boards. \"Small money for you, big deal for us.\"",
+      "staff": "yes",
+      "choices": [
+        { "id": "yes", "label": "Take the deal", "hint": "Earns {amount}. The fans like a local name.", "result": "The boards go up. The bakery sends the staff a tray of pastries every match day.", "effects": [{ "cash": 1, "line": "sponsors" }, { "fans": 0.01 }] },
+        { "id": "discount", "label": "Give them a discount", "hint": "Earns {half}. The city will hear about it.", "result": "{person} is delighted, and tells everyone.", "effects": [{ "cash": 0.5, "line": "sponsors" }, { "fans": 0.015 }, { "press": 0.01 }] },
+        { "id": "no", "label": "Wait for a bigger brand", "hint": "No money.", "result": "{person} thanks you for your time and buys a season ticket anyway.", "effects": [] }
+      ]
+    },
+    {
+      "id": "sponsor-advert",
+      "role": "sponsor",
+      "when": { "hasSponsor": true, "phase": ["season"] },
+      "amount": 50000,
+      "weight": 0.8,
+      "cooldown": 18,
+      "title": "{sponsor} want an advert",
+      "text": "{sponsor} want to film a TV advert at the training ground with five players. \"Half a day. A bit of acting. Nothing embarrassing.\" The script includes a dance.",
+      "staff": "yes",
+      "choices": [
+        { "id": "yes", "label": "Do it, dance and all", "hint": "Earns {amount}. The players will be teased for weeks.", "result": "The advert airs. The dance becomes a chant within a week.", "effects": [{ "cash": 1, "line": "sponsors" }, { "goodwill": 0.08 }, { "squad": -0.005 }, { "fans": 0.01 }] },
+        { "id": "nodance", "label": "Yes, but no dance", "hint": "Earns {half}. The sponsor is a little disappointed.", "result": "The players stand around holding the product. It's fine.", "effects": [{ "cash": 0.5, "line": "sponsors" }, { "goodwill": 0.02 }] },
+        { "id": "no", "label": "The players need to train", "hint": "No money; the sponsor will notice.", "result": "{sponsor} say they understand, in an email with no exclamation marks.", "effects": [{ "goodwill": -0.06 }] }
+      ]
+    },
+    {
+      "id": "agent-loan-offer",
+      "role": "agent",
+      "when": { "subject": "young", "phase": ["preseason", "season"] },
+      "weight": 0.8,
+      "title": "An agent has plans for {player}",
+      "text": "{person}, the agent of {player}, calls. \"He's ready for more than the bench and the academy. Promise him first-team football this season, or let him find it somewhere else.\"",
+      "staff": "patience",
+      "choices": [
+        { "id": "promise", "label": "Promise him three starts", "hint": "He'll expect 3 starts in the next 8 weeks.", "result": "\"That's all we wanted to hear.\"", "effects": [{ "mood": 0.15 }, { "promise": "starts", "weeks": 8, "target": 3 }] },
+        { "id": "patience", "label": "Ask for patience", "hint": "No promise. He'll be a little restless.", "result": "\"Patience. Right. I'll tell him.\"", "effects": [{ "mood": -0.06 }] },
+        { "id": "sell", "label": "Say he can look around", "hint": "A club may bid for him soon.", "result": "The agent sounds pleased. Calls start coming in the next week.", "effects": [{ "listPlayer": 1.0 }, { "mood": 0.05 }] }
+      ]
+    },
+    {
+      "id": "mascot-race",
+      "role": "staffer",
+      "when": { "phase": ["season"] },
+      "amount": 10000,
+      "weight": 0.5,
+      "maxPerSeason": 1,
+      "cooldown": 40,
+      "title": "The mascot race",
+      "text": "The league's annual mascot race is at half-time of a league match next month. {person}, the person inside the club mascot, wants to enter and has been training in secret.",
+      "staff": "yes",
+      "choices": [
+        { "id": "yes", "label": "Enter, and pay for new trainers", "hint": "Costs {amount}. A bit of fun.", "result": "The mascot finishes second after a controversial collision on the final bend. The fans love it.", "news": "{us} mascot pipped in half-time race|The mascot lodged an appeal, which was rejected.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.015 }] },
+        { "id": "no", "label": "Not this year", "hint": "No cost. The mascot will sulk.", "result": "The mascot spends the next home match with its back to the pitch.", "effects": [] }
+      ]
+    }
+  ]
+}
