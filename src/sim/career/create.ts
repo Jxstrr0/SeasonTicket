@@ -8,11 +8,12 @@ import type { TeamColors } from '../types';
 import { fairPrice, newDebt } from './books';
 import { makeSponsorOffers, refillStaffPool } from './club';
 import { createStadiums } from './stadium';
+import { newNews } from './news';
 import { newStory } from './story';
 import type { Career, ClubBooks, Crest, MatchMode, TierId } from './types';
 import { C, addInbox, clamp, emptyLedger, money, userTeam } from './util';
 
-export const CAREER_VERSION = 5;
+export const CAREER_VERSION = 6;
 
 export interface Branding {
   name: string;
@@ -86,6 +87,7 @@ export function createCareer(opts: NewCareerOptions): Career {
     inbox: [],
     history: [],
     story: newStory(),
+    news: newNews(),
     counter: 0,
     gameOverReason: null,
   };

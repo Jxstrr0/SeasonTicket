@@ -19,6 +19,7 @@ import { clearLive, finishLive, liveOf, startLive } from './live';
 import { weeklyMarket } from './market';
 import { matchSelection } from './selection';
 import { stadiumAttendance, weeklyStadium } from './stadium';
+import { weeklyNews } from './news';
 import { moodForm, weeklyStory } from './story';
 import type { Career } from './types';
 import { C, addInbox, userTeam } from './util';
@@ -140,6 +141,7 @@ export function settleCareerWeek(career: Career, week: CareerWeek, played: reado
   fitnessRehab(career);
   weeklyMarket(career);
   weeklyStory(career);
+  weeklyNews(career, results);
   if (checkLadder(career)) return results;
   career.weekIndex += 1;
   const state = career.season;
@@ -161,6 +163,7 @@ export function advanceCareer(career: Career): MatchResult[] {
     weeklyMarket(career);
     preseasonRecovery(career);
     weeklyStory(career);
+    weeklyNews(career, []);
     if (checkLadder(career)) return [];
     career.weekIndex += 1;
     career.preseasonWeek += 1;

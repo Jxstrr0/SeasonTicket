@@ -6,12 +6,13 @@
  * consequences. An event the owner does not answer by its deadline is answered by the
  * staff, so a season simulated to the end plays the same story layer.
  */
-import { EVENT_FILES, STORY_TUNING } from '../data';
+import { EVENT_FILES, NEWS_TUNING, STORY_TUNING } from '../data';
 import { defaultNames, homeNationId } from '../names';
 import type { Rng } from '../rng';
 import type { Player, StaffRole } from '../types';
 import { fairPrice } from './books';
 import { squadRole } from './market';
+import { reportPromise, reportStory } from './news';
 import { INCOME_KEYS, SPENDING_KEYS } from './types';
 import type { Career, IncomeKey, SpendingKey, StoryDecision, StoryEvent, StoryPace, StoryState, StoryTimer, VisitorRole } from './types';
 import { C, addInbox, careerRng, clamp, earn, money, nextId, roundMoney, spend, squadOf, transferWindowOpen, userBooks, userTeam } from './util';
@@ -66,6 +67,8 @@ export interface EventChoice {
   hint: string;
   result: string;
   effects: Effect[];
+  /** A public decision makes the paper: "Headline|Body", with the event's fills. */
+  news?: string;
 }
 
 export interface EventDef {
@@ -484,6 +487,7 @@ export function answerEvent(career: Career, eventRef: string, choiceId: string |
   const decision: StoryDecision = { season: career.season.league.season, weekIndex: career.weekIndex, eventId: def.id, choiceId: choice.id, staff };
   story.decisions.push(decision);
   const result = fill(career, ev, choice.result);
+  if (choice.news) reportStory(career, fill(career, ev, choice.news), NEWS_TUNING.weights.decision);
   const who = staffName(career, staffRoleFor(ev.role)) ?? 'The staff';
   const line = staff ? `${who} dealt with it: ${fill(career, ev, choice.label).toLowerCase()}. ${result}` : `You chose: ${fill(career, ev, choice.label)}. ${result}`;
   const mail = career.inbox.find((m) => m.id === ev.mailId);
@@ -594,6 +598,7 @@ function checkPromise(career: Career, t: StoryTimer): void {
   if (t.playerId) setMood(career, t.playerId, playerMood(career, t.playerId) + fx.mood);
   for (const id of team.playerIds) setMood(career, id, playerMood(career, id) + fx.squad);
   career.story.press = round3(clamp(career.story.press + fx.press, 0, 1));
+  if (!kept && t.kind !== 'later') reportPromise(career, t.kind, who);
   if (t.kind === 'starts') {
     addInbox(career, 'decision', kept ? `Promise kept: ${who}` : `Promise broken: ${who}`, kept ? `${who} got the games you promised and is playing with a smile.` : `You promised ${who} more football and he didn't get it. He's told his team-mates, and the press have heard.`);
   } else {

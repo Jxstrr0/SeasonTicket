@@ -340,6 +340,58 @@ export interface StoryState {
   decisions: StoryDecision[];
 }
 
+export type NewsKind = 'result' | 'league' | 'streak' | 'record' | 'transfer' | 'table' | 'club' | 'money' | 'stadium' | 'season' | 'preview';
+
+/** A newspaper story (Stage 6.2). Text is stored as printed, so it stays right after players move on. */
+export interface NewsItem {
+  /** `n{weekIndex}_{k}`; never uses career.counter. */
+  id: string;
+  season: number;
+  /** The edition it ran in (global week index). */
+  weekIndex: number;
+  /** "Round 12", "Semi-finals", "Pre-season week 2". */
+  label: string;
+  kind: NewsKind;
+  headline: string;
+  body: string;
+  /** Front-page rank; the highest in an edition is the lead. */
+  weight: number;
+  /** About the user's club. */
+  mine: boolean;
+}
+
+export type PostKind = 'fan' | 'rival' | 'rumour' | 'odd';
+
+/** A post on the social feed (Stage 6.2), from a made-up handle. */
+export interface SocialPost {
+  id: string;
+  weekIndex: number;
+  handle: string;
+  text: string;
+  kind: PostKind;
+  tone: 'up' | 'down' | 'flat';
+  likes: number;
+}
+
+/** Something that happened between editions, waiting for the paper. */
+export type NewsWire =
+  | { kind: 'transfer'; playerId: string; name: string; fromId: string | null; toId: string; fee: number; how: 'fee' | 'free' | 'loan' | 'forced' }
+  | { kind: 'story'; headline: string; body: string; weight: number; newsKind: NewsKind };
+
+export interface NewsState {
+  items: NewsItem[];
+  posts: SocialPost[];
+  wire: NewsWire[];
+  /** The table as the paper last printed it. */
+  leaderId: string | null;
+  userPos: number;
+  /** Biggest winning margin in the league this season. */
+  bestMargin: number;
+  /** Lender ladder level the paper last knew about. */
+  ladder: number;
+  shieldDone: boolean;
+}
+
 export interface Career {
   version: number;
   seed: number;
@@ -378,6 +430,8 @@ export interface Career {
   inbox: InboxMessage[];
   history: SeasonHistoryEntry[];
   story: StoryState;
+  /** The newspaper and social feed (Stage 6.2). */
+  news: NewsState;
   /** Counter for career-side ids (bids, debts, messages). */
   counter: number;
   gameOverReason: string | null;
