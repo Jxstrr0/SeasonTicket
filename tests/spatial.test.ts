@@ -153,7 +153,9 @@ describe('spatial ball flight', () => {
 // ---------------------------------------------------------------------------
 
 function pinned(home: Partial<Tactics>, ballX: number, possSide: Side, seconds = 15): SpatialMatch {
-  const m = createSpatial(setup(home), 'shape', 'fine');
+  // A seed whose coin toss gives the home side the kick-off: with the ball pinned before the
+  // kick-off is taken, the two centre-forwards would otherwise stand nose to nose on the halfway line.
+  const m = createSpatial(setup(home), 'shape2', 'fine');
   freezeBall(m, ballX, 34, possSide);
   runSeconds(m, seconds);
   return m;

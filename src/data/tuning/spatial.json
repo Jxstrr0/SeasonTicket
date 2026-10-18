@@ -1,6 +1,6 @@
 {
   "_doc": "Spatial match engine starting values (docs/DESIGN.md section 17, appendix docs/history/STAGE_4_5_SKETCH_NOTES.md). Distances in metres, speeds in m/s, times in seconds unless the key ends in Ms. Five-value arrays are indexed by dial 1..5.",
-  "engineRev": 12,
+  "engineRev": 13,
   "pitch": {
     "length": 105,
     "width": 68,

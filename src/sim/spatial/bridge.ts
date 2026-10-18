@@ -22,7 +22,7 @@ import { emitEvent, nameOf, type EventDraft } from '../match/events';
 import { ensurePlayerStats, sideState, type MatchContext, type MatchState, type Period, type SideState } from '../match/state';
 import { Rng, hashString } from '../rng';
 import type { MatchAction, MatchEvent, MatchReplay, MatchResult, MatchSetup, PlayerMatchStats, Side as MatchSide, TeamMatchStats } from '../types';
-import { createSpatial, fingerprint, queueSubstitution, queueTactics, resumeSpatial, spatialRecord, stepSpatial } from './engine';
+import { createSpatial, fingerprint, matchToss, queueSubstitution, queueTactics, resumeSpatial, spatialRecord, stepSpatial } from './engine';
 import { matchStats } from './onball';
 import { spatialSetupFromMatch } from './setup';
 import { PSTATS, PS_FOULS, PS_KEY, PS_PASSES, PS_SAVES, PS_SECS, PS_TACKLES, type SpatialMatch } from './state';
@@ -92,8 +92,9 @@ function withRng(state: MatchState, work: (rng: Rng) => void): void {
 /** Start a live match: the engine and the classic state, with the kick-off event. */
 export function createSpatialLive(setup: MatchSetup, ctx: MatchContext, opts: SpatialMode | SpatialLiveOptions = 'fine'): SpatialLive {
   const o = typeof opts === 'string' ? { mode: opts } : opts;
-  const state = createMatch(setup, ctx);
-  const m = createSpatial(spatialSetupFromMatch(setup, ctx.players, ctx.teams), `match:${setup.seed}`, o.mode ?? 'fine');
+  const seed = `match:${setup.seed}`;
+  const state = createMatch(setup, ctx, sideName(matchToss(seed)[0]));
+  const m = createSpatial(spatialSetupFromMatch(setup, ctx.players, ctx.teams), seed, o.mode ?? 'fine');
   const live: SpatialLive = {
     m, state, ctx, cursor: { events: 0, shots: 0, goals: 0, kicks: 0 }, boxFouler: null, liveStats: o.liveStats ?? false, carry: null, minute: null,
   };
@@ -144,6 +145,8 @@ export function resumeSpatialLive(saved: MatchState, ctx: MatchContext, opts: Sp
     score: [state.homeScore, state.awayScore],
     poss: sideIndex(state.possession),
     sides: [sideOf(state.home), sideOf(state.away)],
+    // The original match's tosses, so the second half and extra time kick off as they would have.
+    toss: matchToss(`match:${setup.seed}`),
   };
   const m = resumeSpatial(sp, `match:${setup.seed}:resume:${state.events.length}`, opts.mode ?? 'fine', r);
   const copyStats = (S: SideState) => JSON.parse(JSON.stringify(S.playerStats)) as Record<string, PlayerMatchStats>;

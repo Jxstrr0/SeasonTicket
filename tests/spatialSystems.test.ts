@@ -6,19 +6,30 @@
 import { describe, expect, it } from 'vitest';
 import { SPATIAL_TUNING } from '../src/sim/data';
 import {
-  captureFrame, createSpatial, fingerprint, queueCancelSub, queueSubstitution, queueTactics, replayFrames, runSeconds,
+  captureFrame, createSpatial, fingerprint, matchToss, queueCancelSub, queueSubstitution, queueTactics, replayFrames, runSeconds,
   spatialFinished, spatialRecord, stepSpatial,
 } from '../src/sim/spatial/engine';
 import { FOUL_FRONT, foul } from '../src/sim/spatial/rules';
 import { BALL_DEAD, type SpatialMatch } from '../src/sim/spatial/state';
-import { clockLabel, matchTime } from '../src/sim/spatial/systems';
+import { clockLabel, matchTime, startShootout } from '../src/sim/spatial/systems';
 import { FRAME_VALUES, PERIOD, whoOf, type Side } from '../src/sim/spatial/types';
 import { setupWithBench, tactics } from './helpers/spatialFixtures';
 
 const MIN = 60000;
 
+/** Who kicked off each period played, by match (see playOut). */
+const kickers = new WeakMap<SpatialMatch, Side[]>();
+
 function playOut(m: SpatialMatch): SpatialMatch {
-  while (stepSpatial(m)) { /* play on */ }
+  const ko: Side[] = [m.poss as Side];
+  let period = m.period;
+  while (stepSpatial(m)) {
+    if (m.period !== period) {
+      period = m.period;
+      if (period < PERIOD.SHOOTOUT) ko.push(m.poss as Side);
+    }
+  }
+  kickers.set(m, ko);
   return m;
 }
 
@@ -67,10 +78,19 @@ describe('spatial periods and stoppage time', () => {
   });
 });
 
-describe('spatial extra time and the shootout', () => {
-  // Cup ties until one goes to a shootout (a draw after 90 and after 120 minutes).
+let cupCache: SpatialMatch[] | null = null;
+
+/** Cup ties until one goes to a shootout (a draw after 90 and after 120 minutes). */
+function cupTies(): SpatialMatch[] {
+  if (cupCache) return cupCache;
   const ties: SpatialMatch[] = [];
   for (let k = 0; k < 40 && !ties.some((m) => m.shootout); k++) ties.push(playOut(createSpatial(setupWithBench({}, {}, true), `cup-${k}`, 'coarse')));
+  cupCache = ties;
+  return ties;
+}
+
+describe('spatial extra time and the shootout', () => {
+  const ties = cupTies();
 
   it('a cup tie level after 90 minutes plays two halves of extra time, with stoppage', () => {
     const et = ties.filter((m) => m.periodLog.some((r) => r.period === PERIOD.ET_FIRST));
@@ -106,6 +126,78 @@ describe('spatial extra time and the shootout', () => {
       expect(new Set(takers.slice(0, 10)).size).toBe(Math.min(10, takers.length));
     }
     expect(m.events[m.events.length - 1]).toMatchObject({ kind: 'whistle', note: 'shootout' });
+  });
+});
+
+describe('spatial kick-off coin toss', () => {
+  it('the toss is the same for the same seed, and each side kicks off the first half about half the time', () => {
+    let home = 0;
+    const n = 200;
+    for (let k = 0; k < n; k++) {
+      const seed = `toss-${k}`;
+      const a = createSpatial(setupWithBench(), seed, 'coarse');
+      const b = createSpatial(setupWithBench(), seed, 'fine');
+      expect(b.toss).toEqual(a.toss);
+      expect(matchToss(seed)).toEqual(a.toss);
+      expect(a.poss).toBe(a.toss[0]);
+      expect(b.poss).toBe(a.toss[0]);
+      if (a.poss === 0) home++;
+    }
+    expect(home / n).toBeGreaterThan(0.38);
+    expect(home / n).toBeLessThan(0.62);
+  });
+
+  it('the other side kicks off the second half; extra time follows its own toss', () => {
+    const played = [0, 1, 2, 3].map((k) => playOut(createSpatial(setupWithBench(), `periods-${k}`, 'coarse')));
+    for (const m of [...played, ...cupTies()]) {
+      const ko = kickers.get(m) as Side[];
+      expect(ko[0]).toBe(m.toss[0]);
+      expect(ko[1]).toBe(1 - m.toss[0]);
+      if (ko.length > 2) {
+        expect(ko[2]).toBe(m.toss[1]);
+        expect(ko[3]).toBe(1 - m.toss[1]);
+      }
+    }
+    expect(cupTies().some((m) => (kickers.get(m) as Side[]).length > 2)).toBe(true);
+  });
+});
+
+describe('spatial shootout with a man sent off', () => {
+  function pens(): SpatialMatch {
+    const s = setupWithBench({}, {}, true);
+    // Away penalty skill rises with the slot, so its weakest takers are slots 1 and 2.
+    s.away.players.forEach((p, k) => { p.attributes = { ...p.attributes, spk: 40 + k * 4 }; });
+    s.away.tactics.setPieceTakers.penalties = s.away.players[1].id;
+    const m = createSpatial(s, 'pens-red', 'coarse');
+    // Home down to nine.
+    m.on[5] = 0;
+    m.on[7] = 0;
+    m.period = PERIOD.SHOOTOUT;
+    startShootout(m);
+    return m;
+  }
+
+  it('the side with more players leaves out its weakest takers, keeping its keeper and named taker', () => {
+    const m = pens();
+    const [home, away] = m.shootout!.order;
+    expect(home.length).toBe(9);
+    expect(away.length).toBe(9);
+    expect(away[0]).toBe(whoOf(m.setup, 1, m.setup.away.players[1].id));
+    expect(away).toContain(whoOf(m.setup, 1, m.setup.away.players[0].id));
+    // Slots 2 and 3 are the weakest left after the named taker: they sit it out.
+    expect(away).not.toContain(whoOf(m.setup, 1, m.setup.away.players[2].id));
+    expect(away).not.toContain(whoOf(m.setup, 1, m.setup.away.players[3].id));
+  });
+
+  it('nobody kicks twice until every kicker on both sides has kicked', () => {
+    const m = playOut(pens());
+    const so = m.shootout!;
+    expect(so.winner === 0 || so.winner === 1).toBe(true);
+    for (const s of [0, 1] as Side[]) {
+      const takers = so.kicks.filter((k) => k.side === s).map((k) => k.player);
+      expect(new Set(takers.slice(0, 9)).size).toBe(Math.min(9, takers.length));
+      expect(takers.every((t) => so.order[s].includes(t))).toBe(true);
+    }
   });
 });
 

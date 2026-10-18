@@ -342,6 +342,11 @@ export interface SpatialMatch {
   baseAttr: Float64Array;
   distMark: Float64Array;
   sprintMark: Float64Array;
+  /**
+   * The coin tosses for kick-off (matchToss): the side that kicks off the first half, and the
+   * side that kicks off the first half of extra time. The other side kicks off each second half.
+   */
+  toss: [Side, Side];
   /** Penalties after extra time, or null. */
   shootout: ShootoutState | null;
   loft: LoftTable;

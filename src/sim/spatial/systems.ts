@@ -211,7 +211,11 @@ function endPeriod(m: SpatialMatch): void {
   applySubs(m, true);
   for (let i = 0; i < N; i++) if (m.on[i]) refreshPlayer(m, i);
   if (next === PERIOD.SHOOTOUT) startShootout(m);
-  else kickoff(m, next === PERIOD.SECOND || next === PERIOD.ET_SECOND ? 1 : 0);
+  else {
+    // The coin tosses: the winner's side kicks off the first half (of normal or extra time), the other side the second.
+    const first = m.toss[next >= PERIOD.ET_FIRST ? 1 : 0];
+    kickoff(m, (next === PERIOD.SECOND || next === PERIOD.ET_SECOND ? 1 - first : first) as Side);
+  }
 }
 
 /** Match time of an engine time: period, minute (1-based as shown: 45 in first-half stoppage), stoppage minute, seconds. */
@@ -423,7 +427,19 @@ export function assignSpots(m: SpatialMatch, team: TeamState): void {
 // The shootout
 // ---------------------------------------------------------------------------
 
-/** Kick order: the named penalty taker, then outfielders by set pieces plus composure, keepers last. */
+/** Players of a side on the pitch. */
+function onPitch(m: SpatialMatch, side: Side): number {
+  let n = 0;
+  for (let s = 0; s < 11; s++) if (m.on[side * 11 + s]) n++;
+  return n;
+}
+
+/**
+ * Kick order: the named penalty taker, then outfielders by set pieces plus composure, keepers
+ * last. A side with more players on the pitch than its opponent leaves out its weakest
+ * outfield takers until the numbers match (the keeper and the named taker stay), so nobody
+ * kicks twice until every kicker on both sides has had a turn.
+ */
 function kickOrder(m: SpatialMatch, side: Side): number[] {
   const at = m.onball.attr;
   const out: number[] = [], keepers: number[] = [];
@@ -439,6 +455,12 @@ function kickOrder(m: SpatialMatch, side: Side): number[] {
   const nw = named ? whoOf(m.setup, side, named) : -1;
   const k = order.indexOf(nw);
   if (k > 0) { order.splice(k, 1); order.unshift(nw); }
+  const keep = Math.min(order.length, onPitch(m, (1 - side) as Side));
+  for (let j = order.length - 1; j >= 0 && order.length > keep; j--) {
+    if (j === 0 && order[0] === nw) break;
+    const kp = (personOf(m.setup, order[j]) as SpatialPlayer).position === 'GK';
+    if (!kp) order.splice(j, 1);
+  }
   return order;
 }
 

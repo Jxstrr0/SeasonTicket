@@ -4,7 +4,7 @@
  * goes to extra time and penalties, a manager's changes go in, and replays are exact.
  */
 import { describe, expect, it } from 'vitest';
-import { applySpatialAction, createSpatialLive, finalizeSpatial, simulateSpatialMatch, stepSpatialMinute } from '../src/sim/spatial/bridge';
+import { applySpatialAction, createSpatialLive, finalizeSpatial, resumeSpatialLive, simulateSpatialMatch, stepSpatialMinute } from '../src/sim/spatial/bridge';
 import type { MatchContext } from '../src/sim/match/state';
 import type { MatchResult } from '../src/sim/types';
 import { contextOf, makeSetup, makeTeam } from './helpers/matchFixtures';
@@ -83,6 +83,24 @@ describe('spatial bridge: a whole match', () => {
 
   it('replays exactly from the same setup', () => {
     expect(simulateSpatialMatch(makeSetup('sbA', 'sbB', 500), ctx)).toEqual(league[0]);
+  });
+});
+
+describe('spatial bridge: the kick-off toss', () => {
+  it('the opening event names the side that won the toss, and a restarted match keeps the tosses', () => {
+    const sides = new Set<string>();
+    for (let k = 0; k < 8; k++) {
+      const live = createSpatialLive(makeSetup('sbA', 'sbB', 900 + k), ctx, 'coarse');
+      const first = live.m.toss[0] === 0 ? 'home' : 'away';
+      expect(live.state.events[0]).toMatchObject({ type: 'kickoff', side: first });
+      expect(live.m.poss).toBe(live.m.toss[0]);
+      sides.add(first);
+      if (k > 1) continue;
+      for (let n = 0; n < 20; n++) stepSpatialMinute(live);
+      const back = resumeSpatialLive(live.state, ctx, { mode: 'coarse', spatial: true });
+      expect(back.m.toss).toEqual(live.m.toss);
+    }
+    expect(sides.size).toBe(2);
   });
 });
 

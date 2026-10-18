@@ -87,7 +87,8 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 - Injuries happen in matches and training, with weeks out.
 - **Fatigue** drains over a match (faster with high pressing and tempo) and recovers between matches.
 - Points: 3 for a win, 1 for a draw. Tiebreakers: goal difference, goals for, head-to-head points, then a seeded coin flip.
-- **Playoffs:** extra time (two 15-minute halves) then a penalty shootout: five kicks each, then sudden death. Only players on the pitch at the end of extra time take kicks, so a sent-off player never does, and nobody kicks twice until every eligible team-mate has.
+- **Playoffs:** extra time (two 15-minute halves) then a penalty shootout: five kicks each, then sudden death. Only players on the pitch at the end of extra time take kicks, so a sent-off player never does. A side with more players on the pitch than its opponent leaves out its weakest takers to match (it keeps its keeper and its named penalty taker), and nobody kicks twice until every eligible team-mate has. A coin toss decides who kicks first.
+- **Kick-off:** a coin toss before the match decides who kicks off; the other side kicks off the second half. Another toss before extra time does the same for its two halves. Teams do not change ends.
 - The league season: every club plays every other club home and away (**30 matches**).
 
 ---
@@ -292,7 +293,6 @@ Decided during development (the owner can veto any of these):
 Sim simplifications (documented here as the build brief requires):
 - Stoppage time is a base draw plus weights for goals, subs, cards, injuries and time-wasting, clamped to 1 to 6 minutes per half (0 to 2 per extra-time half). Wasted minutes are not added one for one.
 - Substitution windows are not enforced as three strict stoppages; the sim allows a sub at any dead ball and caps the count at five, including extra time (many real competitions allow a sixth in extra time).
-- In a shootout, a side with more players on the pitch does not reduce its kickers to match an opponent reduced by red cards.
 - No VAR or offside-line nuance; offside is an event outcome, not a positional check.
 - Transfer fees are paid in full from cash in the concept test.
 
@@ -378,6 +378,11 @@ Match engine (Stage 4.5 verdict):
 - Fouls: refereed to real top-flight levels, about 10 to 11 a team and 2 yellows.
 - Formations: four at the back is the norm. Coaches favour 4-2-3-1 and 4-3-3, then 4-4-2 and 4-1-4-1; back threes and fives are a minority taste (`selection.formationPopularity` in `src/data/tuning/coach.json`).
 - Keepers: reflexes speed up the dive, so a good keeper saves noticeably more than a poor one, while an average keeper (65) saves as before.
+
+Owner's decisions (2026-10-18):
+- Coin toss for kick-off, like real life. The toss winner kicks off the first half and the other side kicks off the second. Extra time has its own toss.
+- The shootout is reduced to equal numbers after red cards. The side with more players leaves out its weakest takers, never its keeper.
+- The youth intake can take the squad past its usual 28 players. This is deliberate, a bonus that rewards investing in the academy; trim the squad by selling or releasing players if you need room.
 
 ---
 
@@ -706,7 +711,7 @@ What the build actually did, step by step, where it differs from or adds to the 
 - **Smaller misses inside test bounds:** centre-backs run 7.5 to 8 km (real 9 to 10); passes are 8 to 9 a minute (real 8 to 10); throw-ins are about 9 a team (real about 20); the ball is in play about 61 minutes (55 to 60).
 
 **Step 6: systems hookup (done).**
-- **Periods.** Two halves of 45 minutes, each with 1 to 6 minutes added (from goals, cards, subs, injuries and time-wasting), and the whistle waits for the ball to be safe. Cup ties level after 90 minutes play two halves of 15 minutes, then a kick-by-kick shootout: the named penalty taker first, then by set pieces plus composure, keepers last, five each then sudden death.
+- **Periods.** Two halves of 45 minutes, each with 1 to 6 minutes added (from goals, cards, subs, injuries and time-wasting), and the whistle waits for the ball to be safe. Cup ties level after 90 minutes play two halves of 15 minutes, then a kick-by-kick shootout: the named penalty taker first, then by set pieces plus composure, keepers last, five each then sudden death. A side with more players on the pitch leaves out its weakest outfield takers until the numbers match. Kick-offs follow coin tosses (`matchToss` in `src/sim/spatial/engine.ts`): the first two draws of the match's own random stream pick who kicks off the first half and who kicks off the first half of extra time, and the other side kicks off each second half. Both are drawn at the start, so a restarted match works them out from the seed and its later halves kick off as they would have. Teams keep the same ends all match.
 - **Substitutions** wait for the next dead ball (or half-time), five at most, and a queued one can be taken back. A sub comes on from the touchline by halfway. A keeper coming on while an outfielder is in goal goes in goal.
 - **Fatigue** drains by what each player runs and sprints, scaled by stamina and weather, and lowers his attributes. Fine matches end at about 0.57 energy after about 11 km. A side pressing high with a fast tempo ends the hour only about 0.02 more tired than one sitting deep, because energy follows distance and the extra running is a few per cent (question 11).
 - **10- and 9-man shapes** come from formations.json: a 4-3-3 down to ten becomes 4-4-1 (the holding midfielder goes), down to nine 4-3-1. A hurt player with no subs left moves up front.
