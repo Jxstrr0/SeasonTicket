@@ -87,7 +87,8 @@ describe('story layer: a season', () => {
 describe('story layer: events and effects', () => {
   it('fills every placeholder in every event', () => {
     const career = newCareer();
-    const ev = { playerId: firstPlayer(career), person: 'A Visitor', amount: 50_000 };
+    const teamId = career.season.league.teams.find((t) => t.id !== career.userTeamId)!.id;
+    const ev = { playerId: firstPlayer(career), person: 'A Visitor', amount: 50_000, teamId };
     for (const def of EVENTS) {
       const texts = [def.title, def.text, ...def.choices.flatMap((c) => [c.label, c.hint, c.result])];
       for (const c of def.choices) for (const e of c.effects) if ('later' in e) texts.push(e.title, e.text);

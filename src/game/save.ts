@@ -7,7 +7,7 @@
  * that version up to the current one, so an old save is never thrown away.
  */
 import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
-import { CAREER_VERSION, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
+import { CAREER_VERSION, ensureOwners, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
 import type { Team } from '../sim/types';
 
 export const SAVE_PREFIX = 'ST1:';
@@ -71,6 +71,12 @@ const MIGRATIONS: Record<number, Migration> = {
     story.heat = {};
     story.claims = [];
     story.lastPress = -1;
+    return save;
+  },
+  /** Version 8 adds the other clubs' owners (Stage 6.4), drawn from the career seed. */
+  7: (save) => {
+    save.owners = {};
+    ensureOwners(save as unknown as Career);
     return save;
   },
 };

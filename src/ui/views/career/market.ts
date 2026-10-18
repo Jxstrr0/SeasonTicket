@@ -1,7 +1,7 @@
 /** Market: scout players at other clubs, sign free agents, and answer bids for your own. */
 import {
   C,
-  askingPrice,
+  userAskingPrice,
   freeAgentsOpen,
   loanFee,
   money,
@@ -75,7 +75,7 @@ function renderList(career: Career, ui: UiState, players: Player[], free: boolea
   const rows = each(shown, (p) => {
     const r = scoutedRange(career, p);
     const where = p.teamId ? team(league, p.teamId).shortName : 'Free';
-    const price = free ? `${money(wageDemand(career, p, career.userTeamId))}/yr` : money(askingPrice(career, p));
+    const price = free ? `${money(wageDemand(career, p, career.userTeamId))}/yr` : money(userAskingPrice(career, p));
     return `<tr>
       <td class="name-cell"><button type="button" class="link-btn" data-action="market-player" data-id="${esc(p.id)}">${esc(playerName(p))}</button> ${playerFlags(p)}</td>
       <td>${esc(p.position)}</td>
@@ -121,7 +121,7 @@ function renderTargetDetail(career: Career, p: Player): string {
   const r = scoutedRange(career, p);
   const seller = p.teamId ? team(league, p.teamId) : null;
   const wage = wageDemand(career, p, career.userTeamId);
-  const asking = seller ? askingPrice(career, p) : 0;
+  const asking = seller ? userAskingPrice(career, p) : 0;
   const counter = career.counters[p.id];
   const window = transferWindowOpen(career);
   const role = seller ? squadRole(career, p) : null;

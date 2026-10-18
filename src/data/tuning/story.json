@@ -48,7 +48,7 @@
   },
   "staff": {
     "_about": "Who answers for the owner, by visitor role, and how well. q is the staff member's rating / 99. Good effects (mood, fans, press, goodwill going up) are scaled by goodBase + goodGain x q; bad ones by badBase - badGain x q. Money is never scaled.",
-    "byRole": { "player": "headCoach", "coach": "headCoach", "staffer": "assistantCoach", "agent": "assistantCoach", "sponsor": "assistantCoach", "reporter": "assistantCoach", "fans": "assistantCoach", "councillor": "assistantCoach", "vip": "assistantCoach", "lender": "assistantCoach" },
+    "byRole": { "player": "headCoach", "coach": "headCoach", "staffer": "assistantCoach", "agent": "assistantCoach", "sponsor": "assistantCoach", "reporter": "assistantCoach", "fans": "assistantCoach", "councillor": "assistantCoach", "vip": "assistantCoach", "lender": "assistantCoach", "owner": "assistantCoach" },
     "goodBase": 0.55,
     "goodGain": 0.55,
     "badBase": 1.35,

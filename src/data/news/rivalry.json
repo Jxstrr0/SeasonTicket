@@ -1,0 +1,39 @@
+{
+  "_about": "What rival owners say after a derby or a rivalry game (Stage 6.4). 'won' is when their club beat yours, 'lost' when yours beat theirs. Fills: {owner} (their owner), {them} (their club), {us} (your club), {score} (their score first). Each line is 'Headline|Body'.",
+  "won": {
+    "calm": [
+      "{them} take the derby|\"A good day for us,\" said {owner}, the {them} owner. \"{us} will be back. These games always come round again.\"",
+      "{owner}: \"We earned it\"|The {them} owner kept it short after {score}: \"We earned it, and we'll enjoy it quietly.\""
+    ],
+    "showman": [
+      "{owner} lights up {them}|\"Tell {us} the bus is waiting,\" grinned {owner} after {them} won {score}. The {them} owner then bought the press room a round.",
+      "\"Ours, again\"|{owner} posed for photos with the match ball after {them} beat {us} {score}. \"I might frame it,\" said the {them} owner."
+    ],
+    "pennyPincher": [
+      "{owner}: \"Value for money\"|\"Beat {us} {score} with half their wage bill,\" said the {them} owner, {owner}. \"That's what I call a return.\"",
+      "{them} win on a budget|{owner} could not resist: \"{us} spend, we win. Write that down.\""
+    ],
+    "gambler": [
+      "{owner} called it|The {them} owner says they had money on the {score} scoreline. \"Some of us read the game,\" said {owner}.",
+      "{owner} rolls the dice and wins|\"I told the players to go for it, and they did,\" said {owner} after {them} beat {us}."
+    ]
+  },
+  "lost": {
+    "calm": [
+      "{owner} takes it on the chin|\"Fair result,\" said the {them} owner, {owner}, after losing {score} to {us}. \"We'll learn from it.\"",
+      "Quiet night for {them}|{owner} offered a handshake and few words after {us} won. \"Well played. Next time.\""
+    ],
+    "showman": [
+      "{owner} blames the pitch|The {them} owner, {owner}, said the grass at {us} was \"two centimetres too long\" after a {score} defeat.",
+      "No speech from {owner}|For once {owner} had nothing to say. The {them} owner left the ground before the final whistle, sources say."
+    ],
+    "pennyPincher": [
+      "{owner}: \"Money talks\"|\"{us} bought that win,\" said the {them} owner, {owner}, after losing {score}. \"We'll see how long they can afford it.\"",
+      "{owner} counts the cost|The {them} owner grumbled about the spending at {us} after a {score} defeat. \"Some of us live within our means.\""
+    ],
+    "gambler": [
+      "{owner} doubles down|\"We'll win the next one. I'd bet the training ground on it,\" said the {them} owner, {owner}, after losing {score}.",
+      "{owner} shrugs off defeat|\"You win some,\" said {owner}. \"Mostly I win some. Not today.\""
+    ]
+  }
+}

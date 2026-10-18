@@ -10,6 +10,7 @@
 import { PRESS_QUESTIONS, PRESS_TUNING, WORLD } from '../data';
 import type { ScheduledMatch, Team } from '../types';
 import { reportStory } from './news';
+import { addHeat } from './rivalry';
 import { NO_SCALE, playerMood, round3, scaled, setMood, staffName, staffQuality, staffScale } from './story';
 import type { AnswerResult, EventDef, EventView, Scale } from './story';
 import type { Career, PressConference, PressTone, StoryEvent } from './types';
@@ -80,15 +81,10 @@ export const PRESS_DEF: EventDef = {
 // The weekly step
 // ---------------------------------------------------------------------------
 
-/** After the week's matches: promises to win are judged, rivalries cool, and a conference may be called. */
+/** After the week's matches: promises to win are judged and a conference may be called. */
 export function weeklyPress(career: Career): void {
   if (career.phase !== 'season') return;
   judgeClaims(career);
-  const heat = career.story.heat;
-  for (const id of Object.keys(heat)) {
-    heat[id] = round3(heat[id] - P.heat.drift);
-    if (heat[id] <= 0) delete heat[id];
-  }
   callConference(career);
 }
 
@@ -407,12 +403,9 @@ function applyAnswer(career: Career, conf: PressConference, q: PressConference['
     else if ('mood' in e) {
       if (q.playerId) setMood(career, q.playerId, playerMood(career, q.playerId) + scaled(e.mood, s));
     } else if ('press' in e) story.press = round3(clamp(story.press + scaled(e.press, s), 0, 1));
-    else if ('heat' in e) {
-      if (oppId) story.heat[oppId] = round3(clamp((story.heat[oppId] ?? 0) + scaled(e.heat, s), 0, P.heat.max));
-    } else if ('claim' in e) {
-      if (e.claim && def.phase === 'pre' && conf.nextMatchId && conf.nextId && !story.claims.some((c) => c.matchId === conf.nextMatchId)) {
-        story.claims.push({ matchId: conf.nextMatchId, opponentId: conf.nextId, weekIndex: career.weekIndex });
-      }
+    else if ('heat' in e) addHeat(career, oppId, e.heat);
+    else if ('claim' in e) {
+      if (e.claim && def.phase === 'pre' && conf.nextId) addClaim(career, conf.nextId);
     }
   }
 }
@@ -448,6 +441,15 @@ function finish(career: Career, ev: StoryEvent, conf: PressConference): void {
 
 function fillNews(text: string, vars: Record<string, string>): string {
   return text.replace(/\{(quote|context|assistant|them|score)\}/g, (all, key: string) => vars[key] ?? all);
+}
+
+/** A public promise to beat a club in your next match against it (once per match). */
+export function addClaim(career: Career, opponentId: string): void {
+  const me = career.userTeamId;
+  const match = career.season.schedule.matches.find((m) => !m.result && ((m.homeId === me && m.awayId === opponentId) || (m.awayId === me && m.homeId === opponentId)));
+  const story = career.story;
+  if (!match || story.claims.some((c) => c.matchId === match.id)) return;
+  story.claims.push({ matchId: match.id, opponentId, weekIndex: career.weekIndex });
 }
 
 /** Promises to win: kept with a win, broken by anything else, once the match is played. */

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import './helpers/quickCareer';
 import {
   C,
-  askingPrice,
+  userAskingPrice,
   bidForPlayer,
   createCareer,
   ensureUserSelection,
@@ -31,7 +31,7 @@ describe('audit fixes', () => {
     injectCash(career, Math.min(career.owner.fortune, 50_000_000));
     const other = career.season.league.teams.find((t) => t.id !== career.userTeamId)!;
     const target = squadOf(career, other.id).filter((p) => p.position !== 'GK').sort((a, b) => b.value - a.value)[0];
-    const asking = askingPrice(career, target);
+    const asking = userAskingPrice(career, target);
     let bid = Math.round(asking * 0.85);
     const counters: number[] = [];
     for (let i = 0; i < 6; i++) {

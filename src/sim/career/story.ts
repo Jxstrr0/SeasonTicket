@@ -13,7 +13,8 @@ import type { Player, StaffRole } from '../types';
 import { fairPrice } from './books';
 import { squadRole } from './market';
 import { reportPromise, reportStory } from './news';
-import { PRESS_DEF, answerPress, pressView } from './press';
+import { PRESS_DEF, addClaim, answerPress, pressView } from './press';
+import { addHeat, ownerMemory, ownerOf, rivalLevel } from './rivalry';
 import { INCOME_KEYS, SPENDING_KEYS } from './types';
 import type { Career, IncomeKey, SpendingKey, StoryDecision, StoryEvent, StoryPace, StoryState, StoryTimer, VisitorRole } from './types';
 import { C, addInbox, careerRng, clamp, earn, money, nextId, roundMoney, spend, squadOf, transferWindowOpen, userBooks, userTeam } from './util';
@@ -27,7 +28,7 @@ export const STORY_PACES: readonly StoryPace[] = ['calm', 'normal', 'busy'];
 // Event data
 // ---------------------------------------------------------------------------
 
-export type Subject = 'any' | 'benched' | 'starExpiring' | 'unhappy' | 'young' | 'captain';
+export type Subject = 'any' | 'benched' | 'starExpiring' | 'unhappy' | 'young' | 'captain' | 'star';
 
 export interface EventConditions {
   phase?: ('preseason' | 'season')[];
@@ -48,6 +49,10 @@ export interface EventConditions {
   pressAbove?: number;
   flag?: string;
   noFlag?: string;
+  /** The next match is a derby (Stage 6.4). */
+  derbyNext?: boolean;
+  /** The next match is a derby or against a rival. */
+  rivalNext?: boolean;
 }
 
 export type Effect =
@@ -60,7 +65,11 @@ export type Effect =
   | { flag: string }
   | { price: number }
   | { promise: 'starts' | 'signing'; weeks: number; target?: number }
-  | { later: number; title: string; text: string; effects: Effect[] };
+  | { later: number; title: string; text: string; effects: Effect[] }
+  /** Stage 6.4, about the event's rival club: rivalry heat, its owner's memory of you, a public promise to win the next match against it. */
+  | { heat: number }
+  | { owner: number }
+  | { claim: boolean };
 
 export interface EventChoice {
   id: string;
@@ -89,7 +98,7 @@ export interface EventDef {
 }
 
 const D = T.defaults;
-const ROLES: readonly VisitorRole[] = ['lender', 'agent', 'sponsor', 'coach', 'reporter', 'player', 'fans', 'councillor', 'vip', 'staffer'];
+const ROLES: readonly VisitorRole[] = ['lender', 'agent', 'sponsor', 'coach', 'reporter', 'player', 'fans', 'councillor', 'vip', 'staffer', 'owner'];
 
 /** Every event in src/data/events, checked once at load. */
 export const EVENTS: readonly EventDef[] = loadEvents(EVENT_FILES);
@@ -270,6 +279,12 @@ export function conditionsMet(career: Career, w: EventConditions): boolean {
   if (w.pressAbove !== undefined && career.story.press <= w.pressAbove) return false;
   if (w.flag !== undefined && career.story.flags[w.flag] === undefined) return false;
   if (w.noFlag !== undefined && career.story.flags[w.noFlag] !== undefined) return false;
+  if (w.derbyNext || w.rivalNext) {
+    const next = nextOpponent(career);
+    const level = next ? rivalLevel(career, next.id) : null;
+    if (w.derbyNext && level !== 'derby') return false;
+    if (w.rivalNext && !level) return false;
+  }
   return true;
 }
 
@@ -290,7 +305,7 @@ function fairPriceOf(career: Career): number {
   return fairPrice(userTeam(career));
 }
 
-function nextOpponent(career: Career): { name: string; home: boolean } | null {
+function nextOpponent(career: Career): { id: string; name: string; home: boolean } | null {
   if (career.phase !== 'season') return null;
   const state = career.season;
   const me = career.userTeamId;
@@ -299,7 +314,7 @@ function nextOpponent(career: Career): { name: string; home: boolean } | null {
   if (!m) return null;
   const home = m.homeId === me;
   const opp = state.league.teams.find((t) => t.id === (home ? m.awayId : m.homeId));
-  return { name: opp?.shortName ?? 'them', home };
+  return { id: opp?.id ?? '', name: opp?.shortName ?? 'them', home };
 }
 
 function shareOf(career: Career, p: Player): number {
@@ -333,6 +348,9 @@ function pickSubject(career: Career, rng: Rng, subject: Subject | undefined): Pl
       break;
     case 'young':
       pool = squad.filter((p) => p.age <= 21);
+      break;
+    case 'star':
+      pool = byOverall.slice(0, 3);
       break;
     case 'captain': {
       const senior = byOverall.slice(0, 11).sort((a, b) => b.age - a.age || (a.id < b.id ? -1 : 1));
@@ -372,6 +390,7 @@ function startEvent(career: Career, def: EventDef, rng: Rng, subject: Player | n
     answer: null,
     mailId: '',
   };
+  if (def.when.derbyNext || def.when.rivalNext) ev.teamId = nextOpponent(career)?.id || null;
   addInbox(career, 'decision', fill(career, ev, def.title), fill(career, ev, def.text));
   const mail = career.inbox[0];
   mail.eventRef = ev.id;
@@ -396,7 +415,7 @@ export function staffName(career: Career, role: StaffRole): string | null {
 }
 
 /** Fills an event's text: {player}, {coach}, {amount} and the rest (see src/data/events). */
-export function fill(career: Career, ev: Pick<StoryEvent, 'playerId' | 'person' | 'amount'>, text: string): string {
+export function fill(career: Career, ev: Pick<StoryEvent, 'playerId' | 'person' | 'amount' | 'teamId'>, text: string): string {
   const team = userTeam(career);
   const p = ev.playerId ? career.season.league.players[ev.playerId] : undefined;
   const books = userBooks(career);
@@ -416,6 +435,10 @@ export function fill(career: Career, ev: Pick<StoryEvent, 'playerId' | 'person' 
     sponsor: books.sponsor?.brand ?? 'The shirt sponsor',
     opponent: nextOpponent(career)?.name ?? 'next',
   };
+  if (ev.teamId) {
+    vars.rival = career.season.league.teams.find((t) => t.id === ev.teamId)?.shortName ?? vars.opponent;
+    vars.owner = ownerOf(career, ev.teamId)?.name ?? 'their owner';
+  }
   return text.replace(/\{(\w+)\}/g, (all, key: string) => vars[key] ?? all);
 }
 
@@ -557,6 +580,12 @@ function applyEffects(career: Career, ev: StoryEvent, def: EventDef, choice: Eve
         baseline: e.promise === 'starts' ? (p ? (career.playerSeason[p]?.apps ?? 0) : 0) : career.counter,
         target: e.target ?? 0,
       });
+    } else if ('heat' in e) {
+      addHeat(career, ev.teamId, e.heat);
+    } else if ('owner' in e) {
+      ownerMemory(career, ev.teamId, scaled(e.owner, s));
+    } else if ('claim' in e) {
+      if (e.claim && ev.teamId) addClaim(career, ev.teamId);
     } else if ('later' in e) {
       addTimer(career, { week: career.weekIndex + e.later, kind: 'later', eventId: def.id, choiceId: choice.id, playerId: ev.playerId, amount: ev.amount, baseline: 0, target: 0 });
     }

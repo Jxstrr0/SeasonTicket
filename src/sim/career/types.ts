@@ -217,6 +217,16 @@ export interface Stadium {
   startDemand: number;
 }
 
+export type Temperament = 'calm' | 'showman' | 'pennyPincher' | 'gambler';
+
+/** An AI club's owner (Stage 6.4): a light character who remembers how you have dealt with them. */
+export interface RivalOwner {
+  name: string;
+  temperament: Temperament;
+  /** How they feel about you, -1 to 1 (0 neutral). */
+  memory: number;
+}
+
 export interface Owner {
   /** Personal money left to put into the club. */
   fortune: number;
@@ -267,7 +277,7 @@ export interface CareerReplays {
 export type StoryPace = 'calm' | 'normal' | 'busy';
 
 /** Who brings an event to the office. */
-export type VisitorRole = 'lender' | 'agent' | 'sponsor' | 'coach' | 'reporter' | 'player' | 'fans' | 'councillor' | 'vip' | 'staffer';
+export type VisitorRole = 'lender' | 'agent' | 'sponsor' | 'coach' | 'reporter' | 'player' | 'fans' | 'councillor' | 'vip' | 'staffer' | 'owner';
 
 /** An event waiting for the owner's answer (or answered, while its message is still kept). */
 export interface StoryEvent {
@@ -288,6 +298,8 @@ export interface StoryEvent {
   /** The choice made, once answered; 'staff' when the staff answered. */
   answer: string | null;
   mailId: string;
+  /** The rival club the event is about, fixed when it starts (Stage 6.4 rivalry events). */
+  teamId?: string | null;
   /** Set when the event is a press conference (Stage 6.3). */
   press?: PressConference;
 }
@@ -460,6 +472,8 @@ export interface Career {
   inbox: InboxMessage[];
   history: SeasonHistoryEntry[];
   story: StoryState;
+  /** The other clubs' owners, by team id (Stage 6.4). */
+  owners: Record<string, RivalOwner>;
   /** The newspaper and social feed (Stage 6.2). */
   news: NewsState;
   /** Counter for career-side ids (bids, debts, messages). */

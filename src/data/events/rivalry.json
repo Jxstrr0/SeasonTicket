@@ -1,0 +1,96 @@
+{
+  "_about": "Rivalry events (Stage 6.4). They come in the week before a derby (derbyNext) or a game against a rival (rivalNext: a derby or a club with high heat). {rival} is that club and {owner} its owner, fixed when the event starts. Extra effects: heat (rivalry heat with that club), owner (how its owner feels about you, -1 to 1), claim (a public promise to win the match, judged afterwards like a press-conference promise).",
+  "events": [
+    {
+      "id": "rival-jibe", "role": "reporter",
+      "when": { "phase": ["season"], "weekMin": 3, "rivalNext": true },
+      "maxPerSeason": 2, "cooldown": 6,
+      "title": "{owner} has a go at {short}",
+      "text": "A reporter reads you a quote from {owner}, owner of {rival}: \"{short}? Lovely club. Like a museum. Nothing in it has moved for years.\" They want your reply for tomorrow's paper.",
+      "staff": "noComment",
+      "choices": [
+        { "id": "hitBack", "label": "Hit back hard", "hint": "The fans will love it. The rivalry heats up.", "result": "Your reply runs under the headline \"Come and see what's moved\".", "effects": [{ "fans": 0.03 }, { "heat": 0.08 }, { "press": -0.01 }, { "owner": -0.08 }], "news": "Owners trade blows before {rival} game|The {short} owner hit back at {owner}'s \"museum\" jibe. The build-up is now officially spicy." },
+        { "id": "laugh", "label": "Laugh it off", "hint": "Good for your standing with the press.", "result": "\"Museums are free on Sundays. Our tickets aren't.\" The room enjoys it.", "effects": [{ "press": 0.03 }, { "fans": 0.01 }] },
+        { "id": "noComment", "label": "No comment", "hint": "Nothing gained, nothing lost.", "result": "The reporter sighs and writes \"declined to comment\".", "effects": [] }
+      ]
+    },
+    {
+      "id": "derby-wager", "role": "owner",
+      "when": { "phase": ["season"], "derbyNext": true },
+      "maxPerSeason": 1, "cooldown": 10, "amount": 25000,
+      "title": "{owner} proposes a bet",
+      "text": "{owner}, owner of {rival}, drops by with a grin. \"Friendly bet on the derby. The losing owner wears the winner's scarf at their next home game. Deal?\"",
+      "staff": "decline",
+      "choices": [
+        { "id": "shake", "label": "Shake on it", "hint": "A public bet that you win. Win and the fans love it; lose and you wear their scarf.", "result": "You shake on it. By the evening the whole city knows.", "effects": [{ "claim": true }, { "fans": 0.02 }, { "heat": 0.04 }, { "owner": 0.05 }], "news": "Owners bet a scarf on the derby|{owner} and the {short} owner have shaken on it: the loser wears the winner's scarf. Somebody is going to look silly." },
+        { "id": "charity", "label": "Make it {amount} to a local charity instead", "hint": "Costs {amount}. The press and {owner} will like it.", "result": "{owner} matches it on the spot. The local hospice gets a good week.", "effects": [{ "cash": -1, "line": "operations" }, { "press": 0.04 }, { "fans": 0.02 }, { "owner": 0.06 }, { "heat": -0.03 }], "news": "Derby rivals give to charity|{short} and {rival} owners will each give to a local hospice instead of a bet on the derby." },
+        { "id": "decline", "label": "Politely decline", "hint": "{owner} will think you're no fun.", "result": "\"Suit yourself,\" says {owner}, and helps themself to a biscuit on the way out.", "effects": [{ "owner": -0.03 }] }
+      ]
+    },
+    {
+      "id": "rival-tapping", "role": "agent",
+      "when": { "phase": ["season"], "weekMin": 4, "rivalNext": true, "subject": "star" },
+      "maxPerSeason": 1, "cooldown": 12, "amount": 150000,
+      "title": "{rival} are sniffing around {player}",
+      "text": "{player}'s agent closes the door. \"{owner} at {rival} called me last night. Big wages, big promises. My client is happy here, but he'd like to feel wanted.\"",
+      "staff": "steady",
+      "choices": [
+        { "id": "raise", "label": "Pay him a loyalty bonus of {amount}", "hint": "Costs {amount}. He'll feel wanted.", "result": "{first} is staying, and a little richer. {rival} will have to look elsewhere.", "effects": [{ "cash": -1, "line": "playerWages" }, { "mood": 0.15 }] },
+        { "id": "complain", "label": "Complain to the league about tapping up", "hint": "The rivalry heats up and {owner} won't forget it.", "result": "The league says it will \"look into it\". {owner} calls you a sore loser on the radio.", "effects": [{ "heat": 0.08 }, { "owner": -0.1 }, { "press": 0.01 }, { "mood": 0.04 }], "news": "{short} accuse {rival} of tapping up|The {short} owner has complained to the league after {rival} contacted {player}'s camp." },
+        { "id": "steady", "label": "Tell the agent you don't negotiate through rivals", "hint": "Free, but {first} may feel a little taken for granted.", "result": "The agent shrugs. \"I'll pass that on.\"", "effects": [{ "mood": -0.08 }] }
+      ]
+    },
+    {
+      "id": "derby-safety", "role": "councillor",
+      "when": { "phase": ["season"], "derbyNext": true, "homeNext": true },
+      "maxPerSeason": 1, "cooldown": 8, "amount": 40000,
+      "title": "Safety worries for the {rival} derby",
+      "text": "A councillor and a police inspector want a word. The last time {rival} came to the {stadium}, there was trouble on the bridge. They want extra stewards, at {amount}.",
+      "staff": "pay",
+      "choices": [
+        { "id": "pay", "label": "Pay for the stewards", "hint": "Costs {amount}. Safe and sensible.", "result": "Extra stewards are booked. The inspector looks relieved.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.01 }, { "press": 0.01 }] },
+        { "id": "walk", "label": "Organise a joint fan walk with {rival}", "hint": "Costs {half}. Cools things down; {owner} will appreciate it.", "result": "Both sets of fans walk in together behind a brass band. Mostly in step.", "effects": [{ "cash": -0.5, "line": "matchday" }, { "owner": 0.08 }, { "heat": -0.05 }, { "press": 0.03 }], "news": "Derby fans to walk in together|{short} and {rival} supporters will march to the ground side by side behind a brass band." },
+        { "id": "refuse", "label": "Leave it to the police", "hint": "Free, but if it goes wrong, it's on you.", "result": "The inspector writes something down and doesn't say what.", "effects": [{ "press": -0.03 }, { "heat": 0.04 }] }
+      ]
+    },
+    {
+      "id": "mural-wars", "role": "fans",
+      "when": { "phase": ["season"], "rivalNext": true },
+      "maxPerSeason": 1, "cooldown": 10, "amount": 15000,
+      "title": "Someone painted over the mural",
+      "text": "Overnight, the mural of {short} legends outside the ground was painted in {rival} colours. Their fans are celebrating online. The fans' group rep is furious, and the club shop has a lot of spare paint.",
+      "staff": "repaint",
+      "choices": [
+        { "id": "repaint", "label": "Repaint it, bigger", "hint": "Costs {amount}. The fans will be proud of it.", "result": "The new mural is twice the size and has a better likeness of the 1994 captain.", "effects": [{ "cash": -1, "line": "operations" }, { "fans": 0.04 }] },
+        { "id": "reply", "label": "Paint a reply on the wall along their bus route", "hint": "Costs {half}. Fans love it, the rivalry heats up, the press tut.", "result": "The reply is cheeky and accurate. {owner} is not amused.", "effects": [{ "cash": -0.5, "line": "operations" }, { "fans": 0.05 }, { "heat": 0.07 }, { "press": -0.02 }, { "owner": -0.04 }], "news": "Mural wars in {city}|{short} fans woke up to {rival} colours on their mural, and answered with a wall of their own." },
+        { "id": "together", "label": "Invite both sets of fans to repaint it together", "hint": "Free. Good press, and it cools things down.", "result": "It takes all weekend and there is one argument about shades of blue. It looks great.", "effects": [{ "press": 0.04 }, { "heat": -0.04 }, { "owner": 0.04 }, { "fans": -0.01 }] }
+      ]
+    },
+    {
+      "id": "derby-tickets", "role": "vip",
+      "when": { "phase": ["season"], "derbyNext": true, "homeNext": true },
+      "maxPerSeason": 1, "cooldown": 8, "amount": 80000,
+      "title": "Everyone wants a derby ticket",
+      "text": "{person}, from a local firm, wants 300 seats for the {rival} game to give to clients, and offers {amount}. Those seats would usually go to members.",
+      "staff": "members",
+      "choices": [
+        { "id": "sell", "label": "Sell the block for {amount}", "hint": "Brings in {amount}. Members will grumble.", "result": "{person} is delighted. The members' forum less so.", "effects": [{ "cash": 1, "line": "hospitality" }, { "fans": -0.03 }] },
+        { "id": "half", "label": "Sell half, keep half for members", "hint": "Brings in {half}. Nobody is thrilled; nobody is angry.", "result": "A compromise. {person} says they'll take what they can get.", "effects": [{ "cash": 0.5, "line": "hospitality" }, { "fans": -0.01 }] },
+        { "id": "members", "label": "Keep them for the members", "hint": "No money, but the fans notice.", "result": "The members' ballot is the busiest the club has ever seen.", "effects": [{ "fans": 0.03 }] }
+      ]
+    },
+    {
+      "id": "rival-dinner", "role": "owner",
+      "when": { "phase": ["season"], "weekMin": 6, "rivalNext": true },
+      "maxPerSeason": 1, "cooldown": 12,
+      "title": "{owner} invites you to dinner",
+      "text": "{owner}, owner of {rival}, has sent a handwritten card: dinner at the best restaurant in town, \"to talk football like adults\". It is either a peace offering or a fishing trip.",
+      "staff": "decline",
+      "choices": [
+        { "id": "go", "label": "Go, and keep it friendly", "hint": "{owner} will warm to you, which helps in future deals. The fans won't love the photos.", "result": "Three courses and no arguments. {owner} insists on paying, loudly.", "effects": [{ "owner": 0.12 }, { "heat": -0.04 }, { "fans": -0.01 }] },
+        { "id": "business", "label": "Go, and talk business", "hint": "{owner} will respect it; a little warmer.", "result": "You talk transfers over dessert. Nothing is agreed, but the door is open.", "effects": [{ "owner": 0.06 }] },
+        { "id": "decline", "label": "Send your regrets", "hint": "The fans will like that you kept your distance.", "result": "Your card says \"busy\". Everyone knows what it means.", "effects": [{ "owner": -0.04 }, { "fans": 0.01 }] }
+      ]
+    }
+  ]
+}
