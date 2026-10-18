@@ -3,7 +3,7 @@
   "events": [
     {
       "id": "rival-jibe", "role": "reporter",
-      "when": { "phase": ["season"], "weekMin": 3, "rivalNext": true },
+      "when": { "phase": ["season"], "weekMin": 3, "rivalNext": true }, "weight": 2.5,
       "maxPerSeason": 2, "cooldown": 6,
       "title": "{owner} has a go at {short}",
       "text": "A reporter reads you a quote from {owner}, owner of {rival}: \"{short}? Lovely club. Like a museum. Nothing in it has moved for years.\" They want your reply for tomorrow's paper.",
@@ -16,7 +16,7 @@
     },
     {
       "id": "derby-wager", "role": "owner",
-      "when": { "phase": ["season"], "derbyNext": true },
+      "when": { "phase": ["season"], "derbyNext": true }, "weight": 2.5,
       "maxPerSeason": 1, "cooldown": 10, "amount": 25000,
       "title": "{owner} proposes a bet",
       "text": "{owner}, owner of {rival}, drops by with a grin. \"Friendly bet on the derby. The losing owner wears the winner's scarf at their next home game. Deal?\"",
@@ -29,7 +29,7 @@
     },
     {
       "id": "rival-tapping", "role": "agent",
-      "when": { "phase": ["season"], "weekMin": 4, "rivalNext": true, "subject": "star" },
+      "when": { "phase": ["season"], "weekMin": 4, "rivalNext": true, "subject": "star" }, "weight": 2.5,
       "maxPerSeason": 1, "cooldown": 12, "amount": 150000,
       "title": "{rival} are sniffing around {player}",
       "text": "{player}'s agent closes the door. \"{owner} at {rival} called me last night. Big wages, big promises. My client is happy here, but he'd like to feel wanted.\"",
@@ -42,7 +42,7 @@
     },
     {
       "id": "derby-safety", "role": "councillor",
-      "when": { "phase": ["season"], "derbyNext": true, "homeNext": true },
+      "when": { "phase": ["season"], "derbyNext": true, "homeNext": true }, "weight": 2.5,
       "maxPerSeason": 1, "cooldown": 8, "amount": 40000,
       "title": "Safety worries for the {rival} derby",
       "text": "A councillor and a police inspector want a word. The last time {rival} came to the {stadium}, there was trouble on the bridge. They want extra stewards, at {amount}.",
@@ -55,7 +55,7 @@
     },
     {
       "id": "mural-wars", "role": "fans",
-      "when": { "phase": ["season"], "rivalNext": true },
+      "when": { "phase": ["season"], "rivalNext": true }, "weight": 2.5,
       "maxPerSeason": 1, "cooldown": 10, "amount": 15000,
       "title": "Someone painted over the mural",
       "text": "Overnight, the mural of {short} legends outside the ground was painted in {rival} colours. Their fans are celebrating online. The fans' group rep is furious, and the club shop has a lot of spare paint.",
@@ -68,7 +68,7 @@
     },
     {
       "id": "derby-tickets", "role": "vip",
-      "when": { "phase": ["season"], "derbyNext": true, "homeNext": true },
+      "when": { "phase": ["season"], "derbyNext": true, "homeNext": true }, "weight": 2.5,
       "maxPerSeason": 1, "cooldown": 8, "amount": 80000,
       "title": "Everyone wants a derby ticket",
       "text": "{person}, from a local firm, wants 300 seats for the {rival} game to give to clients, and offers {amount}. Those seats would usually go to members.",
@@ -81,7 +81,7 @@
     },
     {
       "id": "rival-dinner", "role": "owner",
-      "when": { "phase": ["season"], "weekMin": 6, "rivalNext": true },
+      "when": { "phase": ["season"], "weekMin": 6, "rivalNext": true }, "weight": 2.5,
       "maxPerSeason": 1, "cooldown": 12,
       "title": "{owner} invites you to dinner",
       "text": "{owner}, owner of {rival}, has sent a handwritten card: dinner at the best restaurant in town, \"to talk football like adults\". It is either a peace offering or a fishing trip.",

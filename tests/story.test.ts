@@ -57,9 +57,15 @@ describe('story layer: a season', () => {
   it('brings plenty of varied decisions', () => {
     const counts = new Map<string, number>();
     for (const d of decisions) counts.set(d.eventId, (counts.get(d.eventId) ?? 0) + 1);
-    expect(decisions.length).toBeGreaterThanOrEqual(20);
-    expect(counts.size).toBeGreaterThanOrEqual(12);
-    expect(Math.max(...counts.values()) / decisions.length).toBeLessThanOrEqual(0.15);
+    expect(decisions.length).toBeGreaterThanOrEqual(25);
+    expect(counts.size).toBeGreaterThanOrEqual(20);
+    expect(Math.max(...counts.values()) / decisions.length).toBeLessThanOrEqual(0.08);
+  });
+
+  it('keeps the Normal pace to one or two decisions a week', () => {
+    const perWeek = decisions.length / quiet.length;
+    expect(perWeek).toBeGreaterThanOrEqual(1);
+    expect(perWeek).toBeLessThanOrEqual(2);
   });
 
   it('has quiet weeks and lets the staff answer some', () => {
@@ -70,7 +76,7 @@ describe('story layer: a season', () => {
 
   it('brings many kinds of visitor', () => {
     const roles = new Set(decisions.map((d) => eventDef(d.eventId)!.role));
-    expect(roles.size).toBeGreaterThanOrEqual(7);
+    expect(roles.size).toBeGreaterThanOrEqual(9);
   });
 
   it('never leaves more open than the cap', () => {

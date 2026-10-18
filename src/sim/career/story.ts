@@ -42,6 +42,8 @@ export interface EventConditions {
   /** Ticket price at least this share of the fair price. */
   priceOverFair?: number;
   homeNext?: boolean;
+  /** The next match is away (Stage 6.7). */
+  awayNext?: boolean;
   lostRun?: number;
   wonRun?: number;
   fansBelow?: number;
@@ -306,6 +308,7 @@ export function conditionsMet(career: Career, w: EventConditions): boolean {
   if (w.hasSponsor !== undefined && !!books.sponsor !== w.hasSponsor) return false;
   if (w.priceOverFair !== undefined && books.ticketPrice < fairPriceOf(career) * w.priceOverFair) return false;
   if (w.homeNext && nextOpponent(career)?.home !== true) return false;
+  if (w.awayNext && nextOpponent(career)?.home !== false) return false;
   const form = formOf(career);
   if (w.lostRun !== undefined && !endsWith(form, 'L', w.lostRun)) return false;
   if (w.wonRun !== undefined && !endsWith(form, 'W', w.wonRun)) return false;

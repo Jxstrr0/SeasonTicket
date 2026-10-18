@@ -10,33 +10,49 @@
       "{score}!!! I've lost my voice and I don't care",
       "That's the best I've seen us play in years. {hero} take a bow",
       "Somebody check on the {them} fans. Actually don't",
-      "Booked the day off tomorrow. Worth it. {score}"
+      "Booked the day off tomorrow. Worth it. {score}",
+      "Can we play {them} every week please",
+      "Group chat has gone absolutely mental. {score}",
+      "{hero}. That's it. That's the post"
     ],
     "win": [
       "Three points. Back of the net. Lovely",
       "{hero} was class today. Give him a new contract now",
       "Not pretty, don't care. Up the {nickWord}",
       "Good win that. More of the same please",
-      "Told my mate we'd win {score}. He owes me a pie"
+      "Told my mate we'd win {score}. He owes me a pie",
+      "Nervy at the end but we'll take it",
+      "Good to see {hero} getting the reward. Deserved",
+      "Home in time for tea with three points. Perfect day"
     ],
     "draw": [
       "A point's a point I suppose",
       "Should have won that. Same old",
       "{hero} the only one who turned up today",
-      "Draws don't win you anything. Just saying"
+      "Draws don't win you anything. Just saying",
+      "Could have been worse. Could have been a lot better",
+      "Nobody deserved to win that, if we're honest",
+      "Fine. Not great. Fine",
+      "Point against {them}. Nobody's dancing in {city} tonight"
     ],
     "loss": [
       "Embarrassing. Absolutely embarrassing",
       "Where was the fight today?",
       "Not good enough. The owner needs to sort this",
       "{hero} gave everything. Can't say that about the rest",
-      "Long drive home after that one"
+      "Long drive home after that one",
+      "Same problems every week and nobody fixes them",
+      "Not having a go at {hero}, he tried. The rest though",
+      "We miss chances like that, we lose. Simple"
     ],
     "bigLoss": [
       "I want my ticket money back",
       "{score}. I have no words. Actually I have several but I can't post them",
       "Worst performance I've seen in my life and I've been coming since I was six",
-      "Somebody has to answer for that"
+      "Somebody has to answer for that",
+      "Turned it off at half-time. Best decision I made all day",
+      "Apologising to my kids for bringing them",
+      "{score}. Just going to sit in the dark for a bit"
     ],
     "happy": [
       "Love being a {us} fan right now",
@@ -77,7 +93,10 @@
     "price": [
       "${price} for a ticket now? For THAT?",
       "Can't afford to take the kids any more. Prices are a joke",
-      "Ticket prices going up, football going down"
+      "Ticket prices going up, football going down",
+      "${price}? I'll watch it in the pub, thanks",
+      "Loyal fans priced out. Great look",
+      "My season ticket costs more than my car is worth"
     ],
     "signing": [
       "Get in! {player} is one of ours now",
@@ -92,15 +111,40 @@
     "preseason": [
       "Counting down the days to kick-off",
       "New season, new hope. Same old seat in the {stadium}",
-      "This is our year. I say that every year. This is our year"
+      "This is our year. I say that every year. This is our year",
+      "Pre-season friendlies mean nothing. Still nervous",
+      "Got the fixture list on the fridge already",
+      "Season ticket in the wallet. Let's go",
+      "Calling it now: top half. Screenshot this",
+      "New kit's alright actually. Don't tell my brother"
     ]
   },
-  "rival": [
-    "Enjoy that one, {us} fans? Thought not",
-    "{score}. Say no more",
-    "Bus home is that way {us}",
-    "Respect to {us}, that was a proper game"
-  ],
+  "rival": {
+    "_about": "Posts from the other side's fans after a match: won (they beat us), drew, lost (we beat them).",
+    "won": [
+      "Enjoy that one, {us} fans? Thought not",
+      "{score}. Say no more",
+      "Bus home is that way {us}",
+      "Easiest three points of the season. Cheers {us}",
+      "Is that it? We were told {us} were decent this year",
+      "Thanks for coming, {us}. Safe trip home"
+    ],
+    "drew": [
+      "Respect to {us}, that was a proper game",
+      "Fair result. Both sets of fans earned a pint",
+      "Should have beaten {us} really. Ah well",
+      "A point off {us}. I'll take it",
+      "{us} were better than I expected. Don't tell anyone"
+    ],
+    "lost": [
+      "Fair play {us}. Better side on the day",
+      "Ref had a shocker. That's all I'm saying",
+      "We'll see you at our place, {us}",
+      "Lucky. Lucky lucky lucky",
+      "Not thinking about it. Moving on. Not thinking about it",
+      "Hate to say it but {hero} was quality"
+    ]
+  },
   "rumour": [
     "Hearing {to} have had scouts at the last two {us} games. {player} the target",
     "ITK: {to} are lining up a bid for {player}. You heard it here first",

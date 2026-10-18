@@ -95,9 +95,11 @@ describe('newspaper and social feed: a season', () => {
       expect(p.handle).toMatch(/^[A-Za-z0-9_]{3,20}$/);
       expect(p.likes).toBeGreaterThanOrEqual(NEWS_TUNING.social.likes.min);
     }
-    // Fans repeat themselves, but not every week.
-    const texts = socialFeed(career).map((p) => p.text);
-    expect(new Set(texts).size / texts.length).toBeGreaterThan(0.7);
+    // Fans repeat themselves, but rarely within a few weeks of each other.
+    const texts = played.posts;
+    const window = NEWS_TUNING.social.freshWindow;
+    const echoes = texts.filter((t, i) => texts.slice(Math.max(0, i - window), i).includes(t)).length;
+    expect(echoes / texts.length).toBeLessThan(0.05);
   });
 
   it('is the same paper from the same seed and choices', () => {

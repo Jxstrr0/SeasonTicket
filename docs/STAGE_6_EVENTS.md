@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.6 built; next is 6.7.
+**Status:** plan approved by the owner (2026-10-18). Steps 6.1 to 6.7 built; Stage 6 is complete and waiting for the owner's verdict.
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -228,6 +228,28 @@ With a full squad, only bids and silly calls come in, so every offer can be acce
 **The war room screen.** The clock and its buttons at the top; the calls on hold (with how long each has left, in orange when it lapses at the next hour); earlier calls folded away; and a whiteboard with cash, the most you can pay, wage room, squad size, ins and outs, and the players on offer.
 
 **Saves.** Save version 10 adds the deadline day. An old save in the last week of a window gets its war room when loaded.
+
+### 6.7 Variety and balance pass (built 2026-10-18)
+
+**More events.** 25 new everyday club events in `src/data/events/club.json`, bringing the total to 72 (63 that can start on their own; the rest are follow-ups in story chains). Among them: a pre-season training camp, a data analyst with a laptop full of charts, a homesick signing, a player's social-media gaffe, a fan podcast, a kit delivery stuck at the port, the kitman retiring after thirty years, the groundsman's broken mower, a school visit, a wedding proposal on the pitch, a celebrity fan, a friendly offered by another owner, a physio asking for new kit while players are injured, an agent offering a loan player, and the mascot race. Every visitor role now turns up in almost every season. One new condition, `awayNext`, lets an event wait for a week with an away match.
+
+**Pace.** Measured over 14 or 15 headless seasons (5 seeds × 3 seasons, all difficulties, an owner who answers about two thirds of events and leaves the rest to the staff):
+
+| Story pace | Decisions a week | Decisions a season | Quiet weeks (of 39) |
+|---|---|---|---|
+| Calm | 0.62 | 24 (16 to 30) | 13 |
+| Normal (default) | 1.26 | 49 (44 to 55) | 4.6 |
+| Busy | 1.43 | 56 (50 to 64) | 3.3 |
+
+Normal now sits in the middle of the owner's "1 to 2 a week" (it was 1.00 before this pass). Busy is held back by the limit of 3 events waiting at once and by cooldowns; it gives fewer quiet weeks rather than many more decisions. A season on Normal brings at least 34 different events (38 on average), and no single event is more than 7% of a season's decisions.
+
+**Rivalry events** were rarely seen (they only qualify in derby or rivalry weeks), so they now carry weight 2.5 when they do qualify.
+
+**Fan feed.** One rival-fan line ("Respect to {us}, that was a proper game") was used after every draw and every win, and short result pools repeated within a few weeks: about 16% of posts repeated one from the last 12. Rival fans now have their own lines for winning, drawing and losing, the result and pre-season pools are larger, and result posts avoid lines used lately. Repeats are now under 1% of posts.
+
+**Rarely seen on purpose.** Some events only come when something has gone wrong: ticket complaints (prices well above fair), the losing-run fans' meeting, the injury crisis, building objections, the lenders and the naming-rights backlash. The test seasons did not trigger them, which is as intended.
+
+**Tests.** `tests/story.test.ts` now checks a Normal season brings at least 25 decisions, at least 20 different events, no event more than 8% of them, 1 to 2 decisions a week and at least 9 kinds of visitor. `tests/news.test.ts` checks fewer than 5% of fan posts repeat one of the last 12.
 
 ## Owner's decisions (2026-10-18)
 
