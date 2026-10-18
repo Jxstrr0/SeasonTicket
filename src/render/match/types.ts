@@ -138,4 +138,8 @@ export interface MatchScene3D {
   /** The home club's ground. */
   ground: StadiumSnapshot;
   night: boolean;
+  /** The sky over the match (src/render/match/weather.ts). */
+  weather: MatchWeather;
 }
+
+export type MatchWeather = 'clear' | 'rain' | 'wind' | 'heat' | 'snow';

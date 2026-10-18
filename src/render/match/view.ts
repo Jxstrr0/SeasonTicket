@@ -27,11 +27,13 @@ import {
   Scene,
   SphereGeometry,
   SRGBColorSpace,
+  Vector2,
   Vector3,
   WebGLRenderer,
 } from 'three';
 import tuning from '../../data/tuning/match3d.json';
 import stadiumTuning from '../../data/tuning/stadium.json';
+import atmosphere from '../../data/tuning/atmosphere.json';
 import { Assets } from '../assets';
 import { QUALITY_TIERS, type QualityTier } from '../quality';
 import { GRASS_Y, buildStadiumModel } from '../stadium/model';
@@ -40,6 +42,7 @@ import { MatchCamera, type CameraKey } from './cameras';
 import { PitchMarks } from './marks';
 import { Squads, loadPlayerTemplates } from './players';
 import type { MatchFrame3D, MatchScene3D, ShapeOverlay3D } from './types';
+import { buildWeather, weatherLook } from './weather';
 
 export type { MatchFrame3D, MatchScene3D, KitColours, ShapeOverlay3D } from './types';
 export { CAMERA_PRESETS, type CameraKey } from './cameras';
@@ -75,6 +78,8 @@ export interface MatchViewHandle {
   /** Cuts to camera `key`; `end` (-1 or 1) holds the behind-the-goal camera at that end. */
   setCamera(key: CameraKey, end?: number): void;
   setNight(night: boolean): void;
+  /** The home fans jump (a home goal). */
+  celebrate(): void;
   /** The tactics overlay on the grass, or null for none. */
   overlay(shape: ShapeOverlay3D | null): void;
   /** Rings the player with person code `who` (-1 for nobody). */
@@ -192,6 +197,11 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   model.update(opts.scene.ground);
   const surroundings = buildSurroundings(tier.cityBlocks, shadows);
   scene.add(model.root, surroundings.root);
+  const weather = buildWeather(opts.scene.weather ?? 'clear', opts.tier);
+  scene.add(weather.root);
+  const look = weatherLook(opts.scene.weather ?? 'clear');
+  const weatherSky = look?.sky ? skyTexture(look.sky[0], look.sky[1]) : null;
+  const bufferSize = new Vector2();
 
   // The ball and the soft shadows under everyone.
   const R = tuning.ball.radius;
@@ -325,7 +335,10 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   const applyTime = (): void => {
     model.setLit(night ? stadiumTuning.view.nightSelfLit : stadiumTuning.view.daySelfLit);
     scene.background = night ? nightSky : daySky;
-    (scene.fog as Fog).color.set(night ? '#1a2340' : '#d5e3ef');
+    const fog = scene.fog as Fog;
+    fog.color.set(night ? '#1a2340' : (look?.fog?.[0] ?? '#d5e3ef'));
+    fog.near = look?.fog?.[1] ?? 650;
+    fog.far = look?.fog?.[2] ?? 1500;
     if (night) {
       sky.color.set('#c9d6ff');
       sky.groundColor.set('#2a2a30');
@@ -333,19 +346,19 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       sun.color.set('#9fb3ff');
       sun.intensity = 0.35;
     } else {
+      // Rain, snow, wind and heat change the daylight; at night the floodlights win.
+      if (weatherSky) scene.background = weatherSky;
       sky.color.set('#dce8ff');
       sky.groundColor.set('#5b5340');
-      sky.intensity = 1.5;
-      sun.color.set('#fff1dc');
-      sun.intensity = 2.4;
+      sky.intensity = look?.skyLight ?? 1.5;
+      sun.color.set(look?.sunColour ?? '#fff1dc');
+      sun.intensity = look?.sun ?? 2.4;
     }
     renderer.shadowMap.needsUpdate = true;
     dirty = true;
   };
-  if (opts.scene.night) {
-    night = true;
-    applyTime();
-  }
+  night = opts.scene.night;
+  if (night || look) applyTime();
 
   let lastTime = performance.now();
   let sinceBoards = 0;
@@ -371,7 +384,9 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       dirty = true;
     }
     const easing = cam.tick(dt);
-    const boards = model.tick(dt) && sinceBoards >= 1 / 30;
+    const stands = model.tick(dt);
+    const air = weather.tick(dt, camera, renderer.getDrawingBufferSize(bufferSize).y);
+    const boards = (stands || air) && sinceBoards >= 1 / 30;
     if (!dirty && !easing && !boards) return;
     dirty = false;
     sinceBoards = 0;
@@ -405,6 +420,10 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       if (value === night) return;
       night = value;
       applyTime();
+    },
+    celebrate() {
+      const J = atmosphere.crowdJump;
+      model.jump(J.seconds, J.height, J.rate);
     },
     overlay(shape) {
       marks.set(shape);
@@ -468,6 +487,8 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       marks.dispose();
       model.dispose();
       surroundings.dispose();
+      weather.dispose();
+      weatherSky?.dispose();
       ball.geometry.dispose();
       (ball.material as MeshLambertMaterial).dispose();
       ballMap.dispose();

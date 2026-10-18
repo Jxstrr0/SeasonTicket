@@ -1025,6 +1025,16 @@ body.office-mode .topbar { backdrop-filter: none; }
 .m3d-energy { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
 .m3d-energy span { display: block; height: 100%; background: currentColor; }
 .m3d-sub { min-height: 44px; margin-top: 2px; }
+/* The commentary ticker over the pitch (Stage 5.5): one line at a time, striped in the side's colour. */
+.ticker { position: absolute; z-index: 2; left: 50%; bottom: 6px; transform: translateX(-50%); width: max-content; max-width: min(480px, calc(100% - 16px)); padding: 5px 12px 5px 10px; border-left: 4px solid var(--c, transparent); border-radius: 6px; background: rgba(11, 16, 32, 0.84); font-size: 0.85rem; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; pointer-events: none; animation: ticker-in 0.25s ease-out; }
+.ticker[hidden] { display: none; }
+.ticker.big { font-weight: 700; font-size: 1rem; background: rgba(11, 16, 32, 0.94); }
+.is-3d .ticker { bottom: 56px; }
+.is-full .ticker { bottom: max(8px, env(safe-area-inset-bottom)); max-width: min(520px, calc(100% - 220px)); }
+.is-full .is-3d .ticker { bottom: calc(max(6px, env(safe-area-inset-bottom)) + 54px); }
+.is-full:has(.lf-ft) .ticker { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 64px); }
+@keyframes ticker-in { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .ticker { animation: none; } }
 .has-pitch .scoreboard { padding: 6px 12px; }
 .has-pitch .sb-score { font-size: 1.5rem; }
 /* Landscape phone: the score and pitch fill the height on the left, the rest scrolls on the right. */

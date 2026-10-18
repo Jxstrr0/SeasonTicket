@@ -77,8 +77,10 @@ import type { HotspotId, OfficePick } from '../../render/office/types';
 import { OfficeHost } from './officeHost';
 import { StadiumHost } from './stadiumHost';
 import { ReplayHost } from './replayHost';
+import { Atmosphere, nightMatch } from './atmosphere';
+import atmosphereTuning from '../../data/tuning/atmosphere.json';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, storeSound, SOUND_SETTINGS, type SoundSetting, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -172,7 +174,9 @@ export class CareerApp {
     this.ui.flash = { kind: 'error', text };
     this.render();
   });
-  private readonly pitch = new LiveHost(this.match3d);
+  /** The crowd's sound and the commentary ticker, shared like the 3D view. */
+  private readonly atmosphere = new Atmosphere();
+  private readonly pitch = new LiveHost(this.match3d, this.atmosphere);
   /** Set after one failed save so the warning shows once. */
   private saveWarned = false;
   /** The 3D office sits behind the menus; the menus render into uiLayer. */
@@ -180,7 +184,7 @@ export class CareerApp {
   private readonly officeLayer: HTMLElement;
   private readonly office: OfficeHost;
   private readonly stadium: StadiumHost;
-  private readonly replay = new ReplayHost(this.match3d);
+  private readonly replay = new ReplayHost(this.match3d, this.atmosphere);
   /** Set when a pick should also turn the 3D stadium's camera to face it. */
   private stadiumFocus = false;
   private runner: MatchRunner | null = null;
@@ -189,6 +193,9 @@ export class CareerApp {
   private warmTimer: number | null = null;
 
   constructor(private readonly root: HTMLElement) {
+    this.atmosphere.onGoal = (side) => {
+      if (side === 0) this.match3d.celebrate();
+    };
     const officeLayer = document.createElement('div');
     officeLayer.id = 'office-layer';
     this.officeLayer = officeLayer;
@@ -220,8 +227,11 @@ export class CareerApp {
     root.addEventListener('input', (e) => this.onDraft(e));
     root.addEventListener('change', (e) => this.onChange(e));
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') this.save();
+      const hidden = document.visibilityState === 'hidden';
+      if (hidden) this.save();
+      this.atmosphere.sound.sleep(hidden);
     });
+    this.atmosphere.sound.setLevel(atmosphereTuning.sound.levels[this.ui.sound]);
     this.render();
   }
 
@@ -262,6 +272,7 @@ export class CareerApp {
     this.syncStadium();
     this.syncReplay();
     this.syncPitch();
+    this.syncSound();
     this.syncFullscreen();
     this.scheduleWarm();
   }
@@ -285,11 +296,26 @@ export class CareerApp {
         m = null;
       }
       const setup = career.liveMatch.setup;
-      three = { ...this.matchChoice(setup.homeId, setup.attendanceShare), side: setup.homeId === career.userTeamId ? 0 : 1, card: (who) => this.liveCard(who) };
+      three = { ...this.matchChoice(setup.homeId, setup.attendanceShare, nightMatch(setup.matchId, setup.playoff)), side: setup.homeId === career.userTeamId ? 0 : 1, card: (who) => this.liveCard(who) };
       this.pitch.sync(this.uiLayer, m, setup.matchId, three);
       return;
     }
     this.pitch.sync(this.uiLayer, m);
+  }
+
+  /**
+   * Sound plays on the live and replay screens only. The pitch and replay hosts start it for
+   * their match; the text-only live screen has no host, so it is started here.
+   */
+  private syncSound(): void {
+    const { ui, career } = this;
+    const live = ui.screen === 'live' && !!career?.liveMatch;
+    if (live && !ui.live.pitch) {
+      const m = career ? liveOf(career)?.m : null;
+      if (m) this.atmosphere.attach(null, m);
+      return;
+    }
+    if (!live && ui.screen !== 'replay') this.atmosphere.stop();
   }
 
   /** The card for a player tapped in the live 3D match: how he is doing so far. */
@@ -344,7 +370,7 @@ export class CareerApp {
   }
 
   /** What the 3D match should show for a match at `homeId`'s ground. */
-  private matchChoice(homeId: string, crowd: number | undefined): Omit<ThreeChoice, 'side'> {
+  private matchChoice(homeId: string, crowd: number | undefined, night: boolean): Omit<ThreeChoice, 'side'> {
     const { ui } = this;
     const career = this.career as Career;
     const ok = ui.quality !== 'off' && !ui.match3dFailed && !!career.stadiums[homeId];
@@ -353,6 +379,7 @@ export class CareerApp {
       highlights: ui.highlights,
       tier: ok && ui.quality !== 'off' ? ui.quality : null,
       ground: () => buildStadiumSnapshot(career, undefined, homeId, crowd),
+      night,
     };
   }
 
@@ -366,7 +393,7 @@ export class CareerApp {
     const id = ui.replayId;
     const setup = replay.record.setup;
     const side = (fixture ? fixture.awayId === career.userTeamId : setup.away.name === userTeam(career).name) ? 1 : 0;
-    this.replay.sync(this.uiLayer, replay, id, { ...this.matchChoice(home, fixture?.result?.attendanceShare ?? setup.crowd), side, card: (who) => this.replayCard(setup, id, who) });
+    this.replay.sync(this.uiLayer, replay, id, { ...this.matchChoice(home, fixture?.result?.attendanceShare ?? setup.crowd, nightMatch(id, !!setup.extraTime)), side, card: (who) => this.replayCard(setup, id, who) });
   }
 
   /** Once the screen is idle, start the coming week's matches in the workers. */
@@ -499,6 +526,24 @@ export class CareerApp {
     return false;
   }
 
+  /** The Sound button turns the sound off and back on at the level it had. */
+  private soundBack: SoundSetting | null = null;
+
+  private toggleSound(): void {
+    if (this.ui.sound !== 'off') return this.setSound('off');
+    const fallback = atmosphereTuning.sound.defaultLevel as SoundSetting;
+    this.setSound(this.soundBack ?? (fallback === 'off' ? 'medium' : fallback));
+  }
+
+  private setSound(level: SoundSetting): void {
+    if (this.ui.sound !== 'off') this.soundBack = this.ui.sound;
+    this.ui.sound = level;
+    storeSound(level);
+    this.atmosphere.sound.setLevel(atmosphereTuning.sound.levels[level]);
+    // This runs inside the tap, so the sound can start now.
+    this.atmosphere.sound.unlock();
+  }
+
   private stopLoops(): void {
     this.runToken += 1;
     this.ui.simming = false;
@@ -509,6 +554,7 @@ export class CareerApp {
     }
     cancelAnimationFrame(this.liveRaf);
     this.liveRaf = 0;
+    this.atmosphere.pause();
   }
 
   // -------------------------------------------------------------------------
@@ -516,6 +562,8 @@ export class CareerApp {
   // -------------------------------------------------------------------------
 
   private onClick(e: Event): void {
+    // Phones only let sound start inside a tap.
+    this.atmosphere.sound.unlock();
     const target = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-action]') : null;
     if (!target || (target instanceof HTMLButtonElement && target.disabled)) return;
     const action = target.dataset.action ?? '';
@@ -605,6 +653,15 @@ export class CareerApp {
         // Turning 3D on (or changing tier) shows the office straight away.
         ui.inOffice = d.quality !== 'off';
         return this.render();
+      case 'live-sound':
+        this.toggleSound();
+        return this.render();
+      case 'set-sound': {
+        const level = SOUND_SETTINGS.find((k) => k === d.sound);
+        if (!level) return;
+        this.setSound(level);
+        return this.render();
+      }
       case 'set-mode':
         if (isMode(d.mode)) career.delegation.matchMode = d.mode;
         break;
@@ -1351,6 +1408,9 @@ export class CareerApp {
         this.save();
         return this.render();
       }
+      const engine = liveOf(career);
+      // A minute at a time: the minute's sounds all fall due at once, and the biggest play.
+      if (engine) this.atmosphere.show(engine.m, engine.m.clockMs, true, 60, performance.now());
       const finished = !career.liveMatch || career.liveMatch.finished;
       if (pause || finished) {
         live.running = false;
@@ -1399,7 +1459,7 @@ export class CareerApp {
         this.save();
         return this.render();
       }
-      this.pitch.show(target, now);
+      this.pitch.show(target, now, live.pitchSpeed);
       const finished = !career.liveMatch || career.liveMatch.finished;
       if (pause || finished) {
         live.running = false;

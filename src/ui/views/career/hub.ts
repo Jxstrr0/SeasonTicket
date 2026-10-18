@@ -2,7 +2,7 @@
 import { C, LADDER_NAMES, money, transferWindowOpen, userBooks, userFixture, userTeam, type Career } from '../../../sim/career';
 import { cls, each, esc } from '../../html';
 import { weekLabel } from '../../model';
-import { HUB_TABS, type HubTab, type UiState } from '../../career/state';
+import { HUB_TABS, SOUND_SETTINGS, type HubTab, type SoundSetting, type UiState } from '../../career/state';
 import { QUALITY_OPTIONS } from '../../../render/quality';
 import { MATCH_MODES } from './newCareer';
 import { renderCrest } from './crest';
@@ -75,6 +75,9 @@ function renderTopBar(career: Career, ui: UiState): string {
   </header>`;
 }
 
+const SOUND_LABELS: Record<SoundSetting, string> = { off: 'Off', low: 'Low', medium: 'Medium', high: 'High' };
+const SOUND_OPTIONS = SOUND_SETTINGS.map((id) => ({ id, label: SOUND_LABELS[id] }));
+
 function renderMenu(career: Career, ui: UiState): string {
   if (!ui.menuOpen) return '';
   const mode = career.delegation.matchMode;
@@ -88,6 +91,11 @@ function renderMenu(career: Career, ui: UiState): string {
       ${each(QUALITY_OPTIONS, (q) => `<button type="button" class="${cls('seg', q.id === ui.quality && 'on')}" data-action="set-quality" data-quality="${q.id}" aria-pressed="${q.id === ui.quality}">${esc(q.label)}</button>`)}
     </div>
     <p class="muted small">Low runs best on older phones. Off uses the plain menus with no 3D office.</p>
+    <div class="card-title">Match sound</div>
+    <div class="segmented" role="group">
+      ${each(SOUND_OPTIONS, (o) => `<button type="button" class="${cls('seg', o.id === ui.sound && 'on')}" data-action="set-sound" data-sound="${o.id}" aria-pressed="${o.id === ui.sound}">${esc(o.label)}</button>`)}
+    </div>
+    <p class="muted small">The crowd, the referee's whistle and the ball on match day. On iPhones the ring/silent switch mutes it.</p>
     <label class="check"><input type="checkbox" data-change="auto-lineup"${career.delegation.autoLineup ? ' checked' : ''}> Head coach picks the lineup each week</label>
     <div class="menu-row">
       <button type="button" class="btn-secondary" data-action="save-code">Save code</button>

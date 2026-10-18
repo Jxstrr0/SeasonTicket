@@ -17,7 +17,9 @@ import { PERIOD, PERSONS, personOf, type Side } from '../../sim/spatial/types';
 import type { MatchReplay } from '../../sim/types';
 import { cls, each, esc } from '../html';
 import { PitchView, goalBanner, nameOf } from '../pitch2d';
+import type { Atmosphere } from './atmosphere';
 import type { Match3D, ThreeChoice } from './match3d';
+import { MatchTape } from './match3dTape';
 
 /** Match time per real second. */
 const SPEEDS = [1, 4, 8, 16, 32] as const;
@@ -77,8 +79,12 @@ export class ReplayHost {
   private readonly wrap: HTMLElement;
   private readonly toggle3d: HTMLButtonElement;
   private readonly toggleHl: HTMLButtonElement;
+  private readonly toggleSound: HTMLButtonElement;
 
-  constructor(private readonly three: Match3D) {
+  constructor(
+    private readonly three: Match3D,
+    private readonly atmosphere: Atmosphere,
+  ) {
     this.el = document.createElement('div');
     this.el.className = 'replay';
     this.el.innerHTML = `
@@ -88,6 +94,7 @@ export class ReplayHost {
         <span class="rp-clock"></span>
         <button type="button" class="btn-secondary rp-3d" data-action="match-3d" hidden>3D</button>
         <button type="button" class="btn-secondary rp-hl" data-action="match-highlights" aria-label="Highlights: 3D for the big moments only" hidden>Highlights</button>
+        <button type="button" class="btn-secondary rp-sound" data-action="live-sound" aria-label="Match sound"></button>
       </div>
       <div class="rp-pitch"><canvas aria-label="Top-down replay of the match"></canvas>
         <div class="rp-status" hidden></div>
@@ -112,6 +119,7 @@ export class ReplayHost {
     this.wrap = q('.rp-pitch');
     this.toggle3d = q('.rp-3d');
     this.toggleHl = q('.rp-hl');
+    this.toggleSound = q('.rp-sound');
     this.el.addEventListener('click', (e) => this.onClick(e));
     this.seek.addEventListener('change', () => this.seekTo(Number(this.seek.value)));
     this.seek.addEventListener('input', () => { this.clock.textContent = this.timeAt(Number(this.seek.value)); });
@@ -126,6 +134,7 @@ export class ReplayHost {
     const slot = replay ? root.querySelector('[data-slot="replay-2d"]') : null;
     if (!slot || !replay) {
       this.three.detach(this.wrap);
+      this.atmosphere.detach(this.wrap);
       this.visible = false;
       cancelAnimationFrame(this.raf);
       this.raf = 0;
@@ -142,6 +151,11 @@ export class ReplayHost {
     this.toggleHl.hidden = !offered || !choice?.want;
     this.toggleHl.classList.toggle('on', !!choice?.highlights);
     this.toggleHl.setAttribute('aria-pressed', String(!!choice?.highlights));
+    const sound = this.atmosphere.sound.on;
+    this.toggleSound.textContent = sound ? 'Sound on' : 'Sound off';
+    this.toggleSound.classList.toggle('on', sound);
+    this.toggleSound.setAttribute('aria-pressed', String(sound));
+    if (this.m && this.phase === 'ready') this.atmosphere.attach(this.wrap, this.m);
     if (offered && choice?.want && this.m) this.three.attach(this.wrap, this.canvas, key, this.m, choice);
     else this.three.detach(this.wrap);
     this.view?.fit(this.wrap.clientWidth, this.wrap.clientHeight);
@@ -217,6 +231,7 @@ export class ReplayHost {
       return this.fail('This replay comes out differently from the match that was played, so it is not shown.');
     }
     this.phase = 'ready';
+    if (this.visible && this.m) this.atmosphere.attach(this.wrap, this.m);
     this.endMs = full.clockMs;
     this.moments = momentsOf(full);
     this.seek.max = String(this.endMs);
@@ -233,6 +248,7 @@ export class ReplayHost {
     if (to < m.clockMs) {
       this.m = this.fresh();
       this.goalsSeen = 0;
+      this.atmosphere.attach(this.wrap, this.m);
     }
     this.target = to;
     this.banner.hidden = true;
@@ -258,6 +274,10 @@ export class ReplayHost {
     }
     const in3d = !!this.m && this.target === null && this.three.show(this.m, this.viewMs);
     if (!in3d && this.m && this.view) this.view.draw(this.m, this.viewMs);
+    if (m && this.phase === 'ready' && this.target === null) {
+      const running = this.playing && !spatialFinished(m);
+      this.atmosphere.show(m, in3d ? MatchTape.shown(this.viewMs) : this.viewMs, running, this.speed, now);
+    }
     if (now - this.lastReadout >= READOUT_MS) {
       this.lastReadout = now;
       this.renderScore();
@@ -276,6 +296,7 @@ export class ReplayHost {
     }
     this.target = null;
     this.goalsSeen = m.goalLog.length;
+    this.atmosphere.skip(m);
     this.view?.savePrev(m);
     this.three.savePrev(m);
     this.viewMs = m.clockMs;
@@ -289,6 +310,7 @@ export class ReplayHost {
     while (m.clockMs < toMs) {
       this.view?.savePrev(m);
       this.three.savePrev(m);
+      this.atmosphere.observe(m);
       if (!stepSpatial(m)) break;
     }
     this.viewMs = Math.min(toMs, m.clockMs);

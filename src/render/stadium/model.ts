@@ -90,6 +90,11 @@ export interface StadiumModel {
   setLit(selfLit: number): void;
   /** Advances animation; true while something moves (keep drawing). */
   tick(dt: number): boolean;
+  /**
+   * The fans jump for `seconds` (a home goal), `height` metres at `rate` bounces a second.
+   * Only drawn by a view that calls `tick`.
+   */
+  jump(seconds: number, height: number, rate: number): void;
   /** Objects a tap can hit; pass a hit to `partOf`. */
   hits(): Object3D[];
   dispose(): void;
@@ -344,9 +349,22 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
 
   // Fans: instanced boxes whose own colour glows a little at night.
   const glowUniform = { value: 0 };
+  // The jump: height now (0 for none) and a clock; each fan's phase comes from where he stands.
+  const jumpUniform = { value: 0 };
+  const jumpTime = { value: 0 };
   const crowdMat = new MeshLambertMaterial({ color: '#ffffff' });
   crowdMat.onBeforeCompile = (shader) => {
     shader.uniforms.crowdGlow = glowUniform;
+    shader.uniforms.crowdJump = jumpUniform;
+    shader.uniforms.crowdTime = jumpTime;
+    shader.vertexShader = `uniform float crowdJump;\nuniform float crowdTime;\n${shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+#ifdef USE_INSTANCING
+	float crowdPhase = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
+	transformed.y += crowdJump * abs(sin(crowdTime + crowdPhase * 6.2832)) / max(0.5, length(instanceMatrix[1].xyz));
+#endif`,
+    )}`;
     shader.fragmentShader = `uniform float crowdGlow;\n${shader.fragmentShader.replace(
       '#include <emissivemap_fragment>',
       '#include <emissivemap_fragment>\n\ttotalEmissiveRadiance += diffuseColor.rgb * crowdGlow;',
@@ -381,6 +399,10 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
   let selected: StadiumPart | null = null;
   let overlays: Mesh[] = [];
   let time = 0;
+  let jumpLeft = 0;
+  let jumpFor = 1;
+  let jumpHeight = 0;
+  let jumpRate = 0;
   let disposed = false;
   let adsKey = '';
   let boardKey = '';
@@ -960,6 +982,14 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
     tick(dt) {
       time += dt;
       let moving = false;
+      if (jumpLeft > 0 || jumpUniform.value > 0) {
+        jumpLeft = Math.max(0, jumpLeft - dt);
+        // Up quickly, then dying away over the last third.
+        const u = jumpLeft / jumpFor;
+        jumpUniform.value = jumpHeight * Math.min(1, (1 - u) * 6, u * 3);
+        jumpTime.value += dt * jumpRate * Math.PI;
+        moving = true;
+      }
       if (selected && overlays.length > 0) {
         highlight.opacity = 0.14 + 0.18 * (0.5 + 0.5 * Math.sin(time * 4));
         moving = true;
@@ -975,6 +1005,11 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
         }
       }
       return moving;
+    },
+    jump(seconds, height, rate) {
+      jumpLeft = jumpFor = Math.max(0.1, seconds);
+      jumpHeight = height;
+      jumpRate = rate;
     },
     hits() {
       return [pitchBin.group, extras.group, ...STAND_KEYS.map((id) => stands[id].group), corners.group, works.group];

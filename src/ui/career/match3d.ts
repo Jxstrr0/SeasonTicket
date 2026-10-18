@@ -65,6 +65,8 @@ export interface ThreeChoice {
   tier: QualityTier | null;
   /** The home club's ground for this match. */
   ground: () => StadiumSnapshot;
+  /** Played under the floodlights (see nightMatch in atmosphere.ts). */
+  night: boolean;
   /** The owner's side, whose shape the tactics overlay draws. */
   side: Side;
   /** The card for the player with person code `who`, or null for none. */
@@ -86,10 +88,10 @@ export function sceneKits(setup: SpatialSetup): { kits: [KitColours, KitColours]
   return { kits: [outfield(0), outfield(1)], keepers: [keeper(0), keeper(1)] };
 }
 
-export function sceneOf(setup: SpatialSetup, ground: StadiumSnapshot): MatchScene3D {
+export function sceneOf(setup: SpatialSetup, ground: StadiumSnapshot, night = false): MatchScene3D {
   const people: string[] = [];
   for (let w = 0; w < PERSONS; w++) people.push(personOf(setup, w)?.id ?? '');
-  return { ...sceneKits(setup), people, ground, night: false };
+  return { ...sceneKits(setup), people, ground, night, weather: setup.weather ?? 'clear' };
 }
 
 /**
@@ -131,7 +133,7 @@ export class Match3D {
   private key = '';
   private tier: QualityTier | null = null;
   private parent: HTMLElement | null = null;
-  private source: { setup: SpatialSetup; ground: () => StadiumSnapshot } | null = null;
+  private source: { setup: SpatialSetup; ground: () => StadiumSnapshot; night: boolean } | null = null;
   private readonly tape = new MatchTape();
   private readonly director = new Director();
   private readonly cams: HTMLElement;
@@ -231,14 +233,14 @@ export class Match3D {
       this.tier = choice.tier;
       this.tape.reset(m);
     }
-    this.source = { setup: m.setup, ground: choice.ground };
+    this.source = { setup: m.setup, ground: choice.ground, night: choice.night };
     this.choice = choice;
     if (choice.highlights !== this.highlights) {
       this.highlights = choice.highlights;
       this.cancel();
       this.visible = !this.highlights;
     }
-    if (this.status === 'idle') this.load(choice.tier, m.setup, choice.ground);
+    if (this.status === 'idle') this.load(choice.tier, this.source);
     if (this.visible) this.handle?.resume();
     this.mark();
   }
@@ -298,6 +300,11 @@ export class Match3D {
   }
 
   /** Stop any replay and forget the ones waiting (the host jumped somewhere). */
+  /** The home fans jump (a home goal on screen). */
+  celebrate(): void {
+    this.handle?.celebrate();
+  }
+
   cancel(): void {
     this.director.reset();
     this.epoch = -1;
@@ -514,13 +521,20 @@ export class Match3D {
     this.shapeBtn.setAttribute('aria-pressed', String(this.shape));
   }
 
-  private load(tier: QualityTier, setup: SpatialSetup, ground: () => StadiumSnapshot): void {
+  private load(tier: QualityTier, { setup, ground, night }: NonNullable<Match3D['source']>): void {
     const token = ++this.token;
     this.status = 'loading';
     this.loading.hidden = false;
     let scene: MatchScene3D;
     try {
-      scene = sceneOf(setup, ground());
+      scene = sceneOf(setup, ground(), night);
+      if (import.meta.env.DEV) {
+        // For checking the looks while developing: ?weather=rain&night=1 (left out of the game build).
+        const q = new URLSearchParams(location.search);
+        const w = q.get('weather');
+        if (w) scene.weather = w as MatchScene3D['weather'];
+        if (q.has('night')) scene.night = q.get('night') === '1';
+      }
     } catch (err) {
       return this.fail(err, 'The 3D match could not start, so the 2D pitch is showing instead.');
     }
@@ -571,7 +585,7 @@ export class Match3D {
     }
     this.drop();
     this.mark();
-    if (this.parent && this.tier && this.source) this.load(this.tier, this.source.setup, this.source.ground);
+    if (this.parent && this.tier && this.source) this.load(this.tier, this.source);
   }
 
   private drop(): void {
