@@ -26,7 +26,7 @@ import { esc } from '../html';
 import { KEEPER_FILL, matchKits } from '../pitch2d';
 import { MatchTape } from './match3dTape';
 import { Director, type Replay, type Take } from './match3dDirector';
-import { loadMatchCamera, loadMatchShape, storeMatchCamera, storeMatchShape } from './state';
+import { loadMatchCamera, loadMatchShape, loadShowFps, storeMatchCamera, storeMatchShape } from './state';
 
 const CAMERA_LABELS: Record<string, { text: string; label: string }> = {
   broadcast: { text: 'TV', label: 'Broadcast camera' },
@@ -140,6 +140,8 @@ export class Match3D {
   private readonly badge: HTMLElement;
   private readonly shapeBtn: HTMLButtonElement;
   private readonly card: HTMLElement;
+  private readonly fps: HTMLElement;
+  private fpsTimer = 0;
   private camera: CameraKey;
   /** The tactics overlay is on, and the engine step it was last worked out at. */
   private shape: boolean;
@@ -187,6 +189,7 @@ export class Match3D {
       <div class="m3d-bar"><div class="m3d-cams segmented" role="group" aria-label="Camera">${CAMERA_PRESETS.map((k) => `<button type="button" class="seg" data-cam="${k}" aria-label="${CAMERA_LABELS[k].label}">${CAMERA_LABELS[k].text}</button>`).join('')}</div>
       <button type="button" class="m3d-shape" data-m3d="shape" aria-label="Shape: draw your team's lines on the grass">Shape</button></div>
       <div class="m3d-card" hidden></div>
+      <span class="m3d-fps" hidden></span>
       <div class="m3d-replay" hidden><span class="m3d-badge" aria-live="polite">Replay</span><button type="button" class="btn-secondary" data-m3d="skip">Skip</button></div>`;
     this.stage = this.el.querySelector('.match3d-stage') as HTMLDivElement;
     this.loading = this.el.querySelector('.match3d-loading') as HTMLElement;
@@ -194,7 +197,9 @@ export class Match3D {
     this.badge = this.el.querySelector('.m3d-replay') as HTMLElement;
     this.shapeBtn = this.el.querySelector('.m3d-shape') as HTMLButtonElement;
     this.card = this.el.querySelector('.m3d-card') as HTMLElement;
+    this.fps = this.el.querySelector('.m3d-fps') as HTMLElement;
     this.shape = loadMatchShape();
+    this.showFps(loadShowFps());
     this.el.addEventListener('click', (e) => this.onClick(e));
     this.renderCams();
     // For checking the draw-call and frame-rate budgets from the browser console.
@@ -203,6 +208,19 @@ export class Match3D {
       if (document.visibilityState === 'hidden') this.handle?.pause();
       else if (this.parent && this.visible) this.handle?.resume();
     });
+  }
+
+  /** Shows or hides the frame-rate readout (frames drawn a second, and the longest wait). */
+  showFps(on: boolean): void {
+    clearInterval(this.fpsTimer);
+    this.fpsTimer = 0;
+    this.fps.hidden = true;
+    if (!on) return;
+    this.fpsTimer = window.setInterval(() => {
+      const s = this.ready ? this.handle?.stats() : null;
+      this.fps.hidden = !s;
+      if (s) this.fps.textContent = `${Math.round(s.fps)} fps · ${Math.round(s.worstMs)} ms`;
+    }, 1000);
   }
 
   /** The 3D view is loaded and laid over a host. */

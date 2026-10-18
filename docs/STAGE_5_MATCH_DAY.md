@@ -52,7 +52,7 @@ Each step ends with a deploy and a short report.
 - **Fallback:**
   - The 2D pitch keeps drawing until the 3D players have loaded.
   - If 3D can't start, or the browser drops it more than twice, the game says so and stays on 2D until the Graphics setting is changed.
-- **Measured** at a phone landscape viewport (844 by 390) at Medium: about 70 draw calls and 380,000 triangles. Most of the triangles are the 22 bodies at about 7,000 vertices each. A lower-detail body for Low and for far players is a 5.6 task.
+- **Measured** at a phone landscape viewport (844 by 390) at Medium: about 70 draw calls and 380,000 triangles. Most of the triangles are the 22 bodies at about 7,000 vertices each. A lower-detail body for Low and for far players is a 5.6 task (done: see What 5.6 shipped).
 
 ## What 5.2 shipped
 
@@ -162,6 +162,28 @@ Each step ends with a deploy and a short report.
 - **The crowd jumps** (in 3D) for a home goal: the home stands bounce for about eight seconds, each fan a little out of step.
 - **Crowd density** follows the attendance, as since Stage 4: a small crowd leaves empty seats and a quieter murmur.
 - **Full time.** The final whistle's step doesn't move the match clock, and the screens stop the moment the match ends (with the 3D view still 0.4 s behind). Both would have swallowed the full-time whistle and its ticker line, so once a match is over everything still waiting plays, and the crowd carries on until the owner leaves.
+
+## What 5.6 shipped
+
+- **Lighter far-away bodies.** Each body has about 12,600 triangles. When the 3D match loads, a light copy of the body and of each hair style is made with about 30% of the triangles (`src/render/match/lod.ts`, using the meshoptimizer simplifier, MIT). It keeps every vertex, so the kit painting and the moves are untouched; only the triangle list is shorter.
+  - Each frame, a player shown less than 90 pixels tall gets the light body, and goes back to the full one once he is over about 100 pixels (the gap stops a player flickering between the two). From the broadcast camera that is everyone; replay close-ups use the full bodies. At Low every player is always light.
+  - The numbers are `lod` in `src/data/tuning/match3d.json`.
+  - The simplifier is a 42 kB download (15 kB compressed) that loads with the 3D match and nowhere else.
+- **Hair rides the body's skeleton.** The hair styles came with a skeleton of their own (65 bones), so every player's bones were worked out twice a frame. The hair only hangs from the head, so it is now moved onto the body's skeleton when the match loads.
+- **One texture decoder.** The office and the match day each started their own set of texture-decoding workers, and the browser warned about it. They now share one.
+- **Frame rate readout.** "Show the frame rate on the 3D match" on the office's Home tab (off at first, remembered per device) puts a small readout in the top-left corner of the 3D view: frames per second, and the longest gap between two frames in the last second, in milliseconds. A smooth 30 fps reads about 33 ms; a stutter shows as a big number.
+- **Measured** in the headless browser at a phone landscape viewport (844 by 390), Medium, the live match at 2x, with the processor slowed four times to stand in for a phone. The headless browser draws on the processor, so its own frame rate means nothing; the time our code takes per frame is the measure.
+
+  | | Before 5.6 | After 5.6 |
+  | --- | --- | --- |
+  | Our code per frame (average) | 30.8 ms | 17.3 ms |
+  | Our code per frame (median) | 22.5 ms | 17.7 ms |
+  | Triangles drawn | about 400,000 | about 195,000 |
+  | Player triangles | about 310,000 | about 95,000 |
+  | Player skeletons | one per body and one per hair | one per player |
+  | Draw calls | 73 to 89 | about 80 |
+
+- **Still to check on a phone:** the Stage 5 "done when" (a full match managed and watched in 3D at Medium). The budget (30 fps at Medium, above) is unchanged and is measured on the phone with the readout.
 
 ## Budgets
 

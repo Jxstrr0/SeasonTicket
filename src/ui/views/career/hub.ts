@@ -91,6 +91,7 @@ function renderMenu(career: Career, ui: UiState): string {
       ${each(QUALITY_OPTIONS, (q) => `<button type="button" class="${cls('seg', q.id === ui.quality && 'on')}" data-action="set-quality" data-quality="${q.id}" aria-pressed="${q.id === ui.quality}">${esc(q.label)}</button>`)}
     </div>
     <p class="muted small">Low runs best on older phones. Off uses the plain menus with no 3D office.</p>
+    <label class="check"><input type="checkbox" data-change="show-fps"${ui.showFps ? ' checked' : ''}> Show the frame rate on the 3D match</label>
     <div class="card-title">Match sound</div>
     <div class="segmented" role="group">
       ${each(SOUND_OPTIONS, (o) => `<button type="button" class="${cls('seg', o.id === ui.sound && 'on')}" data-action="set-sound" data-sound="${o.id}" aria-pressed="${o.id === ui.sound}">${esc(o.label)}</button>`)}
