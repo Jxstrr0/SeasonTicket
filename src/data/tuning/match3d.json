@@ -1,5 +1,15 @@
 {
   "_about": "The 3D match view (Stage 5, docs/STAGE_5_MATCH_DAY.md). Read by src/render/match. Distances in metres, speeds in metres per second, angles in degrees. Stadium space: x along the pitch (0 is the centre spot), z across it (+z is the main stand, where the broadcast camera sits), y up.",
+  "lights": {
+    "_about": "Lights at a night match. Every ground has floodlights; each floodlight upgrade (0-3) makes the pitch a little brighter and whiter. sky is the soft light from all round (skyColour from above, groundColour from below), key the overhead floodlight that casts the shadows.",
+    "sky": 1.05,
+    "skyPerLevel": 0.15,
+    "skyColour": "#dfe6ff",
+    "groundColour": "#4b4b52",
+    "key": 1.5,
+    "keyPerLevel": 0.25,
+    "keyColour": "#f4f6ff"
+  },
   "camera": {
     "_about": "The broadcast camera sits on a gantry just in front of the main stand (its front wall is at z 40) and pans to follow the ball. hfov is the horizontal field of view it keeps on any screen shape (the vertical one is clamped to minVfov-maxVfov). follow is the share of the ball's x the camera body moves; the aim follows the ball fully, out to maxX. lookZ is the share of the ball's z the aim takes. damping is how quickly it catches up (higher is snappier).",
     "height": 20,

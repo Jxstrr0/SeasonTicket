@@ -13,7 +13,7 @@
 import { MATCH_TUNING, SPATIAL_TUNING } from '../data';
 import { Rng } from '../rng';
 import type { Tactics } from '../types';
-import { boxPoint, createAttack, updateAttack } from './attack';
+import { boxPoint, createAttack, supportPoint, updateAttack, updateSupport } from './attack';
 import { flightSubstep, loftTable, loftTableAt } from './ball';
 import { movePlayers } from './move';
 import { counterTarget, coverTarget, markTarget, presserTarget, trackTarget, updatePress, updateTracking } from './press';
@@ -451,6 +451,10 @@ function targetFor(m: SpatialMatch, i: number): void {
   let x = m.sx[i];
   let y = m.sy[i];
   switch (m.role[i]) {
+    case ROLE.SHAPE:
+      // On the ball: his own open spot near his shape spot.
+      if (m.poss === side && m.attack.supOn[side] && (m.attack.supX[i] !== 0 || m.attack.supY[i] !== 0) && b.state !== BALL_DEAD) { supportPoint(m, i, tmp); x = tmp[0]; y = tmp[1]; }
+      break;
     case ROLE.WALL: {
       const q = wallSlot(m, i);
       if (q >= 0) { m.tx[i] = m.rules.wallX[q]; m.ty[i] = m.rules.wallY[q]; return; }
@@ -630,6 +634,7 @@ export function stepSpatial(m: SpatialMatch): boolean {
   updatePress(m, m.teams[m.poss]);
   updateTracking(m, m.teams[1 - m.poss]);
   updateTracking(m, m.teams[m.poss]);
+  updateSupport(m);
   rethink(m);
   for (let i = 0; i < N; i++) targetFor(m, i);
   turnCut(m);

@@ -417,7 +417,7 @@ export function shoot(m: SpatialMatch, i: number, side: Side, kind: number): voi
   else if (fk) sdA = FK.err + FK.errSpk * (1 - skill / 99);
   else {
     const pressF = clamp(1 - close / SH.pressureWithin, 0, 1);
-    sdA = (SH.errBase + SH.errFin * (1 - skill / 99)) * (1 + pressF * (SH.errPress0 + SH.errPressure * (1 - at[o + A_CMP] / 99)));
+    sdA = ((m.mode === 'fine' ? SH.errBase.fine : SH.errBase.coarse) + SH.errFin * (1 - skill / 99)) * (1 + pressF * (SH.errPress0 + SH.errPressure * (1 - at[o + A_CMP] / 99)));
     if (header) sdA *= SH.errHeader;
   }
   const dx = gx - x0, dy = ty - y0;

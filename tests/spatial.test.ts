@@ -250,12 +250,14 @@ interface Behaviour {
   pressersPerStep: number;
   counterSteps: number;
   markSteps: number;
+  /** Share of the opponent's open-play steps with the marker on his man. */
+  markShare: number;
   markDist: number;
 }
 
 function behaviour(home: Partial<Tactics>, seed: string, minutes = 20): Behaviour {
   const m = createSpatial(setup(home), seed, 'fine');
-  let oppSteps = 0, pressSteps = 0, pressers = 0, counterSteps = 0, markSteps = 0, markDist = 0;
+  let oppSteps = 0, pressSteps = 0, pressers = 0, counterSteps = 0, markSteps = 0, markNear = 0, markDist = 0;
   let lostAt = 0, lastPoss = m.poss;
   while (m.clockMs < minutes * 60000 && stepSpatial(m)) {
     if (m.poss !== lastPoss) { lastPoss = m.poss; lostAt = m.clockMs; }
@@ -268,9 +270,13 @@ function behaviour(home: Partial<Tactics>, seed: string, minutes = 20): Behaviou
       const pair = m.clockMs - lostAt >= 2000 ? markingPair(m, 0) : null;
       if (pair) {
         markSteps++;
-        const dx = m.px[pair[0]] - m.px[pair[1]];
-        const dy = m.py[pair[0]] - m.py[pair[1]];
-        markDist += Math.sqrt(dx * dx + dy * dy);
+        // How tight, only where he follows his man (not once the man drops past maxDepth).
+        if (m.px[pair[1]] + SPATIAL_TUNING.manMark.goalSide <= SPATIAL_TUNING.manMark.maxDepth) {
+          markNear++;
+          const dx = m.px[pair[0]] - m.px[pair[1]];
+          const dy = m.py[pair[0]] - m.py[pair[1]];
+          markDist += Math.sqrt(dx * dx + dy * dy);
+        }
       }
     }
     for (let i = 1; i < 11; i++) if (playerRole(m, i) === ROLE.COUNTER) { counterSteps++; break; }
@@ -280,7 +286,8 @@ function behaviour(home: Partial<Tactics>, seed: string, minutes = 20): Behaviou
     pressersPerStep: pressers / oppSteps,
     counterSteps,
     markSteps,
-    markDist: markSteps > 0 ? markDist / markSteps : Infinity,
+    markShare: markSteps / oppSteps,
+    markDist: markNear > 0 ? markDist / markNear : Infinity,
   };
 }
 
@@ -303,9 +310,10 @@ describe('spatial pressing, counters and marking', () => {
   it('a man-marker stays tight to his target', () => {
     expect(behaviour({}, 'mark').markSteps).toBe(0);
     const b = behaviour({ manMarkTarget: 'away-9' }, 'mark');
-    expect(b.markSteps).toBeGreaterThan(2000);
-    // Both tire as the match goes on, so the gap grows a little late on.
-    expect(b.markDist).toBeLessThan(3.5);
+    expect(b.markShare).toBeGreaterThan(0.7);
+    // Both tire as the match goes on, so the gap grows a little late on, and the marked
+    // player keeps moving to get open, so the marker is often a stride behind.
+    expect(b.markDist).toBeLessThan(4);
   });
 });
 
