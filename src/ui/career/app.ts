@@ -80,7 +80,7 @@ import { ReplayHost } from './replayHost';
 import { Atmosphere, nightMatch } from './atmosphere';
 import atmosphereTuning from '../../data/tuning/atmosphere.json';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, storeSound, SOUND_SETTINGS, type SoundSetting, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, storeShowFps, storeSound, SOUND_SETTINGS, type SoundSetting, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -1034,6 +1034,13 @@ export class CareerApp {
     const kind = el.dataset.change;
     const career = this.career;
     if (!kind || !career) return;
+    if (kind === 'show-fps') {
+      // A device setting, not part of the career.
+      this.ui.showFps = (el as HTMLInputElement).checked;
+      storeShowFps(this.ui.showFps);
+      this.match3d.showFps(this.ui.showFps);
+      return;
+    }
     const live = this.ui.screen === 'live';
     const apply = (patch: Partial<Tactics>): void => {
       if (live) this.flashLive(liveTactics(career, patch));

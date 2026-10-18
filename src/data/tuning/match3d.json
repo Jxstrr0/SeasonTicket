@@ -34,6 +34,13 @@
     "turnRate": 9,
     "heldBall": { "forward": 0.32, "height": 1.08 }
   },
+  "lod": {
+    "_about": "Lighter bodies (Stage 5.6). A player shown shorter than heightPx (CSS pixels, head to toe) gets a body with about ratio of the triangles, never more than error (a share of the body's size) off the full shape; he goes back to the full body above heightPx times backAt. On Low every player is light.",
+    "ratio": 0.3,
+    "error": 0.02,
+    "heightPx": 90,
+    "backAt": 1.15
+  },
   "kit": {
     "_about": "Kits are painted onto the bare base body by region, measured on the model's rest pose (a T-pose, about 1.8 m tall). y is height, ax the distance out along the arms.",
     "bootsTo": 0.115,

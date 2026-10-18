@@ -35,6 +35,7 @@ All models were converted with the tools in `scripts/assets` (Meshopt geometry, 
 | three.js, including its example loaders, post-processing and RoomEnvironment | MIT |
 | Basis Universal transcoder (bundled with three.js) | Apache-2.0 |
 | fflate | MIT |
+| meshoptimizer (its simplifier, for the light bodies on the 3D match) | MIT |
 | Vite | MIT |
 | Vitest | MIT |
 

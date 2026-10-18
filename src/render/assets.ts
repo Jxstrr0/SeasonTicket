@@ -1,6 +1,9 @@
 /**
  * Asset loading for every 3D scene: glTF with Meshopt geometry and KTX2
  * (Basis) textures. Files are fetched once and cached per URL.
+ *
+ * Every scene shares one KTX2 loader (and so one set of texture decoding workers): the
+ * office and the match day can be open together, and each loader starts its own workers.
  */
 import type { Texture, WebGLRenderer } from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -13,14 +16,21 @@ export function assetUrl(path: string): string {
   return `${import.meta.env.BASE_URL}${path}`;
 }
 
+/** The shared KTX2 loader and how many scenes are using it. */
+let shared: { loader: KTX2Loader; users: number } | null = null;
+
 export class Assets {
   readonly ktx2: KTX2Loader;
   readonly gltf: GLTFLoader;
   private readonly models = new Map<string, Promise<GLTF>>();
   private readonly textures = new Map<string, Promise<Texture>>();
+  private disposed = false;
 
   constructor(renderer: WebGLRenderer) {
-    this.ktx2 = new KTX2Loader().detectSupport(renderer);
+    // The texture formats a phone's GPU takes are the same for every canvas on the page.
+    shared ??= { loader: new KTX2Loader().detectSupport(renderer), users: 0 };
+    shared.users += 1;
+    this.ktx2 = shared.loader;
     this.gltf = new GLTFLoader().setKTX2Loader(this.ktx2).setMeshoptDecoder(MeshoptDecoder);
   }
 
@@ -43,6 +53,11 @@ export class Assets {
   }
 
   dispose(): void {
-    this.ktx2.dispose();
+    if (this.disposed) return;
+    this.disposed = true;
+    if (shared && shared.loader === this.ktx2 && --shared.users === 0) {
+      shared.loader.dispose();
+      shared = null;
+    }
   }
 }

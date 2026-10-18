@@ -228,6 +228,26 @@ export function storeSound(level: SoundSetting): void {
   }
 }
 
+/** The frame-rate readout on the 3D match (Stage 5.6), per device. */
+const FPS_KEY = 'seasonticket.fps';
+
+export function loadShowFps(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(FPS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function storeShowFps(on: boolean): void {
+  try {
+    if (on) globalThis.localStorage?.setItem(FPS_KEY, '1');
+    else globalThis.localStorage?.removeItem(FPS_KEY);
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
 export const LIVE_SPEEDS: readonly { ms: number; label: string }[] = [
   { ms: 700, label: '1x' },
   { ms: 350, label: '2x' },
@@ -247,6 +267,8 @@ export interface UiState {
   quality: QualitySetting;
   /** Match-day sound level for this device. */
   sound: SoundSetting;
+  /** The frame-rate readout on the 3D match, for this device. */
+  showFps: boolean;
   squadPlayerId: string | null;
   lineupSlot: number | null;
   marketView: MarketView;
@@ -306,6 +328,7 @@ export function initialUi(): UiState {
     inOffice: false,
     quality: loadQuality(),
     sound: loadSound(),
+    showFps: loadShowFps(),
     squadPlayerId: null,
     lineupSlot: null,
     marketView: 'scout',

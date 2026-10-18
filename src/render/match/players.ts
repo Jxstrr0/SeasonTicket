@@ -11,6 +11,8 @@
 import {
   AnimationClip,
   AnimationMixer,
+  BufferAttribute,
+  type BufferGeometry,
   Color,
   Group,
   LoopRepeat,
@@ -22,12 +24,14 @@ import {
   type Bone,
   type MeshStandardMaterial,
   type Object3D,
+  type PerspectiveCamera,
   type SkinnedMesh,
 } from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import tuning from '../../data/tuning/match3d.json';
 import type { Assets } from '../assets';
 import { addRest, restoreBoneNames, splitTrack } from '../rig';
+import { lightGeometries } from './lod';
 import { Move, Pose, Rig, goalRole, holdPose, type MoveContext } from './actions';
 import { ACT, type KitColours, type MatchFrame3D, type MatchScene3D } from './types';
 
@@ -36,6 +40,7 @@ const A = tuning.actions;
 const DEG = Math.PI / 180;
 const K = tuning.kit;
 const L = tuning.looks;
+const LOD = tuning.lod;
 const HAIR_IDS = ['hair_buzzed', 'hair_simpleparted', 'hair_long', 'hair_beard'];
 /** Stadium space: x along the pitch from the centre spot, z towards the main stand. */
 const HALF_X = 52.5;
@@ -50,6 +55,71 @@ export interface PlayerTemplates {
   gaits: { clip: AnimationClip; speed: number; stride: number }[];
   /** Bones the clips move; the rest are put back to rest under each action. */
   animated: Set<string>;
+  /** A lighter version of each body and hair geometry, for players far away. */
+  light: Map<BufferGeometry, BufferGeometry>;
+  /** Hair that can ride on the body's own skeleton (same bones, same bind pose). */
+  sharesSkeleton: Set<SkinnedMesh>;
+}
+
+/** Eyes and brows are too small to see from the stands. */
+const tooSmall = (m: SkinnedMesh): boolean => /eye/i.test(m.name) || /brow/i.test(m.name);
+
+/**
+ * Moves `hair` onto `body`'s skeleton when it can ride it: the bones it hangs from, bound in
+ * the same pose. The hair was bound from its own place in the file, so its bind matrices
+ * differ from the body's by one fixed transform; its vertices are moved by that, and its bone
+ * indices rewritten when the bones come in another order. Changes `hair` in place.
+ */
+function shareSkeleton(hair: SkinnedMesh, body: SkinnedMesh): boolean {
+  const g = hair.geometry;
+  const idx = g.getAttribute('skinIndex');
+  const weight = g.getAttribute('skinWeight');
+  // Only the bones the hair hangs from need to match (in practice just the head).
+  const used = new Set<number>();
+  for (let v = 0; v < idx.count; v++) {
+    for (let c = 0; c < 4; c++) if (weight.getComponent(v, c) > 0) used.add(idx.getComponent(v, c));
+  }
+  const order = new Map(body.skeleton.bones.map((b, i) => [b.name, i]));
+  const map: number[] = [];
+  const fix = new Matrix4();
+  const m = new Matrix4();
+  let first = true;
+  for (let i = 0; i < hair.skeleton.bones.length; i++) {
+    const j = order.get(hair.skeleton.bones[i].name);
+    map.push(j ?? 0);
+    if (!used.has(i)) continue;
+    if (j === undefined) return false;
+    // The body's bind, undone, then the hair's: the same for every bone, or the poses differ.
+    m.copy(body.skeleton.boneInverses[j]).invert().multiply(hair.skeleton.boneInverses[i]);
+    if (first) fix.copy(m);
+    else if (m.elements.some((v, k) => Math.abs(v - fix.elements[k]) > 1e-3)) return false;
+    first = false;
+  }
+  if (first) return false;
+  // Packed (quantized) positions can't hold the moved vertices: unpack them first.
+  for (const name of ['position', 'normal']) {
+    const at = g.getAttribute(name);
+    if (!at) continue;
+    const f = new Float32Array(at.count * 3);
+    for (let v = 0; v < at.count; v++) {
+      f[v * 3] = at.getX(v);
+      f[v * 3 + 1] = at.getY(v);
+      f[v * 3 + 2] = at.getZ(v);
+    }
+    g.setAttribute(name, new BufferAttribute(f, 3));
+  }
+  // Skinned in the world, a vertex v of the hair lands where the body's binding puts
+  // (body bind)⁻¹ · fix · (hair bind) · v.
+  g.applyMatrix4(m.copy(body.bindMatrix).invert().multiply(fix).multiply(hair.bindMatrix));
+  hair.bindMatrix.copy(body.bindMatrix);
+  hair.bindMatrixInverse.copy(body.bindMatrix).invert();
+  if (map.some((j, i) => j !== i)) {
+    for (let v = 0; v < idx.count; v++) {
+      idx.setXYZW(v, map[idx.getX(v)], map[idx.getY(v)], map[idx.getZ(v)], map[idx.getW(v)]);
+    }
+    idx.needsUpdate = true;
+  }
+  return true;
 }
 
 /** Loads the body, hair and gaits once per view. */
@@ -74,6 +144,22 @@ export async function loadPlayerTemplates(assets: Assets): Promise<PlayerTemplat
     });
     hair.set(id, list);
   }
+  let bodyMesh: SkinnedMesh | null = null;
+  body.traverse((o) => {
+    const m = o as SkinnedMesh;
+    if (m.isSkinnedMesh && !tooSmall(m)) bodyMesh ??= m;
+  });
+  const sharesSkeleton = new Set<SkinnedMesh>();
+  const geos: BufferGeometry[] = [];
+  if (bodyMesh) geos.push((bodyMesh as SkinnedMesh).geometry);
+  for (const list of hair.values()) {
+    for (const h of list) {
+      geos.push(h.geometry);
+      if (bodyMesh && shareSkeleton(h, bodyMesh)) sharesSkeleton.add(h);
+    }
+  }
+  // Without the simplifier every player keeps the full body.
+  const light = await lightGeometries(geos, LOD.ratio, LOD.error).catch(() => new Map<BufferGeometry, BufferGeometry>());
   const animated = new Set<string>();
   const clip = (name: string): AnimationClip => {
     const src = anims.animations.find((a) => a.name === name);
@@ -102,7 +188,7 @@ export async function loadPlayerTemplates(assets: Assets): Promise<PlayerTemplat
     const c = clip(g.clip);
     return { clip: c, speed: g.speed, stride: g.speed * c.duration };
   });
-  return { body, hair, idle: clip(P.idle), crouch: clip(P.crouch), gaits, animated };
+  return { body, hair, idle: clip(P.idle), crouch: clip(P.crouch), gaits, animated, light, sharesSkeleton };
 }
 
 /** Small seeded hash so the same id always gives the same looks. */
@@ -192,6 +278,11 @@ class Player {
   private readonly hairMat: MeshLambertMaterial;
   private readonly uniforms: Record<string, { value: Color | number }>;
   private hair: SkinnedMesh[] = [];
+  /** The body's skeleton, which the hair rides on when it can. */
+  private skeleton: Skeleton | null = null;
+  /** Each mesh with its full and light geometry. */
+  private readonly parts: { mesh: SkinnedMesh; full: BufferGeometry; light: BufferGeometry }[] = [];
+  private isLight = false;
   private person = '';
   private heading = 0;
   private speed = 0;
@@ -223,12 +314,14 @@ class Player {
       if ((o as Bone).isBone) this.bones.set(o.name, o as Bone);
       const m = o as SkinnedMesh;
       if (!m.isSkinnedMesh) return;
-      // Eyes and brows are too small to see from the stands; skip their draw calls.
-      if (/eye/i.test(m.name) || /brow/i.test(m.name)) {
+      // Skip the eyes' and brows' draw calls.
+      if (tooSmall(m)) {
         drop.push(m);
         return;
       }
       m.frustumCulled = false;
+      this.skeleton ??= m.skeleton;
+      this.addPart(m, m.geometry);
       kit ??= this.kitMaterial(m.material as MeshStandardMaterial);
       m.material = kit;
     });
@@ -259,6 +352,24 @@ class Player {
     this.idle.time = Math.random() * t.idle.duration;
   }
 
+  private addPart(mesh: SkinnedMesh, full: BufferGeometry): void {
+    const light = this.t.light.get(full);
+    if (!light) return;
+    this.parts.push({ mesh, full, light });
+    if (this.isLight) mesh.geometry = light;
+  }
+
+  get light(): boolean {
+    return this.isLight;
+  }
+
+  /** Light (far away) or full body. */
+  detail(light: boolean): void {
+    if (light === this.isLight) return;
+    this.isLight = light;
+    for (const p of this.parts) p.mesh.geometry = light ? p.light : p.full;
+  }
+
   private kitMaterial(src: MeshStandardMaterial): MeshLambertMaterial {
     const mat = new MeshLambertMaterial({ map: src.map ?? null, color: src.map ? '#ffffff' : src.color });
     mat.onBeforeCompile = (shader) => {
@@ -287,13 +398,17 @@ class Player {
     this.ctx.left = look.left;
     (u.uSkin.value as Color).set(look.skin);
     this.hairMat.color.set(look.hairColor).multiplyScalar(1.6);
-    for (const h of this.hair) h.removeFromParent();
+    const old = new Set(this.hair);
+    for (const h of old) h.removeFromParent();
+    for (let i = this.parts.length - 1; i >= 0; i--) if (old.has(this.parts[i].mesh)) this.parts.splice(i, 1);
     this.hair = [];
     for (const hid of look.style) {
       for (const h of this.t.hair.get(hid) ?? []) {
         const hair = h.clone() as SkinnedMesh;
-        const list = h.skeleton.bones.map((b) => this.bones.get(b.name) ?? b);
-        hair.bind(new Skeleton(list, h.skeleton.boneInverses), h.bindMatrix);
+        // Riding on the body's skeleton saves working out the same bones twice a frame.
+        if (this.skeleton && this.t.sharesSkeleton.has(h)) hair.bind(this.skeleton, h.bindMatrix);
+        else hair.bind(new Skeleton(h.skeleton.bones.map((b) => this.bones.get(b.name) ?? b), h.skeleton.boneInverses), h.bindMatrix);
+        this.addPart(hair, h.geometry);
         hair.material = this.hairMat;
         hair.frustumCulled = false;
         this.body.add(hair);
@@ -534,6 +649,26 @@ export class Squads {
   private add(i: number, mv: Move, ms: number): void {
     if (mv.end < ms) return;
     this.players[i].add(mv);
+  }
+
+  /**
+   * Light bodies for the players shown small by `camera` on a view `heightPx` CSS pixels
+   * tall, or for everyone when `always`.
+   */
+  detail(camera: PerspectiveCamera, heightPx: number, always: boolean): void {
+    // A player's height on screen is k over his distance from the camera.
+    const k = (1.8 * heightPx * camera.zoom) / (2 * Math.tan((camera.fov * DEG) / 2));
+    const c = camera.position;
+    for (const p of this.players) {
+      if (!p.root.visible) continue;
+      if (always) {
+        p.detail(true);
+        continue;
+      }
+      const at = p.root.position;
+      const h = k / Math.max(0.1, Math.hypot(at.x - c.x, 0.9 - c.y, at.z - c.z));
+      p.detail(h < LOD.heightPx * (p.light ? LOD.backAt : 1));
+    }
   }
 
   /** The keeper's hands, for a ball he is holding. */

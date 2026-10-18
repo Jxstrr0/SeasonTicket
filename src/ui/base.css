@@ -1018,6 +1018,8 @@ body.office-mode .topbar { backdrop-filter: none; }
 .m3d-shape { border: 1px solid var(--line); border-radius: 8px; color: var(--text); }
 .m3d-cams .seg.on, .m3d-shape.on { background: var(--accent); }
 .m3d-replay { right: 6px; top: 6px; gap: 8px; }
+.m3d-fps { position: absolute; left: 8px; top: 34px; padding: 1px 7px; border-radius: 6px; background: rgba(11, 16, 32, 0.7); font-size: 0.75rem; font-variant-numeric: tabular-nums; pointer-events: none; }
+.m3d-fps[hidden], .match3d:not(.on) .m3d-fps { display: none; }
 .m3d-badge { padding: 4px 10px; border-radius: 6px; background: #b3122e; color: #fff; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.8rem; }
 .m3d-replay .btn-secondary { min-height: 44px; background: rgba(11, 16, 32, 0.72); }
 .match3d:not(.on) .m3d-bar, .match3d:not(.on) .m3d-replay, .match3d:not(.on) .m3d-card, .m3d-cams[hidden], .m3d-shape[hidden], .m3d-replay[hidden], .m3d-card[hidden] { display: none; }

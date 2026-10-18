@@ -70,6 +70,8 @@ export interface MatchViewStats {
   triangles: number;
   /** Frames drawn per second, over the last second. */
   fps: number;
+  /** The longest wait between two drawn frames over the last second (ms). */
+  worstMs: number;
 }
 
 export interface MatchViewHandle {
@@ -135,6 +137,8 @@ function blobTexture(): CanvasTexture {
 export function createMatchView(container: HTMLElement, opts: MatchViewOptions): MatchViewHandle {
   const tier = QUALITY_TIERS[opts.tier];
   const shadows = tier.shadows && tier.detail >= 1;
+  // On Low every player gets the light body.
+  const alwaysLight = tier.detail === 0;
   const renderer = new WebGLRenderer({ antialias: tier.antialias, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, tier.pixelRatio));
   renderer.outputColorSpace = SRGBColorSpace;
@@ -235,6 +239,8 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   // Players load after the ground, so the stands show while the bodies download.
   const assets = new Assets(renderer);
   let squads: Squads | null = null;
+  // For checking the scene from the browser's console while developing.
+  if (import.meta.env.DEV) (globalThis as { match3dScene?: unknown }).match3dScene = { scene, renderer, camera, squads: () => squads };
   let disposed = false;
   loadPlayerTemplates(assets)
     .then((t) => {
@@ -365,6 +371,9 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   let frames = 0;
   let fpsFrom = lastTime;
   let fps = 0;
+  let worst = 0;
+  let worstNow = 0;
+  let drawnAt = 0;
   let raf = 0;
   let running = true;
   const loop = (): void => {
@@ -390,10 +399,15 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
     if (!dirty && !easing && !boards) return;
     dirty = false;
     sinceBoards = 0;
+    squads?.detail(camera, canvas.clientHeight, alwaysLight);
     renderer.render(scene, camera);
     frames += 1;
+    if (drawnAt) worstNow = Math.max(worstNow, t - drawnAt);
+    drawnAt = t;
     if (t - fpsFrom >= 1000) {
       fps = (frames * 1000) / (t - fpsFrom);
+      worst = worstNow;
+      worstNow = 0;
       frames = 0;
       fpsFrom = t;
     }
@@ -471,11 +485,12 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       if (running) return;
       running = true;
       lastTime = performance.now();
+      drawnAt = 0;
       dirty = true;
       raf = requestAnimationFrame(loop);
     },
     stats() {
-      return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, fps };
+      return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, fps, worstMs: worst };
     },
     dispose() {
       disposed = true;
