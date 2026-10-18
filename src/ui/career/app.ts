@@ -47,6 +47,8 @@ import {
   type MatchMode,
   type StadiumLook,
   type TierId,
+  answerEvent,
+  setStoryPace,
 } from '../../sim/career';
 import { CLUBS, MATCH_TUNING } from '../../sim/data';
 import { seedNumber } from '../../sim/league';
@@ -481,7 +483,18 @@ export class CareerApp {
   private onOfficePick(p: OfficePick): void {
     if (!this.career || this.ui.screen !== 'hub' || this.weeks.playing) return;
     this.ui.flash = null;
-    if (p.kind === 'mail') return this.openMail(p.id);
+    if (p.kind === 'mail') {
+      const mail = this.career.inbox.find((m) => m.id === p.id);
+      const ev = mail?.eventRef ? this.career.story.events.find((e) => e.id === mail.eventRef && e.answer === null) : undefined;
+      if (ev && mail) {
+        // The visitor's scene opens over the office.
+        mail.read = true;
+        this.ui.sceneId = ev.id;
+        this.save();
+        return this.render();
+      }
+      return this.openMail(p.id);
+    }
     this.showTab(HOTSPOT_TABS[p.id]);
   }
 
@@ -715,6 +728,19 @@ export class CareerApp {
         return window.scrollTo(0, 0);
       case 'open-mail':
         return this.openMail(d.id);
+      case 'event-choice': {
+        if (!d.id || !d.choice) return;
+        const res = answerEvent(career, d.id, d.choice === 'staff' ? null : d.choice);
+        ui.sceneId = null;
+        ui.flash = { kind: res.ok ? 'ok' : 'error', text: res.text };
+        break;
+      }
+      case 'close-scene':
+        ui.sceneId = null;
+        break;
+      case 'set-pace':
+        if (d.pace === 'calm' || d.pace === 'normal' || d.pace === 'busy') setStoryPace(career, d.pace);
+        break;
       case 'read-all':
         for (const m of career.inbox) m.read = true;
         break;
