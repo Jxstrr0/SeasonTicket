@@ -63,8 +63,8 @@ const PROPS_BYTES = 3_300_000;
 
 const LABELS: Record<HotspotId, string> = {
   laptop: 'Finances',
-  phone: 'Offers',
-  tv: 'League',
+  phone: 'Fan feed',
+  tv: 'News',
   window: 'Stadium',
   whiteboard: 'Tactics',
   clipboard: 'Squad',
@@ -308,7 +308,7 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
       const door = labels.get('door');
       if (door) door.text.textContent = snap.unread > 0 ? `Inbox (${snap.unread})` : 'Inbox';
       const phone = labels.get('phone');
-      if (phone) phone.text.textContent = snap.bids > 0 ? `Offers (${snap.bids})` : 'Offers';
+      if (phone) phone.text.textContent = snap.bids > 0 ? `Offers (${snap.bids})` : 'Fan feed';
       const key = JSON.stringify(snap);
       if (key === lastKey) return;
       lastKey = key;

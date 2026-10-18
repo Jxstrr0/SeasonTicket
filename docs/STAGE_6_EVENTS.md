@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan approved by the owner (2026-10-18). Building step 6.1.
+**Status:** plan approved by the owner (2026-10-18). Steps 6.1 and 6.2 built; next is 6.3.
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -128,6 +128,28 @@ The loader checks every event on start: known role, the staff choice exists, ids
 **Saves.** Save version 5 adds `story` (open and past events, timers, press, goodwill, pace) and an `other` income line. Older saves migrate with a fresh story.
 
 **Numbers so far.** A headless season with a scripted owner gets about 28 decisions across 16 different events (about 0.8 a week). That is below the 6.7 target of 25+ decisions from 20+ events at under 8% each, because 6.1 has only 21 events; the 6.1 test uses looser limits (20 decisions, 12 kinds, 15% each) until 6.7 fills the pool.
+
+### 6.2 Newspaper and fan feed (built 2026-10-18)
+
+**The paper.** *The Valmere Courier* prints one edition at the end of every week (pre-season weeks, each round, the mid-season break and each playoff round). An edition has 2 to 4 stories, the biggest first. Stories come from:
+
+- your result (the tone follows your press standing), with playoff, final and shootout versions;
+- the round: a record win, a rout, or an upset between clubs 8 or more places apart;
+- winning and losing runs (at the threshold, then every 2 more games);
+- the table: a new leader once 3 games are played, and crossing the playoff line after 5;
+- the shield and the champions;
+- a pre-season preview from each club's best 16 players;
+- hat-tricks and scoring milestones;
+- transfers (yours always; the biggest AI deals, without repeating a player), money trouble when the lender ladder rises to level 2 or more, finished building work;
+- your decisions: 15 event choices in `everyday.json` now carry a `news` line, and broken promises make the paper.
+
+Templates are in `src/data/news/newspaper.json` (several per story, so the same story reads differently); weights and caps are in `src/data/tuning/news.json`.
+
+**The fan feed.** About 4 posts a week from made-up fans, with handles built from parts (at most 20 characters, never "official"). Posts react to your result, mood, signings and sales, ticket prices, rival fans after you play them, transfer-window rumours, and the odd pie complaint. A post line is not reused within the last 12 posts. Lines are in `src/data/news/social.json`.
+
+**Where you see it.** A News tab (Paper / Fan feed, with "‹ Older" and "Newer ›" to read back issues). Home shows the lead headline with a "Read the paper" button. In the office, the TV shows the front page next to a mini table, and the desk phone shows the feed when there are no offers (with offers it still shows them, and tapping it opens the Market). Tapping the TV opens the paper; tapping the phone with no offers opens the feed.
+
+**Determinism and saves.** News has its own seeded stream, so it never changes a match or an event. Save version 6 adds `news` (the last 60 stories and 40 posts); older saves start with an empty paper. A full season adds about 5 KB to the save code.
 
 ## Owner's decisions (2026-10-18)
 

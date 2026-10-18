@@ -159,7 +159,7 @@ function userResultText(career: Career, results: readonly MatchResult[]): string
 const HOTSPOT_TABS: Record<HotspotId, HubTab> = {
   laptop: 'money',
   phone: 'market',
-  tv: 'league',
+  tv: 'news',
   window: 'stadium',
   cabinet: 'club',
   whiteboard: 'lineup',
@@ -494,6 +494,15 @@ export class CareerApp {
         return this.render();
       }
       return this.openMail(p.id);
+    }
+    // The TV is the paper; the phone is the fan feed unless a bid is waiting.
+    if (p.id === 'tv') {
+      this.ui.newsView = 'paper';
+      this.ui.newsEdition = null;
+    }
+    if (p.id === 'phone' && this.career && this.career.incomingBids.length === 0) {
+      this.ui.newsView = 'feed';
+      return this.showTab('news');
     }
     this.showTab(HOTSPOT_TABS[p.id]);
   }
@@ -867,6 +876,16 @@ export class CareerApp {
       case 'stadium-look':
         if (d.key) this.flashResult(setStadiumLook(career, { [d.key]: d.value } as Partial<StadiumLook>));
         break;
+
+      // News
+      case 'news-view':
+        if (d.view === 'paper' || d.view === 'feed') ui.newsView = d.view;
+        return this.render();
+      case 'news-edition': {
+        const n = Number(d.week);
+        if (d.week && Number.isInteger(n)) ui.newsEdition = n;
+        return this.render();
+      }
 
       // League
       case 'league-tab':
@@ -1322,6 +1341,7 @@ export class CareerApp {
     ui.reportOpen = false;
     ui.lineupSlot = null;
     ui.staffRole = null;
+    ui.newsEdition = null;
     ui.menuOpen = false;
     this.render();
     window.scrollTo(0, 0);

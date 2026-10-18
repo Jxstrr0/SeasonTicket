@@ -3,10 +3,10 @@
  * that reads the career for the office, so the render code never touches the
  * sim.
  */
-import { C, LADDER_NAMES, coachSelection, eventView, openEvents, lastHomeCrowd, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
+import { C, LADDER_NAMES, coachSelection, eventView, frontPage, openEvents, paperName, lastHomeCrowd, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
 import { WORLD, formation as formationOf } from '../../sim/data';
 import officeTuning from '../../data/tuning/office.json';
-import type { OfficeSnapshot, OfficeTrophy, OfficeVisitorCall } from '../../render/office/types';
+import type { OfficeFrontPage, OfficeSnapshot, OfficeTrophy, OfficeVisitorCall } from '../../render/office/types';
 import { careerWeekLabel, unreadCount } from '../views/career/hub';
 import { buildStadiumSnapshot, crestDocument } from './stadiumSnapshot';
 
@@ -76,6 +76,14 @@ function selectionSlots(career: Career): { formation: string; slots: OfficeSnaps
   };
 }
 
+
+/** The latest edition's front page for the TV. */
+function frontPageSnapshot(career: Career): OfficeFrontPage | null {
+  const page = frontPage(career);
+  if (!page) return null;
+  const [lead, ...rest] = page.items;
+  return { paper: paperName(), edition: page.label, lead: lead.headline, more: rest.slice(0, 2).map((x) => x.headline) };
+}
 export function buildOfficeSnapshot(career: Career): OfficeSnapshot {
   const team = userTeam(career);
   const books = userBooks(career);
@@ -114,5 +122,7 @@ export function buildOfficeSnapshot(career: Career): OfficeSnapshot {
     stadiumName: team.stadiumName,
     stadium: buildStadiumSnapshot(career, crestSvg),
     visitor: officeVisitor(career),
+    news: frontPageSnapshot(career),
+    posts: career.news.posts.filter((p) => p.weekIndex === career.weekIndex - 1).length,
   };
 }
