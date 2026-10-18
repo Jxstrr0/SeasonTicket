@@ -11,14 +11,14 @@ import { defaultNames, homeNationId } from '../names';
 import type { Rng } from '../rng';
 import type { Player, StaffRole } from '../types';
 import { fairPrice } from './books';
-import { ensureHeadCoach, makeSponsorOffers } from './club';
+import { ensureHeadCoach, makeSponsorOffers, releaseStaff } from './club';
 import { bidForListed, squadRole } from './market';
 import { reportPromise, reportStory } from './news';
 import { PRESS_DEF, addClaim, answerPress, pressView } from './press';
 import { addHeat, ownerMemory, ownerOf, rivalLevel } from './rivalry';
 import { INCOME_KEYS, SPENDING_KEYS } from './types';
 import type { Career, IncomeKey, SpendingKey, StadiumProject, StoryDecision, StoryEvent, StoryPace, StoryState, StoryTimer, VisitorRole } from './types';
-import { C, addInbox, careerRng, clamp, earn, money, nextId, roundMoney, spend, squadOf, transferWindowOpen, userBooks, userTeam } from './util';
+import { C, addInbox, careerRng, clamp, earn, money, nextId, roundMoney, spend, squadOf, theStadium, transferWindowOpen, userBooks, userTeam } from './util';
 
 const T = STORY_TUNING;
 const M = T.mood;
@@ -51,6 +51,8 @@ export interface EventConditions {
   pressBelow?: number;
   pressAbove?: number;
   flag?: string;
+  /** With `flag`: it was set at least this many weeks ago. */
+  flagWeeks?: number;
   noFlag?: string;
   /** The next match is a derby (Stage 6.4). */
   derbyNext?: boolean;
@@ -60,6 +62,8 @@ export interface EventConditions {
   injuredAtLeast?: number;
   /** The lenders' ladder at least this level (1-4). */
   ladderAtLeast?: number;
+  /** The club is breaking the lenders' terms now (their deadline is running). */
+  inBreach?: boolean;
   /** Stadium work under way. */
   building?: boolean;
   /** The stadium carries a sponsor's name. */
@@ -80,6 +84,8 @@ export type Effect =
   | { press: number }
   | { goodwill: number }
   | { flag: string }
+  /** Clears a flag (the follow-up it set up has happened). */
+  | { unflag: string }
   | { price: number }
   | { promise: 'starts' | 'signing' | 'wins' | 'price'; weeks: number; target?: number; kept?: string; broken?: string; news?: string }
   | { later: number; title: string; text: string; effects: Effect[] }
@@ -138,6 +144,10 @@ const ROLES: readonly VisitorRole[] = ['lender', 'agent', 'sponsor', 'coach', 'r
 /** Every event in src/data/events, checked once at load. */
 export const EVENTS: readonly EventDef[] = loadEvents(EVENT_FILES);
 const BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
+const hasEffect = (e: EventDef, key: string): boolean => e.choices.some((c) => c.effects.some((x) => key in x));
+/** Events that can end the sponsor deal or lose the head coach: a chain step needs the same one. */
+const ABOUT_SPONSOR = new Set(EVENTS.filter((e) => hasEffect(e, 'dropSponsor')).map((e) => e.id));
+const ABOUT_COACH = new Set(EVENTS.filter((e) => hasEffect(e, 'coachLeaves')).map((e) => e.id));
 
 function loadEvents(files: readonly unknown[]): EventDef[] {
   const out: EventDef[] = [];
@@ -316,10 +326,11 @@ export function conditionsMet(career: Career, w: EventConditions): boolean {
   if (w.fansAbove !== undefined && team.fanMood <= w.fansAbove) return false;
   if (w.pressBelow !== undefined && career.story.press >= w.pressBelow) return false;
   if (w.pressAbove !== undefined && career.story.press <= w.pressAbove) return false;
-  if (w.flag !== undefined && career.story.flags[w.flag] === undefined) return false;
+  if (w.flag !== undefined && (career.story.flags[w.flag] === undefined || career.weekIndex - career.story.flags[w.flag] < (w.flagWeeks ?? 0))) return false;
   if (w.noFlag !== undefined && career.story.flags[w.noFlag] !== undefined) return false;
   if (w.injuredAtLeast !== undefined && squadOf(career, team.id).filter((p) => p.injuryWeeks > 0).length < w.injuredAtLeast) return false;
   if (w.ladderAtLeast !== undefined && career.ladder.level < w.ladderAtLeast) return false;
+  if (w.inBreach !== undefined && (career.ladder.deadlineWeek !== null) !== w.inBreach) return false;
   if (w.building !== undefined && activeBuilds(career).length > 0 !== w.building) return false;
   if (w.namingRights !== undefined && !!books.namingRights !== w.namingRights) return false;
   if (w.coachAbove !== undefined && headCoachRating(career) < w.coachAbove) return false;
@@ -334,6 +345,11 @@ export function conditionsMet(career: Career, w: EventConditions): boolean {
 
 function activeBuilds(career: Career): StadiumProject[] {
   return (career.stadiums[career.userTeamId]?.projects ?? []).filter((p) => !p.queued && p.weeksLeft > 0);
+}
+
+function headCoachId(career: Career): string | null {
+  const league = career.season.league;
+  return userTeam(career).staffIds.find((id) => league.staff[id]?.role === 'headCoach') ?? null;
 }
 
 function headCoachRating(career: Career): number {
@@ -507,6 +523,7 @@ export function fill(career: Career, ev: Pick<StoryEvent, 'playerId' | 'person' 
     short: team.shortName,
     city: team.city,
     stadium: team.stadiumName,
+    theStadium: theStadium(team.stadiumName),
     coach: staffName(career, 'headCoach') ?? 'The head coach',
     assistant: staffName(career, 'assistantCoach') ?? 'The assistant',
     person: ev.person ?? 'A visitor',
@@ -647,12 +664,17 @@ function applyEffects(career: Career, ev: StoryEvent, def: EventDef, choice: Eve
       story.goodwill = round3(clamp(story.goodwill + scaled(e.goodwill, s), 0, 1));
     } else if ('flag' in e) {
       story.flags[e.flag] = career.weekIndex;
+    } else if ('unflag' in e) {
+      delete story.flags[e.unflag];
     } else if ('price' in e) {
       books.ticketPrice = Math.max(1, Math.round(books.ticketPrice * (1 + e.price)));
     } else if ('promise' in e) {
       const p = ev.playerId;
+      // Games and wins only count from the first match week, so a pre-season promise starts then.
+      const from = career.weekIndex + (career.phase === 'preseason' && (e.promise === 'starts' || e.promise === 'wins') ? C.calendar.preseasonWeeks - career.preseasonWeek + 1 : 0);
       addTimer(career, {
-        week: career.weekIndex + e.weeks,
+        week: from + e.weeks,
+        from,
         kind: e.promise,
         eventId: def.id,
         choiceId: choice.id,
@@ -672,7 +694,7 @@ function applyEffects(career: Career, ev: StoryEvent, def: EventDef, choice: Eve
     } else if ('later' in e) {
       addTimer(career, { week: career.weekIndex + e.later, kind: 'later', eventId: def.id, choiceId: choice.id, playerId: ev.playerId, amount: ev.amount, baseline: 0, target: 0, teamId: ev.teamId ?? null, person: ev.person });
     } else if ('next' in e) {
-      addTimer(career, { week: career.weekIndex + e.weeks, kind: 'next', next: e.next, eventId: def.id, choiceId: choice.id, playerId: ev.playerId, amount: ev.amount, baseline: 0, target: 0, teamId: ev.teamId ?? null, person: ev.person });
+      addTimer(career, { week: career.weekIndex + e.weeks, kind: 'next', next: e.next, eventId: def.id, choiceId: choice.id, playerId: ev.playerId, amount: ev.amount, baseline: 0, target: 0, teamId: ev.teamId ?? null, person: ev.person, sponsor: books.sponsor?.brand ?? null, coachId: headCoachId(career) });
     } else if ('suspend' in e) {
       const p = ev.playerId ? career.season.league.players[ev.playerId] : undefined;
       if (p && p.teamId === team.id) p.suspensionMatches += e.suspend;
@@ -728,9 +750,18 @@ function coachLeaves(career: Career, toTeamId: string | null | undefined): void 
   const coach = league.staff[id];
   team.staffIds = team.staffIds.filter((x) => x !== id);
   coach.teamId = null;
-  const dest = toTeamId ? league.teams.find((t) => t.id === toTeamId)?.shortName : null;
-  addInbox(career, 'staff', `${coach.firstName} ${coach.lastName} has gone`, `Your head coach has left${dest ? ` for ${dest}` : ''}.`);
+  const to = toTeamId ? league.teams.find((t) => t.id === toTeamId) : undefined;
+  addInbox(career, 'staff', `${coach.firstName} ${coach.lastName} has gone`, `Your head coach has left${to ? ` for ${to.shortName}` : ''}.`);
   ensureHeadCoach(career);
+  // He takes over at the rival, whose old coach goes into the hiring pool; with no rival he is free to hire again.
+  if (to) {
+    const old = to.staffIds.find((x) => league.staff[x]?.role === 'headCoach');
+    if (old) releaseStaff(career, league.staff[old]);
+    coach.teamId = to.id;
+    to.staffIds.push(coach.id);
+  } else {
+    releaseStaff(career, coach);
+  }
 }
 
 function addTimer(career: Career, t: Omit<StoryTimer, 'id'>): void {
@@ -765,6 +796,9 @@ function runNext(career: Career, t: StoryTimer): void {
   if (!def || (career.phase !== 'season' && career.phase !== 'preseason')) return;
   const p = t.playerId ? career.season.league.players[t.playerId] : null;
   if (t.playerId && (!p || p.teamId !== career.userTeamId)) return;
+  // A step that can drop the sponsor or lose the coach must be about the same one the chain began with.
+  if (ABOUT_SPONSOR.has(def.id) && t.sponsor !== undefined && (userBooks(career).sponsor?.brand ?? null) !== t.sponsor) return;
+  if (ABOUT_COACH.has(def.id) && t.coachId !== undefined && headCoachId(career) !== t.coachId) return;
   if (career.story.events.some((o) => o.eventId === def.id && o.answer === null)) return;
   const rng = careerRng(career, `story-next:${t.id}`);
   // A step about a player the chain didn't have picks its own (the lenders' star sale).
@@ -774,8 +808,26 @@ function runNext(career: Career, t: StoryTimer): void {
 }
 
 
-function checkPromise(career: Career, t: StoryTimer): void {
+/**
+ * The season is over: promises of games or wins still running are judged on this season's matches
+ * before the off-season wipes them, against the share of the promised time that has passed.
+ */
+export function settleSeasonPromises(career: Career): void {
+  const story = career.story;
+  const open = story.timers.filter((t) => t.kind === 'starts' || t.kind === 'wins');
+  if (!open.length) return;
+  story.timers = story.timers.filter((t) => t.kind !== 'starts' && t.kind !== 'wins');
+  for (const t of open) {
+    const span = t.from !== undefined ? t.week - t.from : 0;
+    const share = span > 0 ? clamp((career.weekIndex - (t.from as number)) / span, 0, 1) : 1;
+    checkPromise(career, t, share);
+  }
+}
+
+function checkPromise(career: Career, t: StoryTimer, share = 1): void {
   const team = userTeam(career);
+  // Judged early (the season ended first): only the share of the promise that had time to happen.
+  const target = Math.floor(t.target * share);
   let kept: boolean;
   let who = 'the head coach';
   if (t.kind === 'starts') {
@@ -783,10 +835,10 @@ function checkPromise(career: Career, t: StoryTimer): void {
     // He left the club: nothing to keep.
     if (!p || p.teamId !== team.id) return;
     who = `${p.firstName} ${p.lastName}`;
-    kept = (career.playerSeason[p.id]?.apps ?? 0) - t.baseline >= t.target || (career.playerSeason[p.id]?.apps ?? 0) < t.baseline;
+    kept = (career.playerSeason[p.id]?.apps ?? 0) - t.baseline >= target || (career.playerSeason[p.id]?.apps ?? 0) < t.baseline;
   } else if (t.kind === 'wins') {
     const won = career.season.standings.find((r) => r.teamId === team.id)?.won ?? 0;
-    kept = won - t.baseline >= t.target;
+    kept = won - t.baseline >= target;
   } else if (t.kind === 'price') {
     kept = userBooks(career).ticketPrice <= t.baseline;
   } else {

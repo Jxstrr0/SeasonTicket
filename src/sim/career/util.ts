@@ -115,6 +115,11 @@ export function squadOf(career: Career, teamId: string): Player[] {
   return teamById(league, teamId).playerIds.map((id) => league.players[id]).filter((p): p is Player => !!p);
 }
 
+/** "the Riverside" for most grounds, but "The Foundry" stays as it is. */
+export function theStadium(name: string): string {
+  return /^the\s/i.test(name) ? name : `the ${name}`;
+}
+
 export function playerName(p: { firstName: string; lastName: string }): string {
   return `${p.firstName} ${p.lastName}`;
 }

@@ -383,8 +383,10 @@
     "targetSize": 24
   },
   "freeAgentPool": {
+    "_about": "Each off-season the pool is topped up to target, players over maxAge leave it, and if released players have piled up past max, only the best max stay.",
     "target": 40,
-    "maxAge": 35
+    "maxAge": 35,
+    "max": 90
   },
   "squadQuality": {
     "_about": "Each offseason a club's squad quality (used for crowds, sponsors and AI planning) is recomputed from the average overall of its best eleven: baseQuality + perPoint x (average - baseOverall), clamped.",

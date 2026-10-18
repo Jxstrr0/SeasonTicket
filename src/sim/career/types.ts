@@ -98,6 +98,8 @@ export interface IncomingBid {
   fee: number;
   /** Global week index after which the bid lapses. */
   expiresWeek: number;
+  /** A bid you asked for (a story choice put him up for sale): it can be accepted while the window is shut. */
+  listed?: boolean;
 }
 
 export interface SponsorOffer {
@@ -347,6 +349,11 @@ export interface StoryTimer {
   baseline: number;
   /** For 'starts': the apps he was promised. */
   target: number;
+  /** For 'starts' and 'wins': the week the promise started counting (after pre-season, if made then). */
+  from?: number;
+  /** For 'next': the shirt sponsor and the head coach when the chain was set, so a step about them is dropped if they are gone. */
+  sponsor?: string | null;
+  coachId?: string | null;
 }
 
 export interface StoryDecision {

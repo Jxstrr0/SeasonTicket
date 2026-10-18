@@ -81,7 +81,7 @@ export function renderDeadline(career: Career, ui: UiState): string {
         <div class="small muted">${esc(leftText(v))}</div>
       </div>
       <div class="war-actions">
-        ${v.closed ? '' : `<button type="button" data-action="deadline-hour">${v.hoursLeft === 1 ? 'Shut the window' : 'Next hour'}</button>`}
+        ${v.closed ? '' : v.hoursLeft === 1 ? confirmButton(ui, 'deadline-hour', v.key, 'Shut the window', 'btn-primary') : '<button type="button" data-action="deadline-hour">Next hour</button>'}
         ${v.closed ? '' : confirmButton(ui, 'deadline-staff', v.key, 'Leave it to the staff')}
         <button type="button" class="btn-secondary" data-action="to-hub">${v.closed ? 'Back to the office' : 'Step out'}</button>
       </div>

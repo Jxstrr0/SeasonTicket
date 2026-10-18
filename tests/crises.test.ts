@@ -205,7 +205,7 @@ describe('crises: effects', () => {
     expect(pr.weeksLeft).toBe(left + 4);
   });
 
-  it('coachLeaves swaps in an interim, pays compensation and pleases the rival owner', () => {
+  it('coachLeaves swaps in an interim, sends him to the rival, pays compensation and pleases its owner', () => {
     const career = newCareer();
     intoSeason(career);
     const was = headCoach(career);
@@ -217,7 +217,8 @@ describe('crises: effects', () => {
     const now = headCoach(career);
     expect(now).toBeTruthy();
     expect(now).not.toBe(was);
-    expect(career.season.league.staff[was!].teamId).toBeNull();
+    // He goes to the club that poached him.
+    expect(career.season.league.staff[was!].teamId).toBe(ev.teamId);
     expect(userBooks(career).cash).toBe(cash + ev.amount);
     expect(career.owners[ev.teamId!].memory).toBeGreaterThan(memory);
     ownerMemory(career, ev.teamId!, 0);

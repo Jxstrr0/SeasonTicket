@@ -1,5 +1,5 @@
 {
-  "_about": "Newspaper templates (Stage 6.2). Each entry is \"Headline|Body\". Story kinds with warm/harsh lists use them when the press likes or dislikes the owner. Fills: {us} {club} {nick} {city} {stadium} {them} {themNick} {score} {venue} {scorer} {hero} {win} {lose} {wscore} {team} {n} {player} {from} {to} {fee} {pos} {pts} {leader} {gap} {crowd} {stage} {cup} {shield} {league} {text}.",
+  "_about": "Newspaper templates (Stage 6.2). Each entry is \"Headline|Body\". Story kinds with warm/harsh lists use them when the press likes or dislikes the owner. Fills: {us} {club} {nick} {city} {stadium} {theStadium} (\"the Riverside\", \"The Foundry\") {them} {themNick} {score} {venue} {scorer} {hero} {win} {lose} {wscore} {team} {n} {player} {from} {to} {fee} {pos} {pts} {leader} {gap} {crowd} {stage} {cup} {shield} {league} {text}.",
   "result": {
     "bigWin": {
       "neutral": [
@@ -80,7 +80,7 @@
     },
     "finalWin": {
       "neutral": [
-        "CHAMPIONS! {us} win the {cup}|{score} against {them} in the final. {scorer} writes their name into {city} folklore.",
+        "CHAMPIONS! {us} win the {cup}|{score} against {them} in the final. {scorer} writes his name into {city} folklore.",
         "Glory for {us}|{nick} lift the {cup} after beating {them} {score}. Parade route to be announced."
       ]
     },
@@ -119,7 +119,7 @@
   ],
   "streakLossMine": [
     "{us} slump to {n} defeats in a row|Confidence is draining away. Something has to change.",
-    "{n} straight losses for {us}|The mood around the {stadium} is grim."
+    "{n} straight losses for {us}|The mood around {theStadium} is grim."
   ],
   "streakLossMineHarsh": [
     "Crisis at {us}: {n} defeats in a row|The fans are asking whether the owner has a plan. So are we."
@@ -184,8 +184,8 @@
     "{us} finances under the spotlight|Sources say the club's lenders have stepped in. Fans fear what comes next."
   ],
   "stadium": [
-    "Work done at the {stadium}|{text}",
-    "New look for the {stadium}|{text}"
+    "Work done at {theStadium}|{text}",
+    "New look for {theStadium}|{text}"
   ],
   "seasonChampion": [
     "{team} win the {cup}|Champions of the {league}. Congratulations from all of us."
