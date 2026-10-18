@@ -73,6 +73,8 @@ export class LiveHost {
       this.three.detach(this.el);
       this.atmosphere.detach(this.el);
       this.el.remove();
+      // The match plays on without the pitch (text mode): rebuild from where it stands next time.
+      this.m = null;
       return;
     }
     slot.replaceWith(this.el);
@@ -93,6 +95,16 @@ export class LiveHost {
     if (choice?.want && choice.tier) this.three.attach(this.el, this.canvas, key, m, choice);
     else this.three.detach(this.el);
     this.fit();
+  }
+
+  /**
+   * The match jumped on (skip to the end): nothing from before it plays, and the next
+   * sync draws the pitch from where the match now stands.
+   */
+  jumped(): void {
+    if (this.m) this.atmosphere.skip(this.m);
+    this.stopSettle();
+    this.m = null;
   }
 
   /** Call before each engine step, so the view can blend from it. */

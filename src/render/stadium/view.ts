@@ -426,6 +426,9 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
       nightSky.dispose();
       sun.dispose();
       renderer.dispose();
+      // Hand the GPU context back now: a closed view's context otherwise lives on until the
+      // browser collects it, and phones only allow a handful at a time.
+      renderer.forceContextLoss();
       canvas.remove();
     },
   };

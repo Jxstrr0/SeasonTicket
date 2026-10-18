@@ -24,6 +24,7 @@ const fail = (message: string): ClubResult => ({ ok: false, message });
 // ---------------------------------------------------------------------------
 
 export function setTicketPrice(career: Career, price: number): ClubResult {
+  if (!Number.isFinite(price)) return fail('Enter a ticket price.');
   const value = Math.round(clamp(price, C.tickets.minPrice, C.tickets.maxPrice) * 2) / 2;
   userBooks(career).ticketPrice = value;
   return ok(`Tickets now cost $${value.toFixed(2)}.`);
@@ -84,6 +85,8 @@ export function namingRightsOffer(career: Career): { brand: string; fee: number;
 export function sellNamingRights(career: Career): ClubResult {
   const offer = namingRightsOffer(career);
   if (!offer) return fail('The stadium name is already sold.');
+  // A deal signed in the review would lose its first year to the rollover straight away.
+  if (career.phase === 'review') return fail('Naming deals are signed once the new season starts.');
   const team = userTeam(career);
   const books = userBooks(career);
   const firstWord = offer.brand.split(' ')[0];

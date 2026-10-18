@@ -204,6 +204,20 @@ These target a mid-range phone (about a 2022 Android) at Medium.
 - **No kick clip:** the library has none, so kicks, tackles and dives (step 5.2) are made in code on top of the running clips, by bending the leg and hip bones towards the strike.
 - **Kits:** painted on in a shader by body region, the same way the office paints suits. This covers the shirt with collar and cuffs, shorts, socks, boots, and long sleeves and gloves for keepers.
 
+## What the Stage 5 audit fixed (2026-10-18)
+
+One review round over everything built so far, as the owner asked. Fixes:
+
+- **Live match:** the 2D pitch no longer freezes after switching from text to the pitch, and "skip to end" no longer plays old sounds or lines. In highlights mode the hidden 3D view stops drawing, and a still, dry 3D match no longer redraws 30 times a second while paused.
+- **Double taps:** a confirm button ignores a second tap within 0.45 s, and a form can't be sent twice in a row by one double tap.
+- **Imported saves:** club colours from a save code are checked before they reach the page, and a damaged code (missing league, players or books) is refused with a message instead of breaking the game.
+- **Weeks:** if a week fails part way, the career goes back to how it was before the week, so a save never holds half a week.
+- **Transfers:** a club's counter-offer stands until the window shuts (it could be walked down by bidding again), and no club sells or loans out a keeper it needs.
+- **Rules:** the homegrown rule now holds for the owner's own line-up too. Ticket prices must be a number, and naming-rights deals are signed once the new season starts.
+- **Small things:** money boxes take any amount, link buttons are full-size touch targets, and 3D scenes give back their graphics memory when closed.
+
+Left for later (notes, not bugs): home always kicks off, the shootout doesn't drop to equal numbers, and the youth intake can take a squad past 28. Changing the first two would change every match result, so they wait for the owner's call.
+
 ## Owner's decisions (2026-10-17)
 
 1. **Player look:** keep the Quaternius base bodies with painted kits.

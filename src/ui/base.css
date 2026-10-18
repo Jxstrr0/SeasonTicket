@@ -321,7 +321,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .stack { flex-direction: column; }
 .link { display: inline-block; padding: 12px 8px; color: var(--accent-2); }
 .link-btn {
-  min-height: 0;
+  min-height: var(--tap);
   min-width: 0;
   padding: 6px 0;
   background: none;
@@ -430,7 +430,6 @@ label .field { color: var(--text); }
 .data-table th.num { text-align: right; }
 .data-table td { padding: 4px 8px; border-top: 1px solid var(--line); white-space: nowrap; }
 .data-table .name-cell { width: 100%; white-space: normal; }
-.data-table .name-cell .link-btn { min-height: 40px; }
 .data-table tr.row-out td { opacity: 0.6; }
 .hide-narrow { display: none; }
 @media (min-width: 720px) { .hide-narrow { display: table-cell; } }

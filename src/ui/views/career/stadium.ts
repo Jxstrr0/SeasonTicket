@@ -43,7 +43,7 @@ import {
   type StandId,
   type UpgradeId,
 } from '../../../sim/career';
-import { cls, each, esc } from '../../html';
+import { cls, each, esc, safeColor } from '../../html';
 import { STADIUM_PICKS, type StadiumPick, type StadiumView, type UiState } from '../../career/state';
 import { renderCrest } from './crest';
 import { confirmButton } from './parts';
@@ -151,8 +151,10 @@ interface Palette {
 
 function palette(career: Career, look: StadiumLook): Palette {
   const t = userTeam(career);
-  const roof = { white: '#e8ecf2', primary: t.colors.primary, secondary: t.colors.secondary, grey: '#8c9096' }[look.roof];
-  return { primary: t.colors.primary, secondary: t.colors.secondary, roof };
+  const primary = safeColor(t.colors.primary, '#223355');
+  const secondary = safeColor(t.colors.secondary, '#ffffff');
+  const roof = { white: '#e8ecf2', primary, secondary, grey: '#8c9096' }[look.roof];
+  return { primary, secondary, roof };
 }
 
 /** Seat colour. Mixed seats come in blocks, one block per section, running back from the pitch. */

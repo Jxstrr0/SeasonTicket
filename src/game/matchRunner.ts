@@ -83,9 +83,10 @@ export function createInThreadRunner(): MatchRunner {
     async run(jobs, onProgress) {
       const out: MatchResult[] = [];
       for (const job of jobs) {
+        // Pause first: callers often ask for one match at a time, and each must wait its turn.
+        await pause();
         out.push(playJob(job));
         onProgress?.(out.length, jobs.length);
-        await pause();
       }
       return out;
     },
@@ -168,7 +169,7 @@ export function createWorkerRunner(size = 2, spawn: () => Worker = defaultSpawn)
           id: nextId++, job, reject,
           resolve: (r) => { done++; onProgress?.(done, jobs.length); resolve(r); },
         };
-        if (broken) { try { p.resolve(playJob(job)); } catch (e) { reject(e); } return; }
+        if (broken) { fallback.run([job]).then((r) => p.resolve(r[0]), reject); return; }
         queue.push(p);
       }));
       for (const w of workers) if (!busy.has(w)) feed(w);

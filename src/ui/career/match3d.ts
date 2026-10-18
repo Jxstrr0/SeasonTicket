@@ -259,7 +259,9 @@ export class Match3D {
       this.visible = !this.highlights;
     }
     if (this.status === 'idle') this.load(choice.tier, this.source);
+    // Hidden behind the 2D pitch in highlights mode: no drawing until a big moment.
     if (this.visible) this.handle?.resume();
+    else this.handle?.pause();
     this.mark();
   }
 
@@ -576,7 +578,7 @@ export class Match3D {
           },
           onLost: () => this.lost(token),
         });
-        if (!this.parent) this.handle.pause();
+        if (!this.parent || !this.visible) this.handle.pause();
       })
       .catch((err: unknown) => {
         if (token === this.token) this.fail(err, 'The 3D match could not start on this device, so the 2D pitch is showing instead.');

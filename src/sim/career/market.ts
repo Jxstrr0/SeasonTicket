@@ -160,6 +160,11 @@ function goalkeepers(players: Player[]): number {
   return players.filter((p) => p.position === 'GK').length;
 }
 
+/** True when `player` is a keeper his club can't spare: it would drop below its minimum. */
+function neededKeeper(career: Career, player: Player): boolean {
+  return player.position === 'GK' && !!player.teamId && goalkeepers(squadOf(career, player.teamId)) <= T.minGoalkeepers;
+}
+
 /** Whether the user can lose this player without breaking the squad rules. */
 function canLose(career: Career, player: Player): string | null {
   const squad = squadOf(career, career.userTeamId);
@@ -192,6 +197,7 @@ export function bidForPlayer(career: Career, playerId: string, fee: number, year
   if (room) return fail(room);
   const seller = teamById(league, player.teamId);
   if (seller.playerIds.length <= T.minSquad) return fail(`${seller.shortName} have too few players to sell.`);
+  if (neededKeeper(career, player)) return fail(`${seller.shortName} won't sell a keeper they need.`);
   if (career.loansIn.some((l) => l.playerId === playerId)) return fail('He is already with you on loan.');
 
   const wage = wageDemand(career, player, career.userTeamId);
@@ -203,10 +209,13 @@ export function bidForPlayer(career: Career, playerId: string, fee: number, year
   if (fee > books.cash) return fail(`You have ${money(books.cash)} in the bank.`);
 
   const asking = askingPrice(career, player);
-  const target = Math.min(asking, career.counters[playerId] ?? Infinity);
+  const standing = career.counters[playerId];
+  const target = Math.min(asking, standing ?? Infinity);
   if (fee < target) {
-    if (fee >= target * T.counterShare) {
-      const counter = roundMoney((fee + target) / 2, 5000);
+    // How close a bid must be is measured from the asking price, and a counter already
+    // made stands: lower and lower bids can't walk the price down.
+    if (fee >= asking * T.counterShare) {
+      const counter = standing ?? roundMoney((fee + asking) / 2, 5000);
       career.counters[playerId] = counter;
       return { ok: false, message: `${seller.shortName} want ${money(counter)}.`, counter };
     }
@@ -257,6 +266,7 @@ export function loanIn(career: Career, playerId: string, wageShare: number = C.l
   if (squadRole(career, player) === 'starter') return fail('His club will not loan out a starter.');
   const parent = teamById(league, player.teamId);
   if (parent.playerIds.length <= T.minSquad) return fail(`${parent.shortName} have too few players.`);
+  if (neededKeeper(career, player)) return fail(`${parent.shortName} won't loan out a keeper they need.`);
   const share = clamp(wageShare, C.loans.wageShare.min, C.loans.wageShare.max);
   const fee = loanFee(player) * (1 + (C.loans.wageShare.max - share));
   const limits = spendingLimits(career);
@@ -431,7 +441,7 @@ function aiDeals(career: Career, rng: Rng): void {
       if (!p.teamId || p.teamId === buyer.id || p.teamId === career.userTeamId) return false;
       if (p.position !== weakest.pos || p.overall <= weakest.best + 2) return false;
       if (career.loansIn.some((l) => l.playerId === p.id)) return false;
-      return teamById(league, p.teamId).playerIds.length > T.minSquad;
+      return teamById(league, p.teamId).playerIds.length > T.minSquad && !neededKeeper(career, p);
     });
     const affordable = targets.map((p) => ({ p, fee: askingPrice(career, p) })).filter((t) => t.fee <= budget);
     if (affordable.length === 0) continue;
