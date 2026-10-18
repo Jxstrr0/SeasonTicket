@@ -1006,14 +1006,25 @@ body.office-mode .topbar { backdrop-filter: none; }
 .match3d-loading { position: absolute; right: 8px; bottom: 6px; margin: 0; padding: 4px 10px; border-radius: 6px; background: rgba(11, 16, 32, 0.75); font-size: 0.85rem; pointer-events: none; }
 .is-3d > canvas { visibility: hidden; }
 /* Camera buttons and the replay badge (Stage 5.3), only while the 3D view is showing. */
-.m3d-cams, .m3d-replay { position: absolute; display: flex; align-items: center; gap: 4px; }
-.m3d-cams { left: 6px; bottom: 6px; flex-wrap: nowrap; }
-.m3d-cams .seg { min-width: 44px; min-height: 44px; padding: 4px 8px; background: rgba(11, 16, 32, 0.72); font-size: 0.85rem; }
-.m3d-cams .seg.on { background: var(--accent); }
+.m3d-bar, .m3d-replay { position: absolute; display: flex; align-items: center; gap: 4px; }
+.m3d-bar { left: 6px; bottom: 6px; gap: 6px; }
+.m3d-cams { display: flex; flex-wrap: nowrap; }
+.m3d-cams .seg, .m3d-shape { min-width: 44px; min-height: 44px; padding: 4px 8px; background: rgba(11, 16, 32, 0.72); font-size: 0.85rem; }
+.m3d-shape { border: 1px solid var(--line); border-radius: 8px; color: var(--text); }
+.m3d-cams .seg.on, .m3d-shape.on { background: var(--accent); }
 .m3d-replay { right: 6px; top: 6px; gap: 8px; }
 .m3d-badge { padding: 4px 10px; border-radius: 6px; background: #b3122e; color: #fff; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.8rem; }
 .m3d-replay .btn-secondary { min-height: 44px; background: rgba(11, 16, 32, 0.72); }
-.match3d:not(.on) .m3d-cams, .match3d:not(.on) .m3d-replay, .m3d-cams[hidden], .m3d-replay[hidden] { display: none; }
+.match3d:not(.on) .m3d-bar, .match3d:not(.on) .m3d-replay, .match3d:not(.on) .m3d-card, .m3d-cams[hidden], .m3d-shape[hidden], .m3d-replay[hidden], .m3d-card[hidden] { display: none; }
+/* The card for a tapped player (Stage 5.4), under the clock. */
+.m3d-card { position: absolute; left: 6px; top: 38px; width: min(240px, 48%); padding: 8px 10px; border-radius: 10px; background: rgba(11, 16, 32, 0.86); display: flex; flex-direction: column; gap: 4px; }
+.m3d-card-head { display: flex; align-items: center; gap: 8px; }
+.m3d-card-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m3d-swatch { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--c); border: 2px solid var(--e); }
+.m3d-close { flex: none; min-width: 44px; min-height: 44px; margin: -8px -8px -8px 0; padding: 0; border: 0; background: none; color: var(--text); font-size: 1.1rem; }
+.m3d-energy { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
+.m3d-energy span { display: block; height: 100%; background: currentColor; }
+.m3d-sub { min-height: 44px; margin-top: 2px; }
 .has-pitch .scoreboard { padding: 6px 12px; }
 .has-pitch .sb-score { font-size: 1.5rem; }
 /* Landscape phone: the score and pitch fill the height on the left, the rest scrolls on the right. */
@@ -1027,3 +1038,31 @@ body.office-mode .topbar { backdrop-filter: none; }
   .has-pitch .live-controls .segmented { flex: 1 1 100%; }
   .has-pitch .live-controls .seg { flex: 1 1 0; min-width: 0; padding: 8px 4px; }
 }
+/* Full screen (Stage 5.4): the pitch fills the screen, the buttons stand down the right, the subs and tactics open in a drawer. */
+.live.has-pitch.is-full { position: fixed; inset: 0; z-index: 5; display: block; max-width: none; margin: 0; padding: 0; background: #0b1020; overflow: hidden; }
+.is-full .lf-stage { position: absolute; inset: 0; }
+.is-full .lf-stage .live-pitch { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+.is-full .lp-clock { left: max(8px, env(safe-area-inset-left)); top: max(6px, env(safe-area-inset-top)); }
+.is-full .m3d-card { left: max(6px, env(safe-area-inset-left)); top: calc(max(6px, env(safe-area-inset-top)) + 34px); }
+.is-full .m3d-bar { left: max(6px, env(safe-area-inset-left)); bottom: max(6px, env(safe-area-inset-bottom)); }
+.is-full .m3d-replay { right: auto; left: 50%; transform: translateX(-50%); top: calc(max(6px, env(safe-area-inset-top)) + 44px); }
+.lf-top { position: absolute; left: 50%; top: max(6px, env(safe-area-inset-top)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: max-content; max-width: 60vw; pointer-events: none; }
+.lf-top > * { pointer-events: auto; }
+.lf-score { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: rgba(11, 16, 32, 0.8); white-space: nowrap; }
+.lf-score .kit { margin: 0; }
+.lf-short { font-weight: 700; font-size: 0.9rem; }
+.lf-goals { font-size: 1.2rem; font-variant-numeric: tabular-nums; padding: 0 2px; }
+.lf-pause { padding: 6px 12px; background: rgba(40, 32, 8, 0.9); }
+.lf-buttons { position: absolute; right: max(6px, env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; }
+.lf-buttons button { min-width: 88px; min-height: 44px; padding: 6px 10px; font-size: 0.95rem; }
+.lf-buttons .btn-secondary { background: rgba(11, 16, 32, 0.78); }
+.lf-buttons .play-btn { min-width: 88px; font-size: 1rem; }
+.drawer-open .lf-buttons { display: none; }
+.drawer-open .lf-top { left: calc((100vw - min(440px, 52vw)) / 2); max-width: calc(100vw - min(440px, 52vw) - 16px); }
+.lf-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(440px, 52vw); padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) 8px; background: rgba(11, 16, 32, 0.9); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.lf-drawer > * + * { margin-top: 8px; }
+.lf-drawer-head { display: flex; align-items: center; gap: 8px; }
+.lf-drawer-head .segmented { flex: 1; }
+.lf-close { flex: none; min-width: 44px; padding: 0; }
+.lf-drawer .sub-grid .pick-list { max-height: none; }
+.lf-ft { position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: min(420px, 80vw); }

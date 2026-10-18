@@ -12,6 +12,7 @@ import {
   CanvasTexture,
   DirectionalLight,
   Fog,
+  Group,
   HemisphereLight,
   InstancedMesh,
   MathUtils,
@@ -33,13 +34,14 @@ import tuning from '../../data/tuning/match3d.json';
 import stadiumTuning from '../../data/tuning/stadium.json';
 import { Assets } from '../assets';
 import { QUALITY_TIERS, type QualityTier } from '../quality';
-import { buildStadiumModel } from '../stadium/model';
+import { GRASS_Y, buildStadiumModel } from '../stadium/model';
 import { buildSurroundings, skyTexture } from '../stadium/scenery';
 import { MatchCamera, type CameraKey } from './cameras';
+import { PitchMarks } from './marks';
 import { Squads, loadPlayerTemplates } from './players';
-import type { MatchFrame3D, MatchScene3D } from './types';
+import type { MatchFrame3D, MatchScene3D, ShapeOverlay3D } from './types';
 
-export type { MatchFrame3D, MatchScene3D, KitColours } from './types';
+export type { MatchFrame3D, MatchScene3D, KitColours, ShapeOverlay3D } from './types';
 export { CAMERA_PRESETS, type CameraKey } from './cameras';
 
 const HALF_X = 52.5;
@@ -73,6 +75,12 @@ export interface MatchViewHandle {
   /** Cuts to camera `key`; `end` (-1 or 1) holds the behind-the-goal camera at that end. */
   setCamera(key: CameraKey, end?: number): void;
   setNight(night: boolean): void;
+  /** The tactics overlay on the grass, or null for none. */
+  overlay(shape: ShapeOverlay3D | null): void;
+  /** Rings the player with person code `who` (-1 for nobody). */
+  select(who: number): void;
+  /** The player (index) drawn nearest a tap at client point x, y, or -1 when nobody is close. */
+  pick(x: number, y: number): number;
   pause(): void;
   resume(): void;
   stats(): MatchViewStats;
@@ -190,7 +198,11 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   const ballMap = ballTexture();
   const ball = new Mesh(new SphereGeometry(R, 16, 12), new MeshLambertMaterial({ map: ballMap }));
   ball.position.set(0, R, 0);
-  scene.add(ball);
+  // Everything on the pitch stands on the grass, which is raised a little over the ground.
+  const field = new Group();
+  field.position.y = GRASS_Y;
+  scene.add(field);
+  field.add(ball);
   const blobMap = blobTexture();
   const blobGeo = new PlaneGeometry(1, 1);
   blobGeo.rotateX(-Math.PI / 2);
@@ -201,7 +213,10 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   );
   blobs.frustumCulled = false;
   blobs.renderOrder = 1;
-  scene.add(blobs);
+  field.add(blobs);
+  const marks = new PitchMarks();
+  field.add(marks.root);
+  let marksDirty = false;
   const blobM = new Matrix4();
   const blobQ = new Quaternion();
   const blobP = new Vector3();
@@ -215,7 +230,7 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
     .then((t) => {
       if (disposed) return;
       squads = new Squads(t, opts.scene);
-      scene.add(squads.root);
+      field.add(squads.root);
       snapNext = true;
       fresh = latest !== null;
       dirty = true;
@@ -227,6 +242,8 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
 
   let latest: MatchFrame3D | null = null;
   let fresh = false;
+  const pickA = new Vector3();
+  const pickB = new Vector3();
   let lastMs = -1;
   let animDt = 0;
   let snapNext = true;
@@ -287,6 +304,8 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
     blobs.setMatrixAt(22, blobM.compose(blobP.set(bx, 0.045, bz), blobQ, blobS.set(bs, 1, bs)));
     blobs.instanceMatrix.needsUpdate = true;
 
+    marks.update(f);
+    marksDirty = false;
     cam.follow(bx, bz, snap);
   };
 
@@ -346,6 +365,10 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       applyFrame(latest);
       fresh = false;
       dirty = true;
+    } else if (marksDirty && latest) {
+      marks.update(latest);
+      marksDirty = false;
+      dirty = true;
     }
     const easing = cam.tick(dt);
     const boards = model.tick(dt) && sinceBoards >= 1 / 30;
@@ -383,6 +406,43 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       night = value;
       applyTime();
     },
+    overlay(shape) {
+      marks.set(shape);
+      marksDirty = true;
+    },
+    select(who) {
+      marks.select(who);
+      marksDirty = true;
+    },
+    pick(x, y) {
+      const f = latest;
+      if (!f || !squads) return -1;
+      const r = canvas.getBoundingClientRect();
+      const tx = x - r.left;
+      const ty = y - r.top;
+      let best = -1;
+      let bestD = tuning.overlay.pickPx;
+      for (let i = 0; i < 22; i++) {
+        if (!f.on[i]) continue;
+        // From his feet to his head on screen.
+        pickA.set(f.px[i] - HALF_X, GRASS_Y, f.py[i] - HALF_Z).project(camera);
+        pickB.set(f.px[i] - HALF_X, GRASS_Y + 1.8, f.py[i] - HALF_Z).project(camera);
+        if (pickA.z > 1 || pickB.z > 1) continue;
+        const ax = ((pickA.x + 1) / 2) * r.width;
+        const ay = ((1 - pickA.y) / 2) * r.height;
+        const bx = ((pickB.x + 1) / 2) * r.width;
+        const by = ((1 - pickB.y) / 2) * r.height;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const t = MathUtils.clamp(((tx - ax) * dx + (ty - ay) * dy) / Math.max(1e-6, dx * dx + dy * dy), 0, 1);
+        const d = Math.hypot(tx - ax - dx * t, ty - ay - dy * t);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      return best;
+    },
     pause() {
       if (!running) return;
       running = false;
@@ -405,6 +465,7 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
       ro.disconnect();
       canvas.removeEventListener('webglcontextlost', onLost);
       squads?.dispose();
+      marks.dispose();
       model.dispose();
       surroundings.dispose();
       ball.geometry.dispose();

@@ -77,6 +77,8 @@ export interface LiveView {
   pitch: boolean;
   /** Match seconds per real second on the 2D pitch. */
   pitchSpeed: number;
+  /** The pitch fills the screen, with the subs and tactics laid over it (Stage 5.4). */
+  full: boolean;
 }
 
 export const PITCH_SPEEDS: readonly { x: number; label: string }[] = [
@@ -138,6 +140,44 @@ export function loadHighlights(): boolean {
 export function storeHighlights(on: boolean): void {
   try {
     globalThis.localStorage?.setItem(HIGHLIGHTS_KEY, on ? 'on' : 'off');
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
+/** Full-screen match view: kept per device. */
+const FULL_KEY = 'seasonticket.liveFull';
+
+export function loadLiveFull(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(FULL_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
+export function storeLiveFull(on: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(FULL_KEY, on ? 'on' : 'off');
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
+}
+
+/** The tactics overlay on the 3D grass: kept per device. */
+const SHAPE_KEY = 'seasonticket.matchShape';
+
+export function loadMatchShape(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(SHAPE_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
+export function storeMatchShape(on: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(SHAPE_KEY, on ? 'on' : 'off');
   } catch {
     // Storage blocked: the choice lasts until the page closes.
   }
@@ -262,7 +302,7 @@ export function initialUi(): UiState {
     pendingConfirm: null,
     simming: false,
     weekRun: null,
-    live: { running: false, speed: 350, panel: 'none', subOut: null, pause: null, showAll: false, pitch: loadLivePitch(), pitchSpeed: 8 },
+    live: { running: false, speed: 350, panel: 'none', subOut: null, pause: null, showAll: false, pitch: loadLivePitch(), pitchSpeed: 8, full: loadLiveFull() },
     saveCode: '',
   };
 }

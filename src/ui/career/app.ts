@@ -48,13 +48,15 @@ import {
   type StadiumLook,
   type TierId,
 } from '../../sim/career';
-import { CLUBS } from '../../sim/data';
+import { CLUBS, MATCH_TUNING } from '../../sim/data';
 import { seedNumber } from '../../sim/league';
 import type { MatchResult, Position, StaffRole, Tactics } from '../../sim/types';
 import { STAFF_ROLES } from '../../sim/types';
 import { coachInCharge, liveSubstitute, liveTactics, playToEnd, setCoachInCharge, stepLive, stepLiveView } from '../../game/matchday';
 import { LiveHost } from './liveHost';
-import { Match3D, type ThreeChoice } from './match3d';
+import { Match3D, type PlayerCard, type ThreeChoice } from './match3d';
+import { ratingSoFar } from '../../sim/match/ratings';
+import { personOf, type SpatialSetup } from '../../sim/spatial/types';
 import { buildStadiumSnapshot } from './stadiumSnapshot';
 import { findMatch } from '../model';
 import { SaveError, decodeSave, encodeSave, loadCareer, saveCareer } from '../../game/save';
@@ -76,7 +78,7 @@ import { OfficeHost } from './officeHost';
 import { StadiumHost } from './stadiumHost';
 import { ReplayHost } from './replayHost';
 import type { StadiumPart } from '../../render/stadium/types';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLivePitch, storeMatch3d, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -260,7 +262,15 @@ export class CareerApp {
     this.syncStadium();
     this.syncReplay();
     this.syncPitch();
+    this.syncFullscreen();
     this.scheduleWarm();
+  }
+
+  /** The browser's own full screen goes with the full-screen match and nothing else. */
+  private syncFullscreen(): void {
+    const { ui } = this;
+    const want = ui.screen === 'live' && ui.live.full && ui.live.pitch && !!this.career?.liveMatch;
+    if (!want && typeof document !== 'undefined' && document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
   }
 
   /** Moves the live match's 2D pitch into the live screen (if it is showing). */
@@ -275,15 +285,66 @@ export class CareerApp {
         m = null;
       }
       const setup = career.liveMatch.setup;
-      three = this.matchChoice(setup.homeId, setup.attendanceShare);
+      three = { ...this.matchChoice(setup.homeId, setup.attendanceShare), side: setup.homeId === career.userTeamId ? 0 : 1, card: (who) => this.liveCard(who) };
       this.pitch.sync(this.uiLayer, m, setup.matchId, three);
       return;
     }
     this.pitch.sync(this.uiLayer, m);
   }
 
+  /** The card for a player tapped in the live 3D match: how he is doing so far. */
+  private liveCard(who: number): PlayerCard | null {
+    const career = this.career;
+    const state = career?.liveMatch;
+    const live = career ? liveOf(career) : null;
+    if (!career || !state || !live) return null;
+    const id = personOf(live.m.setup, who)?.id;
+    const p = id ? career.season.league.players[id] : undefined;
+    if (!id || !p) return null;
+    const home = state.home.playerStats[id] || state.home.onPitch.includes(id);
+    const S = home ? state.home : state.away;
+    const stats = S.playerStats[id];
+    const notes: string[] = [];
+    if (stats?.goals) notes.push(stats.goals === 1 ? 'Scored' : `${stats.goals} goals`);
+    if (stats?.assists) notes.push(stats.assists === 1 ? 'An assist' : `${stats.assists} assists`);
+    if (S.sentOff.includes(id)) notes.push('Sent off');
+    else if ((S.yellows[id] ?? 0) > 0) notes.push('Booked');
+    if (state.injuries.some((i) => i.playerId === id)) notes.push('Hurt');
+    const mine = (home ? state.setup.homeId : state.setup.awayId) === career.userTeamId;
+    const canSub = mine && !state.finished && state.period !== 'shootout' && S.subsUsed < MATCH_TUNING.squad.maxSubs && S.onPitch.includes(id);
+    return {
+      name: `${p.firstName} ${p.lastName}`,
+      detail: `${p.position} · ${p.overall}`,
+      energy: S.onPitch.includes(id) ? (S.fatigue[id] ?? 1) : null,
+      rating: stats ? ratingSoFar(state, live.ctx, id) : null,
+      notes: notes.join(' · '),
+      subId: canSub ? id : undefined,
+    };
+  }
+
+  /** The card for a player tapped in a replay: his rating for the whole match. */
+  private replayCard(setup: SpatialSetup, matchId: string, who: number): PlayerCard | null {
+    const career = this.career;
+    const sp = personOf(setup, who);
+    if (!career || !sp) return null;
+    const p = career.season.league.players[sp.id];
+    const stats = findMatch(career.season, matchId)?.result?.playerStats[sp.id] ?? (career.lastUserMatch?.matchId === matchId ? career.lastUserMatch.playerStats[sp.id] : undefined);
+    const notes: string[] = [];
+    if (stats?.goals) notes.push(stats.goals === 1 ? 'Scored' : `${stats.goals} goals`);
+    if (stats?.assists) notes.push(stats.assists === 1 ? 'An assist' : `${stats.assists} assists`);
+    if (stats?.redCards) notes.push('Sent off');
+    else if (stats?.yellowCards) notes.push('Booked');
+    return {
+      name: p ? `${p.firstName} ${p.lastName}` : sp.name,
+      detail: `${sp.position}${p ? ` · ${p.overall}` : ''}`,
+      energy: null,
+      rating: stats ? stats.rating : null,
+      notes: notes.join(' · '),
+    };
+  }
+
   /** What the 3D match should show for a match at `homeId`'s ground. */
-  private matchChoice(homeId: string, crowd: number | undefined): ThreeChoice {
+  private matchChoice(homeId: string, crowd: number | undefined): Omit<ThreeChoice, 'side'> {
     const { ui } = this;
     const career = this.career as Career;
     const ok = ui.quality !== 'off' && !ui.match3dFailed && !!career.stadiums[homeId];
@@ -302,7 +363,10 @@ export class CareerApp {
     if (!career || !replay || !ui.replayId) return this.replay.sync(this.uiLayer, null);
     const fixture = findMatch(career.season, ui.replayId);
     const home = fixture?.homeId ?? career.season.league.teams.find((t) => t.name === replay.record.setup.home.name)?.id ?? '';
-    this.replay.sync(this.uiLayer, replay, ui.replayId, this.matchChoice(home, fixture?.result?.attendanceShare ?? replay.record.setup.crowd));
+    const id = ui.replayId;
+    const setup = replay.record.setup;
+    const side = (fixture ? fixture.awayId === career.userTeamId : setup.away.name === userTeam(career).name) ? 1 : 0;
+    this.replay.sync(this.uiLayer, replay, id, { ...this.matchChoice(home, fixture?.result?.attendanceShare ?? setup.crowd), side, card: (who) => this.replayCard(setup, id, who) });
   }
 
   /** Once the screen is idle, start the coming week's matches in the workers. */
@@ -758,6 +822,13 @@ export class CareerApp {
         if (PITCH_SPEEDS.some((s) => s.x === x)) ui.live.pitchSpeed = x;
         return this.render();
       }
+      case 'live-full': {
+        ui.live.full = !ui.live.full;
+        storeLiveFull(ui.live.full);
+        // Phones that allow it also drop the browser's bars (iPhone Safari does not; the layout fills the page either way).
+        if (ui.live.full && !document.fullscreenElement) document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }).catch(() => undefined);
+        return this.render();
+      }
       case 'match-3d': {
         ui.match3d = !ui.match3d;
         storeMatch3d(ui.match3d);
@@ -803,6 +874,14 @@ export class CareerApp {
       case 'live-sub-out':
         ui.live.subOut = d.id || null;
         return this.render();
+      case 'live-sub-pick':
+        // "Take him off" on a player's card in the 3D view: straight to choosing who comes on.
+        ui.live.panel = 'subs';
+        ui.live.subOut = d.id || null;
+        this.livePause();
+        this.render();
+        this.uiLayer.querySelector('.sub-grid')?.scrollIntoView({ block: 'nearest' });
+        return;
       case 'live-sub-in':
         if (ui.live.subOut && d.id) {
           this.flashLive(liveSubstitute(career, ui.live.subOut, d.id));

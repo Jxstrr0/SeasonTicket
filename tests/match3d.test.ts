@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { setupWithBench } from './helpers/spatialFixtures';
 import { KEEPER_FILL, matchKits } from '../src/ui/pitch2d';
-import { sceneKits, sceneOf } from '../src/ui/career/match3d';
+import { sceneKits, sceneOf, shapeOverlay, shapeRows } from '../src/ui/career/match3d';
 import type { StadiumSnapshot } from '../src/render/stadium/types';
 import tuning from '../src/data/tuning/match3d.json';
 import { createSpatial, spatialFinished, stepSpatial } from '../src/sim/spatial/engine';
@@ -333,5 +333,50 @@ describe('3D match replays', () => {
     const goal = { id: 3, kind: ACT.GOAL, player: 2, atMs: 4000, fromMs: 4000, x: 0, y: 34, z: 0, power: 1, flag: 1 } as ActionCue;
     d.scan([shot(1, 2000, 0.6, 1), shot(2, 3000, 0.5, 1), goal], false, false);
     expect(d.pending.map((p) => p.kind)).toEqual(['goal']);
+  });
+});
+
+describe('3D tactics overlay', () => {
+  // The shape each formation defends in, line by line from the back.
+  const SHAPES: Record<string, number[]> = {
+    '4-3-3': [4, 5, 1],
+    '4-4-2': [4, 4, 2],
+    '4-2-3-1': [4, 2, 3, 1],
+    '3-5-2': [5, 3, 2],
+    '5-3-2': [5, 3, 2],
+    '4-1-4-1': [4, 1, 4, 1],
+    '3-4-3': [5, 4, 1],
+  };
+
+  it('draws each formation as the lines it defends in, back line first, for both sides', () => {
+    for (const [formationId, lines] of Object.entries(SHAPES)) {
+      const m = createSpatial(setupWithBench({ formationId }, { formationId }), 'shape');
+      for (const side of [0, 1] as const) {
+        const rows = shapeRows(m, side);
+        expect(rows.map((r) => r.length), formationId).toEqual(lines);
+        const all = rows.flat();
+        expect(new Set(all).size).toBe(10);
+        for (const i of all) expect(Math.floor(i / 11)).toBe(side);
+        expect(all).not.toContain(side * 11);
+        // Depth never goes backwards from one line to the next.
+        const t = m.teams[side];
+        for (let k = 1; k < rows.length; k++) expect(Math.min(...rows[k].map((i) => t.defU[i % 11]))).toBeGreaterThan(Math.max(...rows[k - 1].map((i) => t.defU[i % 11])));
+      }
+    }
+  });
+
+  it('leaves a sent-off player out of the lines, and aims the back line inside the pitch', () => {
+    const m = createSpatial(setupWithBench(), 'shape');
+    m.on[3] = 0;
+    expect(shapeRows(m, 0).flat()).not.toContain(3);
+    for (const side of [0, 1] as const) {
+      const o = shapeOverlay(m, side);
+      expect(o.colour).toBe(tuning.overlay.colour);
+      expect(o.aimX).not.toBeNull();
+      expect(o.aimX!).toBeGreaterThan(0);
+      expect(o.aimX!).toBeLessThan(105);
+      // Each side's back line is in its own half at kick-off.
+      expect(side === 0 ? o.aimX! < 52.5 : o.aimX! > 52.5).toBe(true);
+    }
   });
 });
