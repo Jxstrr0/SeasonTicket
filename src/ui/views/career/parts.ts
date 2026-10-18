@@ -1,8 +1,8 @@
 /** Small pieces shared by the career screens. */
-import { ownerOf, temperamentLabel, type Career, type RivalLevel } from '../../../sim/career';
+import { ongoingStories, ownerOf, temperamentLabel, type Career, type OngoingStory, type RivalLevel } from '../../../sim/career';
 import { WORLD, isDomestic, nation } from '../../../sim/data';
 import type { Player, Position } from '../../../sim/types';
-import { cls, esc } from '../../html';
+import { cls, each, esc } from '../../html';
 import type { UiState } from '../../career/state';
 
 /**
@@ -85,4 +85,31 @@ export function ownerFeeling(memory: number): string {
 export function ownerLine(career: Career, teamId: string | null | undefined): string {
   const o = ownerOf(career, teamId);
   return o ? `Owner: ${o.name} · ${temperamentLabel(o.temperament)}, ${ownerFeeling(o.memory)}` : '';
+}
+
+const ONGOING_PILL: Record<OngoingStory['kind'], string> = { promise: 'Promise', story: 'Not over', gate: 'Next home game' };
+
+function weeksLine(o: OngoingStory): string {
+  const w = o.weeks === 1 ? 'a week' : `${o.weeks} weeks`;
+  return o.kind === 'promise' ? `About ${w} left.` : `More to come in about ${w}.`;
+}
+
+/**
+ * Promises you have made and stories that may come back (Stage 6.5). On the
+ * Club screen it always shows; `compact` (Home) shows nothing when there is nothing.
+ */
+export function renderOngoing(career: Career, compact = false): string {
+  const list = ongoingStories(career);
+  if (compact && !list.length) return '';
+  const shown = compact ? list.slice(0, 3) : list;
+  const body = list.length
+    ? `<ul class="ongoing-list">${each(shown, (o) => `<li>
+        <div class="ongoing-top"><span class="pill pill-${o.kind}">${ONGOING_PILL[o.kind]}</span><strong>${esc(o.title)}</strong></div>
+        <div class="muted small">${esc(o.detail)}${o.weeks !== null ? ` ${weeksLine(o)}` : ''}</div>
+      </li>`)}</ul>${compact && list.length > shown.length ? `<p class="muted small">And ${list.length - shown.length} more on the Club screen.</p>` : ''}`
+    : '<p class="muted">Nothing on the go. Promises you make and stories that aren\'t finished show up here.</p>';
+  return `<section class="card ongoing">
+    <div class="card-title">Ongoing</div>
+    ${body}
+  </section>`;
 }

@@ -24,7 +24,7 @@ import {
 import { STAFF_ROLES, type StaffMember, type StaffRole } from '../../../sim/types';
 import { cls, each, esc } from '../../html';
 import type { UiState } from '../../career/state';
-import { confirmButton, ownerFeeling, rivalPill } from './parts';
+import { confirmButton, ownerFeeling, renderOngoing, rivalPill } from './parts';
 import { kit, team } from '../../format';
 
 const ROLE_HELP: Record<StaffRole, string> = {
@@ -200,6 +200,7 @@ export function renderClub(career: Career, ui: UiState): string {
   return `<div class="club-grid">
     <div>
       ${renderStanding(career)}
+      ${renderOngoing(career)}
       ${renderRivals(career)}
       ${renderTickets(career)}
       ${renderSponsor(career, ui)}

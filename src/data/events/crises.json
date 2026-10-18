@@ -1,5 +1,5 @@
 {
-  "_about": "Crises and story chains (Stage 6.5). A crisis starts like any event; some choices start the next step a few weeks later with {\"next\": id, \"weeks\": n}, about the same player, person and club. Steps marked chainOnly are never drawn on their own. Extra effects: suspend (matches), listPlayer (a club bids at this share of his value), coachLeaves, gate (crowd share at your next home match), dropSponsor, delayBuild (weeks), grace (weeks before the lenders' next step), heal (weeks off every injury). Promises 'wins' (win target games in weeks) and 'price' (no ticket price rise for weeks) carry their own kept and broken text.",
+  "_about": "Crises and story chains (Stage 6.5). A crisis starts like any event; some choices start the next step a few weeks later with {\"next\": id, \"weeks\": n}, about the same player, person and club. Steps marked chainOnly are never drawn on their own. A follow-up can carry a note, shown on the Club screen while it waits. Extra effects: suspend (matches), listPlayer (a club bids at this share of his value), coachLeaves, gate (crowd share at your next home match), dropSponsor, delayBuild (weeks), grace (weeks before the lenders' next step), heal (weeks off every injury). Promises 'wins' (win target games in weeks) and 'price' (no ticket price rise for weeks) carry their own kept and broken text.",
   "events": [
     {
       "id": "dressing-room-row",
@@ -24,7 +24,7 @@
           "label": "Get them in a room to clear the air",
           "hint": "Free. It might hold, or it might flare up again.",
           "result": "Handshakes all round. Whether anyone meant them is another matter.",
-          "effects": [{ "squad": 0.01 }, { "next": "row-flares", "weeks": 3 }]
+          "effects": [{ "squad": 0.01 }, { "next": "row-flares", "weeks": 3, "note": "The handshakes looked a bit stiff. Keep an eye on {first}." }]
         },
         {
           "id": "back",
@@ -91,7 +91,7 @@
           "label": "Refuse: he's under contract",
           "hint": "He stays, unhappy. This may not be the end of it.",
           "result": "The agent picks up the letter. \"You'll be hearing from us.\"",
-          "effects": [{ "mood": -0.15 }, { "squad": -0.01 }, { "next": "request-sulk", "weeks": 4 }]
+          "effects": [{ "mood": -0.15 }, { "squad": -0.01 }, { "next": "request-sulk", "weeks": 4, "note": "{first} still wants out, and his agent said you'd hear from them." }]
         },
         {
           "id": "convince",
@@ -159,7 +159,7 @@
           "label": "Push them back early",
           "hint": "Free. Two weeks off every injury, but the squad is wary and there may be a cost.",
           "result": "Strapping, painkillers and crossed fingers.",
-          "effects": [{ "heal": 2 }, { "squad": -0.03 }, { "next": "injury-setback", "weeks": 3 }]
+          "effects": [{ "heal": 2 }, { "squad": -0.03 }, { "next": "injury-setback", "weeks": 3, "note": "The physios think the rushed players could break down again." }]
         },
         {
           "id": "ride",
@@ -226,7 +226,7 @@
           "label": "Stand by them",
           "hint": "The money keeps coming. The press won't let it go.",
           "result": "You say everyone deserves a fair hearing. The reporter writes that down slowly.",
-          "effects": [{ "press": -0.04 }, { "fans": -0.02 }, { "goodwill": 0.04 }, { "next": "scandal-deepens", "weeks": 3 }]
+          "effects": [{ "press": -0.04 }, { "fans": -0.02 }, { "goodwill": 0.04 }, { "next": "scandal-deepens", "weeks": 3, "note": "The papers haven't finished with {sponsor}." }]
         },
         {
           "id": "wait",
@@ -328,7 +328,7 @@
           "label": "Let them march",
           "hint": "Free. Some fans may stay away, and it might grow.",
           "result": "You watch from the window. The chants carry further than you'd like.",
-          "effects": [{ "fans": -0.04 }, { "press": -0.03 }, { "gate": -0.1 }, { "next": "protest-boycott", "weeks": 3 }]
+          "effects": [{ "fans": -0.04 }, { "press": -0.03 }, { "gate": -0.1 }, { "next": "protest-boycott", "weeks": 3, "note": "The supporters' trust is talking about a boycott." }]
         }
       ]
     },
@@ -380,7 +380,7 @@
           "label": "Fight it with lawyers",
           "hint": "Costs {half}. It goes to a hearing in a month.",
           "result": "The lawyers say it's a strong case. Lawyers always say that.",
-          "effects": [{ "cash": -0.5, "line": "operations" }, { "press": -0.02 }, { "next": "permit-hearing", "weeks": 4 }]
+          "effects": [{ "cash": -0.5, "line": "operations" }, { "press": -0.02 }, { "next": "permit-hearing", "weeks": 4, "note": "The objection goes to a council hearing." }]
         },
         {
           "id": "delay",
@@ -448,7 +448,7 @@
           "label": "Refuse outright",
           "hint": "Free. {coach} may be unsettled, and {owner} won't take it well.",
           "result": "\"He's not for sale.\" {owner} smiles in a way you don't like.",
-          "effects": [{ "owner": -0.12 }, { "heat": 0.06 }, { "next": "coach-unsettled", "weeks": 3 }]
+          "effects": [{ "owner": -0.12 }, { "heat": 0.06 }, { "next": "coach-unsettled", "weeks": 3, "note": "{owner} hasn't given up on {coach}." }]
         }
       ]
     },
@@ -515,7 +515,7 @@
           "label": "Tell them money is coming",
           "hint": "Free. If nothing comes, they'll remember.",
           "result": "\"Coming from where?\" You say it's confidential. They write that down too.",
-          "effects": [{ "grace": 1 }, { "next": "lender-followup", "weeks": 3 }]
+          "effects": [{ "grace": 1 }, { "next": "lender-followup", "weeks": 3, "note": "The bank expects the money you said was coming." }]
         }
       ]
     },
@@ -532,7 +532,7 @@
           "label": "Offer up your best player",
           "hint": "A club will bid for him at a fair price. The lenders give you 3 more weeks.",
           "result": "They nod. Selling a player is a plan they understand.",
-          "effects": [{ "grace": 3 }, { "squad": -0.03 }, { "fans": -0.02 }, { "next": "lender-star-sale", "weeks": 1 }]
+          "effects": [{ "grace": 3 }, { "squad": -0.03 }, { "fans": -0.02 }, { "next": "lender-star-sale", "weeks": 1, "note": "The bank wants to see a player sold." }]
         },
         {
           "id": "admit",

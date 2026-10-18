@@ -1132,4 +1132,9 @@ body.office-mode .topbar { backdrop-filter: none; }
 .rival-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; }
 .rival-top { display: flex; align-items: center; gap: 8px; }
 .rival-heat { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); margin: 6px 0 4px; overflow: hidden; }
+.ongoing-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ongoing-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+.pill-promise { background: rgba(110, 168, 254, 0.18); color: #9cc3ff; }
+.pill-story { background: rgba(242, 193, 78, 0.18); color: #f2c14e; }
+.pill-gate { background: rgba(240, 98, 98, 0.16); color: #f59a9a; }
 .rival-heat span { display: block; height: 100%; background: linear-gradient(90deg, #f2c14e, #f06262); }
