@@ -256,13 +256,25 @@ export function weeklyStory(career: Career): void {
   runTimers(career);
   if (story.gate && (career.phase !== 'season' || story.gate.week < career.season.week)) story.gate = null;
   driftMoods(career);
-  story.press = round3(story.press + (T.press.neutral - story.press) * T.press.drift);
+  story.press = round3(story.press + (pressTarget(career) - story.press) * T.press.drift);
   story.goodwill = round3(story.goodwill + (T.goodwill.neutral - story.goodwill) * T.goodwill.drift);
   const team = userTeam(career);
   team.fanMood = clamp(team.fanMood + (story.press - T.press.neutral) * T.press.fanLift, C.fans.min, C.fans.max);
   drawEvents(career);
   const keepAfter = career.weekIndex - T.keep.answeredWeeks;
   story.events = story.events.filter((e) => e.answer === null || e.weekIndex > keepAfter);
+}
+
+/**
+ * Where the press standing drifts each week: neutral, pulled up for a club high in the table
+ * and down for one near the bottom once a few games are played (Stage 7.3).
+ */
+export function pressTarget(career: Career): number {
+  const P = T.press;
+  const rows = career.season.standings;
+  const i = rows.findIndex((r) => r.teamId === career.userTeamId);
+  if (i < 0 || rows.length < 2 || rows[i].played < P.tableMinPlayed) return P.neutral;
+  return P.neutral + P.tablePull * (0.5 - i / (rows.length - 1));
 }
 
 /** The season is over: counts reset, departed players' moods and old decisions go. */

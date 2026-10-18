@@ -13,12 +13,12 @@
     {
       "title": "Money and the lenders",
       "items": [
-        { "q": "How do I lose the club?", "a": "Only through the lenders. If your cash stays below zero, or you break a loan's conditions, they write to you and give you {deadlineWeeks} weeks to fix it. Miss it and they climb a step: a finance chief who caps spending, then a spending lock, then forced player sales, then receivership, which ends the career. Fall more than {receivership} into the red and receivership comes at once." },
+        { "q": "How do I lose the club?", "a": "Only through the lenders. If your cash stays below zero, or you break a loan's conditions, they write to you and give you {deadlineWeeks} weeks to fix it (the harder the club, the less time), and the deadline only lifts once you have stayed out of the red for {clearWeeks} weeks in a row. Miss it and they climb a step: a finance chief who caps spending, then a spending lock, then forced player sales, then receivership, which ends the career. The lenders force sales only once: back at that step within {rescueSeasons} seasons and the club goes straight into receivership. Fall more than {receivership} into the red and receivership comes at once." },
         { "q": "How do I get off the lenders' ladder?", "a": "Get your cash back above zero (and above any loan's minimum). After {goodWeeks} clean weeks in a row they step back down one level." },
         { "q": "What is the wage cap?", "a": "A soft limit of {cap} on your player wages, averaged over the year. You can go over, but you pay luxury tax on every dollar over: {taxRate} the first time, {repeatTaxRate} if you were over last season too. Clubs under the cap share the tax." },
         { "q": "Where does the money come from?", "a": "Tickets, food and drink, merchandise, the shirt sponsor, TV money, prize money and player sales. Wages, staff, running the club and interest go out every week." },
         { "q": "Can I put my own money in?", "a": "Yes, on the Money screen. Your fortune depends on the difficulty and it is not endless. Money you put in stays in the club." },
-        { "q": "Should I borrow?", "a": "Loans are quick money, but you pay interest and some have conditions, such as keeping a minimum cash balance. Break the conditions and the lenders' ladder starts." }
+        { "q": "Should I borrow?", "a": "Loans are quick money, but you pay interest and some have conditions, such as keeping a minimum cash balance. Break the conditions and the lenders' ladder starts. Once the lenders have put a finance chief in your office, nobody will lend to you until you are back down the ladder." }
       ]
     },
     {

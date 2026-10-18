@@ -16,7 +16,7 @@
     ]
   },
   "tiers": {
-    "_about": "Difficulty comes from the club's market, not branding. Fortune is the owner's own money (finite; injections are permanent). Debt is a Harbourline Bank loan over five seasons.",
+    "_about": "Difficulty comes from the club's market, not branding. Fortune is the owner's own money (finite; injections are permanent). deadlineWeeks is how long the lenders give a club in breach before climbing a rung, and rescueMemorySeasons how long they remember forcing sales. Debt is a Harbourline Bank loan over five seasons.",
     "order": [
       "easy",
       "normal",
@@ -25,6 +25,8 @@
     ],
     "easy": {
       "label": "Easy",
+      "deadlineWeeks": 6,
+      "rescueMemorySeasons": 2,
       "fortune": 20000000,
       "cash": 6000000,
       "debt": 0,
@@ -37,6 +39,8 @@
     },
     "normal": {
       "label": "Normal",
+      "deadlineWeeks": 5,
+      "rescueMemorySeasons": 2,
       "fortune": 10000000,
       "cash": 3000000,
       "debt": 1000000,
@@ -44,16 +48,18 @@
         "lakehaven-united",
         "inkwater-rovers",
         "sunreach-sc",
-        "silverpeak-alpine"
+        "racing-val-delacroix"
       ]
     },
     "hard": {
       "label": "Hard",
+      "deadlineWeeks": 4,
+      "rescueMemorySeasons": 3,
       "fortune": 5000000,
       "cash": 1500000,
       "debt": 2000000,
       "clubs": [
-        "racing-val-delacroix",
+        "silverpeak-alpine",
         "cape-fenwick-united",
         "prairie-junction",
         "wrenmoor-wanderers",
@@ -62,6 +68,8 @@
     },
     "veryHard": {
       "label": "Very hard",
+      "deadlineWeeks": 4,
+      "rescueMemorySeasons": 3,
       "fortune": 2000000,
       "cash": 500000,
       "debt": 3000000,
@@ -164,8 +172,9 @@
     }
   },
   "operations": {
-    "_about": "Running the club and the ground per season.",
-    "base": 900000,
+    "_about": "Running the club and the ground per season: base + perMarket x market size + perSeat x seats, so a small-town club costs less to run than a big-city one.",
+    "base": 500000,
+    "perMarket": 800000,
     "perSeat": 15
   },
   "wageCap": {
@@ -209,12 +218,16 @@
     "startingLender": "harbourline",
     "overdraftLender": "tallow",
     "overdraftRate": 0.25,
-    "minLoan": 250000
+    "minLoan": 250000,
+    "noNewLoansFromLevel": 2,
+    "_aboutNoNewLoans": "From this ladder level up (the lender-appointed finance chief) nobody will lend, so a club in trouble cannot borrow its way back into the spending that caused it."
   },
   "ladder": {
     "_about": "Trouble with lenders. Level 0 = fine. 1 warning letter, 2 lender-appointed CFO, 3 spending lock, 4 forced sales, 5 receivership (game over). An overdraft or a broken loan condition triggers it; good weeks bring it back down.",
-    "deadlineWeeks": 6,
-    "goodWeeksToRecover": 8,
+    "goodWeeksToRecover": 10,
+    "clearWeeks": 4,
+    "_aboutRescue": "Forced sales are a one-off rescue: a club that climbs back to forced sales within its tier's rescueMemorySeasons seasons (tiers section) of the last time goes straight into receivership.",
+    "_aboutDeadline": "A breach gives the club its tier's deadlineWeeks (tiers section: fewer at harder clubs) to fix things. The deadline only lifts after clearWeeks clean weeks in a row, so bobbing back above zero for a week does not stop the clock; slipping back into breach after the deadline has passed climbs a rung at once. goodWeeksToRecover clean weeks step the ladder down one level.",
     "cfo": {
       "maxFee": 1000000,
       "maxWage": 300000
@@ -222,6 +235,8 @@
     "lockMaxWage": 60000,
     "forcedSaleEveryWeeks": 2,
     "forcedSaleShare": 0.7,
+    "forcedSaleToLenders": 1,
+    "_aboutForcedSale": "At forced sales the club's most valuable player goes for forcedSaleShare of his value every forcedSaleEveryWeeks weeks, and the lenders take forcedSaleToLenders of the fee (out of whatever cash the club has) against the dearest loans, so a sale pays debt down rather than buying the club out of trouble.",
     "receivershipOverdraft": 4000000
   },
   "transfers": {
@@ -289,7 +304,9 @@
     "minWage": 8000,
     "userMinSquad": 18,
     "emergencyFillTo": 16,
-    "_aboutEmergency": "If the user's squad drops below emergencyFillTo players (or two goalkeepers), the league tops it up with free agents on one-year minimum deals."
+    "emergencyFillPick": 0.5,
+    "emergencyFitMin": 13,
+    "_aboutEmergency": "If the user's squad drops below emergencyFillTo players, two goalkeepers, emergencyFitMin fit players (a side and two on the bench) or a fit keeper, the league tops it up with free agents on one-year deals at their market wage, taken from emergencyFillPick of the way down the pool (0 = the best, 0.5 = the middle)."
   },
   "loans": {
     "_about": "Loans run to the end of the season. Fee is a share of value; the borrower pays a share of the wage.",
@@ -329,11 +346,11 @@
       5
     ],
     "qualityByLevel": [
-      0.2,
-      0.3,
-      0.4,
+      0.32,
+      0.38,
+      0.44,
       0.5,
-      0.6
+      0.56
     ],
     "directorQualityWeight": 0.25,
     "upgradeCost": [
@@ -354,19 +371,27 @@
       "max": 19
     },
     "contractYears": 3,
-    "potentialBonus": 4
+    "potentialBonus": 6
   },
   "fans": {
     "_about": "Fan mood moves with results and ticket prices and drifts back toward the club's baseline. pricePenaltyPerOverFair is taken per 10% the ticket price sits over the fair price, per home match.",
-    "win": 0.02,
+    "win": 0.03,
     "draw": 0.0,
-    "loss": -0.02,
+    "loss": -0.03,
     "pricePenaltyPerOverFair": 0.02,
-    "drift": 0.05,
+    "drift": 0.08,
     "title": 0.1,
     "playoffTitle": 0.1,
     "min": 0.05,
-    "max": 0.98
+    "max": 0.98,
+    "season": {
+      "_about": "At the end of each season every club's baseline fan mood moves by finish x (1 at the top of the table to -1 at the bottom) plus expectation x (places above the squad's strength rank, as a share of the table), then eases revert of the way back to the club's starting baseline, kept between min and max.",
+      "finish": 0.05,
+      "expectation": 0.12,
+      "revert": 0.2,
+      "min": 0.25,
+      "max": 0.92
+    }
   },
   "aging": {
     "_about": "Retirement chance rises each year from startAge; everyone retires at forcedAge.",
@@ -377,9 +402,10 @@
     "staffRetireAge": 70
   },
   "aiSquads": {
-    "_about": "AI clubs renew useful players and top up thin squads from free agents.",
+    "_about": "AI clubs renew useful players and top up thin squads from free agents. While free agents can be signed, a club with room also signs one rated at least starterMargin above its 11th-best player.",
     "renewIfRank": 18,
-    "renewMaxAge": 32,
+    "starterMargin": 1,
+    "renewMaxAge": 34,
     "targetSize": 24
   },
   "freeAgentPool": {

@@ -17,6 +17,7 @@ import {
   tierOfClub,
   userBooks,
   userTeam,
+  weeklyMarket,
   type Career,
   type TierId,
 } from '../src/sim/career';
@@ -138,5 +139,25 @@ describe('career', () => {
     const career = newCareer('normal', 9);
     advanceToReview(career);
     expect(JSON.stringify(career).length).toBeLessThan(1_500_000);
+  });
+});
+
+describe('emergency signings', () => {
+  it('a club with too few fit players to name a side gets signings before the next match', () => {
+    const career = newCareer('normal');
+    const league = career.season.league;
+    const ai = league.teams.find((t) => t.id !== career.userTeamId)!;
+    for (const id of [career.userTeamId, ai.id]) {
+      // Injure everyone but nine outfielders: no fit keeper and no full side.
+      const squad = squadOf(career, id).sort((a, b) => (a.position === 'GK' ? -1 : 0) - (b.position === 'GK' ? -1 : 0));
+      squad.forEach((p, i) => (p.injuryWeeks = i < squad.length - 9 ? 4 : 0));
+    }
+    weeklyMarket(career);
+    for (const id of [career.userTeamId, ai.id]) {
+      const fit = squadOf(career, id).filter((p) => p.injuryWeeks <= 0 && p.suspensionMatches <= 0);
+      expect(fit.length).toBeGreaterThanOrEqual(C.transfers.emergencyFitMin);
+      expect(fit.some((p) => p.position === 'GK')).toBe(true);
+    }
+    expect(() => advanceCareer(career)).not.toThrow();
   });
 });

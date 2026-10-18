@@ -402,7 +402,7 @@ function applyAnswer(career: Career, conf: PressConference, q: PressConference['
     else if ('squad' in e) for (const id of team.playerIds) setMood(career, id, playerMood(career, id) + scaled(e.squad, s));
     else if ('mood' in e) {
       if (q.playerId) setMood(career, q.playerId, playerMood(career, q.playerId) + scaled(e.mood, s));
-    } else if ('press' in e) story.press = round3(clamp(story.press + scaled(e.press, s), 0, 1));
+    } else if ('press' in e) story.press = round3(clamp(story.press + scaled(e.press, s) * P.answerPressShare, 0, 1));
     else if ('heat' in e) addHeat(career, oppId, e.heat);
     else if ('claim' in e) {
       if (e.claim && def.phase === 'pre' && conf.nextId) addClaim(career, conf.nextId);

@@ -1,5 +1,5 @@
 /** The Help screen and the first-time tip card (Stage 7.1). */
-import { C, money } from '../../../sim/career';
+import { C, money, type TierId } from '../../../sim/career';
 import { SEASON_TUNING } from '../../../sim/data';
 import { each, esc } from '../../html';
 import { tipOf, type TipId } from '../../career/tips';
@@ -7,12 +7,22 @@ import helpData from '../../../data/help/help.json';
 
 const pct = (x: number): string => `${Math.round(x * 100)}%`;
 
+/** "4 to 6": the lenders' deadline (or memory) differs by difficulty. */
+function tierRange(pick: (tier: (typeof C.tiers)[TierId]) => number): string {
+  const weeks = (C.tiers.order as TierId[]).map((t) => pick(C.tiers[t]));
+  const lo = Math.min(...weeks);
+  const hi = Math.max(...weeks);
+  return lo === hi ? String(lo) : `${lo} to ${hi}`;
+}
+
 /** The numbers the answers quote, from the tuning files. */
 function helpVars(): Record<string, string> {
   return {
     preseasonWeeks: String(C.calendar.preseasonWeeks),
-    deadlineWeeks: String(C.ladder.deadlineWeeks),
+    deadlineWeeks: tierRange((t) => t.deadlineWeeks),
     goodWeeks: String(C.ladder.goodWeeksToRecover),
+    clearWeeks: String(C.ladder.clearWeeks),
+    rescueSeasons: tierRange((t) => t.rescueMemorySeasons),
     receivership: money(C.ladder.receivershipOverdraft),
     cap: money(C.wageCap.cap),
     taxRate: pct(C.wageCap.taxRate),

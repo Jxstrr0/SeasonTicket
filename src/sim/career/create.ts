@@ -14,7 +14,7 @@ import type { Career, ClubBooks, Crest, MatchMode, TierId } from './types';
 import { C, addInbox, clamp, emptyLedger, money, userTeam } from './util';
 import { ensureOwners } from './rivalry';
 
-export const CAREER_VERSION = 10;
+export const CAREER_VERSION = 11;
 
 export interface Branding {
   name: string;
@@ -72,7 +72,7 @@ export function createCareer(opts: NewCareerOptions): Career {
     season,
     books: {},
     stadiums: {},
-    ladder: { level: 0, deadlineWeek: null, goodWeeks: 0, lastForcedSaleWeek: null },
+    ladder: { level: 0, deadlineWeek: null, goodWeeks: 0, lastForcedSaleWeek: null, rescueSeason: null },
     loansIn: [],
     incomingBids: [],
     counters: {},

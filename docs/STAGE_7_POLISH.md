@@ -109,6 +109,50 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 
 **Tests.** `tests/audio.test.ts` (14 tests): the made sounds are finite, never clip and are the same every time, and the room tone loops without a click; every sound file exists; the referee and ball are on the effects bus; chant timing, the away share, the derby boost and loudness by crowd; the mix is kept, carried over from the old setting, mended when garbled and survives blocked storage; the menu cues for visitors, offers, calls, the paper and the press. Checked in the browser at 740 by 360 and 844 by 390: the radio shows and plays, the sliders and mute work and are kept, the menu sounds play, no console errors.
 
+### 7.3 Balance pass (built 2026-10-18)
+
+**How it was measured.** A headless career bench (`tests/bench/careerBench.ts`) plays ten-season careers with a scripted owner who lets the staff answer every visitor: a **careful** owner (keeps a cash buffer, sells to buy, borrows little), a **reckless** one (spends every pound and every loan on wages and fees, and pours in the fortune) and a **do-nothing** one (never touches anything). Each was played at all 13 Easy, Normal and Hard clubs on three seeds, 117 careers a round, on the quick Stage 1 engine (the targets are about money; a spatial-engine career is many times slower and was spot-checked by hand). Before the pass the lenders were toothless: on Normal no reckless owner lost the club before season 7, and on Hard none before season 5.
+
+**Losing the club, before and after** (careers lost, out of the careers played):
+
+| | Before | After | Target |
+|---|---|---|---|
+| Easy, careful | 0 of 8 | 0 of 12 | never |
+| Easy, reckless | 5 of 8, seasons 7 to 10 | 4 of 12, seasons 4 to 8 | only reckless, never within 3 seasons |
+| Easy, do-nothing | 0 of 8 | 0 of 12 | never |
+| Normal, careful | 0 of 8 | 0 of 12 | never |
+| Normal, reckless | none within 5 | 6 of 12 within 5 | about half within 5 |
+| Normal, do-nothing | 0 of 8 | 0 of 12 | never |
+| Hard, careful | 0 of 10 | 2 of 15 (seasons 8, 9) | some don't survive |
+| Hard, reckless | none within 3 | 12 of 15 within 3 | within 2 or 3 seasons |
+
+**The lenders, harder.** The ladder works as in section 8 of `DESIGN.md`, with these changes:
+- The deadline is now per difficulty: 6 weeks on Easy, 5 on Normal, 4 on Hard and Very hard.
+- A week or two back in the black no longer stops the clock: the deadline lifts after 4 clean weeks in a row, and slipping back into breach after it has passed climbs a rung at once. Stepping down a rung takes 10 clean weeks (was 8).
+- From the lender-appointed finance chief (step 2) up, nobody lends, so a club in trouble can't borrow its way back into the spending that caused it.
+- Forced sales: the lenders now take the whole fee against the dearest loans, so a sale pays debt rather than buying the club out of trouble.
+- Forced sales happen only once. Back at that step within 2 seasons (Easy, Normal) or 3 (Hard, Very hard) and the club goes straight into receivership. The lender letter and Help say so. Saves move to version 11 (the ladder remembers the season of the rescue).
+
+**Money.** Running costs now grow with the club's market as well as its seats (0.5M + 0.8M per unit of market size + 15 per seat, was 0.9M + 15 per seat), so a small-town club is cheaper to run than a big-city one. Crowd demand can grow to 1.8 times the club's starting capacity (was 3), and it grows only once fan mood is above 0.62 (was 0.55), so a bigger stadium has to be earned.
+
+**Fans and press.** Results move fan mood a little more (a win +0.03, a loss -0.03), and it settles faster. At each season end every club's baseline fan mood moves with where it finished and with how that compared to its squad's strength, then eases back a fifth of the way to the club's own starting level. The press standing now drifts toward a point set by the table (higher near the top, lower near the bottom), and an answer at a press conference moves it half as much as before, so a run of calm answers can't lift it above where results put it. Staff answering for the owner do a little less good than before.
+
+**Youth and AI squads.** Academy intakes are better at the low levels (quality 0.32 to 0.56 by level, was 0.2 to 0.6) with a bigger potential bonus (6, was 4): a typical intake is now about 37 overall with 60 potential (was 31 and 52). AI clubs keep players to 34 (was 32), and any AI club with room signs a free agent who would walk into its eleven, so good players don't sit unsigned.
+
+**A crash fixed.** A squad with fewer than 11 fit players (an injury crisis plus suspensions) could not field a side and stopped the week. Now the user's club and every AI club are topped up from free agents on one-year deals at their market wage whenever they have fewer than 13 fit players or no fit keeper. A test injures a squad down to nine and plays on.
+
+**Clubs swapped.** Silverpeak Alpine moved to Hard and Racing Val-Delacroix to Normal. Silverpeak's staff bill (1.33M) is bigger than its ticket money (1.07M), so careful owners bled their fortune and do-nothing owners lost the club, which Normal must not do; Racing plays like a Normal club.
+
+**The league over ten years.** The strongest squad wins the table about a third of the time and one of the four strongest about 75% of the time. The league's average best eleven goes from 64.9 to 70.7 over ten seasons (was 65.2 to 68.8), mostly the better youth. The average age drifts from 26.5 to 24.2 (was 26.6 to 23.8), which is young for a real league: flagged for the 7.7 audit.
+
+**Match engine.** Four more full fine-mode seasons (the watched match): 2.52 goals a match (2.40 to 2.71 by season), 2.72 expected goals, 1.2% of matches with 7 or more goals, home wins 43%, draws 23%, 11.8 shots a team. This is inside every target, so the "watched match is more open" gap is settled and the engine is unchanged. The AI head coaches make all five subs in nearly every match, all between minutes 46 and 90 (half of them by minute 62, nine in ten by minute 80), and change mentality about 2.8 times a match, about half of those after minute 76.
+
+**Story.** 66 of the 76 events turned up in the balance careers. The other ten only follow an owner's choice (a follow-up, or a flag such as "the council is annoyed"), which the scripted owners never make. A new test walks the event data and proves every event can be reached.
+
+**Easy riches.** A do-nothing owner at an Easy club ends ten seasons with about 69M in the bank while finishing bottom, because the wage bill shrinks to almost nothing. Harmless (nobody plays that way), so left as it is.
+
+**Tests.** `tests/storyReach.test.ts` (every event reachable) and an emergency-signing test in `tests/career.test.ts` run with `npm test`. The slow suite (`npm run test:slow`) has four new files: `careers-easy`, `careers-normal` and `careers-hard` check the targets above on fewer seeds, and `careers-league` checks the league over ten seasons (no more than 7 points stronger, average age 23 to 28, youth intake in its band, strong squads winning, happier fans in good seasons, crowds not always full).
+
 ## Owner's answers (2026-10-18)
 
 1. Tutorial: first-time tips on each screen and a Help page. No guided week.

@@ -129,11 +129,11 @@ Tickets (pricing by section), concessions, parking, sponsorships and naming righ
 3. **Loans.** Fast money with interest and conditions (for example, a minimum cash balance or a wage ceiling).
 
 ### The lender ladder (the fail state)
-Breaking loan conditions escalates step by step. Every step can be reversed by fixing the finances.
+Breaking loan conditions escalates step by step. Every step can be reversed by fixing the finances and keeping them fixed for a few weeks.
 1. **Warning letter.** A lender visit in your office, with a deadline.
-2. **Lender-appointed CFO.** Big spending now needs their approval.
+2. **Lender-appointed CFO.** Big spending now needs their approval, and nobody will lend.
 3. **Spending lock.** No contracts above minimum, no transfer fees and no stadium projects.
-4. **Forced sales.** You must sell naming rights, a minority stake or star players.
+4. **Forced sales.** You must sell naming rights, a minority stake or star players, and the lenders take the fees. They rescue a club this way only once: back here within a few seasons and it goes into receivership.
 5. **Receivership.** The lender takes the club; the career ends.
 
 ---
@@ -394,6 +394,7 @@ Owner's decisions (2026-10-18):
 - Stage 7 (polish), as answered on 2026-10-18 and listed in `docs/STAGE_7_POLISH.md`: first-time tips on each screen plus a Help screen, no guided week; music in the office only; the balance targets for losing the club as proposed; installable as an app; problem reports go through the contact form on the studio website (the game sends nothing itself); the Longlight logo and colours; GoatCounter for anonymous play counts; no launch extras.
 - First-time tips and Help (Stage 7.1): each screen's tip shows once per device, can be turned off or reset from the menu, and is kept in the browser rather than the save. Help answers quote numbers from the tuning files.
 - Sound (Stage 7.2): one shared audio context with crowd, effects and music volumes plus mute, kept per device. Music is only the office radio (off at first). Menu sounds are made in code. Chants come from the same CC0 stadium recordings as the crowd and fall at moments fixed by the match, so a replay matches the live match. All sound is presentation and never touches the sim.
+- Balance (Stage 7.3): losing the club follows the owner's targets (Easy: only a reckless owner, never in the first three seasons; Normal: about half of reckless owners within five seasons, careful and do-nothing owners never; Hard: some careful owners and most reckless ones within three). The lenders' deadline is 6, 5 or 4 weeks by difficulty and only lifts after 4 clean weeks; nobody lends from step 2 up; forced sales pay the lenders and happen once (back there within 2 or 3 seasons means receivership). Running costs grow with the club's market. Silverpeak Alpine is a Hard club and Racing Val-Delacroix a Normal one. Numbers in `docs/STAGE_7_POLISH.md`.
 
 ---
 

@@ -35,10 +35,12 @@
     "matchForm": 0.03
   },
   "press": {
-    "_about": "Press standing 0-1 drifts back toward neutral each week. fanLift moves fan mood each week by (press - neutral) x fanLift.",
+    "_about": "Press standing 0-1 drifts each week toward a target: neutral, plus tablePull x (0.5 - the club's place from the top as a share of the table) once tableMinPlayed games are played, so the top of the table sits near neutral + tablePull / 2 and the bottom near neutral - tablePull / 2. fanLift moves fan mood each week by (press - neutral) x fanLift.",
     "neutral": 0.5,
-    "drift": 0.03,
-    "fanLift": 0.01
+    "drift": 0.08,
+    "tablePull": 0.5,
+    "tableMinPlayed": 3,
+    "fanLift": 0.006
   },
   "goodwill": {
     "_about": "Sponsor goodwill 0-1 scales the next shirt sponsor offers by 1 + (goodwill - neutral) x offerSwing, and drifts back toward neutral each week.",
@@ -49,8 +51,8 @@
   "staff": {
     "_about": "Who answers for the owner, by visitor role, and how well. q is the staff member's rating / 99. Good effects (mood, fans, press, goodwill going up) are scaled by goodBase + goodGain x q; bad ones by badBase - badGain x q. Money is never scaled.",
     "byRole": { "player": "headCoach", "coach": "headCoach", "staffer": "assistantCoach", "agent": "assistantCoach", "sponsor": "assistantCoach", "reporter": "assistantCoach", "fans": "assistantCoach", "councillor": "assistantCoach", "vip": "assistantCoach", "lender": "assistantCoach", "owner": "assistantCoach" },
-    "goodBase": 0.55,
-    "goodGain": 0.55,
+    "goodBase": 0.35,
+    "goodGain": 0.5,
     "badBase": 1.35,
     "badGain": 0.6,
     "missingQuality": 0.35
