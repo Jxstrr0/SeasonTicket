@@ -1,10 +1,12 @@
 /** Career title screen: continue, start a new career, or paste a save code. */
 import { esc } from '../../html';
 import type { UiState } from '../../career/state';
+
+export type TitleState = UiState['title'];
 import { renderCrest } from './crest';
 
-export function renderCareerTitle(ui: UiState): string {
-  const { saved, error, importText } = ui.title;
+export function renderCareerTitle(title: TitleState): string {
+  const { saved, error, importText } = title;
   const continueCard = saved
     ? `<div class="card continue-card">
         ${renderCrest(saved.crest, 56)}

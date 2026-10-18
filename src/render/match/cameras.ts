@@ -11,10 +11,9 @@ import tuning from '../../data/tuning/match3d.json';
 import { SIDE_FRONT, standProfile } from '../stadium/layout';
 import type { StadiumSnapshot } from '../stadium/types';
 
-export type CameraKey = 'broadcast' | 'box' | 'goal' | 'overhead' | 'side';
+import type { CameraKey } from './cameraKeys';
 
-/** The cameras the owner can pick, in button order. */
-export const CAMERA_PRESETS: readonly CameraKey[] = ['broadcast', 'box', 'goal', 'overhead'];
+export { CAMERA_PRESETS, type CameraKey } from './cameraKeys';
 
 const B = tuning.camera;
 const C = tuning.cameras;

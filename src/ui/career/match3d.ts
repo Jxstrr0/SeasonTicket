@@ -15,7 +15,7 @@
  * each big moment is played in 3D from its build-up the same way (match3dDirector.ts).
  */
 import type { QualityTier } from '../../render/quality';
-import { CAMERA_PRESETS, type CameraKey } from '../../render/match/cameras';
+import { CAMERA_PRESETS, type CameraKey } from '../../render/match/cameraKeys';
 import type { MatchFrame3D, MatchScene3D, MatchViewHandle, KitColours, ShapeOverlay3D } from '../../render/match/view';
 import type { StadiumSnapshot } from '../../render/stadium/types';
 import { teamShapeInfo } from '../../sim/spatial/engine';
