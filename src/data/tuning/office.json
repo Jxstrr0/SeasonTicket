@@ -59,7 +59,12 @@
       "agent": { "label": "Agent", "walk": "Walk_Loop", "jackets": ["#5a1f2b", "#1f4d4a", "#4a3a6b", "#6b5a2a"], "trousers": "#202022", "shirt": "#111316", "ties": [null] },
       "sponsor": { "label": "Sponsor rep", "walk": "Walk_Formal_Loop", "jackets": ["#2f4f7a", "#7a7f88", "#3b5d3a"], "trousers": "#2a2c30", "shirt": "#f2f2f2", "ties": [null, "#c58a2a"] },
       "coach": { "label": "Head coach", "walk": "Walk_Loop", "jackets": ["club"], "trousers": "#1a1c20", "shirt": "club2", "ties": [null] },
-      "reporter": { "label": "Reporter", "walk": "Walk_Loop", "jackets": ["#8a7454", "#556070", "#6b4a3a"], "trousers": "#3a3f4a", "shirt": "#dfe3e8", "ties": [null] }
+      "reporter": { "label": "Reporter", "walk": "Walk_Loop", "jackets": ["#8a7454", "#556070", "#6b4a3a"], "trousers": "#3a3f4a", "shirt": "#dfe3e8", "ties": [null] },
+      "player": { "label": "Player", "walk": "Walk_Loop", "jackets": ["club"], "trousers": "club", "shirt": "club2", "ties": [null] },
+      "fans": { "label": "Fans' group", "walk": "Walk_Loop", "jackets": ["#3c4a3a", "#4a4038", "#2e3a4e"], "trousers": "#2d3a52", "shirt": "club", "ties": [null] },
+      "councillor": { "label": "Councillor", "walk": "Walk_Formal_Loop", "jackets": ["#5d6168", "#4b4f56"], "trousers": "#3a3d42", "shirt": "#eef0f2", "ties": ["#2f5d3a", "#5a2f5d"] },
+      "vip": { "label": "Guest", "walk": "Walk_Formal_Loop", "jackets": ["#121418", "#2a1c30"], "trousers": "#121418", "shirt": "#f5f5f5", "ties": ["#c9a227", null] },
+      "staffer": { "label": "Club staff", "walk": "Walk_Loop", "jackets": ["club2"], "trousers": "#24262b", "shirt": "club", "ties": [null] }
     },
     "skinTones": ["#f1d3bf", "#e3b597", "#c98f6b", "#a76f4c", "#7d4f33", "#5a3825"],
     "hairColors": ["#1c1410", "#3a2618", "#6b4a2b", "#a07a4a", "#c9b08a", "#7a7a7a"],

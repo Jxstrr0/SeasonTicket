@@ -263,6 +263,8 @@ export interface UiState {
   tab: HubTab;
   /** True while the hub shows the 3D office instead of a tab. */
   inOffice: boolean;
+  /** The story event open over the office, if any. */
+  sceneId: string | null;
   /** Graphics setting for this device ('off' means plain menus, no office). */
   quality: QualitySetting;
   /** Match-day sound level for this device. */
@@ -326,6 +328,7 @@ export function initialUi(): UiState {
     draft: null,
     tab: 'home',
     inOffice: false,
+    sceneId: null,
     quality: loadQuality(),
     sound: loadSound(),
     showFps: loadShowFps(),

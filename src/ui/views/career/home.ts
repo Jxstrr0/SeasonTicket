@@ -18,6 +18,7 @@ import { findMatch } from '../../model';
 import type { UiState } from '../../career/state';
 import { renderMatchFeed } from '../matchFeed';
 import { resultNotes } from '../results';
+import { renderWaiting } from './story';
 
 function ordinal(n: number): string {
   const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
@@ -157,6 +158,7 @@ function renderOwner(career: Career): string {
 export function renderHome(career: Career, ui: UiState): string {
   if (ui.reportOpen) return renderLastMatch(career, ui);
   return `<div class="home-grid">
+    ${renderWaiting(career)}
     ${renderNextMatch(career)}
     ${renderAlerts(career)}
     ${renderLastMatch(career, ui)}

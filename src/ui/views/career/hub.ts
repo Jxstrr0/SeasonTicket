@@ -1,5 +1,5 @@
 /** The career hub frame: top bar with the next action, the tab strip, the menu and the flash message. */
-import { C, LADDER_NAMES, money, transferWindowOpen, userBooks, userFixture, userTeam, type Career } from '../../../sim/career';
+import { C, LADDER_NAMES, type StoryPace, money, transferWindowOpen, userBooks, userFixture, userTeam, type Career } from '../../../sim/career';
 import { cls, each, esc } from '../../html';
 import { weekLabel } from '../../model';
 import { HUB_TABS, SOUND_SETTINGS, type HubTab, type SoundSetting, type UiState } from '../../career/state';
@@ -15,6 +15,19 @@ import { renderClub } from './club';
 import { renderStadium } from './stadium';
 import { renderInbox } from './inbox';
 import { renderLeague } from './league';
+import { renderEventCard } from './story';
+
+/** The office scene: the visitor's event over the 3D room. */
+function renderScene(career: Career, ui: UiState): string {
+  const ev = ui.sceneId ? career.story.events.find((e) => e.id === ui.sceneId && e.answer === null) : undefined;
+  return ev ? renderEventCard(career, ev, true) : '';
+}
+
+const PACE_OPTIONS: { id: StoryPace; label: string }[] = [
+  { id: 'calm', label: 'Calm' },
+  { id: 'normal', label: 'Normal' },
+  { id: 'busy', label: 'Busy' },
+];
 
 export function careerWeekLabel(career: Career): string {
   if (career.phase === 'preseason') return `Pre-season · week ${career.preseasonWeek} of ${C.calendar.preseasonWeeks}`;
@@ -97,6 +110,11 @@ function renderMenu(career: Career, ui: UiState): string {
       ${each(SOUND_OPTIONS, (o) => `<button type="button" class="${cls('seg', o.id === ui.sound && 'on')}" data-action="set-sound" data-sound="${o.id}" aria-pressed="${o.id === ui.sound}">${esc(o.label)}</button>`)}
     </div>
     <p class="muted small">The crowd, the referee's whistle and the ball on match day. On iPhones the ring/silent switch mutes it.</p>
+    <div class="card-title">Story pace</div>
+    <div class="segmented" role="group">
+      ${each(PACE_OPTIONS, (o) => `<button type="button" class="${cls('seg', o.id === career.story.pace && 'on')}" data-action="set-pace" data-pace="${o.id}" aria-pressed="${o.id === career.story.pace}">${esc(o.label)}</button>`)}
+    </div>
+    <p class="muted small">How often people bring you decisions. Normal is one or two a week, more in transfer windows.</p>
     <label class="check"><input type="checkbox" data-change="auto-lineup"${career.delegation.autoLineup ? ' checked' : ''}> Head coach picks the lineup each week</label>
     <div class="menu-row">
       <button type="button" class="btn-secondary" data-action="save-code">Save code</button>
@@ -161,7 +179,7 @@ export function renderHub(career: Career, ui: UiState): string {
     return `${renderTopBar(career, ui)}
   ${renderMenu(career, ui)}
   ${renderTabs(career, ui)}
-  <div class="office-hud">${renderFlash(ui)}</div>`;
+  <div class="office-hud">${renderFlash(ui)}${renderScene(career, ui)}</div>`;
   }
   return `${renderTopBar(career, ui)}
   ${renderMenu(career, ui)}

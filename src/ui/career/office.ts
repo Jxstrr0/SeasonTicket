@@ -3,7 +3,7 @@
  * that reads the career for the office, so the render code never touches the
  * sim.
  */
-import { C, LADDER_NAMES, coachSelection, lastHomeCrowd, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
+import { C, LADDER_NAMES, coachSelection, eventView, openEvents, lastHomeCrowd, money, playerPayroll, userBooks, userFixture, userTeam, type Career, type InboxKind } from '../../sim/career';
 import { WORLD, formation as formationOf } from '../../sim/data';
 import officeTuning from '../../data/tuning/office.json';
 import type { OfficeSnapshot, OfficeTrophy, OfficeVisitorCall } from '../../render/office/types';
@@ -40,6 +40,11 @@ export function officeTrophies(career: Career): OfficeTrophy[] {
 
 /** The newest unread message that brings someone to the office, if any. */
 export function officeVisitor(career: Career): OfficeVisitorCall | null {
+  // An event waiting on the owner brings its visitor first, and they wait until it is answered.
+  for (const ev of openEvents(career)) {
+    const v = eventView(career, ev);
+    if (v) return { mailId: ev.mailId, role: v.role, title: v.title };
+  }
   for (let i = career.inbox.length - 1; i >= 0; i--) {
     const m = career.inbox[i];
     const role = VISITOR_BY_KIND[m.kind];

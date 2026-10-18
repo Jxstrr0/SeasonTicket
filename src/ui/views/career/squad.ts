@@ -8,7 +8,12 @@ import {
   squadRole,
   transferWindowOpen,
   type Career,
+  moodBand,
+  playerMood,
+  type MoodBand,
 } from '../../../sim/career';
+
+const MOOD_TEXT: Record<MoodBand, string> = { unhappy: 'Unhappy', settled: 'Settled', happy: 'Happy' };
 import { positionLabel } from '../../../sim/data';
 import type { AttributeKey, Player } from '../../../sim/types';
 import { cls, each, esc } from '../../html';
@@ -102,6 +107,7 @@ function renderDetail(career: Career, ui: UiState, p: Player): string {
       <div><dt>Overall</dt><dd><strong>${p.overall}</strong></dd></div>
       <div><dt>Potential</dt><dd>${p.potential}</dd></div>
       <div><dt>Condition</dt><dd>${conditionCell(p.condition)}</dd></div>
+      ${p.teamId === career.userTeamId ? `<div><dt>Mood</dt><dd>${esc(MOOD_TEXT[moodBand(playerMood(career, p.id))])}</dd></div>` : ''}
       <div><dt>Form</dt><dd>${p.form.length ? (p.form.reduce((a, b) => a + b, 0) / p.form.length).toFixed(1) : '-'}</dd></div>
       <div><dt>Wage</dt><dd>${esc(money(p.contract.wage))}/yr</dd></div>
       <div><dt>Contract</dt><dd>${p.contract.years} yr${p.contract.years === 1 ? '' : 's'}</dd></div>

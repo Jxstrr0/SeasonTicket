@@ -16,6 +16,7 @@ import {
   userBooks,
   userTeam,
   type Career,
+  squadMood,
 } from '../../../sim/career';
 import { STAFF_ROLES, type StaffMember, type StaffRole } from '../../../sim/types';
 import { cls, each, esc } from '../../html';
@@ -153,9 +154,25 @@ function renderStaff(career: Career, ui: UiState): string {
   </section>`;
 }
 
+/** The story layer's standing: the dressing room, the press and sponsors. */
+function renderStanding(career: Career): string {
+  const s = career.story;
+  const pct = (x: number): string => `${Math.round(x * 100)}%`;
+  return `<section class="card">
+    <div class="card-title">Standing</div>
+    <dl class="facts compact">
+      <div><dt>Dressing room</dt><dd>${pct(squadMood(career))}</dd></div>
+      <div><dt>Press</dt><dd>${pct(s.press)}</dd></div>
+      <div><dt>Sponsor goodwill</dt><dd>${pct(s.goodwill)}</dd></div>
+    </dl>
+    <p class="muted small">Your decisions move these. A happy dressing room plays a little better; the press colours the fans' mood; goodwill helps the next sponsor offer.</p>
+  </section>`;
+}
+
 export function renderClub(career: Career, ui: UiState): string {
   return `<div class="club-grid">
     <div>
+      ${renderStanding(career)}
       ${renderTickets(career)}
       ${renderSponsor(career, ui)}
       ${renderAcademy(career, ui)}

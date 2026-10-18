@@ -275,3 +275,29 @@ describe('story layer: mood on match day and saves', () => {
     advanceCareer(up);
   });
 });
+
+describe('story layer: screens', async () => {
+  const { initialUi } = await import('../src/ui/career/state');
+  const { renderInbox } = await import('../src/ui/views/career/inbox');
+  const { renderHome } = await import('../src/ui/views/career/home');
+  const { officeVisitor } = await import('../src/ui/career/office');
+
+  it('shows a waiting event with its choices on Home, pinned in the inbox, and at the office door', () => {
+    const career = newCareer();
+    const ev = startStoryEvent(career, 'reporter-exclusive')!;
+    // Newer mail arrives after it; the event still comes first.
+    advanceCareer(career);
+    const ui = initialUi();
+    const home = renderHome(career, ui);
+    expect(home).toContain(`data-action="event-choice" data-id="${ev.id}" data-choice="open"`);
+    expect(home).toContain('data-choice="staff"');
+    const first = renderInbox(career, ui).split('<li')[1];
+    expect(first).toContain(`data-id="${ev.mailId}"`);
+    expect(first).toContain('Waiting on you');
+    ui.inboxOpen = ev.mailId;
+    expect(renderInbox(career, ui)).toContain(`data-id="${ev.id}" data-choice="open"`);
+    expect(officeVisitor(career)).toMatchObject({ mailId: ev.mailId, role: 'reporter' });
+    answerEvent(career, ev.id, 'short');
+    expect(renderHome(career, ui)).not.toContain(`data-id="${ev.id}"`);
+  });
+});
