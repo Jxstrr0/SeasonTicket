@@ -1,6 +1,6 @@
 # Stage 6: Events and Story Layer (plan)
 
-**Status:** plan, waiting for the owner's review (2026-10-18). Nothing here is built yet.
+**Status:** plan approved by the owner (2026-10-18). Building step 6.1.
 
 **Done when (from CLAUDE.md):** a season produces varied, consequential events.
 
@@ -104,7 +104,17 @@ Each step ships a playable build to Pages, like Stage 5.
 - Save growth: no more than 15 KB compressed after five seasons, compared with a Stage 5 save.
 - Event text: loaded with the career screens (JSON, a few hundred KB at most), no new 3D assets except visitor outfit colours. A newspaper or phone prop, if added, comes from CC0 sources and is listed in `CREDITS.md`.
 
-## Questions for the owner
+## Owner's decisions (2026-10-18)
+
+1. **Mood affects matches:** yes, up to about ±3% (a happy squad plays a little better, an unhappy one a little worse).
+2. **Story pace:** a per-career setting, Calm / Normal / Busy. Normal is the default: one or two decisions a week, more in transfer windows.
+3. **Press conferences:** only big matches (derbies, playoffs, top-of-the-table) and notable results.
+4. **Deadline day:** tap-to-advance hours (taken as approved with question 3: "your thinking is correct as is").
+5. **Fail state:** the lenders are the only way to lose the club. The game is about managing money and keeping your club; fans and shareholders can make life hard but cannot force you out.
+6. **Rival owners:** light characters (name, temperament, memory).
+7. **Tone:** mostly grounded and believable, with a touch of humour sprinkled in here and there (some odd visitors, the occasional cheeky fan post), never slapstick.
+
+## Questions for the owner (as asked)
 
 1. **Should player mood affect matches?** Proposal: yes, small. A happy squad plays up to about 3% better and an unhappy one up to 3% worse. Without it, mood only matters off the pitch.
 2. **How busy should the story be?** Proposal: a per-career "story pace" setting (Calm, Normal, Busy), default Normal: one or two decisions a week, more in windows.
