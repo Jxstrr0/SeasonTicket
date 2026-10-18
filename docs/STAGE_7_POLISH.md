@@ -1,6 +1,6 @@
 # Stage 7: Polish and Launch (plan)
 
-**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end); two follow-ups are open: where the contact form sends, and where analytics go. Nothing in this plan is built yet.
+**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end); one follow-up is open: where analytics go. Nothing in this plan is built yet.
 
 **Done when (from CLAUDE.md):** ready to share publicly as a free web game.
 
@@ -46,7 +46,7 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
    - Performance budgets are not weakened without the owner's OK.
 5. **7.5 Safety net and finish.**
    - **Crash screen:** if something breaks, the game shows a calm screen with "Copy save code" and "Reload" instead of a blank page. The save is never lost to a crash.
-   - **Contact form:** a "Report a problem or send feedback" form inside the game (the owner's answer). It sends a message, the game version, the device, and optionally the save code. Where it sends is open (follow-up A).
+   - **Contact:** a "Report a problem or send feedback" screen (settings, the crash screen and the Credits screen). It copies a short report (game version, device, season and week, and the save code if the player ticks "Include my save") and opens the contact form on the studio website, https://jxstrr0.github.io/Kelbo.Website/#contact-heading, which already sends through Web3Forms to the studio email (the owner's answer, 2026-10-18). The game sends nothing itself. The website's message box takes 5,000 characters, so a save code that is longer is left out of the copied text and the screen says "Your save is too long to paste; describe the problem instead".
    - **Install as an app:** yes (the owner's answer). "Add to Home Screen" gives the Longlight icon and full-screen play, and the game works offline after the first visit. When an update is ready the game says so and offers "Reload".
    - **Text and screens:** a read-through of every player-facing line for typos, tone and consistency; empty states ("No offers yet"); a check of every screen at the smallest phone size.
    - **Version number** shown in settings, with a short "What's new".
@@ -83,14 +83,14 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 2. Music: office only.
 3. Losing the club: the proposal below is fine for now.
 4. Install as an app: yes.
-5. Problem reports: a contact form in the game.
+5. Problem reports: Web3Forms, through the contact form already on the studio website; the game sends players there.
 6. Branding: use the Longlight logo and colours (see 7.6).
 7. Analytics: the owner asked where it would send. Open (follow-up B).
 8. Launch extras: none.
 
 ## Open follow-ups
 
-- **A. Where the contact form sends.** The game is a static site on GitHub Pages, which cannot receive messages by itself, so the form needs a free form service that forwards each message to the studio's email. Proposal: Web3Forms or Formspree (free tiers, no server to run). The owner signs up with the studio email and gives us the form's public key; the key can sit in the repo safely. The save code is long, so it goes in as an attachment field and is cut if it is over the service's limit.
+- **A. Where the contact form sends.** Settled: the studio website's contact form (Web3Forms).
 - **B. Where analytics go.** Proposal: GoatCounter (free for small, non-commercial sites, open source, no cookies, so no consent banner). It counts page visits, plus a few game moments with no personal data: career started, season finished, club lost. Settings get a "Send anonymous play counts" switch, on by default, and the Credits screen says what is sent. Alternatives: Cloudflare Web Analytics (free, visits only), or none.
 
 ## Questions for the owner (as asked)
