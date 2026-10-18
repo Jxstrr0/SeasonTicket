@@ -16,7 +16,8 @@ import { endLoans, generateFreeAgent, movePlayer } from './market';
 import { repairSelection } from './selection';
 import { summerStadium } from './stadium';
 import { rolloverNews } from './news';
-import { rolloverStory } from './story';
+import { closePress } from './press';
+import { rolloverStory, settleSeasonPromises } from './story';
 import type { Career, SeasonHistoryEntry } from './types';
 import { C, addInbox, careerRng, clamp, emptyLedger, ledgerTotals, playerName, squadOf, userBooks, userTeam } from './util';
 
@@ -29,6 +30,9 @@ const FILL_POSITIONS: Position[] = ['GK', 'CB', 'CB', 'FB', 'DM', 'CM', 'CM', 'A
 
 export function continueToNextSeason(career: Career): void {
   if (career.phase !== 'review') return;
+  // The assistant answers a press conference left open after the last match, and running promises are judged, while this season's players and numbers still exist.
+  closePress(career);
+  settleSeasonPromises(career);
   career.history.push(historyEntry(career));
   endLoans(career);
   tickNamingRights(career);
@@ -307,6 +311,13 @@ function refreshFreeAgentPool(career: Career): void {
     if (p && p.age <= F.maxAge) continue;
     league.freeAgentIds = league.freeAgentIds.filter((x) => x !== id);
     delete league.players[id];
+  }
+  // Released players pile up season after season: keep only the best few beyond the target.
+  if (league.freeAgentIds.length > F.max) {
+    const ranked = league.freeAgentIds.map((id) => league.players[id]).sort((a, b) => b.overall - a.overall || (a.id < b.id ? -1 : 1));
+    for (const p of ranked.slice(F.max)) delete league.players[p.id];
+    const keep = new Set(ranked.slice(0, F.max).map((p) => p.id));
+    league.freeAgentIds = league.freeAgentIds.filter((id) => keep.has(id));
   }
   const rng = careerRng(career, 'fa-pool');
   while (league.freeAgentIds.length < F.target) {

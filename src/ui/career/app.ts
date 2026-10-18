@@ -99,6 +99,8 @@ const PITCH_MAX_FRAME_S = 0.1;
 /** How long a break (half-time) lasts with the head coach in charge, in real ms. */
 /** Taps closer together than this count as one (a double tap fires two clicks). */
 const CONFIRM_GAP_MS = 450;
+/** Taps that answer something or move the clock on, where the next thing to answer appears under the finger. */
+const STEP_ACTIONS = new Set(['event-choice', 'deadline-hour', 'deadline-call']);
 const BREAK_MS = atmosphereTuning.break.coachS * 1000;
 const POSITIONS: readonly Position[] = ['GK', 'CB', 'FB', 'DM', 'CM', 'AM', 'W', 'ST'];
 const DIAL_KEYS = ['mentality', 'pressing', 'defensiveLine', 'width', 'tempo', 'directness', 'timeWasting'] as const;
@@ -195,6 +197,8 @@ export class CareerApp {
   /** When a confirm button was armed, and the last form sent: see CONFIRM_GAP_MS. */
   private armedAt = 0;
   private lastForm = { name: '', at: 0 };
+  /** When a story answer or the deadline clock last moved: the second tap of a double tap must not answer what replaced it. */
+  private lastStepAt = 0;
   /** The 3D office sits behind the menus; the menus render into uiLayer. */
   private readonly uiLayer: HTMLElement;
   private readonly officeLayer: HTMLElement;
@@ -487,6 +491,8 @@ export class CareerApp {
 
   private onOfficePick(p: OfficePick): void {
     if (!this.career || this.ui.screen !== 'hub' || this.weeks.playing) return;
+    // The tail of a double tap on a visitor's card that just closed.
+    if (performance.now() - this.lastStepAt < CONFIRM_GAP_MS) return;
     this.ui.flash = null;
     if (p.kind === 'mail') {
       const mail = this.career.inbox.find((m) => m.id === p.id);
@@ -619,6 +625,11 @@ export class CareerApp {
       }
       // A quick double tap fires two clicks: the second must not confirm the first.
       if (performance.now() - this.armedAt < CONFIRM_GAP_MS) return;
+    }
+    if (STEP_ACTIONS.has(action)) {
+      const now = performance.now();
+      if (now - this.lastStepAt < CONFIRM_GAP_MS) return;
+      this.lastStepAt = now;
     }
     this.ui.pendingConfirm = null;
     if (action !== 'dismiss-flash' && action !== 'menu') this.ui.flash = null;
@@ -1439,6 +1450,7 @@ export class CareerApp {
     if (this.career !== career) return;
     // The week failed and the career is back where it was: nothing new to save.
     if (!results) return this.render();
+    this.ui.newsEdition = null;
     const line = userResultText(career, results);
     if (line) this.ui.flash = { kind: 'ok', text: line };
     this.ui.resultsWeek = null;
@@ -1461,6 +1473,7 @@ export class CareerApp {
     }
     if (this.career !== career) return;
     this.ui.simming = false;
+    this.ui.newsEdition = null;
     if (!this.followPhase()) this.render();
   }
 

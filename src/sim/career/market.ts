@@ -406,7 +406,7 @@ export function acceptBid(career: Career, bidId: string): DealResult {
     career.incomingBids = career.incomingBids.filter((b) => b.id !== bidId);
     return fail('He is no longer yours to sell.');
   }
-  if (!transferWindowOpen(career)) return fail('The transfer window is shut.');
+  if (!transferWindowOpen(career) && !bid.listed) return fail('The transfer window is shut.');
   const blocked = canLose(career, player);
   if (blocked) return fail(blocked);
   const buyer = teamById(career.season.league, bid.fromTeamId);
@@ -459,7 +459,8 @@ export function weeklyMarket(career: Career): void {
     aiDeals(career, careerRng(career, 'ai-deals'));
   } else {
     career.counters = {};
-    career.incomingBids = [];
+    // Bids you asked for stand until they lapse; the rest wait for the window.
+    career.incomingBids = career.incomingBids.filter((b) => b.listed);
   }
   if (freeAgentsOpen(career)) aiFreeSignings(career);
   forcedSale(career);
@@ -494,7 +495,7 @@ export function bidForListed(career: Career, player: Player, share: number, rng:
   }
   const buyer = rng.pick(options.slice(0, 4));
   const fee = roundMoney(base * bidFactor(career, buyer.id), 5000);
-  career.incomingBids.push({ id: nextId(career, 'bid'), playerId: player.id, fromTeamId: buyer.id, fee, expiresWeek: career.weekIndex + T.bidExpiryWeeks });
+  career.incomingBids.push({ id: nextId(career, 'bid'), playerId: player.id, fromTeamId: buyer.id, fee, expiresWeek: career.weekIndex + T.bidExpiryWeeks, listed: true });
   addInbox(career, 'bid', `Bid for ${playerName(player)}`, `${buyer.shortName} offer ${money(fee)} for ${playerName(player)}. It lapses in ${T.bidExpiryWeeks} weeks.`);
   return true;
 }

@@ -201,6 +201,11 @@ export function fireStaff(career: Career, staffId: string): ClubResult {
   return ok(`${playerName(member)} has left (${money(cost)}).`);
 }
 
+/** A staff member leaves his club for the hiring pool (a story event). */
+export function releaseStaff(career: Career, member: StaffMember): void {
+  removeFromClub(career, member);
+}
+
 function removeFromClub(career: Career, member: StaffMember): void {
   if (member.teamId) {
     const team = teamById(career.season.league, member.teamId);

@@ -11,7 +11,7 @@
  * Tuning is src/data/tuning/deadline.json, text src/data/deadline.json; every draw has a
  * seeded stream named for the window and the hour.
  */
-import { DEADLINE_TEXT, DEADLINE_TUNING } from '../data';
+import { DEADLINE_TEXT, DEADLINE_TUNING, positionLabel } from '../data';
 import { teamById } from '../league';
 import { defaultNames, homeNationId } from '../names';
 import type { Rng } from '../rng';
@@ -408,6 +408,10 @@ function fillVars(text: string, vars: Record<string, string>): string {
   return text.replace(/\{(\w+)\}/g, (all, key: string) => vars[key] ?? all);
 }
 
+function withArticle(word: string): string {
+  return `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`;
+}
+
 function hourLabel(hour: number): string {
   return `${String(hour).padStart(2, '0')}:00`;
 }
@@ -420,6 +424,7 @@ function callFill(career: Career, call: DeadlineCall, text: string): string {
     player: p ? playerName(p) : 'the player',
     first: p ? p.firstName : 'He',
     pos: p ? p.position : '',
+    aPos: p ? withArticle(positionLabel(p.position).toLowerCase()) : 'a player',
     club: team(call.teamId),
     rival: team(call.rivalId),
     fee: money(call.kind === 'hijack' ? call.rivalFee : call.fee),

@@ -328,6 +328,7 @@ Career simplifications (Stage 2):
 - Loans go one way only. The owner can loan players in until the end of the season and pays a chosen share of the wage; the parent club pays nothing for that player while he is away. Loaning your own players out is a later feature.
 - AI clubs never go bust. If an AI club's cash drops below zero at the end of a week, its owner tops it back up to zero. Only the owner's club faces the lender ladder.
 - If the owner's squad drops below 16 players or two goalkeepers, the league places free agents with the club on one-year minimum deals to fill it. The inbox says who.
+- The free-agent pool is capped at 90 players (`freeAgentPool.max` in `career.json`). At each rollover the best by rating stay and the rest leave the game.
 - Naming rights are sold for a lump sum paid up front, which fans dislike. The old stadium name returns when the deal runs out.
 - Players and staff only age at season rollover, not on birthdays during the season. Players who retire leave the game for good; they do not return as staff.
 - A good fitness coach (rating at or above a floor) gives each injured player a weekly chance, scaled by rating, to come back a week sooner.
@@ -389,6 +390,7 @@ Owner's decisions (2026-10-18):
 - Rivalries (Stage 6.4): same-region games are derbies (bigger crowds, bigger fan-mood swings, a Derby badge). Rivalry heat with any club grows from derbies, big results, playoff ties and press words and fades slowly. Every other club has a light-character owner with a temperament and a memory of you that moves transfer prices both ways. Seven rivalry events run in derby and rivalry weeks.
 - Crises and story chains (Stage 6.5): ten multi-step storylines (dressing-room row, transfer request, injury crisis, sponsor scandal, floodlights, fan protest and boycott, building objections, coach poaching, the bank, naming-rights backlash). A choice can bring a follow-up weeks later about the same people. New promises to the fans (win games, hold prices) are judged when time is up. The Club screen's Ongoing card shows promises and unfinished stories.
 - Variety and balance (Stage 6.7): 72 events in all. On the default Normal story pace a season brings about 49 decisions (about 1.3 a week, 38 different events on average, a few quiet weeks); Calm is about 0.6 a week and Busy about 1.5 (Busy lets 4 events wait at once, Calm and Normal 3). Rival fans post their own lines for each result, and fan posts rarely repeat within a few weeks.
+- Stage 6 close-out: bids you asked for stand outside the transfer window; pre-season promises start counting at the first match week, and promises still running at the season end are judged on the share of time that passed; follow-ups are dropped when the sponsor or head coach they were about has changed; a poached head coach joins the rival. Event conditions `flagWeeks` and `inBreach`, the `unflag` effect, and the `{theStadium}` and `{aPos}` text fills were added. Details in `docs/STAGE_6_EVENTS.md`.
 
 ---
 

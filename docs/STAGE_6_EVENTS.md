@@ -251,6 +251,30 @@ Normal now sits in the middle of the owner's "1 to 2 a week" (it was 1.00 before
 
 **Tests.** `tests/story.test.ts` now checks a Normal season brings at least 25 decisions, at least 20 different events, no event more than 8% of them, 1 to 2 decisions a week and at least 9 kinds of visitor. `tests/news.test.ts` checks fewer than 5% of fan posts repeat one of the last 12.
 
+### Close-out review (2026-10-18)
+
+Three reviewers read the story layer (sim, news text, screens) before Stage 7. Every finding was checked first, then fixed, and `tests/storyFixes.test.ts` keeps them fixed.
+
+**Story logic.**
+- **Bids you asked for** (accepting a transfer request, listing a player) now stand outside the transfer window and can be accepted then. Before, they were wiped the next week and could not be accepted.
+- **Promises in pre-season** ("he'll get games", "we'll win 3 in 6") now start counting at the first match week, not during pre-season when no games are played.
+- **Promises at the season end** are judged on the share of time that had passed, so a promise made in the last weeks no longer carries into next season against a different squad. The fan protest no longer starts after week 26.
+- **The lenders' visit** only comes while a lenders' deadline is running.
+- **Follow-ups keep their people.** A sponsor-scandal follow-up is dropped if you have changed sponsor since, and a coach follow-up if you have a different head coach.
+- **A poached head coach** now joins the club that poached him (their old coach goes to the free pool). Before, he simply vanished.
+- **Loose ends.** Four new everyday events pick up choices that used to lead nowhere: the council favour and the council's reminder (from the parking promise), the council paying you back (or not) for stalling, and a ticket-price review the pre-season after you raised prices. Two new conditions (`flagWeeks`: a choice was made at least N weeks ago; `inBreach`: a lenders' deadline is running) and one new effect (`unflag`) make them work.
+- **Free agents** are capped at 90 (the best by rating stay). The pool used to grow every season, slowing saves.
+
+**Text.**
+- The press conference after the final is now closed at the off-season instead of staying open into the next season.
+- "the The Foundry" is gone: templates use `{theStadium}`, which adds "the" only when the name lacks it.
+- "has a AM without a club" is now "has an attacking midfielder without a club" (`{aPos}`).
+- "writes their name" is now "writes his name".
+
+**Screens.**
+- A quick double tap could answer two event cards, two press questions or two deadline-day hours at once. A second tap within half a second of the first is now ignored, and "Shut the window" on deadline day asks you to tap again to confirm.
+- The News tab showed last week's paper after a week was played. It now opens on the latest edition.
+
 ## Owner's decisions (2026-10-18)
 
 1. **Mood affects matches:** yes, up to about ±3% (a happy squad plays a little better, an unhappy one a little worse).

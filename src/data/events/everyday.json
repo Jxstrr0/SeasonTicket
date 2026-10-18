@@ -1,5 +1,5 @@
 {
-  "_about": "Everyday events (Stage 6.1). Format in docs/STAGE_6_EVENTS.md. Text fields fill {player}, {first}, {club}, {short}, {city}, {stadium}, {coach}, {assistant}, {person}, {amount}, {half}, {double}, {sponsor} and {opponent}. Effects: cash (x amount, with line), fans, mood (the player), squad, press, goodwill, flag, price (ticket price share), promise, later.",
+  "_about": "Everyday events (Stage 6.1). Format in docs/STAGE_6_EVENTS.md. Text fields fill {player}, {first}, {club}, {short}, {city}, {stadium} {theStadium} (\"the Riverside\", \"The Foundry\"), {coach}, {assistant}, {person}, {amount}, {half}, {double}, {sponsor} and {opponent}. Effects: cash (x amount, with line), fans, mood (the player), squad, press, goodwill, flag, price (ticket price share), promise, later.",
   "events": [
     {
       "id": "fringe-minutes",
@@ -262,7 +262,7 @@
       "text": "{person} turns 100 this month and has had a season ticket at {stadium} for 71 years. Their grandchildren ask if the club could do something special.",
       "staff": "shirt",
       "choices": [
-        { "id": "lead", "label": "Invite them to lead the team out", "hint": "Free. A moment everyone will remember.", "result": "{person} walks out to a standing ovation. Not a dry eye in the ground.", "news": "Oldest fan leads {us} out|At the {stadium}, a lifelong supporter walked out with the captain. Not a dry eye.", "effects": [{ "fans": 0.03 }, { "press": 0.04 }, { "squad": 0.02 }] },
+        { "id": "lead", "label": "Invite them to lead the team out", "hint": "Free. A moment everyone will remember.", "result": "{person} walks out to a standing ovation. Not a dry eye in the ground.", "news": "Oldest fan leads {us} out|At {theStadium}, a lifelong supporter walked out with the captain. Not a dry eye.", "effects": [{ "fans": 0.03 }, { "press": 0.04 }, { "squad": 0.02 }] },
         { "id": "shirt", "label": "Send a signed shirt", "hint": "Free. A kind gesture.", "result": "The shirt is framed above {person}'s favourite chair.", "effects": [{ "fans": 0.01 }] },
         { "id": "none", "label": "Send a card", "hint": "The bare minimum.", "result": "A nice card. The grandchildren had hoped for more.", "effects": [] }
       ]
@@ -292,9 +292,69 @@
       "text": "{person}, who played 400 games for the club, is retiring from coaching. Their family asks if {stadium} could host a testimonial match, with the proceeds going to the club's youth foundation.",
       "staff": "host",
       "choices": [
-        { "id": "host", "label": "Host it and cover the costs", "hint": "Costs {amount}. The fans will love it.", "result": "Twenty thousand turn up. Old heroes, slow legs, big cheers.", "news": "{us} host a testimonial for a club great|Old faces back at the {stadium} for one more game, and a full house.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.04 }, { "press": 0.03 }] },
+        { "id": "host", "label": "Host it and cover the costs", "hint": "Costs {amount}. The fans will love it.", "result": "Twenty thousand turn up. Old heroes, slow legs, big cheers.", "news": "{us} host a testimonial for a club great|Old faces back at {theStadium} for one more game, and a full house.", "effects": [{ "cash": -1, "line": "matchday" }, { "fans": 0.04 }, { "press": 0.03 }] },
         { "id": "split", "label": "Host it, split the gate", "hint": "Costs nothing, earns nothing.", "result": "A good day out. Everyone breaks even.", "effects": [{ "fans": 0.02 }] },
         { "id": "no", "label": "The pitch needs rest", "hint": "Free. Old fans will grumble.", "result": "The match moves to the local park. The club gets no credit.", "effects": [{ "fans": -0.02 }, { "press": -0.02 }] }
+      ]
+    },
+    {
+      "id": "council-favour",
+      "role": "councillor",
+      "when": { "flag": "councilFriend", "flagWeeks": 6 },
+      "amount": 60000,
+      "weight": 1.2,
+      "maxPerSeason": 1,
+      "title": "The council returns a favour",
+      "text": "Councillor {person} hasn't forgotten the shuttle buses. \"There's {amount} in the town's sport fund with nobody's name on it. I'd like it to be yours.\"",
+      "staff": "take",
+      "choices": [
+        { "id": "take", "label": "Take the {amount}", "hint": "You get {amount}. The favour is repaid.", "result": "The money arrives with a handwritten note. Favours work both ways.", "effects": [{ "cash": 1, "line": "other" }, { "unflag": "councilFriend" }] },
+        { "id": "kids", "label": "Ask for it to go to the kids' teams", "hint": "No money for you. The city and the press will notice.", "result": "The youth league gets new goals and kits, with the club's name on them.", "news": "{us} pass council grant on to youth football|The money goes to new kits and goals for the town's children's league.", "effects": [{ "fans": 0.03 }, { "press": 0.03 }, { "unflag": "councilFriend" }] }
+      ]
+    },
+    {
+      "id": "council-reminder",
+      "role": "councillor",
+      "when": { "flag": "councilWaiting", "flagWeeks": 6 },
+      "amount": 80000,
+      "weight": 1.2,
+      "maxPerSeason": 1,
+      "title": "You said you'd look into the parking",
+      "text": "Councillor {person} is back, with photos of cars on pavements. \"You promised to look into it. Have you looked?\"",
+      "staff": "pay",
+      "choices": [
+        { "id": "pay", "label": "Pay for the shuttle buses now", "hint": "Costs {amount}. A promise kept, late.", "result": "\"Better late than never.\" The councillor almost smiles.", "effects": [{ "cash": -1, "line": "operations" }, { "press": 0.01 }, { "unflag": "councilWaiting" }, { "flag": "councilFriend" }] },
+        { "id": "stall", "label": "Say it's still being looked at", "hint": "Free. The council won't believe you twice.", "result": "Councillor {person} closes the folder slowly.", "effects": [{ "press": -0.02 }, { "unflag": "councilWaiting" }, { "flag": "councilAnnoyed" }] }
+      ]
+    },
+    {
+      "id": "council-payback",
+      "role": "councillor",
+      "when": { "phase": ["season"], "flag": "councilAnnoyed", "flagWeeks": 4, "homeNext": true },
+      "amount": 50000,
+      "weight": 1.2,
+      "maxPerSeason": 1,
+      "title": "The council wants a policing charge",
+      "text": "Councillor {person} has a letter. From now on, the club pays {amount} towards policing and street cleaning on match days, or one stand stays shut for a safety check on Saturday.",
+      "staff": "pay",
+      "choices": [
+        { "id": "pay", "label": "Pay the {amount}", "hint": "Costs {amount}. Peace with the council.", "result": "You pay. The letter goes in a drawer marked \"lessons\".", "effects": [{ "cash": -1, "line": "matchday" }, { "unflag": "councilAnnoyed" }] },
+        { "id": "shut", "label": "Refuse and let them shut the stand", "hint": "Free, but a smaller crowd at your next home match.", "result": "Tape across one stand on match day. The fans know whose fault it is, and it isn't the council's.", "news": "Stand shut at {theStadium} after council row|One part of the ground will be empty this weekend.", "effects": [{ "gate": -0.12 }, { "fans": -0.02 }, { "press": -0.02 }, { "unflag": "councilAnnoyed" }] }
+      ]
+    },
+    {
+      "id": "price-review",
+      "role": "fans",
+      "when": { "phase": ["preseason"], "flag": "priceReview", "flagWeeks": 2 },
+      "weight": 2,
+      "maxPerSeason": 1,
+      "title": "The summer price review you promised",
+      "text": "{person} from the {short} Supporters' Trust is back, holding your promise. \"It's summer. You said you'd review ticket prices. So: what did the review find?\"",
+      "staff": "freeze",
+      "choices": [
+        { "id": "cut", "label": "Cut prices by 10%", "hint": "Less money per ticket, a lot of goodwill.", "result": "The Trust's newsletter leads with your photo, and it's a nice one.", "news": "{us} cut prices after summer review|The owner kept a promise to the supporters' trust.", "effects": [{ "price": -0.1 }, { "fans": 0.04 }, { "press": 0.02 }, { "unflag": "priceReview" }] },
+        { "id": "freeze", "label": "Freeze prices for the season", "hint": "You can't raise ticket prices for 12 weeks.", "result": "\"A freeze. We can live with a freeze.\"", "effects": [{ "fans": 0.02 }, { "unflag": "priceReview" }, { "promise": "price", "weeks": 12, "kept": "Price freeze kept|The summer freeze held. The Trust says so in its newsletter.", "broken": "You broke the price freeze|You promised the Trust a freeze after the summer review. They have the minutes.", "news": "{short} owner breaks summer price freeze|The supporters' trust says it was promised no rises." }] },
+        { "id": "same", "label": "Say the review found nothing to change", "hint": "Free. The fans feel fobbed off.", "result": "{person} reads the one-page review twice and laughs.", "effects": [{ "fans": -0.05 }, { "press": -0.02 }, { "unflag": "priceReview" }] }
       ]
     }
   ]

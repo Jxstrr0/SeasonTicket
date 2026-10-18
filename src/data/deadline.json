@@ -1,5 +1,5 @@
 {
-  "_about": "Deadline-day text (Stage 6.6, src/sim/career/deadline.ts). Fills: {player} {first} {pos} {club} (the other club) {rival} (the club trying a hijack) {fee} {wage} {person} (the caller) {short} (your club) {hour}. Each list is drawn from at random. Callers' gender is never stated.",
+  "_about": "Deadline-day text (Stage 6.6, src/sim/career/deadline.ts). Fills: {player} {first} {pos} {aPos} (\"an attacking midfielder\") {club} (the other club) {rival} (the club trying a hijack) {fee} {wage} {person} (the caller) {short} (your club) {hour}. Each list is drawn from at random. Callers' gender is never stated.",
   "open": {
     "pre": "The pre-season window shuts tonight at 23:00. The war room is set up: phones charged, whiteboard wiped, coffee on. Take the calls yourself, or leave it to the staff.",
     "mid": "The mid-season window shuts tonight at 23:00. The war room is set up: phones charged, whiteboard wiped, coffee on. Take the calls yourself, or leave it to the staff."
@@ -38,9 +38,9 @@
   "freeAgent": {
     "title": ["An agent calls about {player}", "Free agent: {player}", "{player} is available"],
     "text": [
-      "{person}, an agent, has a {pos} without a club: {player}. No fee, {wage} a season, and he can be at the training ground tomorrow.",
+      "{person}, an agent, has {aPos} without a club: {player}. No fee, {wage} a season, and he can be at the training ground tomorrow.",
       "\"I've got just the player for you,\" says {person}. {player} ({pos}) is a free agent and wants {wage} a season.",
-      "{person} represents {player}, a {pos} who's been training alone for weeks. He's yours for {wage} a season."
+      "{person} represents {player}, {aPos} who's been training alone for weeks. He's yours for {wage} a season."
     ],
     "yes": "Sign him",
     "no": "No thanks",

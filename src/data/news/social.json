@@ -1,5 +1,5 @@
 {
-  "_about": "Social feed templates (Stage 6.2). Handles are built from parts; posts fill {us} {nick} {city} {stadium} {them} {score} {hero} {player} {to} {from} {abbr} {price}. Every name here is made up.",
+  "_about": "Social feed templates (Stage 6.2). Handles are built from parts; posts fill {us} {nick} {city} {stadium} {theStadium} (\"the Riverside\", \"The Foundry\") {them} {score} {hero} {player} {to} {from} {abbr} {price}. Every name here is made up.",
   "handles": {
     "start": ["", "the_", "real", "old", "proper", "mad", "true", "big", "loud", "", ""],
     "core": ["{city}", "{abbr}", "{nickWord}", "terrace", "northstand", "southend", "seasonticket", "matchday", "halftimepie", "awaydays", "kickoff", "bootroom", "touchline", "floodlight", "scarf", "turnstile"],
@@ -56,14 +56,14 @@
     ],
     "happy": [
       "Love being a {us} fan right now",
-      "The atmosphere at the {stadium} lately is something else",
+      "The atmosphere at {theStadium} lately is something else",
       "Whatever they're doing behind the scenes, keep doing it",
       "Up the {nickWord}. That's the post",
       "Dad would have loved this team. Wish he could see it",
       "Proper buzz around {city} this week",
       "Bought the new shirt. No regrets",
       "Haven't missed a game in years and this is the most fun I've had",
-      "Get the kids down to the {stadium}. This is a team worth watching",
+      "Get the kids down to {theStadium}. This is a team worth watching",
       "Feels like the club is going somewhere for once"
     ],
     "grumpy": [
@@ -75,14 +75,14 @@
       "My season ticket is costing me sleep",
       "Remember when we used to be good? Me neither, but still",
       "The owner should come and sit in the away end. See how it feels",
-      "Can't remember the last time I left the {stadium} smiling",
+      "Can't remember the last time I left {theStadium} smiling",
       "Patience is wearing thin in {city}"
     ],
     "chatter": [
       "Who's in the pub before the next game?",
-      "Ranking every half-time pie at the {stadium}. Thread",
+      "Ranking every half-time pie at {theStadium}. Thread",
       "Scarf drying on the radiator. Ready for the next one",
-      "Best seat in the {stadium}? Row F, by the tunnel. Fight me",
+      "Best seat in {theStadium}? Row F, by the tunnel. Fight me",
       "Season ticket renewal email came in. Already paid",
       "Anyone know if the club shop is open on Mondays?",
       "Took my nan to her first game. She booed the referee within ten minutes. Proud",
@@ -110,7 +110,7 @@
     ],
     "preseason": [
       "Counting down the days to kick-off",
-      "New season, new hope. Same old seat in the {stadium}",
+      "New season, new hope. Same old seat in {theStadium}",
       "This is our year. I say that every year. This is our year",
       "Pre-season friendlies mean nothing. Still nervous",
       "Got the fixture list on the fridge already",
@@ -153,7 +153,7 @@
     "Sources say {us} have asked about {player} at {from}. Watch this space"
   ],
   "odd": [
-    "The pies at the {stadium} were cold again. 2/10. Would eat again",
+    "The pies at {theStadium} were cold again. 2/10. Would eat again",
     "There was a pigeon on the crossbar for the whole first half. Best defender we've got",
     "Lost my glove in row K. If found, it's the left one. You'll know",
     "Mascot did a backflip at half time and nearly took out a steward. Ten out of ten",

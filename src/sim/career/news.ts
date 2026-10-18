@@ -12,7 +12,7 @@ import { matchesForWeek } from '../season';
 import type { MatchResult, ScheduledMatch, Team } from '../types';
 import { fairPrice } from './books';
 import type { Career, NewsItem, NewsKind, NewsState, NewsWire, PostKind, SocialPost } from './types';
-import { careerRng, money, playerName, squadOf, transferWindowOpen, userBooks, userTeam } from './util';
+import { careerRng, money, playerName, squadOf, theStadium, transferWindowOpen, userBooks, userTeam } from './util';
 
 const T = NEWS_TUNING;
 const W = T.weights;
@@ -214,6 +214,7 @@ function baseVars(career: Career): Vars {
     nickWord: t.nickname.replace(/^(the|les|la|le|los)\s+/i, ''),
     city: t.city,
     stadium: t.stadiumName,
+    theStadium: theStadium(t.stadiumName),
     abbr: t.abbr,
     cup: WORLD.league.playoffTrophy,
     shield: WORLD.league.tableTrophy,
