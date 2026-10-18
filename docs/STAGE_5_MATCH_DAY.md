@@ -96,15 +96,16 @@ Each step ends with a deploy and a short report.
   - The tape keeps the last 20 seconds of frames.
   - **Every goal** is replayed 3.2 seconds after it goes in. The replay has two slow-motion angles: the touchline at 0.55x, then behind the goal at 0.35x.
   - **Big chances** are also replayed, behind the goal at 0.5x. A big chance is a shot worth 0.25 xG or more that doesn't go in, or one that hits the woodwork.
-  - If a goal follows soon after a chance, the goal's replay covers both.
-  - **A replay holds the live match**, then it picks up where it stopped, so nothing is missed. A **Skip** button (top-right) ends it early.
+  - **Great saves** are replayed the same way, with the badge "Replay: save" (the owner asked for these). A great save stops a shot worth 0.1 xG or more, and the keeper had to cover 1.8 m or more from where he stood when it was hit, or move faster than 3.5 m/s over the ball's flight. On 20 test matches that was about 1.2 a match, out of about 6 saves.
+  - If a goal follows soon after a chance or save, the goal's replay covers both.
+  - **A replay holds the live match** (the owner chose this over replaying on top of live play), then it picks up where it stopped, so nothing is missed. A **Skip** button (top-right) ends it early.
   - Replays play in slow motion from the engine's frames, so the legs slow down too. Nothing is replayed in a penalty shootout.
   - In the replay viewer, a replay starts when the match is paused or stopped at the moment, too.
 - **Highlights option.** A Highlights button sits next to 3D on the live screen and the replay screen. With it on, the 2D pitch plays the match, and each big moment plays in 3D:
   - It starts 7 seconds before the moment, at real speed, on the owner's camera, and ends 1.5 seconds after.
   - A goal then gets one slow-motion take behind the goal. A big chance gets its replay too.
   - A moment is a goal, a saved shot, a shot off the woodwork, or any shot worth 0.13 xG or more.
-  - The badge reads "Highlight" for the real-speed part, then "Replay".
+  - The badge reads "Highlight" for the real-speed part, then "Replay", "Replay: goal" or "Replay: save".
   - **Why moments, not "danger":** the first design showed 3D whenever the ball was near a box. But the ball gets near a box about 100 times a match, so the screen flickered between 2D and 3D. Shots are the moments a TV highlights show uses.
 - **Measured** on one full match (seed `replay1`):
   - Full mode: 2 goals, both replayed within one engine step of going in, on two angles. There were no big chances in that match.

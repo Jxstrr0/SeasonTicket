@@ -1,12 +1,12 @@
 /**
- * What the 3D match replays, and when (Stage 5.3): goals and big chances again in slow
- * motion, and in highlights mode every big moment in 3D from its build-up while the 2D pitch
+ * What the 3D match replays, and when (Stage 5.3): goals, big chances and great saves again
+ * in slow motion, and in highlights mode every big moment in 3D from its build-up while the 2D pitch
  * plays the rest. Plain logic with no DOM or three.js, so it can be tested;
  * src/ui/career/match3d.ts does the drawing.
  *
  * Times are match ms as the 3D view shows them (behind the engine by the tape's lag).
  */
-import { ACT, CHANCE_POST, CHANCE_SAVED, type ActionCue } from '../../render/match/types';
+import { ACT, CHANCE_GREAT, CHANCE_POST, CHANCE_SAVED, type ActionCue } from '../../render/match/types';
 import type { CameraKey } from '../../render/match/cameras';
 import tuning from '../../data/tuning/match3d.json';
 
@@ -25,7 +25,8 @@ export interface Take {
 }
 
 export interface Replay {
-  kind: 'goal' | 'chance';
+  /** A save is a chance the keeper saved. */
+  kind: 'goal' | 'chance' | 'save';
   /** When it happened: the goal going in, or the shot being hit. */
   atMs: number;
   /** When the replay should start (as shown). */
@@ -56,11 +57,12 @@ export function replayFor(c: ActionCue, highlights: boolean): Replay | null {
     return { kind: 'goal', atMs: c.atMs, dueMs: c.atMs + R.goalAfter * 1000, takes: highlights ? [lead(c.atMs, end), ...slow] : slow };
   }
   if (c.kind !== ACT.CHANCE) return null;
-  const big = c.power >= R.bigChanceXg || (c.flag & CHANCE_POST) !== 0;
+  const big = c.power >= R.bigChanceXg || (c.flag & (CHANCE_POST | CHANCE_GREAT)) !== 0;
   const moment = big || (c.flag & CHANCE_SAVED) !== 0 || c.power >= R.shotXg;
   if (!big && !(highlights && moment)) return null;
   const slow = big ? takes(R.chance, c.atMs, end) : [];
-  return { kind: 'chance', atMs: c.atMs, dueMs: c.atMs + R.chanceAfter * 1000, takes: highlights ? [lead(c.atMs, end), ...slow] : slow };
+  const kind = (c.flag & CHANCE_SAVED) !== 0 ? 'save' : 'chance';
+  return { kind, atMs: c.atMs, dueMs: c.atMs + R.chanceAfter * 1000, takes: highlights ? [lead(c.atMs, end), ...slow] : slow };
 }
 
 export class Director {
@@ -82,10 +84,10 @@ export class Director {
       const r = replayFor(c, highlights);
       if (!r) continue;
       if (r.kind === 'goal') {
-        // The goal's replay shows the chances just before it.
+        // The goal's replay shows the chances and saves just before it.
         const from = Math.min(...r.takes.map((t) => t.from));
         for (let i = this.pending.length - 1; i >= 0; i--) {
-          if (this.pending[i].kind === 'chance' && this.pending[i].atMs >= from) this.pending.splice(i, 1);
+          if (this.pending[i].kind !== 'goal' && this.pending[i].atMs >= from) this.pending.splice(i, 1);
         }
       }
       this.pending.push(r);

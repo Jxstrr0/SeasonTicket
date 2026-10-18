@@ -287,7 +287,7 @@ export class Match3D {
 
   /** A highlight's run-up plays at real speed, then come the slow-motion replays. */
   private label(r: Replay, take: Take): void {
-    const text = take.rate >= 1 ? 'Highlight' : r.kind === 'goal' ? 'Replay: goal' : 'Replay';
+    const text = take.rate >= 1 ? 'Highlight' : r.kind === 'goal' ? 'Replay: goal' : r.kind === 'save' ? 'Replay: save' : 'Replay';
     this.badge.querySelector('.m3d-badge')!.textContent = text;
   }
 

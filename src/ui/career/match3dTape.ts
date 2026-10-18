@@ -6,7 +6,7 @@
  * throws, and when the contact is. Cues are found by comparing the engine's state from one
  * step to the next, so the sim needs no hooks for them.
  */
-import { ACT, CHANCE_POST, CHANCE_SAVED, type ActionCue, type MatchFrame3D } from '../../render/match/types';
+import { ACT, CHANCE_GREAT, CHANCE_POST, CHANCE_SAVED, type ActionCue, type MatchFrame3D } from '../../render/match/types';
 import {
   BALL_DEAD, BALL_HELD, KICK_SHOT, LENGTH, PSTATS, PS_TACKLES, SHOT_VALUES, SP_THROW, type SpatialMatch,
 } from '../../sim/spatial/state';
@@ -269,7 +269,8 @@ export class MatchTape {
     for (let s = this.shots; s < m.shotLog.length; s++) {
       const rec = m.shotLog[s];
       if (rec.outcome === 'goal') continue;
-      const how = rec.outcome === 'post' ? CHANCE_POST : rec.outcome === 'saved' ? CHANCE_SAVED : 0;
+      let how = rec.outcome === 'post' ? CHANCE_POST : rec.outcome === 'saved' ? CHANCE_SAVED : 0;
+      if (how === CHANCE_SAVED && this.greatSave(m, rec.side, rec.ms, rec.xg)) how += CHANCE_GREAT;
       this.cue(ACT.CHANCE, -1, t, rec.x, rec.y, 0, Math.min(1, rec.xg), rec.side + how);
     }
 
@@ -279,6 +280,25 @@ export class MatchTape {
       const at = rec.scorer >= 0 ? m.at[rec.scorer] : -1;
       this.cue(ACT.GOAL, at, t, b.x, b.y, 0, 1, rec.side + (rec.ownGoal ? 2 : 0));
     }
+  }
+
+  /**
+   * Whether a save of a shot hit at `ms` is a great one: a real chance that the keeper only
+   * reached by going a long way, or quickly, from where he stood as it was hit.
+   */
+  private greatSave(m: SpatialMatch, side: number, ms: number, xg: number): boolean {
+    const R = tuning.replays;
+    if (xg < R.greatSaveXg) return false;
+    const k = (1 - side) * 11;
+    // The save's dive was planned as the shot was hit, just before this.
+    let dive: ActionCue | null = null;
+    for (let i = this.cues.length - 1; i >= 0 && !dive; i--) {
+      const c = this.cues[i];
+      if (c.kind === ACT.DIVE && c.player === k && c.atMs > ms) dive = c;
+    }
+    if (!dive) return false;
+    const reach = Math.hypot(dive.x - m.px[k], dive.y - m.py[k]);
+    return reach >= R.greatReach || reach / ((dive.atMs - ms) / 1000) >= R.greatSpeed;
   }
 
   /** A dive cue for keeper p close to time t, if there is one. */

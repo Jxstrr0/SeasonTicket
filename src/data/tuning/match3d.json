@@ -103,11 +103,14 @@
     "throwLiftMs": 450
   },
   "replays": {
-    "_about": "Stage 5.3: automatic replays in 3D. keepS is how much of the match the tape keeps (seconds). A goal is replayed goalAfter seconds after it goes in (as shown), a big chance chanceAfter seconds after the shot: a shot that does not go in with an xG of bigChanceXg or more, or hits the woodwork. Each take plays from fromS to toS seconds around the moment at rate times real speed, on a camera (side or goal, at the end the shot went to). The live match waits while a replay plays. If the screen stops being drawn (the match is paused), a waiting replay starts after idleMs.",
+    "_about": "Stage 5.3: automatic replays in 3D. keepS is how much of the match the tape keeps (seconds). A goal is replayed goalAfter seconds after it goes in (as shown), a big chance chanceAfter seconds after the shot: a shot that does not go in with an xG of bigChanceXg or more, or hits the woodwork, or a great save: a shot of greatSaveXg or more that the keeper reached only by going greatReach metres or more, or faster than greatSpeed metres per second over the ball's flight. Each take plays from fromS to toS seconds around the moment at rate times real speed, on a camera (side or goal, at the end the shot went to). The live match waits while a replay plays. If the screen stops being drawn (the match is paused), a waiting replay starts after idleMs.",
     "keepS": 20,
     "goalAfter": 3.2,
     "chanceAfter": 3,
     "bigChanceXg": 0.25,
+    "greatSaveXg": 0.1,
+    "greatReach": 1.8,
+    "greatSpeed": 3.5,
     "idleMs": 400,
     "goal": [
       { "camera": "side", "fromS": -6, "toS": 1, "rate": 0.55 },
