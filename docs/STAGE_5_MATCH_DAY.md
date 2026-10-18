@@ -111,6 +111,29 @@ Each step ends with a deploy and a short report.
   - Full mode: 2 goals, both replayed within one engine step of going in, on two angles. There were no big chances in that match.
   - Highlights mode: 9 moments, about 97 seconds of 3D in total.
 
+## What 5.4 shipped
+
+- **Files:**
+  - `src/render/match/marks.ts` paints the shape on the grass and the ring under a tapped player.
+  - `src/ui/career/match3d.ts` works out the lines (`shapeRows`), draws the Shape button and the player card, and turns a tap into a player.
+  - `src/ui/views/career/live.ts` has the full-screen layout; the styles are in `src/ui/base.css`.
+  - `ratingSoFar` in `src/sim/match/ratings.ts` gives a player's rating at any point in the match, worked out the same way as the full-time one.
+  - Tuning is in the `overlay` block of `src/data/tuning/match3d.json`.
+- **Shape.** A Shape button sits next to the camera buttons. With it on, the owner's team has its lines painted on the grass in gold:
+  - Each line of the formation is joined player to player, left to right as they stand, so the lines bend and stretch as the team moves.
+  - The back line also runs the width of the pitch at its players' depth, and a dashed line shows the depth the team is aiming its back line for (it moves with the Defensive line setting and with play).
+  - The lines are the shape the team **defends** in, from the engine's own depths: a 4-3-3 draws 4-5-1 (the wingers drop in beside the midfield), 3-5-2 and 3-4-3 draw a back five, and 4-4-2, 4-2-3-1, 5-3-2 and 4-1-4-1 draw as named. A sent-off player drops out.
+  - The lines update as soon as the engine moves on, so a formation change shows once play restarts. They are off during replays. The choice is remembered per device (off at first).
+- **Tap a player** (either side) for his card, top-left: name, kit colour, position and overall, energy, his rating so far, and goals, assists, bookings or an injury. A ring marks him on the grass. The card refreshes every second; ✕ closes it.
+  - On the owner's own players the card has **Take him off**, which pauses and opens the subs panel with him already picked, so only the player coming on is left to choose.
+  - In the replay viewer the card shows the full-time rating.
+  - A tap picks the player drawn nearest it, measured along his whole body on screen, within 28 px.
+- **Full screen.** A Full screen button on the live screen lays the match (2D or 3D) over the whole screen:
+  - The score sits in a pill at the top; Play/Pause, speed (one button, tap for the next speed), Subs, Tactics and Exit stand down the right edge.
+  - Subs and Tactics open in a drawer over the right half of the pitch, the same panels as the normal screen. The match pauses while it is open.
+  - Phones that allow it also hide the browser's bars (Android Chrome does; iPhone Safari does not, and the layout fills the page there anyway). The choice is remembered per device (off at first).
+- **Fix:** the grass in the stadium model is raised 10 cm over the ground, so since 5.1 the players, the ball and the soft shadows under them stood 10 cm into it (the shadows were hidden). Everything on the pitch now stands on the grass.
+
 ## Budgets
 
 These target a mid-range phone (about a 2022 Android) at Medium.
@@ -141,4 +164,5 @@ These target a mid-range phone (about a 2022 Android) at Medium.
 
 - **Kicks, touches, tackles and dives** are approximated: the moves are procedural bone bends on top of the running clips, not captured animations. Celebrations are arm and body poses on top of the engine's own runs, not set-piece celebrations such as knee slides.
 - **The body is one shared build.** Height and build don't vary by player yet.
-- **Shirt numbers and names** come later in step 5.4. The 2D view and the tap card will show who's who.
+- **Shirt numbers and names** are not painted on the kits. The tap card (step 5.4) and the 2D view show who's who.
+- **The shape overlay** draws the lines the team defends in, even while it attacks; in possession the same groups are joined where the players stand.

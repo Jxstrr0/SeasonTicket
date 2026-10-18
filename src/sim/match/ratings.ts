@@ -4,7 +4,7 @@
  */
 import { MATCH_TUNING } from '../data';
 import { powInt } from '../spatial/det';
-import type { Side } from '../types';
+import type { PlayerMatchStats, Side } from '../types';
 import { otherSide, scoreOf, sideState, type MatchContext, type MatchState } from './state';
 import { unitOfPosition } from './strength';
 
@@ -13,24 +13,37 @@ const R = MATCH_TUNING.rating;
 export function assignRatings(state: MatchState, ctx: MatchContext, winner: Side | null): void {
   const totalMinutes = Math.max(1, longestAppearance(state));
   for (const side of ['home', 'away'] as const) {
-    const S = sideState(state, side);
-    const conceded = scoreOf(state, otherSide(side));
-    const resultBonus = winner === null ? 0 : winner === side ? R.win : R.loss;
-    for (const stats of Object.values(S.playerStats)) {
-      const player = ctx.players[stats.playerId];
-      const unit = unitOfPosition(player.position);
-      const share = stats.minutes / totalMinutes;
-      let rating = R.base;
-      rating += stats.goals * R.goal + stats.assists * R.assist + stats.xg * R.xg;
-      rating += stats.keyPasses * R.keyPass + stats.shotsOnTarget * R.shotOnTarget + stats.tackles * R.tackle + stats.saves * R.save;
-      rating += stats.yellowCards * R.yellow + stats.redCards * R.red;
-      rating += conceded * share * R.concededByUnit[unit];
-      if (conceded === 0 && stats.minutes >= R.cleanSheetMinMinutes) rating += R.cleanSheetByUnit[unit];
-      rating += penaltyAdjustment(state, stats.playerId);
-      rating += resultBonus * share;
-      stats.rating = round(Math.min(R.max, Math.max(R.min, rating)));
-    }
+    for (const stats of Object.values(sideState(state, side).playerStats)) stats.rating = rate(state, ctx, side, stats, totalMinutes, winner);
   }
+}
+
+/** A player's rating if the match ended as it stands (the live match's player card), or null if he has not played. */
+export function ratingSoFar(state: MatchState, ctx: MatchContext, playerId: string): number | null {
+  for (const side of ['home', 'away'] as const) {
+    const stats = sideState(state, side).playerStats[playerId];
+    if (!stats) continue;
+    const lead = scoreOf(state, side) - scoreOf(state, otherSide(side));
+    const winner = lead > 0 ? side : lead < 0 ? otherSide(side) : null;
+    return rate(state, ctx, side, stats, Math.max(1, longestAppearance(state)), winner);
+  }
+  return null;
+}
+
+function rate(state: MatchState, ctx: MatchContext, side: Side, stats: PlayerMatchStats, totalMinutes: number, winner: Side | null): number {
+  const player = ctx.players[stats.playerId];
+  const unit = unitOfPosition(player.position);
+  const conceded = scoreOf(state, otherSide(side));
+  const resultBonus = winner === null ? 0 : winner === side ? R.win : R.loss;
+  const share = stats.minutes / totalMinutes;
+  let rating = R.base;
+  rating += stats.goals * R.goal + stats.assists * R.assist + stats.xg * R.xg;
+  rating += stats.keyPasses * R.keyPass + stats.shotsOnTarget * R.shotOnTarget + stats.tackles * R.tackle + stats.saves * R.save;
+  rating += stats.yellowCards * R.yellow + stats.redCards * R.red;
+  rating += conceded * share * R.concededByUnit[unit];
+  if (conceded === 0 && stats.minutes >= R.cleanSheetMinMinutes) rating += R.cleanSheetByUnit[unit];
+  rating += penaltyAdjustment(state, stats.playerId);
+  rating += resultBonus * share;
+  return round(Math.min(R.max, Math.max(R.min, rating)));
 }
 
 function penaltyAdjustment(state: MatchState, playerId: string): number {

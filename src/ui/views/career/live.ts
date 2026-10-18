@@ -1,7 +1,8 @@
 /**
  * The live match: score and clock, the 2D pitch (src/ui/career/liveHost.ts
  * fills its slot), play/pause and speed, the pause banner for big moments,
- * and the subs and tactics panels. Everything here reads
+ * and the subs and tactics panels, or all of it laid over a full-screen pitch.
+ * Everything here reads
  * career.liveMatch; the owner's changes go through src/game/matchday.ts.
  */
 import type { Career } from '../../../sim/career';
@@ -86,6 +87,7 @@ function renderControls(career: Career, ui: UiState, state: MatchState): string 
     <button type="button" class="${cls('btn-secondary', live.pitch && 'on')}" data-action="live-pitch" aria-pressed="${live.pitch}">Pitch</button>
     ${live.pitch && ui.quality !== 'off' && !ui.match3dFailed ? `<button type="button" class="${cls('btn-secondary', ui.match3d && 'on')}" data-action="match-3d" aria-pressed="${ui.match3d}">3D</button>` : ''}
     ${live.pitch && ui.quality !== 'off' && !ui.match3dFailed && ui.match3d ? `<button type="button" class="${cls('btn-secondary', ui.highlights && 'on')}" data-action="match-highlights" aria-pressed="${ui.highlights}" aria-label="Highlights: 3D for the big moments only">Highlights</button>` : ''}
+    ${live.pitch ? `<button type="button" class="btn-secondary" data-action="live-full" aria-label="Full screen: the match fills the screen">Full screen</button>` : ''}
     ${coachToggle}
     ${confirmButton(ui, 'live-skip', 'end', 'Skip to the end')}
     <button type="button" class="btn-secondary" data-action="live-leave">Office</button>
@@ -153,12 +155,67 @@ function renderEvents(career: Career, ui: UiState, state: MatchState): string {
   </section>`;
 }
 
+/** The score as a small pill over the full-screen pitch. */
+function renderScorePill(career: Career, state: MatchState): string {
+  const league = career.season.league;
+  const home = team(league, state.setup.homeId);
+  const away = team(league, state.setup.awayId);
+  const pens = state.shootout ? ` <span class="small">(${state.shootout.home}-${state.shootout.away} pens)</span>` : '';
+  return `<div class="lf-score" role="status" aria-label="Score">
+    ${kit(home)}<span class="lf-short">${esc(home.shortName)}</span>
+    <strong class="lf-goals">${state.homeScore}-${state.awayScore}</strong>${pens}
+    <span class="lf-short">${esc(away.shortName)}</span>${kit(away)}
+  </div>`;
+}
+
+/**
+ * Full screen (Stage 5.4): the pitch (2D or 3D) fills the screen. The match buttons stand
+ * down the right edge, and the subs and tactics open in a drawer over the pitch.
+ */
+function renderFull(career: Career, ui: UiState, state: MatchState, S: SideState): string {
+  const live = ui.live;
+  const panel = state.finished ? 'none' : live.panel;
+  const left = MATCH_TUNING.squad.maxSubs - S.subsUsed;
+  const locked = state.finished || state.period === 'shootout';
+  const i = PITCH_SPEEDS.findIndex((s) => s.x === live.pitchSpeed);
+  const next = PITCH_SPEEDS[(i + 1) % PITCH_SPEEDS.length];
+  const now = PITCH_SPEEDS[Math.max(0, i)];
+  const pause = live.pause && !state.finished
+    ? `<div class="pause-banner lf-pause" role="status"><strong>${esc(live.pause)}</strong><span class="muted small">Make a change or play on.</span></div>`
+    : '';
+  const buttons = state.finished
+    ? `<section class="card notice lf-ft"><p><strong>Full time.</strong> Head back to the office for the report.</p>
+        <div class="button-row"><button type="button" data-action="live-continue">Continue</button>
+        <button type="button" class="btn-secondary" data-action="live-full">Exit full screen</button></div></section>`
+    : `<nav class="lf-buttons" aria-label="Match">
+        <button type="button" class="play-btn" data-action="${live.running ? 'live-pause' : 'live-play'}">${live.running ? 'Pause' : 'Play'}</button>
+        <button type="button" class="btn-secondary" data-action="live-pitch-speed" data-x="${next.x}" aria-label="Speed ${esc(now.label)}: tap for ${esc(next.label)}">${esc(now.label)}</button>
+        <button type="button" class="btn-secondary" data-action="live-panel" data-panel="subs"${locked ? ' disabled' : ''}>Subs · ${left}</button>
+        <button type="button" class="btn-secondary" data-action="live-panel" data-panel="tactics"${locked ? ' disabled' : ''}>Tactics</button>
+        <button type="button" class="btn-secondary" data-action="live-full" aria-label="Exit full screen">Exit</button>
+      </nav>`;
+  const drawer = panel === 'none'
+    ? ''
+    : `<aside class="lf-drawer" aria-label="${panel === 'subs' ? 'Substitutions' : 'Tactics'}">
+        <div class="lf-drawer-head">${renderPanelTabs(ui, state, S)}
+          <button type="button" class="btn-secondary lf-close" data-action="live-panel" data-panel="none" aria-label="Close and go back to the match">✕</button></div>
+        ${panel === 'subs' ? renderSubs(career, ui, S) : renderLiveTactics(career, ui, state, S)}
+      </aside>`;
+  return `<main class="shell live has-pitch is-full${panel === 'none' ? '' : ' drawer-open'}">
+    <div class="lf-stage"><div data-slot="live-2d"></div></div>
+    <div class="lf-top">${renderScorePill(career, state)}${pause}</div>
+    ${buttons}
+    ${drawer}
+  </main>`;
+}
+
 export function renderLive(career: Career, ui: UiState): string {
   const state = career.liveMatch;
   if (!state) {
     return `<main class="shell"><section class="card"><p class="muted">No match is on.</p><button type="button" data-action="live-continue">Back to the office</button></section></main>`;
   }
   const S = userSide(career, state) === 'home' ? state.home : state.away;
+  if (ui.live.pitch && ui.live.full) return renderFull(career, ui, state, S);
   const panel = state.finished ? 'none' : ui.live.panel;
   const rest = `${renderControls(career, ui, state)}
     ${state.finished ? '' : renderPanelTabs(ui, state, S)}

@@ -107,6 +107,19 @@ export interface MatchFrame3D {
   cues: ActionCue[];
 }
 
+/**
+ * The tactics overlay (Stage 5.4): one team's shape, painted on the grass under the players.
+ * The view joins each line of the formation player to player, left to right as they stand.
+ */
+export interface ShapeOverlay3D {
+  /** The team's colour on the grass. */
+  colour: string;
+  /** Player indices in each line of the formation, back line first. */
+  rows: number[][];
+  /** Pitch x (metres) the back line is aiming for, or null. */
+  aimX: number | null;
+}
+
 export interface KitColours {
   shirt: string;
   /** Collar and cuffs. */

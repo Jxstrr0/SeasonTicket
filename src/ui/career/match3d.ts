@@ -16,15 +16,17 @@
  */
 import type { QualityTier } from '../../render/quality';
 import { CAMERA_PRESETS, type CameraKey } from '../../render/match/cameras';
-import type { MatchFrame3D, MatchScene3D, MatchViewHandle, KitColours } from '../../render/match/view';
+import type { MatchFrame3D, MatchScene3D, MatchViewHandle, KitColours, ShapeOverlay3D } from '../../render/match/view';
 import type { StadiumSnapshot } from '../../render/stadium/types';
-import type { SpatialMatch } from '../../sim/spatial/state';
-import { PERIOD, PERSONS, personOf, type SpatialSetup } from '../../sim/spatial/types';
+import { teamShapeInfo } from '../../sim/spatial/engine';
+import { LENGTH, type SpatialMatch } from '../../sim/spatial/state';
+import { PERIOD, PERSONS, personOf, whoSide, type Side, type SpatialSetup } from '../../sim/spatial/types';
 import tuning from '../../data/tuning/match3d.json';
+import { esc } from '../html';
 import { KEEPER_FILL, matchKits } from '../pitch2d';
 import { MatchTape } from './match3dTape';
 import { Director, type Replay, type Take } from './match3dDirector';
-import { loadMatchCamera, storeMatchCamera } from './state';
+import { loadMatchCamera, loadMatchShape, storeMatchCamera, storeMatchShape } from './state';
 
 const CAMERA_LABELS: Record<string, { text: string; label: string }> = {
   broadcast: { text: 'TV', label: 'Broadcast camera' },
@@ -41,6 +43,20 @@ interface Playing {
   started: boolean;
 }
 
+/** What the card shows for a player tapped in the 3D view (Stage 5.4). */
+export interface PlayerCard {
+  name: string;
+  /** Position and the like, already worded. */
+  detail: string;
+  /** 0 to 1, or null when not known. */
+  energy: number | null;
+  rating: number | null;
+  /** Goals, cards and the like, already worded ('' for none). */
+  notes: string;
+  /** Set when the owner can take him off: his player id. */
+  subId?: string;
+}
+
 /** What a host is asked to show. `tier` null means 3D is not offered (Graphics: Off). */
 export interface ThreeChoice {
   want: boolean;
@@ -49,6 +65,10 @@ export interface ThreeChoice {
   tier: QualityTier | null;
   /** The home club's ground for this match. */
   ground: () => StadiumSnapshot;
+  /** The owner's side, whose shape the tactics overlay draws. */
+  side: Side;
+  /** The card for the player with person code `who`, or null for none. */
+  card?: (who: number) => PlayerCard | null;
 }
 
 type Status = 'idle' | 'loading' | 'ready' | 'failed';
@@ -72,6 +92,33 @@ export function sceneOf(setup: SpatialSetup, ground: StadiumSnapshot): MatchScen
   return { ...sceneKits(setup), people, ground, night: false };
 }
 
+/**
+ * The lines of a side's formation as player indices, back line first: the outfield spots on
+ * the pitch in order of their depth without the ball, with a new line wherever the next spot
+ * sits more than rowGap deeper. So the lines are the shape the team defends in: a 4-3-3
+ * draws 4-5-1 (the wingers drop in beside the midfield) and a 3-5-2 draws 5-3-2.
+ */
+export function shapeRows(m: SpatialMatch, side: Side): number[][] {
+  const t = m.teams[side];
+  const order: number[] = [];
+  for (let s = 1; s < 11; s++) if (m.on[side * 11 + s]) order.push(s);
+  order.sort((a, b) => t.defU[a] - t.defU[b] || a - b);
+  const rows: number[][] = [];
+  let prev = -Infinity;
+  for (const s of order) {
+    if (t.defU[s] - prev > tuning.overlay.rowGap) rows.push([]);
+    prev = t.defU[s];
+    rows[rows.length - 1].push(side * 11 + s);
+  }
+  return rows;
+}
+
+/** The tactics overlay for `side`: its lines, and where its back line is aiming. */
+export function shapeOverlay(m: SpatialMatch, side: Side): ShapeOverlay3D {
+  const aim = teamShapeInfo(m, side).targetLine;
+  return { colour: tuning.overlay.colour, rows: shapeRows(m, side), aimX: side === 0 ? aim : LENGTH - aim };
+}
+
 export class Match3D {
   /** Laid over the 2D canvas inside whichever host is showing. */
   private readonly el: HTMLDivElement;
@@ -89,7 +136,17 @@ export class Match3D {
   private readonly director = new Director();
   private readonly cams: HTMLElement;
   private readonly badge: HTMLElement;
+  private readonly shapeBtn: HTMLButtonElement;
+  private readonly card: HTMLElement;
   private camera: CameraKey;
+  /** The tactics overlay is on, and the engine step it was last worked out at. */
+  private shape: boolean;
+  private shapeStep = -1;
+  private choice: ThreeChoice | null = null;
+  private match: SpatialMatch | null = null;
+  /** Person code of the player whose card is open, or -1; and when the card was last filled. */
+  private picked = -1;
+  private cardAt = 0;
   private highlights = false;
   /** The 3D view is showing (in highlights mode only during a replay; otherwise 2D). */
   private visible = true;
@@ -125,12 +182,17 @@ export class Match3D {
     const saved = loadMatchCamera();
     this.camera = CAMERA_PRESETS.find((k) => k === saved) ?? 'broadcast';
     this.el.innerHTML = `<div class="match3d-stage"></div><p class="match3d-loading" hidden>Loading the ground…</p>
-      <div class="m3d-cams segmented" role="group" aria-label="Camera">${CAMERA_PRESETS.map((k) => `<button type="button" class="seg" data-cam="${k}" aria-label="${CAMERA_LABELS[k].label}">${CAMERA_LABELS[k].text}</button>`).join('')}</div>
+      <div class="m3d-bar"><div class="m3d-cams segmented" role="group" aria-label="Camera">${CAMERA_PRESETS.map((k) => `<button type="button" class="seg" data-cam="${k}" aria-label="${CAMERA_LABELS[k].label}">${CAMERA_LABELS[k].text}</button>`).join('')}</div>
+      <button type="button" class="m3d-shape" data-m3d="shape" aria-label="Shape: draw your team's lines on the grass">Shape</button></div>
+      <div class="m3d-card" hidden></div>
       <div class="m3d-replay" hidden><span class="m3d-badge" aria-live="polite">Replay</span><button type="button" class="btn-secondary" data-m3d="skip">Skip</button></div>`;
     this.stage = this.el.querySelector('.match3d-stage') as HTMLDivElement;
     this.loading = this.el.querySelector('.match3d-loading') as HTMLElement;
     this.cams = this.el.querySelector('.m3d-cams') as HTMLElement;
     this.badge = this.el.querySelector('.m3d-replay') as HTMLElement;
+    this.shapeBtn = this.el.querySelector('.m3d-shape') as HTMLButtonElement;
+    this.card = this.el.querySelector('.m3d-card') as HTMLElement;
+    this.shape = loadMatchShape();
     this.el.addEventListener('click', (e) => this.onClick(e));
     this.renderCams();
     // For checking the draw-call and frame-rate budgets from the browser console.
@@ -170,6 +232,7 @@ export class Match3D {
       this.tape.reset(m);
     }
     this.source = { setup: m.setup, ground: choice.ground };
+    this.choice = choice;
     if (choice.highlights !== this.highlights) {
       this.highlights = choice.highlights;
       this.cancel();
@@ -212,9 +275,15 @@ export class Match3D {
       this.movedAt = performance.now();
     }
     this.shootout = m.period >= PERIOD.SHOOTOUT;
+    this.match = m;
     const h = this.handle;
     if (!h || !this.ready) return false;
+    if (this.picked >= 0 && performance.now() - this.cardAt >= tuning.overlay.cardMs) this.renderCard();
     if (this.playing) return true;
+    if (this.shape && m.steps !== this.shapeStep) {
+      this.shapeStep = m.steps;
+      h.overlay(shapeOverlay(m, this.choice?.side ?? 0));
+    }
     const ms = MatchTape.shown(viewMs);
     this.director.scan(this.tape.cues, this.shootout, this.highlights);
     const r = this.director.due(ms, false);
@@ -276,6 +345,10 @@ export class Match3D {
 
   private start(r: Replay): void {
     this.playing = { r, take: 0, t: 0, started: false };
+    // The replays show the moment itself, without the overlay.
+    this.handle?.overlay(null);
+    this.shapeStep = -1;
+    this.shapeBtn.hidden = true;
     this.setVisible(true);
     this.badge.hidden = false;
     this.label(r, r.takes[0]);
@@ -297,6 +370,7 @@ export class Match3D {
     this.playing = null;
     this.badge.hidden = true;
     this.cams.hidden = false;
+    this.shapeBtn.hidden = false;
     if (!was || !this.handle) return;
     this.handle.setCamera(this.camera);
     if (this.highlights) this.setVisible(false);
@@ -358,10 +432,17 @@ export class Match3D {
   };
 
   private onClick(e: Event): void {
-    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-cam], [data-m3d]');
-    if (!el) return;
+    const target = e.target as HTMLElement;
+    const el = target.closest<HTMLElement>('[data-cam], [data-m3d]');
+    if (!el) {
+      // A tap on the grass picks the player nearest it (the card's own buttons belong to the app).
+      if (!target.closest('button, .m3d-card') && e instanceof MouseEvent) this.pickAt(e.clientX, e.clientY);
+      return;
+    }
     e.stopPropagation();
     if (el.dataset.m3d === 'skip') return this.stop(true);
+    if (el.dataset.m3d === 'shape') return this.toggleShape();
+    if (el.dataset.m3d === 'close') return this.setPicked(-1);
     const key = CAMERA_PRESETS.find((k) => k === el.dataset.cam);
     if (!key || key === this.camera) return;
     this.camera = key;
@@ -373,12 +454,64 @@ export class Match3D {
     this.renderCams();
   }
 
+  private toggleShape(): void {
+    this.shape = !this.shape;
+    storeMatchShape(this.shape);
+    this.shapeStep = -1;
+    if (!this.shape) this.handle?.overlay(null);
+    else if (this.match && !this.playing) {
+      this.shapeStep = this.match.steps;
+      this.handle?.overlay(shapeOverlay(this.match, this.choice?.side ?? 0));
+    }
+    this.renderCams();
+  }
+
+  // -------------------------------------------------------------------------
+  // The player card
+  // -------------------------------------------------------------------------
+
+  private pickAt(x: number, y: number): void {
+    const h = this.handle;
+    if (!h || !this.ready || !this.visible) return;
+    const i = h.pick(x, y);
+    this.setPicked(i >= 0 ? this.f.who[i] : -1);
+  }
+
+  private setPicked(who: number): void {
+    this.picked = who;
+    this.handle?.select(who);
+    this.renderCard();
+  }
+
+  private renderCard(): void {
+    this.cardAt = performance.now();
+    const c = this.picked >= 0 ? this.choice?.card?.(this.picked) ?? null : null;
+    if (!c || !this.source) {
+      this.card.hidden = true;
+      this.card.innerHTML = '';
+      return;
+    }
+    const kit = matchKits(this.source.setup)[whoSide(this.picked)];
+    const energy = c.energy === null ? '' : Math.round(c.energy * 100);
+    const band = c.energy === null ? '' : c.energy >= 0.75 ? 'good' : c.energy >= 0.55 ? 'ok' : 'low';
+    this.card.innerHTML = `<div class="m3d-card-head"><span class="m3d-swatch" style="--c:${esc(kit.fill)};--e:${esc(kit.edge)}"></span>
+      <strong class="m3d-card-name">${esc(c.name)}</strong>
+      <button type="button" class="m3d-close" data-m3d="close" aria-label="Close the player card">✕</button></div>
+      <div class="muted small">${esc(c.detail)}</div>
+      ${c.energy === null ? '' : `<div class="m3d-energy energy-${band}" role="img" aria-label="Energy ${energy}%"><span style="width:${energy}%"></span></div><div class="small">Energy ${energy}%</div>`}
+      <div class="small">${c.rating === null ? '' : `Rating <strong>${c.rating.toFixed(1)}</strong>`}${c.rating !== null && c.notes ? ' · ' : ''}${esc(c.notes)}</div>
+      ${c.subId ? `<button type="button" class="btn-secondary m3d-sub" data-action="live-sub-pick" data-id="${esc(c.subId)}">Take him off</button>` : ''}`;
+    this.card.hidden = false;
+  }
+
   private renderCams(): void {
     for (const b of this.cams.querySelectorAll<HTMLButtonElement>('[data-cam]')) {
       const on = b.dataset.cam === this.camera;
       b.classList.toggle('on', on);
       b.setAttribute('aria-pressed', String(on));
     }
+    this.shapeBtn.classList.toggle('on', this.shape);
+    this.shapeBtn.setAttribute('aria-pressed', String(this.shape));
   }
 
   private load(tier: QualityTier, setup: SpatialSetup, ground: () => StadiumSnapshot): void {
@@ -400,6 +533,8 @@ export class Match3D {
           onReady: () => {
             if (token !== this.token) return;
             this.handle?.setCamera(this.camera);
+            this.handle?.select(this.picked);
+            this.shapeStep = -1;
             this.status = 'ready';
             this.loading.hidden = true;
             this.mark();

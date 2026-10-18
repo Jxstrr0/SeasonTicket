@@ -74,6 +74,22 @@
     "ball": 0.5,
     "opacity": 0.42
   },
+  "overlay": {
+    "_about": "Stage 5.4: the tactics overlay painted on the grass. It is drawn in colour (the game's gold, so it never reads as a pitch marking or a kit). Each line of the formation is a ribbon width wide over a dark edge edge wide (so it reads on any grass), the back line also runs the width of the pitch, backWidth wide, and a dashed line dash long with gap between marks where the line is aiming. The lines are the shape the team defends in: the spots in order of their depth without the ball (0 is the back line, 1 the front of the block), with a new line wherever the next spot is more than rowGap deeper. A tap picks the player drawn within pickPx (CSS pixels) of it; the ring under him is ring metres across. The player card refreshes every cardMs.",
+    "width": 0.32,
+    "edge": 0.62,
+    "backWidth": 0.22,
+    "dash": 1.6,
+    "gap": 1.4,
+    "opacity": 0.92,
+    "edgeOpacity": 0.4,
+    "aimOpacity": 0.7,
+    "rowGap": 0.16,
+    "colour": "#f2c14e",
+    "pickPx": 28,
+    "ring": 1.7,
+    "cardMs": 1000
+  },
   "crowdCap": 9000,
   "actions": {
     "_about": "Stage 5.2: what the players do with the ball. The 3D view runs lagMs behind the engine so a leg can swing back before the ball leaves it. A touch with the ball headerFrom or higher is a header, chestFrom or higher a chest. A tackle from slideFrom or further from the ball is a slide. A keeper with the ball in his hands throws it when it leaves slower than keeperThrowBelow and flatter than loftedVz (upward speed), otherwise punts it. fullPower is the ball speed of a full-power strike. A dive starts no sooner than keeperReactMs after the shot is hit; a shot that beats him still gets a dive if no higher than diveHighest. diveMatchMs pairs a catch or parry with the dive planned for it. Times in ms.",

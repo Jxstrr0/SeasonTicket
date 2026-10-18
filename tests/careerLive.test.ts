@@ -4,7 +4,10 @@ import { C, advanceCareer, createCareer, finishLive, liveOf, startUserMatch, ste
 import { decodeSave, encodeSave, migrate } from '../src/game/save';
 import { liveSubstitute, liveTactics, userSide, userSideState } from '../src/game/matchday';
 import { fingerprint } from '../src/sim/spatial/engine';
-import { createMatch } from '../src/sim/match/engine';
+import { createMatch, finalizeMatch } from '../src/sim/match/engine';
+import { ratingSoFar } from '../src/sim/match/ratings';
+import { initialUi } from '../src/ui/career/state';
+import { renderLive } from '../src/ui/views/career/live';
 import { stepMinute } from './helpers/stage1/engine';
 import { matchContext } from '../src/sim/season';
 
@@ -126,5 +129,59 @@ describe('the live match on the spatial engine', () => {
     expect(team.passes).toBeGreaterThan(passesBefore);
     expect(result.playerStats[stayer].minutes).toBeGreaterThan(minutesBefore + 25);
     expect(result.playerStats[gone].minutes).toBe(S.playerStats[gone]?.minutes ?? 0);
+  });
+});
+
+describe('the live match screen (Stage 5.4)', () => {
+  it('rates players as the match goes, ending on the full-time rating', () => {
+    const career = kickedOff(37);
+    startUserMatch(career);
+    const live = liveOf(career)!;
+    for (let i = 0; i < 30; i++) stepLiveMinute(career);
+    const S = userSideState(career, career.liveMatch!);
+    const id = S.onPitch[5];
+    const r = ratingSoFar(career.liveMatch!, live.ctx, id);
+    expect(r).not.toBeNull();
+    expect(r!).toBeGreaterThanOrEqual(1);
+    expect(r!).toBeLessThanOrEqual(10);
+    expect(ratingSoFar(career.liveMatch!, live.ctx, 'nobody')).toBeNull();
+    while (!career.liveMatch!.finished) stepLiveMinute(career);
+    const state = career.liveMatch!;
+    const ids = [...Object.keys(state.home.playerStats), ...Object.keys(state.away.playerStats)];
+    const soFar = ids.map((p) => ratingSoFar(state, live.ctx, p));
+    const result = finalizeMatch(state, live.ctx);
+    expect(soFar).toEqual(ids.map((p) => result.playerStats[p].rating));
+  });
+
+  it('lays the match over the whole screen, with the subs and tactics in a drawer', () => {
+    const career = kickedOff(41);
+    startUserMatch(career);
+    const ui = initialUi();
+    ui.screen = 'live';
+    ui.live.pitch = true;
+    ui.live.full = false;
+    expect(renderLive(career, ui)).toContain('data-action="live-full"');
+    expect(renderLive(career, ui)).not.toContain('is-full');
+    ui.live.full = true;
+    let html = renderLive(career, ui);
+    expect(html).toContain('is-full');
+    expect(html).toContain('data-slot="live-2d"');
+    expect(html).toContain('data-panel="subs"');
+    expect(html).toContain('data-panel="tactics"');
+    expect(html).not.toContain('lf-drawer');
+    ui.live.panel = 'subs';
+    html = renderLive(career, ui);
+    expect(html).toContain('lf-drawer');
+    expect(html).toContain('data-action="live-sub-out"');
+    ui.live.panel = 'tactics';
+    expect(renderLive(career, ui)).toContain('data-action="set-formation"');
+    // The 2D-only text feed has no full screen.
+    ui.live.pitch = false;
+    expect(renderLive(career, ui)).not.toContain('is-full');
+    while (!career.liveMatch!.finished) stepLiveMinute(career);
+    ui.live.pitch = true;
+    html = renderLive(career, ui);
+    expect(html).toContain('data-action="live-continue"');
+    expect(html).not.toContain('lf-drawer');
   });
 });

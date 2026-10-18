@@ -107,6 +107,8 @@ export function partOf(obj: Object3D | null): StadiumPart | null {
 const SKIN = ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#ffdbac'];
 const DIAG = Math.SQRT1_2;
 /** Mesh names that cast shadows (everything receives them). */
+/** Height of the grass over the ground (the 3D match stands its players on it). */
+export const GRASS_Y = 0.1;
 const CASTS = new Set(['seats', 'wall', 'ribbon', 'glass', 'concourse', 'underside', 'facade', 'grass', 'roof', 'fascia', 'steel', 'crane', 'scaffold', 'dark', 'shopWall', 'kiosk', 'canopy']);
 const BOXES = tuning.boxes;
 
@@ -477,7 +479,7 @@ export function buildStadiumModel(tier: TierSettings, opts: StadiumModelOptions)
     B.get('bowl').quad([-END_FRONT, 0.05, SIDE_FRONT], [END_FRONT, 0.05, SIDE_FRONT], [END_FRONT, 0.05, -SIDE_FRONT], [-END_FRONT, 0.05, -SIDE_FRONT], [0, 1, 0]);
     const L = GRASS.length / 2;
     const W = GRASS.width / 2;
-    B.get('pitch').quad([-L, 0.1, W], [L, 0.1, W], [L, 0.1, -W], [-L, 0.1, -W], [0, 1, 0], [
+    B.get('pitch').quad([-L, GRASS_Y, W], [L, GRASS_Y, W], [L, GRASS_Y, -W], [-L, GRASS_Y, -W], [0, 1, 0], [
       [0, 0],
       [1, 0],
       [1, 1],
