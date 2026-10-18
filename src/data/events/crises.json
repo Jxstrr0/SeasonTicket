@@ -1,0 +1,605 @@
+{
+  "_about": "Crises and story chains (Stage 6.5). A crisis starts like any event; some choices start the next step a few weeks later with {\"next\": id, \"weeks\": n}, about the same player, person and club. Steps marked chainOnly are never drawn on their own. Extra effects: suspend (matches), listPlayer (a club bids at this share of his value), coachLeaves, gate (crowd share at your next home match), dropSponsor, delayBuild (weeks), grace (weeks before the lenders' next step), heal (weeks off every injury). Promises 'wins' (win target games in weeks) and 'price' (no ticket price rise for weeks) carry their own kept and broken text.",
+  "events": [
+    {
+      "id": "dressing-room-row",
+      "role": "coach",
+      "when": { "phase": ["season"], "weekMin": 5, "subject": "star" },
+      "maxPerSeason": 1,
+      "cooldown": 45,
+      "weight": 0.6,
+      "title": "Dressing-room row: {player}",
+      "text": "{coach} looks tired. \"{player} and half the back four had it out after training. Words, then a shove, then a water bottle. I've split them up, but the room has taken sides. How do you want it handled?\"",
+      "staff": "talk",
+      "choices": [
+        {
+          "id": "discipline",
+          "label": "Drop {first} for a match",
+          "hint": "He misses the next game. The squad sees the rules apply to stars too.",
+          "result": "{first} takes the news badly, but the rest of the squad nods along.",
+          "effects": [{ "suspend": 1 }, { "mood": -0.15 }, { "squad": 0.03 }]
+        },
+        {
+          "id": "talk",
+          "label": "Get them in a room to clear the air",
+          "hint": "Free. It might hold, or it might flare up again.",
+          "result": "Handshakes all round. Whether anyone meant them is another matter.",
+          "effects": [{ "squad": 0.01 }, { "next": "row-flares", "weeks": 3 }]
+        },
+        {
+          "id": "back",
+          "label": "Back {first} in public",
+          "hint": "He'll love you for it. The defenders won't.",
+          "result": "{first} is grateful. The back four have stopped talking to the coach.",
+          "effects": [{ "mood": 0.15 }, { "squad": -0.04 }]
+        }
+      ]
+    },
+    {
+      "id": "row-flares",
+      "role": "coach",
+      "when": { "chainOnly": true },
+      "title": "It's kicked off again with {player}",
+      "text": "\"So much for clearing the air,\" {coach} says. \"{first} and the defenders went at it again in the canteen. Someone has told the papers. I need a decision from you this time.\"",
+      "staff": "fine",
+      "amount": 30000,
+      "choices": [
+        {
+          "id": "sell",
+          "label": "Tell clubs {first} is available",
+          "hint": "A club will bid for him, below his value. The room calms down.",
+          "result": "Word goes out. The phone will ring soon enough.",
+          "effects": [{ "listPlayer": 0.85 }, { "mood": -0.2 }, { "squad": 0.04 }],
+          "news": "{player} on the market after {short} bust-up|The {short} star is available after a second row in a week, we understand."
+        },
+        {
+          "id": "fine",
+          "label": "Fine everyone involved",
+          "hint": "Brings in {amount} for the club's charity fund and a short peace.",
+          "result": "The fines go to the hospital ward. The players grumble, together, which is a start.",
+          "effects": [{ "squad": -0.01 }, { "mood": -0.05 }, { "press": 0.01 }]
+        },
+        {
+          "id": "retreat",
+          "label": "Take the squad away for two days",
+          "hint": "Costs {amount}. Expensive, but it might actually fix it.",
+          "result": "Two days of team-building by a lake. Somebody fell in. Everybody laughed. It worked.",
+          "effects": [{ "cash": -1, "line": "operations" }, { "squad": 0.06 }, { "mood": 0.05 }]
+        }
+      ]
+    },
+    {
+      "id": "transfer-request",
+      "role": "agent",
+      "when": { "phase": ["season", "preseason"], "subject": "unhappy" },
+      "maxPerSeason": 1,
+      "cooldown": 16,
+      "weight": 1.1,
+      "title": "{player} hands in a transfer request",
+      "text": "{player}'s agent slides a letter across the desk. \"He's not happy, and he wants out. We'd rather do this quietly, but we can do it loudly if we have to.\"",
+      "staff": "refuse",
+      "choices": [
+        {
+          "id": "accept",
+          "label": "Accept and let clubs know",
+          "hint": "A club will bid close to his value. He stops sulking.",
+          "result": "The agent smiles for the first time. \"Sensible. I'll make some calls.\"",
+          "effects": [{ "listPlayer": 0.95 }, { "mood": 0.15 }]
+        },
+        {
+          "id": "refuse",
+          "label": "Refuse: he's under contract",
+          "hint": "He stays, unhappy. This may not be the end of it.",
+          "result": "The agent picks up the letter. \"You'll be hearing from us.\"",
+          "effects": [{ "mood": -0.15 }, { "squad": -0.01 }, { "next": "request-sulk", "weeks": 4 }]
+        },
+        {
+          "id": "convince",
+          "label": "Promise him a bigger role",
+          "hint": "He'll expect 4 starts in the next 6 weeks.",
+          "result": "{first} agrees to give it until the next window. The clock is ticking.",
+          "effects": [{ "mood": 0.2 }, { "promise": "starts", "weeks": 6, "target": 4 }]
+        }
+      ]
+    },
+    {
+      "id": "request-sulk",
+      "role": "coach",
+      "when": { "chainOnly": true },
+      "amount": 60000,
+      "title": "{player} is sulking",
+      "text": "{coach} closes the door. \"{first} turned up late twice this week and walked through the drills. The young lads are watching how we deal with it.\"",
+      "staff": "reserves",
+      "choices": [
+        {
+          "id": "sell",
+          "label": "Sell him, even at a discount",
+          "hint": "A club will bid at about two thirds of his value.",
+          "result": "It's done. Sometimes you just have to let them go.",
+          "effects": [{ "listPlayer": 0.7 }, { "squad": 0.03 }],
+          "news": "{short} ready to cut their losses on {player}|A cut-price exit is on the cards for the unsettled {short} player."
+        },
+        {
+          "id": "reserves",
+          "label": "Send him to train with the reserves",
+          "hint": "He misses two matches. The squad sees who's in charge.",
+          "result": "{first} trains with the under-21s. They have never been so well behaved.",
+          "effects": [{ "suspend": 2 }, { "mood": -0.15 }, { "squad": 0.04 }]
+        },
+        {
+          "id": "peace",
+          "label": "Make peace with a {amount} bonus",
+          "hint": "Costs {amount}. Money talks, at least for a while.",
+          "result": "{first} cheers up remarkably quickly. The dressing room notices how.",
+          "effects": [{ "cash": -1, "line": "playerWages" }, { "mood": 0.3 }, { "squad": -0.02 }]
+        }
+      ]
+    },
+    {
+      "id": "injury-crisis",
+      "role": "coach",
+      "when": { "phase": ["season"], "injuredAtLeast": 4 },
+      "maxPerSeason": 1,
+      "cooldown": 14,
+      "weight": 1.6,
+      "amount": 120000,
+      "title": "Injury crisis",
+      "text": "{coach} has the medical report in hand. \"Four or more out and we're picking players who should be in the youth team. The physios say they can speed things up, but it costs, and rushing players back has its own price.\"",
+      "staff": "ride",
+      "choices": [
+        {
+          "id": "specialist",
+          "label": "Fly in a specialist for {amount}",
+          "hint": "Costs {amount}. Every injured player is back a week sooner.",
+          "result": "The specialist arrives with a suitcase of machines nobody can pronounce. The players are back sooner.",
+          "effects": [{ "cash": -1, "line": "operations" }, { "heal": 1 }, { "squad": 0.02 }]
+        },
+        {
+          "id": "rush",
+          "label": "Push them back early",
+          "hint": "Free. Two weeks off every injury, but the squad is wary and there may be a cost.",
+          "result": "Strapping, painkillers and crossed fingers.",
+          "effects": [{ "heal": 2 }, { "squad": -0.03 }, { "next": "injury-setback", "weeks": 3 }]
+        },
+        {
+          "id": "ride",
+          "label": "Ride it out and trust the kids",
+          "hint": "Free. The young players get a chance.",
+          "result": "The academy lads get their shot. One of them even looks the part.",
+          "effects": [{ "squad": 0.01 }, { "fans": 0.01 }]
+        }
+      ]
+    },
+    {
+      "id": "injury-setback",
+      "role": "staffer",
+      "when": { "chainOnly": true },
+      "title": "The rushed returns have caught up with us",
+      "text": "The head physio is blunt. \"I told you. Two of the lads we rushed back have broken down in training. The players think the club cares more about results than their bodies.\"",
+      "staff": "apologise",
+      "amount": 50000,
+      "choices": [
+        {
+          "id": "apologise",
+          "label": "Apologise to the squad",
+          "hint": "Free. Some of the trust comes back.",
+          "result": "You admit you got it wrong. It helps more than you expected.",
+          "effects": [{ "squad": 0.02 }, { "press": -0.01 }]
+        },
+        {
+          "id": "invest",
+          "label": "Spend {amount} on the medical room",
+          "hint": "Costs {amount}. New kit and a promise it won't happen again.",
+          "result": "New scanners, new beds, and a physio who finally smiles.",
+          "effects": [{ "cash": -1, "line": "operations" }, { "squad": 0.04 }]
+        },
+        {
+          "id": "blame",
+          "label": "Blame the physios",
+          "hint": "Free. The squad sees through it.",
+          "result": "The physios are furious. The players are quietly on their side.",
+          "effects": [{ "squad": -0.04 }, { "press": -0.02 }]
+        }
+      ]
+    },
+    {
+      "id": "sponsor-scandal",
+      "role": "reporter",
+      "when": { "phase": ["season"], "hasSponsor": true },
+      "maxPerSeason": 1,
+      "cooldown": 70,
+      "weight": 0.3,
+      "title": "Your shirt sponsor is in the papers",
+      "text": "A reporter waves the morning edition: {sponsor} are accused of selling \"artisanal\" goods that turn out to come from a warehouse three towns over, by the lorryload. \"Will {short} keep that name on their shirts?\"",
+      "staff": "wait",
+      "choices": [
+        {
+          "id": "drop",
+          "label": "Drop {sponsor} today",
+          "hint": "The shirt deal ends. The press and fans like it; future sponsors less so.",
+          "result": "You end the deal on the spot. The headline writers approve.",
+          "effects": [{ "dropSponsor": true }, { "press": 0.05 }, { "fans": 0.03 }, { "goodwill": -0.05 }],
+          "news": "{short} drop shirt sponsor over scandal|The club acted within hours of the story breaking."
+        },
+        {
+          "id": "stand",
+          "label": "Stand by them",
+          "hint": "The money keeps coming. The press won't let it go.",
+          "result": "You say everyone deserves a fair hearing. The reporter writes that down slowly.",
+          "effects": [{ "press": -0.04 }, { "fans": -0.02 }, { "goodwill": 0.04 }, { "next": "scandal-deepens", "weeks": 3 }]
+        },
+        {
+          "id": "wait",
+          "label": "Say you're waiting for the facts",
+          "hint": "Buys time. Nobody is impressed.",
+          "result": "\"We are monitoring the situation.\" Nobody has ever been satisfied by that sentence.",
+          "effects": [{ "press": -0.01 }]
+        }
+      ]
+    },
+    {
+      "id": "scandal-deepens",
+      "role": "sponsor",
+      "when": { "chainOnly": true },
+      "amount": 150000,
+      "title": "{sponsor} want to make it up to you",
+      "text": "The sponsor's marketing chief has stopped smiling. \"It got worse. We know. We'll pay {amount} on top of the deal if you keep our name on the shirt until the season ends.\"",
+      "staff": "drop",
+      "choices": [
+        {
+          "id": "take",
+          "label": "Take the {amount}",
+          "hint": "Money now. The press will call it what it is.",
+          "result": "The money lands. So does a column calling you \"for sale\".",
+          "effects": [{ "cash": 1, "line": "sponsors" }, { "press": -0.05 }, { "fans": -0.03 }],
+          "news": "{short} keep scandal sponsor for extra cash|The club took a reported {amount} to keep the name on the shirt."
+        },
+        {
+          "id": "drop",
+          "label": "Walk away now",
+          "hint": "The shirt deal ends. Late, but the right call.",
+          "result": "You end it. Better late than never, the papers say, mostly.",
+          "effects": [{ "dropSponsor": true }, { "press": 0.03 }]
+        }
+      ]
+    },
+    {
+      "id": "floodlight-failure",
+      "role": "staffer",
+      "when": { "phase": ["season"], "homeNext": true, "weekMin": 3 },
+      "maxPerSeason": 1,
+      "cooldown": 70,
+      "weight": 0.3,
+      "amount": 90000,
+      "title": "The floodlights have failed",
+      "text": "The groundsman calls from a ladder. \"Half the floodlights went in last night's storm. We can patch them or replace them, but the next home game is in a few days.\"",
+      "staff": "patch",
+      "choices": [
+        {
+          "id": "replace",
+          "label": "Replace them properly for {amount}",
+          "hint": "Costs {amount}. The game goes ahead as normal.",
+          "result": "New lights, brighter than the old ones. The groundsman says he can see his own pitch again.",
+          "effects": [{ "cash": -1, "line": "upgrades" }]
+        },
+        {
+          "id": "patch",
+          "label": "Patch them for {half}",
+          "hint": "Costs {half}. Part of the ground may have to stay empty.",
+          "result": "The patch holds, mostly. One stand will be closed for safety.",
+          "effects": [{ "cash": -0.5, "line": "operations" }, { "gate": -0.15 }]
+        },
+        {
+          "id": "early",
+          "label": "Move kick-off to the afternoon",
+          "hint": "Free. Fewer fans can make it, and the fans grumble.",
+          "result": "Kick-off moves to three o'clock on a weekday. The fans are not amused.",
+          "effects": [{ "gate": -0.25 }, { "fans": -0.03 }]
+        }
+      ]
+    },
+    {
+      "id": "fan-protest",
+      "role": "fans",
+      "when": { "phase": ["season"], "weekMin": 6, "fansBelow": 0.4 },
+      "maxPerSeason": 1,
+      "cooldown": 16,
+      "weight": 1.2,
+      "title": "Fans plan a protest march",
+      "text": "{person} from the supporters' trust doesn't sit down. \"Prices up, results down, and nobody tells us anything. We're marching to the ground before the next home game. You can come and talk to us, or you can watch from your window.\"",
+      "staff": "meet",
+      "choices": [
+        {
+          "id": "meet",
+          "label": "Meet them and promise results",
+          "hint": "You promise 3 wins in the next 6 weeks. The fans will hold you to it.",
+          "result": "You walk out to meet the march. It's quiet, then someone claps. It's a start.",
+          "effects": [{ "fans": 0.04 }, { "press": 0.02 }, { "promise": "wins", "weeks": 6, "target": 3, "kept": "The fans got their wins|Three wins, as you promised. The supporters' trust says thank you, with only a little sarcasm.", "broken": "The wins never came|You promised the fans three wins. They're counting, and they got fewer.", "news": "Owner's promise to fans falls flat at {short}|The owner promised the marchers three wins. They didn't come." }]
+        },
+        {
+          "id": "freeze",
+          "label": "Promise no ticket price rise this season",
+          "hint": "You can't raise ticket prices for 12 weeks. Breaking it would be ugly.",
+          "result": "\"No rises this season. You have my word.\" The banners come down, for now.",
+          "effects": [{ "fans": 0.06 }, { "promise": "price", "weeks": 12, "kept": "Price freeze kept|You promised the fans no price rises, and kept it. They noticed.", "broken": "You raised prices after promising not to|The supporters' trust has your promise in writing. They've framed it, next to the new prices.", "news": "{short} owner breaks ticket promise|Fans were told prices would not rise. They have." }]
+        },
+        {
+          "id": "ignore",
+          "label": "Let them march",
+          "hint": "Free. Some fans may stay away, and it might grow.",
+          "result": "You watch from the window. The chants carry further than you'd like.",
+          "effects": [{ "fans": -0.04 }, { "press": -0.03 }, { "gate": -0.1 }, { "next": "protest-boycott", "weeks": 3 }]
+        }
+      ]
+    },
+    {
+      "id": "protest-boycott",
+      "role": "fans",
+      "when": { "chainOnly": true },
+      "title": "The supporters' trust calls a boycott",
+      "text": "{person} is back, with a printed leaflet. \"Stay away from the next home game, it says. A lot of people are going to listen. Last chance to talk.\"",
+      "staff": "cut",
+      "choices": [
+        {
+          "id": "cut",
+          "label": "Cut ticket prices by 15%",
+          "hint": "Less money per seat. The boycott is called off.",
+          "result": "The trust calls off the boycott. {person} even shakes your hand.",
+          "effects": [{ "price": -0.15 }, { "fans": 0.06 }, { "press": 0.02 }]
+        },
+        {
+          "id": "sit",
+          "label": "Sit it out",
+          "hint": "A lot of empty seats at the next home game, and the press will love it.",
+          "result": "The boycott goes ahead. The cameras find every empty seat.",
+          "effects": [{ "gate": -0.3 }, { "fans": -0.05 }, { "press": -0.04 }],
+          "news": "Empty seats as {short} fans boycott|The supporters' trust says thousands stayed away."
+        }
+      ]
+    },
+    {
+      "id": "permit-fight",
+      "role": "councillor",
+      "when": { "building": true },
+      "maxPerSeason": 1,
+      "cooldown": 20,
+      "amount": 120000,
+      "title": "Neighbours object to the building work",
+      "text": "Councillor {person} arrives with a folder. \"Residents near {stadium} say the work starts too early and the lorries block their streets. There's a petition. I have to take it seriously.\"",
+      "staff": "fund",
+      "choices": [
+        {
+          "id": "fund",
+          "label": "Pay {amount} into a community fund",
+          "hint": "Costs {amount}. The work carries on as planned.",
+          "result": "A new playground, a quieter start time, and a much happier councillor.",
+          "effects": [{ "cash": -1, "line": "upgrades" }, { "press": 0.02 }]
+        },
+        {
+          "id": "lawyers",
+          "label": "Fight it with lawyers",
+          "hint": "Costs {half}. It goes to a hearing in a month.",
+          "result": "The lawyers say it's a strong case. Lawyers always say that.",
+          "effects": [{ "cash": -0.5, "line": "operations" }, { "press": -0.02 }, { "next": "permit-hearing", "weeks": 4 }]
+        },
+        {
+          "id": "delay",
+          "label": "Agree to slow the work down",
+          "hint": "Free. The building work takes 4 weeks longer.",
+          "result": "The lorries come later and leave earlier. The building work stretches on.",
+          "effects": [{ "delayBuild": 4 }, { "press": 0.01 }]
+        }
+      ]
+    },
+    {
+      "id": "permit-hearing",
+      "role": "councillor",
+      "when": { "chainOnly": true },
+      "title": "The council hearing",
+      "text": "Councillor {person} is waiting outside the hearing room. \"It could go either way. The residents would settle for a smaller fund than before, if you offer now.\"",
+      "staff": "settle",
+      "choices": [
+        {
+          "id": "settle",
+          "label": "Settle for {half}",
+          "hint": "Costs {half}. It's over.",
+          "result": "Everyone shakes hands. The lawyers send a bill anyway.",
+          "effects": [{ "cash": -0.5, "line": "upgrades" }]
+        },
+        {
+          "id": "fight",
+          "label": "Fight it out",
+          "hint": "Free, but if you lose the work stops for a while and the press side with the neighbours.",
+          "result": "The council rules for the residents. The work pauses for two weeks.",
+          "effects": [{ "delayBuild": 2 }, { "press": -0.03 }],
+          "news": "Council sides with residents over {short} building work|Work at {stadium} must stop early each day."
+        }
+      ]
+    },
+    {
+      "id": "coach-poach",
+      "role": "owner",
+      "when": { "phase": ["season", "preseason"], "coachAbove": 62, "otherClub": true },
+      "maxPerSeason": 1,
+      "cooldown": 70,
+      "weight": 0.35,
+      "amount": 400000,
+      "title": "{owner} wants your head coach",
+      "text": "{owner}, owner of {rival}, doesn't waste time. \"I want {coach}. I'll pay you {amount} in compensation, today. Or I can call him directly and we can do this the messy way.\"",
+      "staff": "refuse",
+      "choices": [
+        {
+          "id": "sell",
+          "label": "Let {coach} go for {amount}",
+          "hint": "You get {amount}. An interim coach takes over until you appoint someone.",
+          "result": "{coach} shakes your hand on the way out. {owner} is all smiles.",
+          "effects": [{ "cash": 1, "line": "other" }, { "coachLeaves": true }, { "owner": 0.15 }, { "squad": -0.03 }],
+          "news": "{rival} prise {coach} away from {short}|The head coach leaves for a reported {amount} in compensation."
+        },
+        {
+          "id": "raise",
+          "label": "Give {coach} a raise to stay",
+          "hint": "Costs {half}. He stays, and {owner} is annoyed.",
+          "result": "{coach} is staying. {owner} hangs up on you.",
+          "effects": [{ "cash": -0.5, "line": "staffWages" }, { "owner": -0.08 }, { "squad": 0.02 }]
+        },
+        {
+          "id": "refuse",
+          "label": "Refuse outright",
+          "hint": "Free. {coach} may be unsettled, and {owner} won't take it well.",
+          "result": "\"He's not for sale.\" {owner} smiles in a way you don't like.",
+          "effects": [{ "owner": -0.12 }, { "heat": 0.06 }, { "next": "coach-unsettled", "weeks": 3 }]
+        }
+      ]
+    },
+    {
+      "id": "coach-unsettled",
+      "role": "coach",
+      "when": { "chainOnly": true },
+      "title": "{coach} has been talking to {rival}",
+      "text": "{coach} admits it straight away. \"{owner} called me. I said no, but it's a big offer and my family likes their city. I want to know I'm valued here.\"",
+      "staff": "raise",
+      "choices": [
+        {
+          "id": "raise",
+          "label": "Pay {half} to keep him",
+          "hint": "Costs {half}. He's staying, and he's grateful.",
+          "result": "{coach} signs on. He buys the staff a round to celebrate.",
+          "effects": [{ "cash": -0.5, "line": "staffWages" }, { "squad": 0.02 }]
+        },
+        {
+          "id": "release",
+          "label": "Let him go for {half} compensation",
+          "hint": "You get {half}. An interim coach takes over.",
+          "result": "He's off to {rival}. You get something for him, at least.",
+          "effects": [{ "cash": 0.5, "line": "other" }, { "coachLeaves": true }, { "heat": 0.05 }, { "squad": -0.03 }],
+          "news": "{coach} leaves {short} for {rival}|The head coach is gone after a month of speculation."
+        },
+        {
+          "id": "loyalty",
+          "label": "Appeal to his loyalty",
+          "hint": "Free. It might work. It might not.",
+          "result": "He says he'll stay. He also took the call from {owner} on speaker.",
+          "effects": [{ "squad": -0.02 }, { "press": -0.01 }]
+        }
+      ]
+    },
+    {
+      "id": "lender-visit",
+      "role": "lender",
+      "when": { "ladderAtLeast": 1 },
+      "maxPerSeason": 2,
+      "cooldown": 8,
+      "weight": 1.4,
+      "amount": 100000,
+      "title": "The bank sends someone round",
+      "text": "{person} from the bank keeps their coat on. \"We've seen the numbers. We'd like to see a plan, and soon. I'd rather not be the one who comes back with worse news.\"",
+      "staff": "plan",
+      "choices": [
+        {
+          "id": "plan",
+          "label": "Walk them through a recovery plan",
+          "hint": "Free. The lenders give you 2 more weeks.",
+          "result": "{person} takes notes and almost smiles. \"Two more weeks. Use them.\"",
+          "effects": [{ "grace": 2 }]
+        },
+        {
+          "id": "lunch",
+          "label": "Take them to an expensive lunch",
+          "hint": "Costs {amount}. They give you 4 more weeks, and the press hear about the bill.",
+          "result": "Three courses and a cheese trolley later, the bank is in a generous mood.",
+          "effects": [{ "cash": -1, "line": "operations" }, { "grace": 4 }, { "press": -0.02 }]
+        },
+        {
+          "id": "bluff",
+          "label": "Tell them money is coming",
+          "hint": "Free. If nothing comes, they'll remember.",
+          "result": "\"Coming from where?\" You say it's confidential. They write that down too.",
+          "effects": [{ "grace": 1 }, { "next": "lender-followup", "weeks": 3 }]
+        }
+      ]
+    },
+    {
+      "id": "lender-followup",
+      "role": "lender",
+      "when": { "chainOnly": true },
+      "title": "The bank wants to see that money",
+      "text": "{person} is back, with a colleague this time. \"You told us money was coming. We'd like to know when, and how much.\"",
+      "staff": "sell",
+      "choices": [
+        {
+          "id": "sell",
+          "label": "Offer up your best player",
+          "hint": "A club will bid for him at a fair price. The lenders give you 3 more weeks.",
+          "result": "They nod. Selling a player is a plan they understand.",
+          "effects": [{ "grace": 3 }, { "squad": -0.03 }, { "fans": -0.02 }, { "next": "lender-star-sale", "weeks": 1 }]
+        },
+        {
+          "id": "admit",
+          "label": "Admit there's no money yet",
+          "hint": "Free. Honest, but no extra time.",
+          "result": "They appreciate the honesty. They do not appreciate the situation.",
+          "effects": [{ "press": -0.01 }]
+        }
+      ]
+    },
+    {
+      "id": "lender-star-sale",
+      "role": "agent",
+      "when": { "chainOnly": true, "subject": "star" },
+      "title": "Who goes to keep the bank happy?",
+      "text": "The bank wants a sale. Clubs have been asking about {player}. Your chief scout thinks a bid would come quickly.",
+      "staff": "list",
+      "choices": [
+        {
+          "id": "list",
+          "label": "Let clubs bid for {player}",
+          "hint": "A club will bid at about his value.",
+          "result": "The calls start within the hour.",
+          "effects": [{ "listPlayer": 1 }, { "mood": -0.05 }]
+        },
+        {
+          "id": "keep",
+          "label": "Keep him and find the money elsewhere",
+          "hint": "Free. The bank won't be pleased.",
+          "result": "You tell the bank you'll find another way. They say they look forward to hearing about it.",
+          "effects": [{ "press": -0.01 }, { "grace": -2 }]
+        }
+      ]
+    },
+    {
+      "id": "naming-rights-backlash",
+      "role": "fans",
+      "when": { "phase": ["season"], "namingRights": true, "fansBelow": 0.55 },
+      "maxPerSeason": 1,
+      "cooldown": 30,
+      "weight": 0.7,
+      "title": "Fans want the old name back",
+      "text": "{person} hands over a petition with thousands of names. \"Nobody calls it by the sponsor's name. Nobody. Put the old name on the tickets at least, and we'll stop singing about it.\"",
+      "staff": "tickets",
+      "choices": [
+        {
+          "id": "tickets",
+          "label": "Use the old name on tickets",
+          "hint": "Free. The fans like it; the naming sponsor won't.",
+          "result": "The old name is back on the tickets. The naming sponsor sends a stiff email.",
+          "effects": [{ "fans": 0.04 }, { "goodwill": -0.04 }]
+        },
+        {
+          "id": "explain",
+          "label": "Explain what the money pays for",
+          "hint": "Free. Some fans get it.",
+          "result": "You show where the money goes. Some fans are convinced. Most keep singing.",
+          "effects": [{ "fans": 0.01 }, { "press": 0.01 }]
+        },
+        {
+          "id": "ignore",
+          "label": "Ignore it",
+          "hint": "Free. The fans won't forget.",
+          "result": "The petition goes in a drawer. The singing gets louder.",
+          "effects": [{ "fans": -0.03 }, { "gate": -0.05 }]
+        }
+      ]
+    }
+  ]
+}

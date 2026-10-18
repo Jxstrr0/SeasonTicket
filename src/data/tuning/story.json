@@ -58,7 +58,9 @@
   "promises": {
     "_about": "What happens when a promise comes due. Kept and broken effects apply to the player the promise was made to (mood), the squad, and the press.",
     "kept": { "mood": 0.12, "squad": 0.01, "press": 0.01 },
-    "broken": { "mood": -0.3, "squad": -0.03, "press": -0.03 }
+    "broken": { "mood": -0.3, "squad": -0.03, "press": -0.03 },
+    "fansKept": 0.03,
+    "fansBroken": -0.06
   },
   "keep": {
     "_about": "Answered events are dropped after this many weeks (their inbox message stays). Decisions are kept for this season and the last.",

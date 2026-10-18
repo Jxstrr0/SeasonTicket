@@ -331,7 +331,13 @@ export interface StoryTimer {
   id: string;
   /** Global week index it comes due. */
   week: number;
-  kind: 'starts' | 'signing' | 'later';
+  /** 'next' starts a follow-up event (Stage 6.5 story chains); 'wins' and 'price' are promises to win games or hold ticket prices. */
+  kind: 'starts' | 'signing' | 'later' | 'next' | 'wins' | 'price';
+  /** For 'next': the event to start. */
+  next?: string;
+  /** Carried into a follow-up event, so the chain stays about the same club and people. */
+  teamId?: string | null;
+  person?: string | null;
   /** The event and choice that set it, for its effects and text. */
   eventId: string;
   choiceId: string;
@@ -380,6 +386,8 @@ export interface StoryState {
   claims: PressClaim[];
   /** Global week of the last press conference, or -1. */
   lastPress: number;
+  /** A change to the crowd at your next home match (Stage 6.5: a protest, a floodlight fault), for that season week. */
+  gate: { share: number; week: number } | null;
 }
 
 export type NewsKind = 'result' | 'league' | 'streak' | 'record' | 'transfer' | 'table' | 'club' | 'money' | 'stadium' | 'season' | 'preview';

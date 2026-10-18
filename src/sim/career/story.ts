@@ -11,12 +11,13 @@ import { defaultNames, homeNationId } from '../names';
 import type { Rng } from '../rng';
 import type { Player, StaffRole } from '../types';
 import { fairPrice } from './books';
-import { squadRole } from './market';
+import { ensureHeadCoach, makeSponsorOffers } from './club';
+import { bidForListed, squadRole } from './market';
 import { reportPromise, reportStory } from './news';
 import { PRESS_DEF, addClaim, answerPress, pressView } from './press';
 import { addHeat, ownerMemory, ownerOf, rivalLevel } from './rivalry';
 import { INCOME_KEYS, SPENDING_KEYS } from './types';
-import type { Career, IncomeKey, SpendingKey, StoryDecision, StoryEvent, StoryPace, StoryState, StoryTimer, VisitorRole } from './types';
+import type { Career, IncomeKey, SpendingKey, StadiumProject, StoryDecision, StoryEvent, StoryPace, StoryState, StoryTimer, VisitorRole } from './types';
 import { C, addInbox, careerRng, clamp, earn, money, nextId, roundMoney, spend, squadOf, transferWindowOpen, userBooks, userTeam } from './util';
 
 const T = STORY_TUNING;
@@ -53,6 +54,20 @@ export interface EventConditions {
   derbyNext?: boolean;
   /** The next match is a derby or against a rival. */
   rivalNext?: boolean;
+  /** Stage 6.5 crises. At least this many of your players injured. */
+  injuredAtLeast?: number;
+  /** The lenders' ladder at least this level (1-4). */
+  ladderAtLeast?: number;
+  /** Stadium work under way. */
+  building?: boolean;
+  /** The stadium carries a sponsor's name. */
+  namingRights?: boolean;
+  /** Your head coach is rated at least this. */
+  coachAbove?: number;
+  /** The event is about another club, picked when it starts: {rival} and {owner}. */
+  otherClub?: boolean;
+  /** Only ever started by an earlier event in a chain, never drawn. */
+  chainOnly?: boolean;
 }
 
 export type Effect =
@@ -64,12 +79,30 @@ export type Effect =
   | { goodwill: number }
   | { flag: string }
   | { price: number }
-  | { promise: 'starts' | 'signing'; weeks: number; target?: number }
+  | { promise: 'starts' | 'signing' | 'wins' | 'price'; weeks: number; target?: number; kept?: string; broken?: string; news?: string }
   | { later: number; title: string; text: string; effects: Effect[] }
   /** Stage 6.4, about the event's rival club: rivalry heat, its owner's memory of you, a public promise to win the next match against it. */
   | { heat: number }
   | { owner: number }
-  | { claim: boolean };
+  | { claim: boolean }
+  /** Stage 6.5. Start a follow-up event in `weeks` weeks, about the same player, person and club. */
+  | { next: string; weeks: number }
+  /** The player misses this many matches. */
+  | { suspend: number }
+  /** A club bids for the player at this share of his value. */
+  | { listPlayer: number }
+  /** The head coach leaves; an interim takes over. */
+  | { coachLeaves: boolean }
+  /** The crowd at your next home match changes by this share of capacity. */
+  | { gate: number }
+  /** The shirt sponsor walks (or is dropped). */
+  | { dropSponsor: boolean }
+  /** Stadium work takes this many weeks longer. */
+  | { delayBuild: number }
+  /** The lenders give this many more weeks before their next step. */
+  | { grace: number }
+  /** Every injured player is back this many weeks sooner. */
+  | { heal: number };
 
 export interface EventChoice {
   id: string;
@@ -149,6 +182,7 @@ export function newStory(pace: StoryPace = 'normal'): StoryState {
     heat: {},
     claims: [],
     lastPress: -1,
+    gate: null,
   };
 }
 
@@ -208,6 +242,7 @@ export function weeklyStory(career: Career): void {
   const story = career.story;
   for (const ev of openEvents(career)) if (ev.deadlineWeek <= career.weekIndex) answerEvent(career, ev.id, null);
   runTimers(career);
+  if (story.gate && (career.phase !== 'season' || story.gate.week < career.season.week)) story.gate = null;
   driftMoods(career);
   story.press = round3(story.press + (T.press.neutral - story.press) * T.press.drift);
   story.goodwill = round3(story.goodwill + (T.goodwill.neutral - story.goodwill) * T.goodwill.drift);
@@ -250,6 +285,7 @@ function drawEvents(career: Career): void {
 }
 
 function eligible(career: Career, e: EventDef): boolean {
+  if (e.when.chainOnly) return false;
   const story = career.story;
   const last = story.last[e.id];
   if (last !== undefined && career.weekIndex - last < (e.cooldown ?? D.cooldown)) return false;
@@ -279,6 +315,11 @@ export function conditionsMet(career: Career, w: EventConditions): boolean {
   if (w.pressAbove !== undefined && career.story.press <= w.pressAbove) return false;
   if (w.flag !== undefined && career.story.flags[w.flag] === undefined) return false;
   if (w.noFlag !== undefined && career.story.flags[w.noFlag] !== undefined) return false;
+  if (w.injuredAtLeast !== undefined && squadOf(career, team.id).filter((p) => p.injuryWeeks > 0).length < w.injuredAtLeast) return false;
+  if (w.ladderAtLeast !== undefined && career.ladder.level < w.ladderAtLeast) return false;
+  if (w.building !== undefined && activeBuilds(career).length > 0 !== w.building) return false;
+  if (w.namingRights !== undefined && !!books.namingRights !== w.namingRights) return false;
+  if (w.coachAbove !== undefined && headCoachRating(career) < w.coachAbove) return false;
   if (w.derbyNext || w.rivalNext) {
     const next = nextOpponent(career);
     const level = next ? rivalLevel(career, next.id) : null;
@@ -286,6 +327,33 @@ export function conditionsMet(career: Career, w: EventConditions): boolean {
     if (w.rivalNext && !level) return false;
   }
   return true;
+}
+
+function activeBuilds(career: Career): StadiumProject[] {
+  return (career.stadiums[career.userTeamId]?.projects ?? []).filter((p) => !p.queued && p.weeksLeft > 0);
+}
+
+function headCoachRating(career: Career): number {
+  const league = career.season.league;
+  for (const id of userTeam(career).staffIds) {
+    const s = league.staff[id];
+    if (s && s.role === 'headCoach') return s.rating;
+  }
+  return 0;
+}
+
+/** The season week of your next home match, or null. */
+function nextHomeWeek(career: Career): number | null {
+  if (career.phase !== 'season') return null;
+  const state = career.season;
+  const m = state.schedule.matches.find((x) => !x.result && x.week > state.week - 1 && x.homeId === career.userTeamId);
+  return m ? m.week : null;
+}
+
+/** Share of capacity added to (or taken from) the crowd for a match: a story effect on your next home game. */
+export function storyGate(career: Career, homeId: string, week: number): number {
+  const g = career.story.gate;
+  return g && homeId === career.userTeamId && g.week === week ? g.share : 0;
 }
 
 function endsWith(form: string[], r: string, n: number): boolean {
@@ -373,11 +441,19 @@ export function startStoryEvent(career: Career, eventId: string, playerId: strin
   return startEvent(career, def, careerRng(career, `story:${eventId}`), p);
 }
 
-function startEvent(career: Career, def: EventDef, rng: Rng, subject: Player | null): StoryEvent {
+interface ChainInit {
+  person: string | null;
+  amount: number;
+  teamId: string | null;
+}
+
+function startEvent(career: Career, def: EventDef, rng: Rng, subject: Player | null, from?: ChainInit): StoryEvent {
   const story = career.story;
   const nation = homeNationId();
-  const person = `${defaultNames.firstName(rng, nation)} ${defaultNames.lastName(rng, nation)}`;
-  const amount = def.amount ? Math.max(T.money.round, roundMoney(def.amount * moneyScale(career), T.money.round)) : 0;
+  const person = from?.person ?? `${defaultNames.firstName(rng, nation)} ${defaultNames.lastName(rng, nation)}`;
+  const own = def.amount ? Math.max(T.money.round, roundMoney(def.amount * moneyScale(career), T.money.round)) : 0;
+  // A follow-up keeps the story's money unless it names its own.
+  const amount = def.amount || !from ? own : from.amount;
   const ev: StoryEvent = {
     id: nextId(career, 'ev'),
     eventId: def.id,
@@ -390,7 +466,9 @@ function startEvent(career: Career, def: EventDef, rng: Rng, subject: Player | n
     answer: null,
     mailId: '',
   };
-  if (def.when.derbyNext || def.when.rivalNext) ev.teamId = nextOpponent(career)?.id || null;
+  if (from?.teamId) ev.teamId = from.teamId;
+  else if (def.when.derbyNext || def.when.rivalNext) ev.teamId = nextOpponent(career)?.id || null;
+  else if (def.when.otherClub) ev.teamId = rng.pick(career.season.league.teams.filter((t) => t.id !== career.userTeamId)).id;
   addInbox(career, 'decision', fill(career, ev, def.title), fill(career, ev, def.text));
   const mail = career.inbox[0];
   mail.eventRef = ev.id;
@@ -577,8 +655,10 @@ function applyEffects(career: Career, ev: StoryEvent, def: EventDef, choice: Eve
         choiceId: choice.id,
         playerId: e.promise === 'starts' ? p : null,
         amount: ev.amount,
-        baseline: e.promise === 'starts' ? (p ? (career.playerSeason[p]?.apps ?? 0) : 0) : career.counter,
+        baseline: promiseBaseline(career, e.promise, p),
         target: e.target ?? 0,
+        teamId: ev.teamId ?? null,
+        person: ev.person,
       });
     } else if ('heat' in e) {
       addHeat(career, ev.teamId, e.heat);
@@ -587,9 +667,67 @@ function applyEffects(career: Career, ev: StoryEvent, def: EventDef, choice: Eve
     } else if ('claim' in e) {
       if (e.claim && ev.teamId) addClaim(career, ev.teamId);
     } else if ('later' in e) {
-      addTimer(career, { week: career.weekIndex + e.later, kind: 'later', eventId: def.id, choiceId: choice.id, playerId: ev.playerId, amount: ev.amount, baseline: 0, target: 0 });
+      addTimer(career, { week: career.weekIndex + e.later, kind: 'later', eventId: def.id, choiceId: choice.id, playerId: ev.playerId, amount: ev.amount, baseline: 0, target: 0, teamId: ev.teamId ?? null, person: ev.person });
+    } else if ('next' in e) {
+      addTimer(career, { week: career.weekIndex + e.weeks, kind: 'next', next: e.next, eventId: def.id, choiceId: choice.id, playerId: ev.playerId, amount: ev.amount, baseline: 0, target: 0, teamId: ev.teamId ?? null, person: ev.person });
+    } else if ('suspend' in e) {
+      const p = ev.playerId ? career.season.league.players[ev.playerId] : undefined;
+      if (p && p.teamId === team.id) p.suspensionMatches += e.suspend;
+    } else if ('listPlayer' in e) {
+      const p = ev.playerId ? career.season.league.players[ev.playerId] : undefined;
+      if (p && p.teamId === team.id) bidForListed(career, p, e.listPlayer, careerRng(career, `story-list:${ev.id}`));
+    } else if ('coachLeaves' in e) {
+      if (e.coachLeaves) coachLeaves(career, ev.teamId);
+    } else if ('gate' in e) {
+      const week = nextHomeWeek(career);
+      if (week !== null) {
+        const share = scaled(e.gate, s) + (story.gate?.week === week ? story.gate.share : 0);
+        story.gate = { share: round3(clamp(share, -0.6, 0.3)), week };
+      }
+    } else if ('dropSponsor' in e) {
+      if (e.dropSponsor && books.sponsor) {
+        addInbox(career, 'finance', 'Shirt sponsor gone', `${books.sponsor.brand} and the club have parted ways. Pick a new shirt sponsor from the Club screen.`);
+        books.sponsor = null;
+        career.sponsorOffers = makeSponsorOffers(career);
+      }
+    } else if ('delayBuild' in e) {
+      for (const pr of activeBuilds(career)) {
+        pr.weeksLeft += e.delayBuild;
+        pr.weeks += e.delayBuild;
+      }
+    } else if ('grace' in e) {
+      if (career.ladder.deadlineWeek !== null) career.ladder.deadlineWeek += e.grace;
+    } else if ('heal' in e) {
+      for (const p of squadOf(career, team.id)) if (p.injuryWeeks > 0) p.injuryWeeks = Math.max(1, p.injuryWeeks - e.heal);
     }
   }
+}
+
+function promiseBaseline(career: Career, kind: 'starts' | 'signing' | 'wins' | 'price', playerId: string | null): number {
+  switch (kind) {
+    case 'starts':
+      return playerId ? (career.playerSeason[playerId]?.apps ?? 0) : 0;
+    case 'signing':
+      return career.counter;
+    case 'wins':
+      return career.season.standings.find((r) => r.teamId === career.userTeamId)?.won ?? 0;
+    case 'price':
+      return userBooks(career).ticketPrice;
+  }
+}
+
+/** The head coach walks out (poached, or let go to a rival); the best free coach steps in as interim. */
+function coachLeaves(career: Career, toTeamId: string | null | undefined): void {
+  const team = userTeam(career);
+  const league = career.season.league;
+  const id = team.staffIds.find((x) => league.staff[x]?.role === 'headCoach');
+  if (!id) return;
+  const coach = league.staff[id];
+  team.staffIds = team.staffIds.filter((x) => x !== id);
+  coach.teamId = null;
+  const dest = toTeamId ? league.teams.find((t) => t.id === toTeamId)?.shortName : null;
+  addInbox(career, 'staff', `${coach.firstName} ${coach.lastName} has gone`, `Your head coach has left${dest ? ` for ${dest}` : ''}.`);
+  ensureHeadCoach(career);
 }
 
 function addTimer(career: Career, t: Omit<StoryTimer, 'id'>): void {
@@ -603,6 +741,7 @@ function runTimers(career: Career): void {
   story.timers = story.timers.filter((t) => t.week > career.weekIndex);
   for (const t of due) {
     if (t.kind === 'later') runLater(career, t);
+    else if (t.kind === 'next') runNext(career, t);
     else checkPromise(career, t);
   }
 }
@@ -612,10 +751,25 @@ function runLater(career: Career, t: StoryTimer): void {
   const choice = def?.choices.find((c) => c.id === t.choiceId);
   const later = choice?.effects.find((e): e is Extract<Effect, { later: number }> => 'later' in e);
   if (!def || !choice || !later) return;
-  const ev = { playerId: t.playerId, person: null, amount: t.amount } as StoryEvent;
+  const ev = { playerId: t.playerId, person: t.person ?? null, amount: t.amount, teamId: t.teamId ?? null } as StoryEvent;
   applyEffects(career, ev, def, choice, later.effects, NO_SCALE);
   addInbox(career, 'info', fill(career, ev, later.title), fill(career, ev, later.text));
 }
+
+/** The next step of a story chain. It needs its player still at the club, if it is about one. */
+function runNext(career: Career, t: StoryTimer): void {
+  const def = t.next ? BY_ID.get(t.next) : undefined;
+  if (!def || (career.phase !== 'season' && career.phase !== 'preseason')) return;
+  const p = t.playerId ? career.season.league.players[t.playerId] : null;
+  if (t.playerId && (!p || p.teamId !== career.userTeamId)) return;
+  if (career.story.events.some((o) => o.eventId === def.id && o.answer === null)) return;
+  const rng = careerRng(career, `story-next:${t.id}`);
+  // A step about a player the chain didn't have picks its own (the lenders' star sale).
+  const subject = p ?? pickSubject(career, rng, def.when.subject);
+  if (def.when.subject && !subject) return;
+  startEvent(career, def, rng, subject, { person: t.person ?? null, amount: t.amount, teamId: t.teamId ?? null });
+}
+
 
 function checkPromise(career: Career, t: StoryTimer): void {
   const team = userTeam(career);
@@ -627,20 +781,46 @@ function checkPromise(career: Career, t: StoryTimer): void {
     if (!p || p.teamId !== team.id) return;
     who = `${p.firstName} ${p.lastName}`;
     kept = (career.playerSeason[p.id]?.apps ?? 0) - t.baseline >= t.target || (career.playerSeason[p.id]?.apps ?? 0) < t.baseline;
+  } else if (t.kind === 'wins') {
+    const won = career.season.standings.find((r) => r.teamId === team.id)?.won ?? 0;
+    kept = won - t.baseline >= t.target;
+  } else if (t.kind === 'price') {
+    kept = userBooks(career).ticketPrice <= t.baseline;
   } else {
     // Anyone in the squad with an id newer than the promise is a new signing.
     kept = signedSince(career, t.baseline);
+  }
+  if (t.kind === 'wins' || t.kind === 'price') {
+    settleDataPromise(career, t, kept);
+    return;
   }
   const fx = kept ? T.promises.kept : T.promises.broken;
   if (t.playerId) setMood(career, t.playerId, playerMood(career, t.playerId) + fx.mood);
   for (const id of team.playerIds) setMood(career, id, playerMood(career, id) + fx.squad);
   career.story.press = round3(clamp(career.story.press + fx.press, 0, 1));
-  if (!kept && t.kind !== 'later') reportPromise(career, t.kind, who);
+  if (!kept && (t.kind === 'starts' || t.kind === 'signing')) reportPromise(career, t.kind, who);
   if (t.kind === 'starts') {
     addInbox(career, 'decision', kept ? `Promise kept: ${who}` : `Promise broken: ${who}`, kept ? `${who} got the games you promised and is playing with a smile.` : `You promised ${who} more football and he didn't get it. He's told his team-mates, and the press have heard.`);
   } else {
     addInbox(career, 'decision', kept ? 'The coach got his signing' : 'No signing for the coach', kept ? 'You promised a signing and delivered. The dressing room noticed.' : 'You promised the head coach a signing and none came. The dressing room noticed that too.');
   }
+}
+
+/** A promise whose words come from the event data (Stage 6.5): "Title|Body" for kept and broken, and the paper's take on a broken one. */
+function settleDataPromise(career: Career, t: StoryTimer, kept: boolean): void {
+  const def = BY_ID.get(t.eventId);
+  const choice = def?.choices.find((c) => c.id === t.choiceId);
+  const fx = choice?.effects.find((e): e is Extract<Effect, { promise: string }> => 'promise' in e && e.promise === t.kind);
+  const P = kept ? T.promises.kept : T.promises.broken;
+  const team = userTeam(career);
+  for (const id of team.playerIds) setMood(career, id, playerMood(career, id) + P.squad);
+  career.story.press = round3(clamp(career.story.press + P.press, 0, 1));
+  team.fanMood = clamp(team.fanMood + (kept ? T.promises.fansKept : T.promises.fansBroken), C.fans.min, C.fans.max);
+  const ev = { playerId: t.playerId, person: t.person ?? null, amount: t.amount, teamId: t.teamId ?? null };
+  const text = (kept ? fx?.kept : fx?.broken) ?? (kept ? 'Promise kept|You did what you said.' : 'Promise broken|You said it, and it did not happen.');
+  const [title, body] = fill(career, ev, text).split('|');
+  addInbox(career, 'decision', title, body ?? '');
+  if (!kept && fx?.news) reportStory(career, fill(career, ev, fx.news), NEWS_TUNING.weights.promise);
 }
 
 function signedSince(career: Career, counterMark: number): boolean {

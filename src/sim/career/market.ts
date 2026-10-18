@@ -437,6 +437,22 @@ function maybeIncomingBid(career: Career, rng: Rng): void {
   addInbox(career, 'bid', `Bid for ${playerName(player)}`, `${buyer.shortName} offer ${money(fee)} for ${playerName(player)}. It lapses in ${T.bidExpiryWeeks} weeks.`);
 }
 
+/** A club bids for one of your players at a share of his value (a transfer request, a lender's push to sell). False if no club can afford him. */
+export function bidForListed(career: Career, player: Player, share: number, rng: Rng): boolean {
+  if (career.incomingBids.some((b) => b.playerId === player.id)) return true;
+  const base = roundMoney(player.value * share, 5000);
+  const options = buyers(career, career.userTeamId, base);
+  if (options.length === 0) {
+    addInbox(career, 'bid', `No takers for ${playerName(player)}`, `Clubs were told ${playerName(player)} is available, but none can afford ${money(base)} right now.`);
+    return false;
+  }
+  const buyer = rng.pick(options.slice(0, 4));
+  const fee = roundMoney(base * bidFactor(career, buyer.id), 5000);
+  career.incomingBids.push({ id: nextId(career, 'bid'), playerId: player.id, fromTeamId: buyer.id, fee, expiresWeek: career.weekIndex + T.bidExpiryWeeks });
+  addInbox(career, 'bid', `Bid for ${playerName(player)}`, `${buyer.shortName} offer ${money(fee)} for ${playerName(player)}. It lapses in ${T.bidExpiryWeeks} weeks.`);
+  return true;
+}
+
 /** Starting-eleven average at a position for a club, used to find where an AI club is weakest. */
 function bestAt(players: Player[], position: Position): number {
   const at = players.filter((p) => p.position === position).map((p) => p.overall).sort((a, b) => b - a);
