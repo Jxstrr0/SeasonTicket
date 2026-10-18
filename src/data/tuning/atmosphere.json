@@ -62,6 +62,10 @@
     "queue": 3,
     "minChanceXg": 0.04
   },
+  "break": {
+    "_about": "Half-time and the wait before extra time on the live match screen. With the owner in charge play stops there until Play; with the head coach in charge it waits coachS real seconds with a card on the pitch, then the referee whistles play back on.",
+    "coachS": 5
+  },
   "night": {
     "_about": "Which matches kick off in the evening under the floodlights: a fixed share of league rounds picked from the fixture id (so it never changes for a match), and every playoff.",
     "leagueShare": 0.35,

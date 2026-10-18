@@ -13,7 +13,7 @@ import {
   saveCareer,
   type SaveStore,
 } from '../src/game/save';
-import { BIG_CALL_MINUTE, coachInCharge, liveMentality, liveSubstitute, pauseReason, playToEnd, setCoachInCharge, stepLive, userSideState } from '../src/game/matchday';
+import { BIG_CALL_MINUTE, coachInCharge, isBreak, liveMentality, liveSubstitute, pauseReason, playToEnd, setCoachInCharge, stepLive, userSideState } from '../src/game/matchday';
 
 function newCareer(tier: TierId = 'normal', seed = 21): Career {
   const club = (C.tiers[tier].clubs as string[])[0];
@@ -148,7 +148,14 @@ describe('match day', () => {
     career.delegation.matchMode = 'coach';
     toKickoff(career);
     const state = startUserMatch(career)!;
-    for (let i = 0; i < 400 && !state.finished; i++) expect(stepLive(career).pause).toBeNull();
+    let breaks = 0;
+    for (let i = 0; i < 400 && !state.finished; i++) {
+      const step = stepLive(career);
+      expect(step.pause).toBeNull();
+      if (isBreak(step.events)) breaks += 1;
+    }
+    // The screen still takes a short half-time break without stopping.
+    expect(breaks).toBe(1);
   });
 
   it('full mode leaves decisions to the owner and pauses for injuries', () => {
@@ -158,8 +165,16 @@ describe('match day', () => {
     expect(coachInCharge(career)).toBe(false);
     const injury = { minute: 50, added: 0, type: 'injury' as const, side: state.setup.homeId === career.userTeamId ? ('home' as const) : ('away' as const), teamId: career.userTeamId, playerId: userSideState(career, state).onPitch[3], secondaryPlayerId: null, xg: null, text: '', homeScore: 0, awayScore: 0, highlight: true };
     expect(pauseReason(career, state, [injury])).toMatch(/Injury/);
+    // Half-time and the wait for extra time stop play for the owner's team talk; goals do not.
+    const at = (type: 'halfTime' | 'extraTimeStart' | 'goal') => ({ ...injury, type, playerId: null });
+    expect(pauseReason(career, state, [at('halfTime')])).toMatch(/Half-time/);
+    expect(pauseReason(career, state, [at('extraTimeStart')])).toMatch(/Extra time/);
+    expect(pauseReason(career, state, [at('goal')])).toBeNull();
+    expect(isBreak([at('goal'), at('halfTime')])).toBe(true);
+    expect(isBreak([at('goal')])).toBe(false);
     setCoachInCharge(career, true);
     expect(coachInCharge(career)).toBe(true);
+    expect(pauseReason(career, state, [at('halfTime')])).toBeNull();
     setCoachInCharge(career, false);
     expect(coachInCharge(career)).toBe(false);
   });

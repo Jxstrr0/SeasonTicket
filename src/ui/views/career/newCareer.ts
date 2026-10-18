@@ -7,7 +7,7 @@ import type { NewCareerDraft } from '../../career/state';
 import { CREST_ICONS, CREST_PATTERNS, CREST_SHAPES, renderCrest } from './crest';
 
 export const MATCH_MODES: readonly { id: MatchMode; label: string; hint: string }[] = [
-  { id: 'full', label: 'Full control', hint: 'You make every change. Play stops for injuries and red cards.' },
+  { id: 'full', label: 'Full control', hint: 'You make every change. Play stops at half-time and for injuries and red cards.' },
   { id: 'bigCalls', label: 'Game plan + big calls', hint: 'The coach runs the match; play stops for goals, half-time and a 65th-minute call.' },
   { id: 'coach', label: 'Coach decides', hint: 'Watch only. The head coach makes every call.' },
 ];

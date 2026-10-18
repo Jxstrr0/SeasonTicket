@@ -973,6 +973,11 @@ body.office-mode .topbar { backdrop-filter: none; }
 .rp-status { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 86%; padding: 10px 16px; border-radius: 10px; background: rgba(11, 16, 32, 0.85); text-align: center; }
 .rp-banner { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); padding: 8px 16px; border-radius: 10px; background: rgba(11, 16, 32, 0.88); border: 2px solid var(--c, #fff); text-align: center; pointer-events: none; }
 .rp-banner strong { color: var(--accent); letter-spacing: 0.04em; }
+.lp-break { position: absolute; left: 50%; top: 16%; transform: translateX(-50%); width: max-content; max-width: min(90%, 360px); padding: 8px 16px; border-radius: 10px; background: rgba(11, 16, 32, 0.88); border: 2px solid var(--accent); text-align: center; pointer-events: none; z-index: 3; }
+.lp-break > * { display: block; }
+.lp-break strong { color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.85rem; }
+.lp-break .lp-score { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
+.lp-break[hidden] { display: none; }
 .rp-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .rp-side .live-controls .segmented { flex: 1 1 100%; }
 .rp-side .live-controls .seg { flex: 1 1 0; min-width: 0; padding: 8px 4px; }

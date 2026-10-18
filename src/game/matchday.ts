@@ -12,6 +12,17 @@ import type { Dial, MatchEvent, Side, Tactics } from '../sim/types';
 
 /** The minute of the second half when big-calls mode stops once for a substitution window. */
 export const BIG_CALL_MINUTE = 65;
+const HALF_TIME_TALK = 'Half-time team talk.';
+const EXTRA_TIME_TALK = 'Extra time. Fresh legs?';
+
+/**
+ * Whether these events bring a break in play: half-time, or the wait before extra time. The
+ * match screen stops there (or, with the head coach in charge, waits a few seconds) and the
+ * referee whistles play back on.
+ */
+export function isBreak(events: readonly MatchEvent[]): boolean {
+  return events.some((e) => e.type === 'halfTime' || e.type === 'extraTimeStart');
+}
 
 export interface ActionResult {
   ok: boolean;
@@ -36,12 +47,20 @@ export function pauseReason(career: Career, state: MatchState, events: MatchEven
     if (e.type === 'injury' && e.side === mine && S.onPitch.includes(e.playerId ?? '')) return 'Injury: one of yours is down.';
     if ((e.type === 'redCard' || e.type === 'secondYellow') && e.side === mine) return 'Red card: you are down to ten.';
   }
-  if (mode !== 'bigCalls') return null;
+  if (mode !== 'bigCalls') {
+    // Handed to the head coach, half-time is his (the screen takes a short break instead).
+    if (S.aiControlled) return null;
+    for (const e of events) {
+      if (e.type === 'halfTime') return HALF_TIME_TALK;
+      if (e.type === 'extraTimeStart') return EXTRA_TIME_TALK;
+    }
+    return null;
+  }
   for (const e of events) {
     if (e.type === 'goal' || e.type === 'ownGoal' || e.type === 'penaltyScored') return e.side === mine ? 'Goal! Hold the lead or push on?' : 'Conceded. Time to react?';
     if ((e.type === 'redCard' || e.type === 'secondYellow') && e.side !== mine) return 'They are down to ten.';
-    if (e.type === 'halfTime') return 'Half-time team talk.';
-    if (e.type === 'extraTimeStart') return 'Extra time. Fresh legs?';
+    if (e.type === 'halfTime') return HALF_TIME_TALK;
+    if (e.type === 'extraTimeStart') return EXTRA_TIME_TALK;
     if (e.type === 'shootoutStart') return 'Penalties.';
   }
   if (state.period === 'secondHalf' && state.minute === BIG_CALL_MINUTE && state.added === 0) return 'Big call: changes for the last 25 minutes?';

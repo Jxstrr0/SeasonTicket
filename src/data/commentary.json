@@ -95,6 +95,14 @@
     "Half time. {score}.",
     "The referee ends the first half. {score}."
   ],
+  "secondHalf": [
+    "The second half is under way. {score}.",
+    "{team} get the second half going. {score}."
+  ],
+  "extraTimeKickoff": [
+    "Extra time is under way. {score}.",
+    "{team} kick off extra time. {score}."
+  ],
   "fullTime": [
     "Full time. {score}.",
     "That is the end of the match. {score}."

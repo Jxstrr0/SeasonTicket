@@ -333,9 +333,9 @@ Career simplifications (Stage 2):
 - A good fitness coach (rating at or above a floor) gives each injured player a weekly chance, scaled by rating, to come back a week sooner.
 - To keep saves small, results are trimmed once their week is played. The timeline keeps only goals, red cards and injuries (without commentary), and only scorers, assisters and sent-off players keep a stat line. The owner's latest match is kept in full.
 - Match day has three modes:
-  - **Full control:** play stops only for the owner's injuries and red cards.
+  - **Full control:** play stops only for the owner's injuries and red cards, half-time and extra time.
   - **Game plan and big calls:** play also stops for goals, an opponent's red card, half-time, the 65th minute, extra time and penalties.
-  - **Coach:** play never stops.
+  - **Coach:** play never stops; half-time is a 5-second break with a card on the pitch. The same goes for a full-control match handed to the head coach mid-game.
 - In big-calls mode, a tactics change by the owner becomes the head coach's new game plan. The coach makes his usual adjustments (chasing, protecting, after a red card) from that plan instead of undoing it.
 
 HQ Office (Stage 3):

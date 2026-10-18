@@ -48,9 +48,20 @@ describe('match moments', () => {
       expect(k.power).toBeGreaterThanOrEqual(0);
       expect(k.power).toBeLessThanOrEqual(1);
     }
-    // One after each goal. The halves start straight after the half-time whistle (the engine
-    // has no break), so that whistle stands for the second half's kick-off too.
+    // One after each goal. The engine kicks the second half off at the half-time whistle;
+    // the screen adds that kick-off's whistle when play comes back on after its break.
     expect(of('kickoff').length).toBe(m.goalLog.length);
+  });
+
+  it('whistles play back on after a break, with a line, but says nothing after a goal', () => {
+    const half = moments.find((mo) => mo.kind === 'event' && mo.event.kind === 'whistle' && mo.event.note === 'half');
+    expect(half).toBeDefined();
+    const back: Moment = { kind: 'kickoff', ms: m.clockMs, side: 1, resume: true };
+    expect(soundsFor(back)).toEqual([expect.objectContaining({ key: 'whistle' })]);
+    const line = tickerLine(m, back);
+    expect(line?.text).toMatch(/second half|extra time/i);
+    expect(line?.text).not.toMatch(/[{}]/);
+    expect(tickerLine(m, { ...back, resume: false })).toBeNull();
   });
 
   it('never changes the match it watches', () => {
