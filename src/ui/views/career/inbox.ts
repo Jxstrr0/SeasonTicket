@@ -15,6 +15,7 @@ const KIND_LABELS: Record<InboxMessage['kind'], string> = {
   match: 'Match',
   season: 'Season',
   stadium: 'Stadium',
+  decision: 'Decision',
 };
 
 function when(m: InboxMessage, career: Career): string {

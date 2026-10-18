@@ -2,6 +2,7 @@
  * Running the club off the pitch: ticket prices, the shirt sponsor, stadium
  * naming rights, the youth academy and the coaching staff.
  */
+import { STORY_TUNING } from '../data';
 import { teamById } from '../league';
 import { makeIdFactory, defaultNames } from '../names';
 import { generateStaffMember } from '../staff';
@@ -39,7 +40,7 @@ export function makeSponsorOffers(career: Career): SponsorOffer[] {
   const s = C.sponsors;
   const team = userTeam(career);
   const rng = careerRng(career, 'sponsor-offers');
-  const middle = s.base + s.perMarket * Math.pow(team.marketSize, s.exponent) * (0.85 + 0.3 * team.squadQuality);
+  const middle = s.base + s.perMarket * Math.pow(team.marketSize, s.exponent) * (0.85 + 0.3 * team.squadQuality) * goodwillFactor(career);
   const brands = rng.shuffle(s.brands).slice(0, s.offers);
   return brands
     .map((brand) => {
@@ -60,6 +61,12 @@ export function acceptSponsor(career: Career, index: number): ClubResult {
   career.sponsorOffers = [];
   addInbox(career, 'finance', `${offer.brand} on the shirt`, `${offer.brand} will pay ${money(offer.perSeason)} a season for ${offer.years} season${offer.years > 1 ? 's' : ''}.`);
   return ok(`${offer.brand} signed.`);
+}
+
+/** Sponsor goodwill (the story layer) moves offers a little either way. A new career has no story yet. */
+function goodwillFactor(career: Career): number {
+  const g = STORY_TUNING.goodwill;
+  return 1 + ((career.story?.goodwill ?? g.neutral) - g.neutral) * g.offerSwing;
 }
 
 /** At kick-off of the season a club without a sponsor takes the best offer on the table. */

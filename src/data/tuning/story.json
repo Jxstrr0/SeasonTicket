@@ -1,0 +1,67 @@
+{
+  "_about": "Stage 6 events and story layer: how often events come, deadlines, player mood, the press and how well the staff answer for you. Read by src/sim/career/story.ts. Events themselves live in src/data/events.",
+  "pace": {
+    "_about": "Chance of 0, 1, 2 or 3 new events in a week, by story pace. 'window' is used instead in transfer-window weeks (pre-season and the mid-season window) and is scaled toward calm/busy by windowShift.",
+    "calm": [0.5, 0.42, 0.08, 0],
+    "normal": [0.2, 0.55, 0.22, 0.03],
+    "busy": [0.08, 0.42, 0.38, 0.12],
+    "windowExtra": { "calm": [0.4, 0.45, 0.15, 0], "normal": [0.1, 0.5, 0.32, 0.08], "busy": [0.04, 0.32, 0.44, 0.2] },
+    "maxOpen": 3
+  },
+  "defaults": {
+    "_about": "Event fields left out of the data. deadline is in weeks: the staff answer when the owner has not after that many weeks. cooldown: weeks before the same event can come again.",
+    "deadline": 2,
+    "cooldown": 10,
+    "maxPerSeason": 2,
+    "weight": 1
+  },
+  "money": {
+    "_about": "Event amounts are written for a mid-sized club and scaled by market size: scale = base + perMarket x marketSize, rounded to round.",
+    "base": 0.55,
+    "perMarket": 0.9,
+    "round": 5000
+  },
+  "mood": {
+    "_about": "Player mood 0-1. Each week it moves drift of the way toward a target: neutral, plus playTime x (share of matches played - what his squad role expects), plus perResult for each of the team's last five results (W +, L -). Pre-season it drifts toward neutral. unhappyBelow marks a player as unhappy for events. matchForm: the eleven's average mood shifts every attribute by up to this share on match day ((mood - neutral) / (1 - neutral) of it).",
+    "neutral": 0.6,
+    "drift": 0.15,
+    "playTime": 0.5,
+    "expectedShare": { "starter": 0.75, "rotation": 0.4, "fringe": 0.12 },
+    "perResult": 0.015,
+    "unhappyBelow": 0.35,
+    "happyAbove": 0.8,
+    "min": 0,
+    "max": 1,
+    "matchForm": 0.03
+  },
+  "press": {
+    "_about": "Press standing 0-1 drifts back toward neutral each week. fanLift moves fan mood each week by (press - neutral) x fanLift.",
+    "neutral": 0.5,
+    "drift": 0.03,
+    "fanLift": 0.01
+  },
+  "goodwill": {
+    "_about": "Sponsor goodwill 0-1 scales the next shirt sponsor offers by 1 + (goodwill - neutral) x offerSwing, and drifts back toward neutral each week.",
+    "neutral": 0.5,
+    "drift": 0.01,
+    "offerSwing": 0.2
+  },
+  "staff": {
+    "_about": "Who answers for the owner, by visitor role, and how well. q is the staff member's rating / 99. Good effects (mood, fans, press, goodwill going up) are scaled by goodBase + goodGain x q; bad ones by badBase - badGain x q. Money is never scaled.",
+    "byRole": { "player": "headCoach", "coach": "headCoach", "staffer": "assistantCoach", "agent": "assistantCoach", "sponsor": "assistantCoach", "reporter": "assistantCoach", "fans": "assistantCoach", "councillor": "assistantCoach", "vip": "assistantCoach", "lender": "assistantCoach" },
+    "goodBase": 0.55,
+    "goodGain": 0.55,
+    "badBase": 1.35,
+    "badGain": 0.6,
+    "missingQuality": 0.35
+  },
+  "promises": {
+    "_about": "What happens when a promise comes due. Kept and broken effects apply to the player the promise was made to (mood), the squad, and the press.",
+    "kept": { "mood": 0.12, "squad": 0.01, "press": 0.01 },
+    "broken": { "mood": -0.3, "squad": -0.03, "press": -0.03 }
+  },
+  "keep": {
+    "_about": "Answered events are dropped after this many weeks (their inbox message stays). Decisions are kept for this season and the last.",
+    "answeredWeeks": 6
+  }
+}

@@ -33,6 +33,8 @@ export interface SpatialSide {
   bench?: SpatialPlayer[];
   /** Energy at kick-off (0..1), starters then bench, in the same order; 1 if left out. */
   energy?: number[];
+  /** Match-day form (TeamSelection.form): every attribute but aggression times 1 + form. */
+  form?: number;
 }
 
 export interface SpatialSetup {

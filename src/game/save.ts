@@ -7,7 +7,7 @@
  * that version up to the current one, so an old save is never thrown away.
  */
 import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
-import { CAREER_VERSION, fullCapacity, initialStadium, type Career, type Stadium } from '../sim/career';
+import { CAREER_VERSION, fullCapacity, initialStadium, newStory, type Career, type Stadium } from '../sim/career';
 import type { Team } from '../sim/types';
 
 export const SAVE_PREFIX = 'ST1:';
@@ -48,6 +48,16 @@ const MIGRATIONS: Record<number, Migration> = {
   /** Version 4 keeps replays for the 2D viewer. Matches played before it have none. */
   3: (save) => {
     save.replays = { club: {}, round: {} };
+    return save;
+  },
+  /** Version 5 adds the story layer (Stage 6): neutral moods, no events yet, and an "other" income line. */
+  4: (save) => {
+    save.story = newStory();
+    type Ledger = { income: Record<string, number> };
+    for (const books of Object.values(save.books as Record<string, { ledger: Ledger; lastLedger: Ledger | null }>)) {
+      books.ledger.income.other ??= 0;
+      if (books.lastLedger) books.lastLedger.income.other ??= 0;
+    }
     return save;
   },
 };
