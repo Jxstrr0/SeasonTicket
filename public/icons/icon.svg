@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- The Longlight mark: a copper half-sun resting on a bar, on Longlight purple. -->
+  <rect width="512" height="512" fill="#6F45B8"/>
+  <path d="M146 292a110 110 0 0 1 220 0z" fill="#C2826A"/>
+  <rect x="126" y="304" width="260" height="26" rx="4" fill="#E1DED7"/>
+</svg>

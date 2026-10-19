@@ -6,11 +6,13 @@
 import { renderCareerTitle } from '../views/career/title';
 import { loadTitleSummary } from './titleSummary';
 import { installCrashGuard } from './crash';
+import { registerServiceWorker } from '../../pwa/register';
 
 type Pending = { action: string } | { code: string } | null;
 
 export function bootCareer(root: HTMLElement): void {
   installCrashGuard();
+  registerServiceWorker();
   const layer = document.createElement('div');
   layer.id = 'ui-layer';
   layer.innerHTML = renderCareerTitle({ saved: loadTitleSummary(), error: null, importText: '' });

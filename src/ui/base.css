@@ -1229,3 +1229,25 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .whats-new ul { margin: 4px 0; padding-left: 20px; }
 .whats-new li + li { margin-top: 4px; }
 .title-links { justify-content: center; }
+
+/* "A new version is ready" (Stage 7.5): above everything, clear of the notch. */
+.update-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  width: min(560px, calc(100% - 24px));
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #1c1820;
+  color: #e1ded7;
+  border: 1px solid #6f45b8;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
+}
+.update-bar span { flex: 1 1 200px; }
+.update-bar button { min-height: 44px; }
