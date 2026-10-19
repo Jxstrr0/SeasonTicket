@@ -32,6 +32,20 @@ export function listSources(relDir, ext = '.ts') {
     .map((f) => `${relDir}/${f}`);
 }
 
+/** Every file under `relDir`, at any depth, as paths relative to it. */
+export function listFilesDeep(relDir) {
+  const out = [];
+  const walk = (sub) => {
+    for (const e of readdirSync(join(ROOT, relDir, sub), { withFileTypes: true })) {
+      const rel = sub ? `${sub}/${e.name}` : e.name;
+      if (e.isDirectory()) walk(rel);
+      else out.push(rel);
+    }
+  };
+  walk('');
+  return out.sort();
+}
+
 export function envFlag(name) {
   return process.env[name] === '1';
 }

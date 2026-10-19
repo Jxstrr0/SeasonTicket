@@ -40,6 +40,8 @@ export interface StadiumViewOptions {
   onPick(part: StadiumPart): void;
   /** The browser dropped the WebGL context. */
   onLost?(): void;
+  /** The title screen: dusk light, no touch, a slow turn around the ground (Stage 7.6). */
+  ambient?: boolean;
 }
 
 export interface StadiumViewHandle {
@@ -61,6 +63,7 @@ interface Orbit {
   zoom: number;
 }
 
+const AMBIENT = VIEW.ambient;
 const DEG = Math.PI / 180;
 const MIN_EL = VIEW.minElevation * DEG;
 const MAX_EL = VIEW.maxElevation * DEG;
@@ -90,6 +93,8 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
   const scene = new Scene();
   const daySky = skyTexture('#5d8fd0', '#d5e3ef');
   const nightSky = skyTexture('#03060f', '#1a2340');
+  const ambient = opts.ambient === true;
+  const duskSky = ambient ? skyTexture(AMBIENT.skyTop, AMBIENT.skyHorizon) : null;
   scene.background = daySky;
   scene.fog = new Fog('#d5e3ef', 650, 1500);
   const camera = new PerspectiveCamera(VIEW.fov, 1, 1, 3000);
@@ -130,7 +135,9 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
 
   // The camera orbits the centre spot; `goal` is where it is heading.
   const first = VIEW_PRESETS[0];
-  const cur: Orbit = { az: first.azimuth * DEG, el: first.elevation * DEG, zoom: first.zoom };
+  const cur: Orbit = ambient
+    ? { az: AMBIENT.startAzimuth * DEG, el: AMBIENT.elevation * DEG, zoom: AMBIENT.zoom }
+    : { az: first.azimuth * DEG, el: first.elevation * DEG, zoom: first.zoom };
   const goal: Orbit = { ...cur };
   // The point the camera turns around: the centre spot, or nearer a focused part.
   const centre = target.clone();
@@ -205,6 +212,20 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
   };
 
   const applyTime = (): void => {
+    if (duskSky) {
+      // Dusk: a low copper sun under a purple sky, the stands' lights coming on.
+      model.setLit(AMBIENT.selfLit);
+      scene.background = duskSky;
+      (scene.fog as Fog).color.set(AMBIENT.fog);
+      sky.color.set('#b9a6e8');
+      sky.groundColor.set('#3a2a30');
+      sky.intensity = 0.9;
+      sun.color.set('#ffb07a');
+      sun.intensity = 1.6;
+      sun.position.set(-260, 70, -120);
+      dirty = true;
+      return;
+    }
     model.setLit(night ? VIEW.nightSelfLit : VIEW.daySelfLit);
     scene.background = night ? nightSky : daySky;
     (scene.fog as Fog).color.set(night ? '#1a2340' : '#d5e3ef');
@@ -303,11 +324,15 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
     clampOrbit(goal);
     dirty = true;
   };
-  canvas.addEventListener('pointerdown', onDown);
-  canvas.addEventListener('pointermove', onMove);
-  canvas.addEventListener('pointerup', onUp);
-  canvas.addEventListener('pointercancel', onUp);
-  canvas.addEventListener('wheel', onWheel, { passive: false });
+  if (!ambient) {
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+  }
+
+  if (ambient) applyTime();
 
   const resize = (): void => {
     const w = Math.max(1, container.clientWidth);
@@ -333,6 +358,17 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
     lastTime = t;
     sinceDraw += dt;
     if (lost) return;
+    if (ambient) {
+      // The title screen: turn slowly, drawn at a gentle frame rate to spare the battery.
+      cur.az = goal.az = goal.az + dt * AMBIENT.driftDegPerSec * DEG;
+      model.tick(dt);
+      if (sinceDraw < 1 / AMBIENT.fps && !dirty) return;
+      dirty = false;
+      sinceDraw = 0;
+      placeCamera();
+      renderer.render(scene, camera);
+      return;
+    }
     // Ease towards the goal (presets and focus turns).
     const k = 1 - Math.exp(-dt * 6);
     let easing = false;
@@ -424,6 +460,7 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
       surroundings.dispose();
       daySky.dispose();
       nightSky.dispose();
+      duskSky?.dispose();
       sun.dispose();
       renderer.dispose();
       // Hand the GPU context back now: a closed view's context otherwise lives on until the

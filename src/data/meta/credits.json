@@ -1,0 +1,287 @@
+{
+  "_about": "Every asset, library and tool, with its source and licence. CREDITS.md and the in-game Credits screen are both made from this list: run `npm run credits` after editing it (a test checks CREDITS.md matches). Each asset lists the files under public/assets it covers (a path, or the start of one); a test checks every file there is covered.",
+  "studio": "Longlight Interactive",
+  "assets": [
+    {
+      "asset": "Office props: metal office desk, classic laptop, modern arm chair 01, potted plant 04, desk lamp arm 01, wall clock, wooden display shelves 01, sofa 01, modern coffee table 01, hanging picture frame 02, clipboard, modern ceiling lamp 01, football",
+      "source": "Poly Haven",
+      "url": "https://polyhaven.com/models",
+      "licence": "CC0",
+      "usedFor": "HQ Office furniture and desk objects",
+      "files": [
+        "office/props.glb"
+      ]
+    },
+    {
+      "asset": "Textures: herringbone parquet, beige wall 001",
+      "source": "Poly Haven",
+      "url": "https://polyhaven.com/textures",
+      "licence": "CC0",
+      "usedFor": "HQ Office parquet floor and walls",
+      "files": [
+        "office/herringbone_parquet_",
+        "office/beige_wall_001_"
+      ]
+    },
+    {
+      "asset": "Texture: Carpet 012",
+      "source": "ambientCG",
+      "url": "https://ambientcg.com/view?id=Carpet012",
+      "licence": "CC0",
+      "usedFor": "HQ Office carpet",
+      "files": [
+        "office/Carpet012_"
+      ]
+    },
+    {
+      "asset": "Universal Base Characters [Standard]",
+      "source": "Quaternius",
+      "url": "https://quaternius.com",
+      "licence": "CC0",
+      "usedFor": "Office visitors and the 3D match players (bodies and hair)",
+      "files": [
+        "office/people.glb"
+      ]
+    },
+    {
+      "asset": "Universal Animation Library [Standard]",
+      "source": "Quaternius",
+      "url": "https://quaternius.com",
+      "licence": "CC0",
+      "usedFor": "Office visitor animations (walk, idle, talk, sit) and the 3D match players' idle, walk, jog and sprint",
+      "files": [
+        "office/anims.glb",
+        "match/anims.glb"
+      ]
+    },
+    {
+      "asset": "Sound: Football match ambience",
+      "source": "habbis92 on Freesound",
+      "url": "https://freesound.org/people/habbis92/sounds/206003/",
+      "licence": "CC0",
+      "usedFor": "The crowd murmur under every match",
+      "files": [
+        "audio/bed.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Stadium crowd reaction, general ambience",
+      "source": "itmightgetloud on Freesound",
+      "url": "https://freesound.org/people/itmightgetloud/sounds/829454/",
+      "licence": "CC0",
+      "usedFor": "The crowd swell as attacks near a goal",
+      "files": [
+        "audio/swell.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Stadium crowd reaction, goal",
+      "source": "itmightgetloud on Freesound",
+      "url": "https://freesound.org/people/itmightgetloud/sounds/829455/",
+      "licence": "CC0",
+      "usedFor": "Goal roars",
+      "files": [
+        "audio/roar-1.mp3",
+        "audio/roar-2.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Goal",
+      "source": "Sandermotions on Freesound",
+      "url": "https://freesound.org/people/Sandermotions/sounds/494352/",
+      "licence": "CC0",
+      "usedFor": "A goal roar",
+      "files": [
+        "audio/roar-3.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Stadium \"oehh\"",
+      "source": "Sandermotions on Freesound",
+      "url": "https://freesound.org/people/Sandermotions/sounds/494362/",
+      "licence": "CC0",
+      "usedFor": "The crowd reacting to a chance",
+      "files": [
+        "audio/ooh-2.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Crowd reaction during a soccer game",
+      "source": "felix.blume on Freesound",
+      "url": "https://freesound.org/people/felix.blume/sounds/612131/",
+      "licence": "CC0",
+      "usedFor": "The crowd reacting to a chance",
+      "files": [
+        "audio/ooh-1.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Crowd sigh in disappointment",
+      "source": "ShangusBurger on Freesound",
+      "url": "https://freesound.org/people/ShangusBurger/sounds/763880/",
+      "licence": "CC0",
+      "usedFor": "The groan when the away side scores",
+      "files": [
+        "audio/groan.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Booing",
+      "source": "ShangusBurger on Freesound",
+      "url": "https://freesound.org/people/ShangusBurger/sounds/764033/",
+      "licence": "CC0",
+      "usedFor": "Boos for fouls and cards",
+      "files": [
+        "audio/boo.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Referee whistle",
+      "source": "Rosa-Orenes256 on Freesound",
+      "url": "https://freesound.org/people/Rosa-Orenes256/sounds/538422/",
+      "licence": "CC0",
+      "usedFor": "The short whistle (fouls, offside, kick-off)",
+      "files": [
+        "audio/whistle.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Metal whistle",
+      "source": "strongbot on Freesound",
+      "url": "https://freesound.org/people/strongbot/sounds/568995/",
+      "licence": "CC0",
+      "usedFor": "The half-time and full-time whistles",
+      "files": [
+        "audio/whistle-long.mp3",
+        "audio/whistle-end.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Soccer ball kick",
+      "source": "bittermelonheart on Freesound",
+      "url": "https://freesound.org/people/bittermelonheart/sounds/555042/",
+      "licence": "CC0",
+      "usedFor": "Ball kicks",
+      "files": [
+        "audio/kick-1.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Ball kick",
+      "source": "Nicolas4677 on Freesound",
+      "url": "https://freesound.org/people/Nicolas4677/sounds/446639/",
+      "licence": "CC0",
+      "usedFor": "Ball kicks",
+      "files": [
+        "audio/kick-2.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Stadium crowd reaction, general ambience (a second cut)",
+      "source": "itmightgetloud on Freesound",
+      "url": "https://freesound.org/people/itmightgetloud/sounds/829454/",
+      "licence": "CC0",
+      "usedFor": "The home end's chants (Stage 7.2)",
+      "files": [
+        "audio/chant-1.mp3",
+        "audio/chant-2.mp3"
+      ]
+    },
+    {
+      "asset": "Sound: Stadium crowd reaction, mood waves",
+      "source": "itmightgetloud on Freesound",
+      "url": "https://freesound.org/people/itmightgetloud/sounds/829456/",
+      "licence": "CC0",
+      "usedFor": "The away end's chant, muffled by distance",
+      "files": [
+        "audio/chant-away.mp3"
+      ]
+    },
+    {
+      "asset": "Music: Coffee House Bump",
+      "source": "OatCog on OpenGameArt",
+      "url": "https://opengameart.org/content/coffee-house-bump",
+      "licence": "CC0",
+      "usedFor": "A song on the office radio",
+      "files": [
+        "audio/radio-cafe.mp3"
+      ]
+    },
+    {
+      "asset": "Music: Funked Up",
+      "source": "joth on OpenGameArt",
+      "url": "https://opengameart.org/content/funked-up",
+      "licence": "CC0",
+      "usedFor": "A song on the office radio",
+      "files": [
+        "audio/radio-funk.mp3"
+      ]
+    },
+    {
+      "asset": "Music: Chill lofi inspired",
+      "source": "omfgdude on OpenGameArt",
+      "url": "https://opengameart.org/content/chill-lofi-inspired",
+      "licence": "CC0",
+      "usedFor": "A song on the office radio",
+      "files": [
+        "audio/radio-lofi.mp3"
+      ]
+    }
+  ],
+  "notes": [
+    "All models were converted with the tools in `scripts/assets` (Meshopt geometry, KTX2 textures). The sounds were cut, levelled and encoded to MP3 by `scripts/assets/build-audio.py`. The menus' taps, the visitor's knock, the phone's ring, the newspaper's page, the press cameras, the war-room clock and the office's room tone are made in code by the game itself (`src/render/audio/synth.ts`), with no recording.",
+    "The app icon (`public/icons/`, the Longlight copper half-sun on a bar) is the studio's own work, drawn as SVG and rendered to PNG for phones. So is the link preview picture (`public/og.png`) and the title screen's still stadium."
+  ],
+  "libraries": [
+    {
+      "name": "three.js, including its example loaders, post-processing and RoomEnvironment",
+      "licence": "MIT"
+    },
+    {
+      "name": "Basis Universal transcoder (bundled with three.js)",
+      "licence": "Apache-2.0"
+    },
+    {
+      "name": "fflate",
+      "licence": "MIT"
+    },
+    {
+      "name": "meshoptimizer (its simplifier, for the light bodies on the 3D match)",
+      "licence": "MIT"
+    },
+    {
+      "name": "Vite",
+      "licence": "MIT"
+    },
+    {
+      "name": "Vitest",
+      "licence": "MIT"
+    }
+  ],
+  "tools": [
+    {
+      "name": "glTF Transform",
+      "licence": "MIT"
+    },
+    {
+      "name": "meshoptimizer",
+      "licence": "MIT"
+    },
+    {
+      "name": "sharp",
+      "licence": "Apache-2.0"
+    },
+    {
+      "name": "KTX-Software (`toktx`)",
+      "licence": "Apache-2.0"
+    },
+    {
+      "name": "FFmpeg with LAME (`build-audio.py`)",
+      "licence": "LGPL-2.1 or later"
+    },
+    {
+      "name": "NumPy (`build-audio.py`)",
+      "licence": "BSD-3-Clause"
+    }
+  ]
+}

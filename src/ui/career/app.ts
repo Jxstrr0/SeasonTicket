@@ -66,6 +66,7 @@ import { Match3D, type PlayerCard, type ThreeChoice } from './match3d';
 import { ratingSoFar } from '../../sim/match/ratings';
 import { personOf, type SpatialSetup } from '../../sim/spatial/types';
 import { buildStadiumSnapshot } from './stadiumSnapshot';
+import { setTitleBackdrop } from './titleBackdrop';
 import { findMatch } from '../model';
 import { SaveError, decodeSave, encodeSave, loadCareer, saveCareer } from '../../game/save';
 import { createMatchRunner, type MatchRunner } from '../../game/matchRunner';
@@ -84,6 +85,7 @@ import { renderDeadline } from '../views/career/deadline';
 import { renderGameOver, renderSaveCode } from '../views/career/saves';
 import { renderHelp, renderTip } from '../views/career/help';
 import { renderContact, renderWhatsNew } from '../views/career/contact';
+import { renderCredits } from '../views/career/credits';
 import { buildReport, deviceSummary } from './report';
 import { hasCrashed, setCrashWhere, showCrash } from './crash';
 import { copyText } from '../clipboard';
@@ -101,7 +103,7 @@ import { UiSounds } from '../../render/audio/uiSounds';
 import { OfficeAudio } from '../../render/audio/officeAudio';
 import { cuesFor, type CueState } from './uiSound';
 import { officeVisitor } from './office';
-import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, storeShowFps, storeMix, storeRadio, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type StadiumPick, type UiState, type WeekRun } from './state';
+import { HUB_TABS, LIVE_SPEEDS, MARKET_PAGE, PITCH_SPEEDS, STADIUM_PICKS, initialUi, storeHighlights, storeLiveFull, storeLivePitch, storeMatch3d, storeShowFps, storeMix, storeRadio, type HubTab, type LeagueTab, type LivePanel, type MarketView, type NewCareerDraft, type Screen, type StadiumPick, type UiState, type WeekRun } from './state';
 
 type Result = { ok: boolean; message: string };
 
@@ -187,6 +189,9 @@ const HOTSPOT_TABS: Record<Exclude<HotspotId, 'radio'>, HubTab> = {
   clipboard: 'squad',
   door: 'inbox',
 };
+
+/** Screens opened over another one; Back returns to where the player came from. */
+const INFO_SCREENS: readonly Screen[] = ['help', 'contact', 'whatsNew', 'credits'];
 
 export class CareerApp {
   private ui: UiState = initialUi();
@@ -321,6 +326,7 @@ export class CareerApp {
     this.measureTopBar();
     this.syncOffice();
     this.syncStadium();
+    this.syncTitle();
     this.syncReplay();
     this.syncPitch();
     this.syncSound();
@@ -546,6 +552,13 @@ export class CareerApp {
     }
   }
 
+  /** Your ground at dusk behind the title screen (a still picture when graphics are Off). */
+  private syncTitle(): void {
+    const { ui, career } = this;
+    const on = ui.screen === 'title' || (ui.screen === 'new' && !ui.draft);
+    setTitleBackdrop(on, on ? this.officeTier() : null, on && career ? buildStadiumSnapshot(career) : null);
+  }
+
   /** The tier the office runs at, or null when the plain menus are on. */
   private officeTier(): QualityTier | null {
     const q = this.ui.quality;
@@ -628,6 +641,8 @@ export class CareerApp {
         return this.renderContactScreen();
       case 'whatsNew':
         return renderWhatsNew();
+      case 'credits':
+        return renderCredits();
       default:
         break;
     }
@@ -792,9 +807,10 @@ export class CareerApp {
         return this.render();
       case 'help':
       case 'contact':
-      case 'whats-new': {
+      case 'whats-new':
+      case 'credits': {
         const screen = action === 'whats-new' ? 'whatsNew' : action;
-        if (ui.screen !== 'help' && ui.screen !== 'contact' && ui.screen !== 'whatsNew') ui.returnTo = ui.screen;
+        if (!INFO_SCREENS.includes(ui.screen)) ui.returnTo = ui.screen;
         if (screen === 'contact') this.save();
         return this.show(screen);
       }

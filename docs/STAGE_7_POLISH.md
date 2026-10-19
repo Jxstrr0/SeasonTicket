@@ -16,7 +16,7 @@ The work in CLAUDE.md is: tutorial, audio pass, balance pass, performance pass, 
 - **Audio:** match day only (crowd, whistles, kicks: 14 CC0 sounds). The office, menus, events, press conferences and deadline day are silent. One on/off setting.
 - **Balance:** the match engine meets its targets (2.55 goals a match, 45% home wins, 23% draws). Two known gaps: the watched match is a little more open than background matches, and coarse and fine mode disagree on throw-ins and offsides (DESIGN.md 17.15). The economy and the difficulty tiers have never been tested over long careers.
 - **Performance:** first load downloads about 325 KB of compressed script before the title screen (1.0 MB uncompressed); 3D scenes load their own files later. The 3D match aims for 30 fps at Medium. The owner reports it "running very well" on their phone; the frame rate numbers are still to come.
-- **Credits:** `CREDITS.md` lists every asset and library, but there is no credits screen in the game.
+- **Credits:** `CREDITS.md` lists every asset and library, but there is no credits screen in the game. (Done in 7.6: a Credits screen, built from the same list.)
 
 ## Build steps
 
@@ -180,6 +180,20 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 **Text and screens.** Every screen checked at 640 × 360 and 667 × 375 (title, Help, Report a problem, What's new, club pick, branding, every tab, the menu, a played week, the league after a round, match day): nothing wider than the screen and every button at least 44 px. A read-through of the player-facing text found one slip ("Seeds 1 to 2"), now "Seeds 1 and 2". Empty states (no mail, no newspaper yet, no results, no appearances) all say what will fill them.
 
 **Still to come: analytics.** GoatCounter waits on the owner's site code.
+
+### 7.6 Credits and title (built 2026-10-19)
+
+**One credits list.** `src/data/meta/credits.json` is the list of every asset (where it came from, its licence, what it is used for and which files under `public/assets` it covers), plus the libraries and tools. `CREDITS.md` is written from it: after editing the list, `npm run credits` rewrites the file. Tests fail if `CREDITS.md` and the list disagree, if any file in `public/assets` is not covered by an entry, or if an entry points at no files.
+
+**Credits screen.** From the title screen and the menu. Longlight Interactive at the top with the mark, then what the game sends (nothing, for now), every asset with a link to its source and licence, the libraries and the tools.
+
+**Studio card.** On the first visit of a session, the Longlight mark, "LONGLIGHT INTERACTIVE" and "presents" on purple, for under two seconds. A tap skips it, and it never shows to anyone whose phone asks for less motion. The title screen is already working underneath it, so it never slows the start.
+
+**Title screen.** The name in wide, spaced capitals, over your ground at dusk. Every device first gets a still picture (a floodlit bowl under a purple-to-copper sky, drawn in code, so it costs nothing to download). With graphics on, the 3D stadium from the Stadium tab fades in over it and the camera turns slowly round the ground: yours once you have a career, otherwise "Longlight Park" in the studio colours. The 3D only loads on the title screen and is thrown away as soon as you leave it, so it never competes with the office or the match. With graphics Off, or with reduced motion, the still picture stays. The turn speed, camera, sky colours and lighting are in `src/data/tuning/stadium.json` under `view.ambient`.
+
+**Link preview.** Sharing the link shows a 1200 × 630 picture (the still stadium, the mark, the name and the tagline) with the title and description, on sites that read Open Graph or Twitter cards. The image is `public/og.png`, rendered from the same drawing.
+
+**Checked:** title at 740 × 360 with graphics Medium (3D fades in, no errors) and Off (still picture); leaving the title drops the 3D; the 640 × 360 sweep of every screen passes; the start-up script is 7.8 KB compressed (was 6.2 KB; limit 200 KB).
 
 ## Owner's answers (2026-10-18)
 

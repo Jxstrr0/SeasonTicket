@@ -1251,3 +1251,37 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 }
 .update-bar span { flex: 1 1 200px; }
 .update-bar button { min-height: 44px; }
+
+/* Credits (Stage 7.6) and the studio's wide, spaced capitals. */
+.brand-caps { text-transform: uppercase; letter-spacing: 0.32em; font-weight: 600; }
+.longlight-mark { display: block; width: 4.5em; height: auto; }
+.credits-studio { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; background: #1c1820; border-color: #583696; }
+.credits-studio .longlight-mark { width: 88px; margin: 6px 0 2px; }
+.credits-studio .brand-caps { margin: 4px 0 0; color: #e1ded7; font-size: 0.95rem; padding-left: 0.32em; }
+.credits-list { list-style: none; margin: 8px 0; padding: 0; }
+.credits-list li { display: flex; flex-direction: column; gap: 2px; padding: 7px 0; border-top: 1px solid var(--line); }
+.credits-list li:first-child { border-top: 0; }
+.credits-list .link { display: inline-block; padding: 6px 0; }
+.credits-screen code { font-size: 0.9em; }
+
+/* Title backdrop and studio splash (Stage 7.6) */
+#title-backdrop { position: fixed; inset: 0; z-index: 0; display: none; overflow: hidden; background: #1c1430; pointer-events: none; }
+#title-backdrop.on { display: block; }
+#title-backdrop .title-still { position: absolute; inset: 0; width: 100%; height: 100%; }
+#title-backdrop .title-3d { position: absolute; inset: -30% 0 0; opacity: 0; transition: opacity 1.2s ease; }
+#title-backdrop.live .title-3d { opacity: 1; }
+#title-backdrop .title-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+#title-backdrop .title-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(28, 24, 32, 0.1) 0%, rgba(28, 24, 32, 0.2) 45%, rgba(28, 24, 32, 0.7) 100%); }
+.has-title-backdrop body { background: #1c1430; }
+.has-title-backdrop .title-screen .masthead { min-height: 34vh; display: flex; flex-direction: column; justify-content: flex-end; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55); }
+.title-screen .masthead h1 { text-transform: uppercase; letter-spacing: 0.16em; font-weight: 700; }
+.has-title-backdrop .title-screen .card { background: rgba(28, 24, 32, 0.78); border: 1px solid rgba(194, 130, 106, 0.35); }
+.has-title-backdrop .title-screen .continue-card { border-color: rgba(194, 130, 106, 0.7); }
+.has-title-backdrop .title-screen > p { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+.splash { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: #6f45b8; color: #fff; animation: splash-in 0.5s ease both; }
+.splash.out { opacity: 0; transition: opacity 0.45s ease; pointer-events: none; }
+.splash-mark { width: min(32vw, 160px); animation: splash-rise 1.2s ease both; }
+.splash-studio { font-size: clamp(0.9rem, 3vw, 1.25rem); padding-left: 0.32em; color: #fff; }
+.splash-presents { font-size: 0.9rem; letter-spacing: 0.12em; color: #e1ded7; opacity: 0; animation: splash-in 0.6s ease 0.7s both; }
+@keyframes splash-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splash-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
