@@ -265,7 +265,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .banner.shield { background: rgba(78, 205, 196, 0.12); border: 1px solid rgba(78, 205, 196, 0.4); }
 .banner-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .banner-club { display: flex; align-items: center; font-weight: 800; font-size: 1.15rem; }
-.bracket { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: center; }
+.bracket { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 12px; align-items: center; overflow-x: auto; }
 @media (max-width: 559px) { .bracket { grid-template-columns: 1fr; } }
 .bk-col { display: flex; flex-direction: column; gap: 8px; }
 .bk-head { margin: 0; font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -578,9 +578,11 @@ label .field { color: var(--text); }
 .home-grid > *, .club-grid > *, .money-grid > *, .review-grid > *, .live-grid > *, .lineup-grid > * { min-width: 0; margin-top: 0; }
 @media (min-width: 720px) {
   .home-grid { grid-template-columns: 1fr 1fr; }
-  .club-grid:not(.new-career .club-grid), .money-grid, .review-grid, .live-grid { grid-template-columns: 1fr 1fr; }
+  .club-grid:not(.new-career .club-grid), .money-grid, .live-grid { grid-template-columns: 1fr 1fr; }
   .lineup-grid { grid-template-columns: minmax(280px, 5fr) 6fr; }
 }
+/* The playoff bracket needs room for three columns. */
+@media (min-width: 980px) { .review-grid { grid-template-columns: 1fr 1fr; } }
 .club-grid > div > * + *, .money-grid > div > * + *, .live-grid > div > * + *, .lineup-side > * + * { margin-top: 12px; }
 .next-match { border: 1px solid rgba(242, 193, 78, 0.35); }
 .next-opp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 0; font-size: 1.15rem; }
@@ -1186,6 +1188,7 @@ body.office-mode .topbar { backdrop-filter: none; }
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   animation: tip-in 0.2s ease-out;
 }
+.shell::after { content: ''; display: block; height: var(--tip-h, 0px); }
 .tip-title { font-weight: 700; color: var(--accent); }
 .tip-card p { margin: 4px 0 10px; font-size: 0.92rem; line-height: 1.4; }
 .tip-row { display: flex; flex-wrap: wrap; gap: 8px; }

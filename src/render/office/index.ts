@@ -122,17 +122,30 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
   let texturesDone = 0;
   const report = (): void => opts.onProgress?.(Math.min(0.98, 0.8 * Math.min(1, propsBytes / PROPS_BYTES) + 0.2 * texturesDone));
   report();
-  const [room, gltf] = await Promise.all([
-    buildRoom(assets, tier, anisotropy).then((r) => {
-      texturesDone = 1;
-      report();
-      return r;
-    }),
-    assets.model('assets/office/props.glb', (n) => {
-      propsBytes = n;
-      report();
-    }),
-  ]);
+  let room: Awaited<ReturnType<typeof buildRoom>>;
+  let gltf: Awaited<ReturnType<Assets['model']>>;
+  try {
+    [room, gltf] = await Promise.all([
+      buildRoom(assets, tier, anisotropy).then((r) => {
+        texturesDone = 1;
+        report();
+        return r;
+      }),
+      assets.model('assets/office/props.glb', (n) => {
+        propsBytes = n;
+        report();
+      }),
+    ]);
+  } catch (err) {
+    // Give back the WebGL context and the page elements, or each retry would leak one.
+    canvas.removeEventListener('webglcontextlost', onLost);
+    assets.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
+    canvas.remove();
+    labelLayer.remove();
+    throw err;
+  }
   const props = buildProps(gltf, tier, anisotropy);
   const trophies = new TrophyCase(props.shelf, tier.detail);
   let dirty = true;
@@ -318,12 +331,13 @@ export async function createOffice(container: HTMLElement, opts: OfficeOptions):
       trophies.set(snap.trophies);
       outside.update(snap);
       visitors.set(snap.visitor, snap);
+      // Nice-to-have downloads: if one fails the office keeps what it has.
       void props.update(snap).then(() => {
         dirty = true;
-      });
+      }).catch(() => undefined);
       void room.setLevel(snap.level).then(() => {
         dirty = true;
-      });
+      }).catch(() => undefined);
       dirty = true;
     },
     pause() {

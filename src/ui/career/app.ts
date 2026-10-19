@@ -116,7 +116,7 @@ const PITCH_MAX_FRAME_S = 0.1;
 /** Taps closer together than this count as one (a double tap fires two clicks). */
 const CONFIRM_GAP_MS = 450;
 /** Taps that answer something or move the clock on, where the next thing to answer appears under the finger. */
-const STEP_ACTIONS = new Set(['event-choice', 'deadline-hour', 'deadline-call']);
+const STEP_ACTIONS = new Set(['event-choice', 'deadline-hour', 'deadline-call', 'live-play', 'live-pause', 'live-panel']);
 const BREAK_MS = atmosphereTuning.break.coachS * 1000;
 const POSITIONS: readonly Position[] = ['GK', 'CB', 'FB', 'DM', 'CM', 'AM', 'W', 'ST'];
 const DIAL_KEYS = ['mentality', 'pressing', 'defensiveLine', 'width', 'tempo', 'directness', 'timeWasting'] as const;
@@ -323,6 +323,9 @@ export class CareerApp {
     const html = this.view() + (this.ui.weekRun ? renderWeekRun(this.ui.weekRun) : '');
     const tip = this.pickTip(html);
     this.uiLayer.innerHTML = tip ? html + renderTip(tip) : html;
+    // Room under the page for the tip card, so it never sits on top of the last button.
+    const tipH = tip ? Math.ceil(this.uiLayer.querySelector('.tip-card')?.getBoundingClientRect().height ?? 0) : 0;
+    document.documentElement.style.setProperty('--tip-h', `${tipH}px`);
     this.measureTopBar();
     this.syncOffice();
     this.syncStadium();
@@ -1071,6 +1074,11 @@ export class CareerApp {
         if (!d.match) return;
         ui.openMatchId = d.match;
         ui.showAllEvents = false;
+        // The season review has no feed of its own: the League tab shows the match.
+        if (ui.screen === 'review') {
+          ui.tab = 'league';
+          return this.show('hub');
+        }
         this.render();
         return window.scrollTo(0, 0);
       case 'watch-2d':
@@ -1341,7 +1349,11 @@ export class CareerApp {
         break;
       case 'abbr': {
         const abbr = value.toUpperCase().slice(0, 3);
-        if (c.initials === b.abbr) c.initials = abbr;
+        if (c.initials === b.abbr) {
+          c.initials = abbr;
+          const field = el.closest('form, main, section')?.querySelector<HTMLInputElement>('[data-draft="initials"]');
+          if (field) field.value = abbr;
+        }
         b.abbr = abbr;
         break;
       }

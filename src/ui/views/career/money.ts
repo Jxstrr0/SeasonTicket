@@ -161,7 +161,7 @@ function renderDebts(career: Career): string {
         <div><strong>${esc(l.name)}</strong> <span class="muted small">${Math.round(d.rate * 100)}% · ${esc(money(d.weeklyPayment))}/wk · ${(d.weeksLeft / weeksPerSeason).toFixed(1)} seasons left</span></div>
         <div class="small">Owed ${esc(money(d.balance))}${d.minCash > 0 ? ` · keep ${esc(money(d.minCash))} in the bank` : ''}</div>
         <form data-form="repay" data-id="${esc(d.id)}" class="inline-form">
-          <label class="small">Repay ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="1" step="any" value="${Math.round(Math.min(d.balance, Math.max(0, books.cash)) / 1000)}"></label>
+          <label class="small">Repay ($k)<input class="field small-field" type="number" name="amount" inputmode="numeric" min="1" step="any" value="${Math.floor(Math.min(d.balance, Math.max(0, books.cash)) / 1000)}"></label>
           <button type="submit" class="btn-secondary">Repay</button>
         </form>
       </li>`;

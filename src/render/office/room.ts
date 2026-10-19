@@ -276,7 +276,10 @@ export async function buildRoom(assets: Assets, tier: TierSettings, anisotropy: 
       level = next;
       if (next >= 2) {
         parquet ??= loadPbr(assets, 'herringbone_parquet', anisotropy);
-        const set = await parquet;
+        const set = await parquet.catch((err) => {
+          parquet = null;
+          throw err;
+        });
         if (level < 2) return;
         floor.material = pbrMaterial(set, { metalness: 0, metalnessMap: null });
         floor.geometry.dispose();

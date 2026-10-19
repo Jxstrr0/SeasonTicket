@@ -39,6 +39,8 @@ export class Assets {
     if (!p) {
       p = this.gltf.loadAsync(assetUrl(path), (e) => onBytes?.(e.loaded));
       this.models.set(path, p);
+      // A failed download (a dropped connection) must not be remembered: the next ask tries again.
+      p.catch(() => this.models.delete(path));
     }
     return p;
   }
@@ -48,6 +50,7 @@ export class Assets {
     if (!p) {
       p = this.ktx2.loadAsync(assetUrl(path));
       this.textures.set(path, p);
+      p.catch(() => this.textures.delete(path));
     }
     return p;
   }
