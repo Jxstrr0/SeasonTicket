@@ -10,6 +10,7 @@ import { strFromU8, strToU8, Unzlib, zlibSync } from 'fflate';
 import { CAREER_VERSION, ensureOwners, openDeadlineIfDue, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
 import type { Team } from '../sim/types';
 import { STORAGE_KEY, savesFrozen } from './saveKey';
+import { careerProblem } from './saveCheck';
 
 export const SAVE_PREFIX = 'ST1:';
 export { STORAGE_KEY, freezeSaves } from './saveKey';
@@ -174,7 +175,7 @@ export function decodeSave(code: string): Career {
   if (!career.season || !career.books || !career.userTeamId) throw new SaveError('The save code holds no career.');
   // A code can inflate and parse yet be cut short or hand-edited: check the parts every screen reads.
   const league = career.season.league;
-  if (!league || !Array.isArray(league.teams) || !league.players || !league.teams.some((t) => t.id === career.userTeamId) || !career.books[career.userTeamId]) {
+  if (!league || !Array.isArray(league.teams) || !league.players || !league.teams.some((t) => t.id === career.userTeamId) || !career.books[career.userTeamId] || careerProblem(career)) {
     throw new SaveError('The save code is damaged or incomplete. Check it was copied in full.');
   }
   return career;
@@ -198,10 +199,83 @@ function defaultStore(): SaveStore | null {
 /** Writes the career to the browser. Returns false if storage is unavailable or full, or after a crash. */
 export function saveCareer(career: Career, store: SaveStore | null = defaultStore()): boolean {
   if (!store || savesFrozen()) return false;
+  const code = encodeSave(career);
   try {
-    store.setItem(STORAGE_KEY, encodeSave(career));
+    store.setItem(STORAGE_KEY, code);
     return true;
   } catch {
+    // Storage full: the career being played matters more than the backup of an old one.
+    try {
+      if (!store.getItem(BACKUP_KEY)) return false;
+      store.removeItem(BACKUP_KEY);
+      store.setItem(STORAGE_KEY, code);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/**
+ * The career put aside when a save code or a new career replaced it (Stage 7.8). Only the
+ * last one is kept: a phone's storage holds about two careers.
+ */
+export const BACKUP_KEY = `${STORAGE_KEY}.backup`;
+
+/** Keeps the saved career as the backup. False if there is none, or it could not be kept. */
+export function backupSavedCareer(store: SaveStore | null = defaultStore()): boolean {
+  if (!store || savesFrozen()) return false;
+  try {
+    const code = store.getItem(STORAGE_KEY);
+    if (!code) return false;
+    store.setItem(BACKUP_KEY, code);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function hasBackup(store: SaveStore | null = defaultStore()): boolean {
+  try {
+    return !!store?.getItem(BACKUP_KEY);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Brings the backup back as the saved career, and puts the saved one aside in its place, so a
+ * restore can itself be undone. Returns false, with nothing changed, if it could not.
+ */
+export function swapBackup(store: SaveStore | null = defaultStore()): boolean {
+  if (!store || savesFrozen()) return false;
+  let main: string | null;
+  let backup: string | null;
+  try {
+    main = store.getItem(STORAGE_KEY);
+    backup = store.getItem(BACKUP_KEY);
+  } catch {
+    return false;
+  }
+  if (!backup) return false;
+  try {
+    decodeSave(backup);
+  } catch {
+    return false;
+  }
+  try {
+    // The two swap places, so they fit in the space they used before.
+    store.removeItem(BACKUP_KEY);
+    store.setItem(STORAGE_KEY, backup);
+    if (main) store.setItem(BACKUP_KEY, main);
+    return true;
+  } catch {
+    try {
+      if (main) store.setItem(STORAGE_KEY, main);
+      store.setItem(BACKUP_KEY, backup);
+    } catch {
+      // Nothing more to try: storage is blocked.
+    }
     return false;
   }
 }

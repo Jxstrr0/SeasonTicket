@@ -293,7 +293,15 @@ export interface UiState {
   screen: Screen;
   /** Where Back on the save-code screen goes. */
   returnTo: Screen;
-  title: { saved: SavedSummary | null; error: string | null; importText: string };
+  title: {
+    saved: SavedSummary | null;
+    error: string | null;
+    importText: string;
+    /** The career put aside by the last load or new career, if one is kept (Stage 7.8). */
+    backup: SavedSummary | null;
+    /** A pasted code that would replace the saved career, waiting for "Replace and load". */
+    confirm: { club: string; season: number } | null;
+  };
   draft: NewCareerDraft | null;
   tab: HubTab;
   /** True while the hub shows the 3D office instead of a tab. */
@@ -366,7 +374,7 @@ export function initialUi(): UiState {
   return {
     screen: 'title',
     returnTo: 'hub',
-    title: { saved: null, error: null, importText: '' },
+    title: { saved: null, error: null, importText: '', backup: null, confirm: null },
     draft: null,
     tab: 'home',
     inOffice: false,

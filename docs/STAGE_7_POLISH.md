@@ -1,6 +1,6 @@
 # Stage 7: Polish and Launch (plan)
 
-**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 to 7.7 are built (see "Build notes"); what is left is the owner's phone checklist and the GoatCounter code.
+**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 to 7.8 are built (see "Build notes"); what is left is the owner's phone checklist and the GoatCounter code.
 
 **Done when (from CLAUDE.md):** ready to share publicly as a free web game.
 
@@ -240,7 +240,7 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 - Maths functions (`Math.log`, `Math.cos`, `Math.pow`) in some world generation could differ in the last digit between phone engines. It only matters for a save code imported on a different kind of phone, and changing it would change every existing world, so it is noted here and left.
 - AI emergency signings can take an AI club a couple of players over 28 for a few weeks. It is a safety net and trims itself at the off-season.
 - A shootout still level after 50 rounds (about one in a billion) would stop a season; unreachable in practice.
-- A paused live match does not stop you releasing a player who is on the pitch. Not traced to a failure.
+- A paused live match does not stop you releasing a player who is on the pitch. Not traced to a failure. (Locked in 7.8.)
 - Two tabs open on an old version can fail to load a 3D scene after the other tab updates; reloading fixes it.
 
 **The young league (flagged in 7.3).** The league's average age fell from 26.5 to 24.2 over ten seasons because players retired from 33. Retirement now starts at 35 (forced at 40) and AI clubs renew players up to 36. Over ten seasons the age now goes 26.5, 26.4, 26.1, 25.7, 25.2, 25.2, 25.2, 25.0, 24.9, 24.6 on Easy and ends at 24.7 on Hard: a gentler fall, flattening out from season 5, still younger than a real league. A third step (retirement from 36, renewals to 37) flattened it at 25.0 but tipped the careful Hard career into losing the club in season 9, so it was not kept. The league's strength drift is unchanged (65 to 71 over ten seasons). The next lever, if it is wanted, is the size of the youth intake.
@@ -250,3 +250,13 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 **Two seasons in a browser.** A script played two full seasons through the real screens at 740 by 360 with graphics Off: new career, every tab, the menu, a live match, every visitor, press conference and deadline call, the review and the off-season, with first-time tips on. 78 weeks, no console errors, and no screen wider than the phone or with a tap target under 44 px. The same run at 844 by 390 with the 3D office on (software-rendered, so slow) played one full season and most of a second in 9 minutes with no errors.
 
 **Launch checklist.** `docs/LAUNCH_CHECKLIST.md`: what the owner ticks off on a real phone.
+
+### 7.8 Save safety (built 2026-10-19)
+
+Three items left over from the 7.7 audit, all about a player's saved career.
+
+- **Load code asks first, and keeps a backup.** With a career saved, Load code now shows what the code holds and what it replaces ("Racing Val-Delacroix, season 3 replaces Sunreach SC, season 2") with Replace and load or Cancel. Loading a code or starting a new career first puts the saved career aside as a backup (`seasonticket.career.backup`, with its name in `seasonticket.backupTitle` so the title screen need not unpack it). The title screen shows the backup with Bring it back, which swaps the two, so a restore can itself be undone. Only the last backup is kept: a phone's storage holds about two careers, and if storage fills, the backup is dropped before the career being played fails to save. A damaged backup is never restored over a good career. A save this version cannot read (from a newer version, say) is still put aside before it is replaced.
+- **Deeper save-code check.** `src/game/saveCheck.ts` checks every number money, squads, the table and the fixtures hang on is a real number, every club has its books and ground, every player in a squad exists and belongs to that club, positions are real, and every fixture is between real clubs. A code that fails is refused with the usual "damaged or incomplete" message. Edits that keep the shape (more cash, say) still load: it is a one-player game. The ten-season career suites now run the same check at every season's end and start, so a real career can never trip it unnoticed.
+- **Match lock.** While your match is under way, paused or not, signings, sales, releases, loans and deadline-day deals are refused ("Your match is under way. Finish it first."), and the Squad and Market tabs say so with a Back to the match button. The team sheet in a live match is the engine's own copy, so changing the squad mid-match could leave a released player on the pitch.
+
+Tests: `tests/saveSafety.test.ts` (7): real careers pass the check through a season and the next; twelve kinds of hand edit are refused; a shape-keeping edit loads; backup, restore and undo; a damaged backup is refused; a full store drops the backup to keep the career; the match lock holds during the match and lifts at full time. A browser run at 740 by 360 played the whole flow (two careers, load over one, restore, reload, the market note mid-match) with no console errors, nothing wider than the screen and no tap target under 44 px.

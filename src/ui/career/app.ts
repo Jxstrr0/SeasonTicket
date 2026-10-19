@@ -68,13 +68,13 @@ import { personOf, type SpatialSetup } from '../../sim/spatial/types';
 import { buildStadiumSnapshot } from './stadiumSnapshot';
 import { setTitleBackdrop } from './titleBackdrop';
 import { findMatch } from '../model';
-import { SaveError, decodeSave, encodeSave, loadCareer, saveCareer } from '../../game/save';
+import { SaveError, backupSavedCareer, decodeSave, encodeSave, hasBackup, loadCareer, saveCareer, swapBackup } from '../../game/save';
 import { createMatchRunner, type MatchRunner } from '../../game/matchRunner';
 import { WeekPlayer } from '../../game/week';
 import { renderWeekRun, weekRunCount } from '../views/career/weekRun';
 import { parseSeed, randomSeed } from '../app';
 import { renderCareerTitle } from '../views/career/title';
-import { storeTitleSummary } from './titleSummary';
+import { loadBackupSummary, storeBackupSummary, storeTitleSummary } from './titleSummary';
 import { MATCH_MODES, renderCrestPreview, renderNewCareer } from '../views/career/newCareer';
 import { careerWeekLabel, renderHub } from '../views/career/hub';
 import { renderLive } from '../views/career/live';
@@ -217,6 +217,8 @@ export class CareerApp {
   private readonly pitch = new LiveHost(this.match3d, this.atmosphere);
   /** Set after one failed save so the warning shows once. */
   private saveWarned = false;
+  /** A decoded save code waiting for "Replace and load" (Stage 7.8). */
+  private pendingImport: Career | null = null;
   /** When a confirm button was armed, and the last form sent: see CONFIRM_GAP_MS. */
   private armedAt = 0;
   private lastForm = { name: '', at: 0 };
@@ -297,6 +299,31 @@ export class CareerApp {
       this.ui.title.error = err instanceof SaveError ? err.message : `The saved career could not be read: ${errorText(err)}`;
     }
     this.refreshSummary();
+    this.ui.title.backup = hasBackup() ? loadBackupSummary() : null;
+  }
+
+  /** Puts the saved career aside before a code or a new career replaces it, even one this version can't read. */
+  private backupCurrent(): void {
+    const saved = this.ui.title.saved;
+    if (!backupSavedCareer()) return;
+    storeBackupSummary(saved);
+    this.ui.title.backup = saved;
+  }
+
+  private restoreBackup(): void {
+    const putAside = this.ui.title.saved;
+    this.stopLoops();
+    this.pendingImport = null;
+    this.ui.title.confirm = null;
+    if (!swapBackup()) {
+      this.ui.title.error = 'The backup could not be brought back. It may be damaged, or this browser would not save.';
+      return this.show('title');
+    }
+    this.loadStored();
+    storeBackupSummary(putAside);
+    // The Continue card now names the career that came back.
+    this.ui.title.backup = putAside;
+    this.show('title');
   }
 
   private refreshSummary(): void {
@@ -660,6 +687,11 @@ export class CareerApp {
   private show(screen: UiState['screen']): void {
     this.ui.screen = screen;
     this.ui.menuOpen = false;
+    // Leaving the title drops a code still waiting for "Replace and load".
+    if (screen !== 'title') {
+      this.pendingImport = null;
+      this.ui.title.confirm = null;
+    }
     this.render();
     window.scrollTo(0, 0);
   }
@@ -768,6 +800,18 @@ export class CareerApp {
         this.goHome();
         if (!this.followPhase()) this.show('hub');
         return;
+      case 'import-confirm': {
+        const pending = this.pendingImport;
+        // A double tap on "Load code" must not also press the button that takes its place.
+        if (!pending || performance.now() - this.armedAt < CONFIRM_GAP_MS) return;
+        return this.loadImported(pending);
+      }
+      case 'import-cancel':
+        this.pendingImport = null;
+        ui.title.confirm = null;
+        return this.render();
+      case 'restore-backup':
+        return this.restoreBackup();
       case 'new-career':
         this.stopLoops();
         ui.draft = newDraft();
@@ -1446,6 +1490,7 @@ export class CareerApp {
     this.goHome();
     this.ui.title.error = null;
     this.ui.flash = { kind: 'ok', text: `Welcome to ${userTeam(career).name}. Pre-season starts now: the transfer window is open.` };
+    this.backupCurrent();
     this.save();
     this.refreshSummary();
     this.show('hub');
@@ -1461,6 +1506,20 @@ export class CareerApp {
       this.ui.title.error = err instanceof SaveError ? err.message : `That code did not load: ${errorText(err)}`;
       return this.render();
     }
+    this.ui.title.error = null;
+    if (this.ui.title.saved) {
+      this.pendingImport = career;
+      this.ui.title.confirm = { club: userTeam(career).name, season: career.season.league.season };
+      this.armedAt = performance.now();
+      return this.render();
+    }
+    this.loadImported(career);
+  }
+
+  private loadImported(career: Career): void {
+    this.pendingImport = null;
+    this.ui.title.confirm = null;
+    this.backupCurrent();
     this.stopLoops();
     this.career = career;
     this.saveWarned = false;
