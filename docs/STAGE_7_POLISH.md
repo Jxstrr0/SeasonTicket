@@ -46,7 +46,7 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
    - Performance budgets are not weakened without the owner's OK.
 5. **7.5 Safety net and finish.**
    - **Crash screen:** if something breaks, the game shows a calm screen with "Copy save code" and "Reload" instead of a blank page. The save is never lost to a crash.
-   - **Contact:** a "Report a problem or send feedback" screen (settings, the crash screen and the Credits screen). It copies a short report (game version, device, season and week, and the save code if the player ticks "Include my save") and opens the contact form on the studio website, https://jxstrr0.github.io/Kelbo.Website/#contact-heading, which already sends through Web3Forms to the studio email (the owner's answer, 2026-10-18). The game sends nothing itself. The website's message box takes 5,000 characters, so a save code that is longer is left out of the copied text and the screen says "Your save is too long to paste; describe the problem instead".
+   - **Contact:** a "Report a problem or send feedback" screen (settings, the crash screen and the Credits screen). It copies a short report (game version, device, season and week, ) and opens the contact form on the studio website, https://jxstrr0.github.io/Kelbo.Website/#contact-heading, which already sends through Web3Forms to the studio email (the owner's answer, 2026-10-18). The game sends nothing itself. The website's message box takes 5,000 characters and a save code is 100,000 or more, so the report never carries the save; the screen says how to download it as a file instead (changed while building, see 7.5 notes).
    - **Install as an app:** yes (the owner's answer). "Add to Home Screen" gives the Longlight icon and full-screen play, and the game works offline after the first visit. When an update is ready the game says so and offers "Reload".
    - **Text and screens:** a read-through of every player-facing line for typos, tone and consistency; empty states ("No offers yet"); a check of every screen at the smallest phone size.
    - **Version number** shown in settings, with a short "What's new".
@@ -164,6 +164,22 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 **Week time.** Playing a week's matches on the real engine in one thread takes 1.1 seconds (median; 1.5 s at most). It does not grow over the seasons, and the game spreads the matches over two background workers.
 
 **Long session.** Ten trips from the office to a 3D match and back, with memory measured in the office after each. Memory goes up 30 MB on the first trip, because the 3D match scene is built once and kept for next time. After that it adds only 2.2 MB over nine more trips (110.2 to 112.4 MB), mostly the longer match log. Geometries (59), textures (37), shader programs (17), page elements and event listeners stay flat. No console errors.
+
+### 7.5 Safety net and finish (built 2026-10-19)
+
+**Crash screen.** If the game hits an error it cannot get past, a calm screen shows "Something went wrong" with Reload, Copy save code and Report the problem, instead of a blank or frozen page. The game saves after every action, so the stored save is from just before the problem; once the crash screen is up nothing saves again, because the career in memory may be half way through the action that broke. Reload carries on from the stored save. Browser noise (other sites' scripts, blocked sounds, a cancelled full screen) is ignored. The start-up script installs this before the rest of the game downloads.
+
+**Report a problem.** From the title screen, the menu and the crash screen. Copy report gives a short text (version and build, device and screen size, club and week, the error if there was one) to paste into the contact form on the studio website, which opens in a new tab. The game sends nothing itself.
+
+**Changed from the plan: no "Include my save".** A save code is 100,000 characters or more and the form takes 5,000, so it could never fit. The screen says to use Menu → Save code → Download .txt if we ask to see a save.
+
+**Version and What's new.** Version 0.9.0, shown on the title screen, in the menu and in reports. "What's new" lists the changes; the list lives in `src/data/meta/version.json`.
+
+**Install as an app.** A manifest, the Longlight icon (copper half-sun on a bar, on purple) and the iPhone home-screen tags. "Add to Home Screen" opens the game full screen and landscape. A service worker, written at build time, stores the game's code, page and icons on the first visit, so the game opens and plays offline. Models, textures and sounds come from the network when there is one and are kept for when there is none. A new version waits until the player taps Reload on a small "A new version is ready" banner, so a match in progress is never cut off; the game checks for updates each time it comes back on screen. Checked in a browser: installed, reloaded offline to a working title screen and club picker, then a rebuild showed the banner and Reload switched to the new version with no errors.
+
+**Text and screens.** Every screen checked at 640 × 360 and 667 × 375 (title, Help, Report a problem, What's new, club pick, branding, every tab, the menu, a played week, the league after a round, match day): nothing wider than the screen and every button at least 44 px. A read-through of the player-facing text found one slip ("Seeds 1 to 2"), now "Seeds 1 and 2". Empty states (no mail, no newspaper yet, no results, no appearances) all say what will fill them.
+
+**Still to come: analytics.** GoatCounter waits on the owner's site code.
 
 ## Owner's answers (2026-10-18)
 
