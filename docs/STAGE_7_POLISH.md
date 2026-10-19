@@ -1,6 +1,6 @@
 # Stage 7: Polish and Launch (plan)
 
-**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 to 7.8 are built (see "Build notes"); what is left is the owner's phone checklist and the GoatCounter code.
+**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 to 7.8 are built (see "Build notes"). **Launched as version 1.0.0 on 2026-10-19** at the owner's go-ahead. GoatCounter stays off until the site code arrives; the phone frame-rate numbers are still welcome for a later performance pass.
 
 **Done when (from CLAUDE.md):** ready to share publicly as a free web game.
 
