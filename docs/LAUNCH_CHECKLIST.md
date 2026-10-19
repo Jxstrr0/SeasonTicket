@@ -4,6 +4,8 @@ For the owner to tick off on their own phone before sharing the game: https://jx
 
 Everything here was also checked by script in 7.7; this list is what only a real phone can confirm.
 
+**Launched:** version 1.0.0 went public on 2026-10-19. The list stays useful as a quick check after any later update.
+
 ## First visit
 - [ ] Open the link in a fresh tab (or a private tab). The purple Longlight card shows for under two seconds, then the title screen.
 - [ ] Tap anywhere during the card: it skips.

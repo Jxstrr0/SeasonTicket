@@ -1,7 +1,15 @@
 {
   "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Bump the version when a release changes what players see.",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "notes": [
+    {
+      "version": "1.0.0",
+      "date": "2026-10-19",
+      "lines": [
+        "Season Ticket is out: the first public release, free to play in your browser.",
+        "Everything from the test builds is in: your club, its money and its ground, live matches in text, 2D and 3D, and a story that runs season to season."
+      ]
+    },
     {
       "version": "0.9.0",
       "date": "2026-10-19",
