@@ -17,7 +17,7 @@ export function bootCareer(root: HTMLElement): void {
   registerServiceWorker();
   const layer = document.createElement('div');
   layer.id = 'ui-layer';
-  layer.innerHTML = renderCareerTitle({ saved: loadTitleSummary(), error: null, importText: '' });
+  layer.innerHTML = renderCareerTitle({ saved: loadTitleSummary(), error: null, importText: '', backup: null, confirm: null });
   root.replaceChildren(layer);
   setTitleBackdrop(true);
   playSplash();

@@ -23,6 +23,7 @@ Everything here was also checked by script in 7.7; this list is what only a real
 
 ## Safety
 - [ ] Menu → Save code copies a code. Paste it into Load a save code on the title screen (in a private tab) and the same career loads.
+- [ ] Paste a different career's code into Load a save code: it asks before replacing yours, and the title screen then shows your old career as a Backup. Bring it back returns it.
 - [ ] Close the tab mid-week and reopen: Continue picks up where you were.
 - [ ] Add to Home Screen, open it from the icon, switch to airplane mode and open it again: the game still opens.
 - [ ] After the next update, the "A new version is ready" banner shows; Reload brings the new version.

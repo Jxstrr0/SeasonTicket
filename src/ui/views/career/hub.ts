@@ -1,5 +1,5 @@
 /** The career hub frame: top bar with the next action, the tab strip, the menu and the flash message. */
-import { C, LADDER_NAMES, type StoryPace, money, transferWindowOpen, userBooks, userFixture, userTeam, type Career } from '../../../sim/career';
+import { C, LADDER_NAMES, type StoryPace, matchLock, money, transferWindowOpen, userBooks, userFixture, userTeam, type Career } from '../../../sim/career';
 import { cls, each, esc } from '../../html';
 import { weekLabel } from '../../model';
 import { HUB_TABS, type HubTab, type UiState } from '../../career/state';
@@ -178,16 +178,23 @@ function renderTabs(career: Career, ui: UiState): string {
   </nav>`;
 }
 
+/** While the match is paused the squad is on the pitch: no signings, sales or releases until full time. */
+function matchNote(career: Career): string {
+  return matchLock(career)
+    ? `<section class="card notice"><p><strong>Your match is under way.</strong> Signings, sales and releases wait until full time.</p><button type="button" data-action="match-day">Back to the match</button></section>`
+    : '';
+}
+
 function renderTab(career: Career, ui: UiState): string {
   switch (ui.tab) {
     case 'home':
       return renderHome(career, ui);
     case 'squad':
-      return renderSquad(career, ui);
+      return matchNote(career) + renderSquad(career, ui);
     case 'lineup':
       return renderLineup(career, ui);
     case 'market':
-      return renderMarket(career, ui);
+      return matchNote(career) + renderMarket(career, ui);
     case 'money':
       return renderMoney(career, ui);
     case 'club':

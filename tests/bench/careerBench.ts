@@ -22,6 +22,7 @@ import { simulateSpatialMatch } from '../../src/sim/spatial/bridge';
 import { simulateMatch } from '../helpers/stage1/engine';
 import type { SpatialMode } from '../../src/sim/spatial/types';
 import type { Player } from '../../src/sim/types';
+import { careerProblem } from '../../src/game/saveCheck';
 import {
   C,
   academyUpgradeCost,
@@ -308,6 +309,9 @@ export function playCareer(o: CareerOptions): CareerRun {
       attendance: round3(averageHomeCrowd(career, career.userTeamId)),
       fanMood: round3(team.fanMood),
     });
+    // Every season's end, and the new season's start, must pass the save-code check (Stage 7.8).
+    const problem = careerProblem(career);
+    if (problem) throw new Error(`season ${s} end fails the save check: ${problem}`);
     if (career.phase === 'gameOver') {
       lost = s;
       break;
@@ -316,6 +320,8 @@ export function playCareer(o: CareerOptions): CareerRun {
     summer(career, o.style);
     const before = new Set(squadOf(career, career.userTeamId).map((p) => p.id));
     continueToNextSeason(career);
+    const fresh = careerProblem(career);
+    if (fresh) throw new Error(`season ${s + 1} start fails the save check: ${fresh}`);
     const intake = squadOf(career, career.userTeamId).filter((p) => !before.has(p.id) && p.age <= C.youth.age.max);
     youth = {
       n: intake.length,

@@ -174,7 +174,14 @@ function neededKeeper(career: Career, player: Player): boolean {
 }
 
 /** Whether the user can lose this player without breaking the squad rules. */
+/** A message while the user's match is under way, or null. A paused match still has the squad on the pitch (Stage 7.8). */
+export function matchLock(career: Career): string | null {
+  return career.liveMatch && !career.liveMatch.finished ? 'Your match is under way. Finish it first.' : null;
+}
+
 export function canLose(career: Career, player: Player): string | null {
+  const lock = matchLock(career);
+  if (lock) return lock;
   const squad = squadOf(career, career.userTeamId);
   if (squad.length <= T.userMinSquad) return `You need at least ${T.userMinSquad} players.`;
   if (player.position === 'GK' && goalkeepers(squad) <= T.minGoalkeepers) return `You need at least ${T.minGoalkeepers} goalkeepers.`;
@@ -183,6 +190,8 @@ export function canLose(career: Career, player: Player): string | null {
 }
 
 function roomToSign(career: Career): string | null {
+  const lock = matchLock(career);
+  if (lock) return lock;
   return squadOf(career, career.userTeamId).length >= T.maxSquad ? `Your squad is full (${T.maxSquad}).` : null;
 }
 
