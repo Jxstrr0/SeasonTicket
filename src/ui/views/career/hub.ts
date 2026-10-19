@@ -147,6 +147,7 @@ function renderMenu(career: Career, ui: UiState): string {
     <div class="menu-row">
       <button type="button" class="btn-secondary" data-action="contact">Report a problem</button>
       <button type="button" class="btn-secondary" data-action="whats-new">What's new</button>
+      <button type="button" class="btn-secondary" data-action="credits">Credits</button>
     </div>
     <p class="muted small">Season Ticket version ${esc(GAME_VERSION)}, by Longlight Interactive.</p>
   </div>`;

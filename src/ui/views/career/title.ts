@@ -40,6 +40,7 @@ export function renderCareerTitle(title: TitleState): string {
       <button type="button" class="btn-secondary" data-action="help">How to play</button>
       <button type="button" class="btn-secondary" data-action="contact">Report a problem</button>
       <button type="button" class="btn-secondary" data-action="whats-new">What's new</button>
+      <button type="button" class="btn-secondary" data-action="credits">Credits</button>
     </p>
     <p class="center muted small">Version ${esc(GAME_VERSION)}</p>
     <p class="center small"><a class="link" href="#sandbox">League sandbox (watch a season, no club)</a></p>

@@ -7,6 +7,8 @@ import { renderCareerTitle } from '../views/career/title';
 import { loadTitleSummary } from './titleSummary';
 import { installCrashGuard } from './crash';
 import { registerServiceWorker } from '../../pwa/register';
+import { setTitleBackdrop } from './titleBackdrop';
+import { playSplash } from './splash';
 
 type Pending = { action: string } | { code: string } | null;
 
@@ -17,6 +19,8 @@ export function bootCareer(root: HTMLElement): void {
   layer.id = 'ui-layer';
   layer.innerHTML = renderCareerTitle({ saved: loadTitleSummary(), error: null, importText: '' });
   root.replaceChildren(layer);
+  setTitleBackdrop(true);
+  playSplash();
 
   let pending: Pending = null;
   const busy = (el: Element | null) => {

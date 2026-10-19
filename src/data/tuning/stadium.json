@@ -377,6 +377,18 @@
     "crowdCap": 9000,
     "crowdFallback": 0.6,
     "daySelfLit": 0.12,
-    "nightSelfLit": 1
+    "nightSelfLit": 1,
+    "ambient": {
+      "_about": "The title screen's slow turn around the ground at dusk (Stage 7.6): degrees a second, the camera's elevation and zoom, the sky's top and horizon colours (Longlight purple to copper), and how brightly the stands' own lights glow.",
+      "driftDegPerSec": 2.2,
+      "startAzimuth": 150,
+      "elevation": 11,
+      "zoom": 1.25,
+      "skyTop": "#3a2670",
+      "skyHorizon": "#c98a6c",
+      "fog": "#9a6a72",
+      "selfLit": 0.85,
+      "fps": 30
+    }
   }
 }

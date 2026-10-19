@@ -33,7 +33,7 @@ Every asset shipped with the game is listed here with its source and licence.
 
 All models were converted with the tools in `scripts/assets` (Meshopt geometry, KTX2 textures). The sounds were cut, levelled and encoded to MP3 by `scripts/assets/build-audio.py`. The menus' taps, the visitor's knock, the phone's ring, the newspaper's page, the press cameras, the war-room clock and the office's room tone are made in code by the game itself (`src/render/audio/synth.ts`), with no recording.
 
-The app icon (`public/icons/`, the Longlight copper half-sun on a bar) is the studio's own work, drawn as SVG and rendered to PNG for phones.
+The app icon (`public/icons/`, the Longlight copper half-sun on a bar) is the studio's own work, drawn as SVG and rendered to PNG for phones. So is the link preview picture (`public/og.png`) and the title screen's still stadium.
 
 ## Libraries
 

@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sim": "vitest run tests/season.test.ts",
-    "golden": "UPDATE_GOLDEN=1 vitest run --project unit tests/golden.test.ts"
+    "golden": "UPDATE_GOLDEN=1 vitest run --project unit tests/golden.test.ts",
+    "credits": "UPDATE_CREDITS=1 vitest run --project unit tests/credits.test.ts"
   },
   "dependencies": {
     "fflate": "0.8.2",
