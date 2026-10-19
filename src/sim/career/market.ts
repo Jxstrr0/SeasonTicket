@@ -410,6 +410,10 @@ export function acceptBid(career: Career, bidId: string): DealResult {
   const blocked = canLose(career, player);
   if (blocked) return fail(blocked);
   const buyer = teamById(career.season.league, bid.fromTeamId);
+  if (buyer.playerIds.length >= T.maxSquad) {
+    career.incomingBids = career.incomingBids.filter((b) => b.id !== bidId);
+    return fail(`${buyer.shortName} have no room in their squad any more.`);
+  }
   ownerMemory(career, buyer.id, OWNER_MEMORY.accept);
   sellToAi(career, player, buyer, bid.fee, 'Bid accepted');
   return { ok: true, message: `${playerName(player)} sold to ${buyer.shortName} for ${money(bid.fee)}.` };
@@ -488,6 +492,7 @@ function maybeIncomingBid(career: Career, rng: Rng): void {
 /** A club bids for one of your players at a share of his value (a transfer request, a lender's push to sell). False if no club can afford him. */
 export function bidForListed(career: Career, player: Player, share: number, rng: Rng): boolean {
   if (career.incomingBids.some((b) => b.playerId === player.id)) return true;
+  if (career.loansIn.some((l) => l.playerId === player.id)) return false; // on loan: not his to sell
   const base = roundMoney(player.value * share, 5000);
   const options = buyers(career, career.userTeamId, base);
   if (options.length === 0) {

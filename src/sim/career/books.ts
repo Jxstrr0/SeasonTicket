@@ -232,6 +232,7 @@ export function borrow(career: Career, lenderId: string, amount: number): { ok: 
   const option = borrowOptions(career).find((o) => o.lender.id === lenderId);
   if (!option) return { ok: false, message: 'Unknown lender.' };
   if (!option.available) return { ok: false, message: option.reason ?? 'Not available.' };
+  if (!Number.isFinite(amount)) return { ok: false, message: 'Enter an amount.' };
   const value = roundMoney(amount, 10_000);
   if (value < C.lenders.minLoan) return { ok: false, message: `The smallest loan is ${money(C.lenders.minLoan)}.` };
   if (value > option.max) return { ok: false, message: `${option.lender.name} will lend at most ${money(option.max)}.` };
@@ -249,6 +250,7 @@ export function repayDebt(career: Career, debtId: string, amount: number): { ok:
   const books = userBooks(career);
   const debt = books.debts.find((d) => d.id === debtId);
   if (!debt) return { ok: false, message: 'No such loan.' };
+  if (!Number.isFinite(amount)) return { ok: false, message: 'Enter an amount.' };
   const value = Math.min(debt.balance, Math.max(0, amount));
   if (value <= 0) return { ok: false, message: 'Nothing to repay.' };
   if (value > books.cash) return { ok: false, message: 'Not enough cash.' };
@@ -267,6 +269,7 @@ export function repayDebt(career: Career, debtId: string, amount: number): { ok:
 // ---------------------------------------------------------------------------
 
 export function injectCash(career: Career, amount: number): { ok: boolean; message: string } {
+  if (!Number.isFinite(amount)) return { ok: false, message: 'Enter an amount.' };
   const value = roundMoney(amount, 10_000);
   if (value < C.owner.minInjection) return { ok: false, message: `Put in at least ${money(C.owner.minInjection)}.` };
   if (value > career.owner.fortune) return { ok: false, message: `You only have ${money(career.owner.fortune)} left.` };

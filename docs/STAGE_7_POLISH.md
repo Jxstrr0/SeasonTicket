@@ -1,6 +1,6 @@
 # Stage 7: Polish and Launch (plan)
 
-**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 and 7.2 are built (see "Build notes").
+**Status:** plan written 2026-10-18. The owner answered the questions the same day (see "Owner's answers" at the end), and chose GoatCounter for analytics (the site code is to come). 7.1 to 7.7 are built (see "Build notes"); what is left is the owner's phone checklist and the GoatCounter code.
 
 **Done when (from CLAUDE.md):** ready to share publicly as a free web game.
 
@@ -221,3 +221,32 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 6. **Title screen and branding.** Do you have a Longlight Interactive logo or colours you want used? Proposal: a simple text logo, the Season Ticket name over a slow camera move around your stadium at dusk (the plain-menu version uses a still picture).
 7. **Analytics.** Proposal: none. The game sends nothing anywhere, and the credits screen says so. If you want to know how many people play, a privacy-friendly page counter is the only option we'd suggest, and it would be your call.
 8. **Launch extras.** Is anything missing that you want before sharing it publicly (a second save slot, a "new game plus" with a richer owner, a share-your-season card)? Proposal: none of these for launch; list them as ideas for after.
+
+### 7.7 Launch audit (built 2026-10-19)
+
+**The audit.** Four reviewers read the code in parallel, each over one area: the career sim and saves, the match engine and season, the UI, and the 3D scenes with the service worker and deploy. Each finding had to name a real path from a caller to the failure. Of about 30 reports, these were fixed:
+
+- *Tips.* The tip card could sit on top of the last button on a short screen (it covered half of "Start the career"). The page now keeps room under its content for the card.
+- *Season review.* The playoff bracket made the page 950 px wide on a 740 px phone. The review's two columns now sit side by side only from 980 px, and the bracket scrolls inside its card if it must. Its match buttons did nothing there; they now open the match on the League tab. The earlier smallest-screen sweep never reached the playoffs, which is why this was missed.
+- *Offline and updates.* The service worker could store a stale page from the browser's 10-minute cache, so an offline launch right after an update could not find its scripts. It now always fetches fresh files when installing. The "Reload" button asks whichever new version is waiting now.
+- *Failed downloads.* A dropped connection while the office or a model downloaded was remembered for the whole visit, and a failed floor texture could trip the crash screen. Failures are now forgotten so the next try downloads again, and a failed office build gives back its WebGL context.
+- *Skip to full time* now hands both sides to the head coach in full-control mode; before, your side played the rest of the match with no substitutions.
+- *Schedule.* About one season in fifteen replayed the whole last round of the first half as the first round of the second half (reversed). It no longer can.
+- *Double taps* on Play, Pause and the Subs and Tactics buttons no longer undo themselves. The Repay amount no longer rounds above your cash, the ticket price field accepts any value, the initials box follows the abbreviation, and a failure while the game starts shows the crash screen.
+- *Saves.* A pasted save code that would inflate past 60 MB is refused instead of freezing the tab. Amounts that are not numbers are refused by cash, loans and repayments. A sale to a club with a full squad is refused. A listed bid can no longer be raised for a loaned-in player, and an event's price change keeps to the ticket limits. The title screen warns that Load a code replaces the saved career.
+- *Deploy.* The workflow is read-only by default; only the jobs that publish get the Pages permissions, and a running deploy is no longer cancelled by the next push.
+
+**Found and left alone (with the reason).**
+- Maths functions (`Math.log`, `Math.cos`, `Math.pow`) in some world generation could differ in the last digit between phone engines. It only matters for a save code imported on a different kind of phone, and changing it would change every existing world, so it is noted here and left.
+- AI emergency signings can take an AI club a couple of players over 28 for a few weeks. It is a safety net and trims itself at the off-season.
+- A shootout still level after 50 rounds (about one in a billion) would stop a season; unreachable in practice.
+- A paused live match does not stop you releasing a player who is on the pitch. Not traced to a failure.
+- Two tabs open on an old version can fail to load a 3D scene after the other tab updates; reloading fixes it.
+
+**The young league (flagged in 7.3).** The league's average age fell from 26.5 to 24.2 over ten seasons because players retired from 33. Retirement now starts at 35 (forced at 40) and AI clubs renew players up to 36. Over ten seasons the age now goes 26.5, 26.4, 26.1, 25.7, 25.2, 25.2, 25.2, 25.0, 24.9, 24.6 on Easy and ends at 24.7 on Hard: a gentler fall, flattening out from season 5, still younger than a real league. A third step (retirement from 36, renewals to 37) flattened it at 25.0 but tipped the careful Hard career into losing the club in season 9, so it was not kept. The league's strength drift is unchanged (65 to 71 over ten seasons). The next lever, if it is wanted, is the size of the youth intake.
+
+**Test changes.** The schedule fix shifts about one season in fifteen, which moved the two fine-mode seasons the slow suite plays. Over those two seasons the share of 7-goal-or-more matches read 2.3% against a 2% limit, and one season had 6 attackers among its top ten scorers against a limit of 7. The fine-mode suite now plays four seasons (960 matches: 2.60 goals a match, 1.8% with 7 or more, home wins 45%, draws 22%, 12.1 shots a team), and the top-scorer check allows a single season to dip to 6 as long as the seasons average 7 or more.
+
+**Two seasons in a browser.** A script played two full seasons through the real screens at 740 by 360 with graphics Off: new career, every tab, the menu, a live match, every visitor, press conference and deadline call, the review and the off-season, with first-time tips on. 78 weeks, no console errors, and no screen wider than the phone or with a tap target under 44 px. The same run at 844 by 390 with the 3D office on (software-rendered, so slow) played one full season and most of a second in 9 minutes with no errors.
+
+**Launch checklist.** `docs/LAUNCH_CHECKLIST.md`: what the owner ticks off on a real phone.

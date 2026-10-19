@@ -6,7 +6,7 @@
  * Every save carries the career's `version`. Loading runs each migration from
  * that version up to the current one, so an old save is never thrown away.
  */
-import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
+import { strFromU8, strToU8, Unzlib, zlibSync } from 'fflate';
 import { CAREER_VERSION, ensureOwners, openDeadlineIfDue, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
 import type { Team } from '../sim/types';
 import { STORAGE_KEY, savesFrozen } from './saveKey';
@@ -135,13 +135,37 @@ export function migrate(save: Record<string, unknown>): Career {
   return data as unknown as Career;
 }
 
+/** The most a save may inflate to. A real 10-season career is about 3 MB; a hostile paste could be a zip bomb. */
+const MAX_INFLATED = 60_000_000;
+
+function inflateCapped(data: Uint8Array): Uint8Array {
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let failure: unknown = null;
+  const stream = new Unzlib((chunk) => {
+    total += chunk.length;
+    if (total > MAX_INFLATED) failure = new Error('too large');
+    else chunks.push(chunk);
+  });
+  const step = 1 << 16;
+  for (let i = 0; i < data.length && !failure; i += step) stream.push(data.subarray(i, i + step), i + step >= data.length);
+  if (failure) throw failure;
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    out.set(c, at);
+    at += c.length;
+  }
+  return out;
+}
+
 /** Reads a save code (spaces and line breaks are ignored). Throws SaveError if it is not one. */
 export function decodeSave(code: string): Career {
   const clean = code.replace(/\s+/g, '');
   if (!clean.startsWith(SAVE_PREFIX)) throw new SaveError('That is not a Season Ticket save code. It should start with ST1:');
   let parsed: unknown;
   try {
-    parsed = JSON.parse(strFromU8(unzlibSync(fromBase64(clean.slice(SAVE_PREFIX.length)))));
+    parsed = JSON.parse(strFromU8(inflateCapped(fromBase64(clean.slice(SAVE_PREFIX.length)))));
   } catch {
     throw new SaveError('The save code is damaged or incomplete. Check it was copied in full.');
   }

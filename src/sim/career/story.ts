@@ -679,7 +679,7 @@ function applyEffects(career: Career, ev: StoryEvent, def: EventDef, choice: Eve
     } else if ('unflag' in e) {
       delete story.flags[e.unflag];
     } else if ('price' in e) {
-      books.ticketPrice = Math.max(1, Math.round(books.ticketPrice * (1 + e.price)));
+      books.ticketPrice = clamp(Math.round(books.ticketPrice * (1 + e.price)), C.tickets.minPrice, C.tickets.maxPrice);
     } else if ('promise' in e) {
       const p = ev.playerId;
       // Games and wins only count from the first match week, so a pre-season promise starts then.

@@ -395,17 +395,17 @@
   },
   "aging": {
     "_about": "Retirement chance rises each year from startAge; everyone retires at forcedAge.",
-    "startAge": 33,
+    "startAge": 35,
     "chanceAtStart": 0.15,
     "chancePerYear": 0.2,
-    "forcedAge": 38,
+    "forcedAge": 40,
     "staffRetireAge": 70
   },
   "aiSquads": {
     "_about": "AI clubs renew useful players and top up thin squads from free agents. While free agents can be signed, a club with room also signs one rated at least starterMargin above its 11th-best player.",
     "renewIfRank": 18,
     "starterMargin": 1,
-    "renewMaxAge": 34,
+    "renewMaxAge": 36,
     "targetSize": 24
   },
   "freeAgentPool": {
