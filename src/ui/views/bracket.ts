@@ -91,7 +91,7 @@ function renderRace(season: SeasonState): string {
   return `
   <section class="card playoffs-card">
     <h2 class="card-title">Playoff race</h2>
-    <p class="muted small">The top ${spots} after the last round qualify. Seeds 1 to ${byes} go straight to the semi-finals.</p>
+    <p class="muted small">The top ${spots} after the last round qualify. ${byes === 1 ? 'Seed 1 goes' : byes === 2 ? 'Seeds 1 and 2 go' : `Seeds 1 to ${byes} go`} straight to the semi-finals.</p>
     <ol class="race">
       ${each(rows, (row, i) => {
         const pos = i + 1;
