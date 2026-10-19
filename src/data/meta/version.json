@@ -1,0 +1,17 @@
+{
+  "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Bump the version when a release changes what players see.",
+  "version": "0.9.0",
+  "notes": [
+    {
+      "version": "0.9.0",
+      "date": "2026-10-19",
+      "lines": [
+        "Help, and a short tip the first time you open each screen.",
+        "Sound in the office, an office radio, and chants at the match.",
+        "Long careers are better balanced on every difficulty.",
+        "The game starts much faster.",
+        "If something breaks, your save is kept and you can tell us what happened."
+      ]
+    }
+  ]
+}

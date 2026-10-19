@@ -1,8 +1,13 @@
 import { defineConfig } from 'vitest/config';
 
+// The build machine's environment (no Node types in this project).
+const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
+
 // Deployed to GitHub Pages at https://jxstrr0.github.io/SeasonTicket/
 export default defineConfig({
   base: '/SeasonTicket/',
+  // Shown in problem reports so a report names the exact build.
+  define: { __BUILD_ID__: JSON.stringify((env.GITHUB_SHA ?? 'dev').slice(0, 7)) },
   build: {
     target: 'es2022',
     sourcemap: false,
