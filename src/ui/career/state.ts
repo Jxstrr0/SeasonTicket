@@ -9,7 +9,7 @@ import { loadQuality, type QualitySetting } from '../../render/quality';
 import audioTuning from '../../data/tuning/audio.json';
 import type { Mix } from '../../render/audio/hub';
 
-export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay' | 'deadline' | 'help';
+export type Screen = 'title' | 'new' | 'hub' | 'live' | 'review' | 'gameOver' | 'saveCode' | 'replay' | 'deadline' | 'help' | 'contact' | 'whatsNew';
 
 export type HubTab = 'home' | 'squad' | 'lineup' | 'market' | 'money' | 'club' | 'stadium' | 'inbox' | 'news' | 'league';
 

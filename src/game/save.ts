@@ -9,9 +9,10 @@
 import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
 import { CAREER_VERSION, ensureOwners, openDeadlineIfDue, fullCapacity, initialStadium, newNews, newStory, type Career, type Stadium } from '../sim/career';
 import type { Team } from '../sim/types';
+import { STORAGE_KEY, savesFrozen } from './saveKey';
 
 export const SAVE_PREFIX = 'ST1:';
-export const STORAGE_KEY = 'seasonticket.career';
+export { STORAGE_KEY, freezeSaves } from './saveKey';
 
 /**
  * Migrations by the version they upgrade FROM. Each takes the parsed JSON of
@@ -170,9 +171,9 @@ function defaultStore(): SaveStore | null {
   }
 }
 
-/** Writes the career to the browser. Returns false if storage is unavailable or full. */
+/** Writes the career to the browser. Returns false if storage is unavailable or full, or after a crash. */
 export function saveCareer(career: Career, store: SaveStore | null = defaultStore()): boolean {
-  if (!store) return false;
+  if (!store || savesFrozen()) return false;
   try {
     store.setItem(STORAGE_KEY, encodeSave(career));
     return true;

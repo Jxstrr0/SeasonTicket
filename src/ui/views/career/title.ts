@@ -4,6 +4,7 @@ import type { UiState } from '../../career/state';
 
 export type TitleState = UiState['title'];
 import { renderCrest } from './crest';
+import { GAME_VERSION } from '../../career/report';
 
 export function renderCareerTitle(title: TitleState): string {
   const { saved, error, importText } = title;
@@ -35,7 +36,12 @@ export function renderCareerTitle(title: TitleState): string {
       <textarea id="import-code" name="code" class="field code-field" rows="3" placeholder="ST1:..." spellcheck="false" autocomplete="off">${esc(importText)}</textarea>
       <button type="submit" class="btn-secondary">Load code</button>
     </form>
-    <p class="center"><button type="button" class="btn-secondary" data-action="help">How to play</button></p>
+    <p class="center row-actions title-links">
+      <button type="button" class="btn-secondary" data-action="help">How to play</button>
+      <button type="button" class="btn-secondary" data-action="contact">Report a problem</button>
+      <button type="button" class="btn-secondary" data-action="whats-new">What's new</button>
+    </p>
+    <p class="center muted small">Version ${esc(GAME_VERSION)}</p>
     <p class="center small"><a class="link" href="#sandbox">League sandbox (watch a season, no club)</a></p>
     <p class="center small"><a class="link" href="#engine-lab">Engine lab (preview of the new match engine)</a></p>
   </main>`;

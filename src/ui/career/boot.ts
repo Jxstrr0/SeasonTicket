@@ -5,10 +5,12 @@
  */
 import { renderCareerTitle } from '../views/career/title';
 import { loadTitleSummary } from './titleSummary';
+import { installCrashGuard } from './crash';
 
 type Pending = { action: string } | { code: string } | null;
 
 export function bootCareer(root: HTMLElement): void {
+  installCrashGuard();
   const layer = document.createElement('div');
   layer.id = 'ui-layer';
   layer.innerHTML = renderCareerTitle({ saved: loadTitleSummary(), error: null, importText: '' });

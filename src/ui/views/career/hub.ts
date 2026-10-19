@@ -6,6 +6,7 @@ import { HUB_TABS, type HubTab, type UiState } from '../../career/state';
 import { QUALITY_OPTIONS } from '../../../render/quality';
 import { MATCH_MODES } from './newCareer';
 import { renderCrest } from './crest';
+import { GAME_VERSION } from '../../career/report';
 import { renderHome } from './home';
 import { renderSquad } from './squad';
 import { renderLineup } from './lineup';
@@ -143,6 +144,11 @@ function renderMenu(career: Career, ui: UiState): string {
       <button type="button" class="btn-secondary" data-action="menu">Close</button>
     </div>
     <p class="muted small">The game saves itself after every action.</p>
+    <div class="menu-row">
+      <button type="button" class="btn-secondary" data-action="contact">Report a problem</button>
+      <button type="button" class="btn-secondary" data-action="whats-new">What's new</button>
+    </div>
+    <p class="muted small">Season Ticket version ${esc(GAME_VERSION)}, by Longlight Interactive.</p>
   </div>`;
 }
 

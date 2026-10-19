@@ -83,6 +83,10 @@ import { renderReview } from '../views/career/review';
 import { renderDeadline } from '../views/career/deadline';
 import { renderGameOver, renderSaveCode } from '../views/career/saves';
 import { renderHelp, renderTip } from '../views/career/help';
+import { renderContact, renderWhatsNew } from '../views/career/contact';
+import { buildReport, deviceSummary } from './report';
+import { hasCrashed, setCrashWhere, showCrash } from './crash';
+import { copyText } from '../clipboard';
 import { loadTips, markSeen, nextTip, onScreenOf, storeTips, tipCandidates, tipsPaused, type TipId } from './tips';
 import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
 import type { HotspotId, OfficePick } from '../../render/office/types';
@@ -259,6 +263,7 @@ export class CareerApp {
       },
     );
     this.loadStored();
+    setCrashWhere(() => this.where());
     root.addEventListener('click', (e) => this.onClick(e));
     // Turning the phone changes how tall the top bar is.
     window.addEventListener('resize', () => this.syncOffice());
@@ -298,6 +303,8 @@ export class CareerApp {
   private save(): void {
     // Half way through a week the career is not in a state to keep; it saves once settled.
     if (!this.career || this.weeks.playing) return;
+    // After a crash the career in memory may be half way through what broke: keep the last good save.
+    if (hasCrashed()) return;
     const ok = saveCareer(this.career);
     if (ok) this.refreshSummary();
     if (!ok && !this.saveWarned) {
@@ -617,6 +624,10 @@ export class CareerApp {
         return renderGameOver(career);
       case 'help':
         return renderHelp();
+      case 'contact':
+        return this.renderContactScreen();
+      case 'whatsNew':
+        return renderWhatsNew();
       default:
         break;
     }
@@ -726,8 +737,7 @@ export class CareerApp {
     try {
       this.handleAction(action, d);
     } catch (err) {
-      this.ui.flash = { kind: 'error', text: `Something went wrong: ${errorText(err)}` };
-      this.render();
+      showCrash(err);
     }
   }
 
@@ -781,8 +791,15 @@ export class CareerApp {
         ui.flash = { kind: 'ok', text: 'Tips will show again as you go.' };
         return this.render();
       case 'help':
-        if (ui.screen !== 'help') ui.returnTo = ui.screen;
-        return this.show('help');
+      case 'contact':
+      case 'whats-new': {
+        const screen = action === 'whats-new' ? 'whatsNew' : action;
+        if (ui.screen !== 'help' && ui.screen !== 'contact' && ui.screen !== 'whatsNew') ui.returnTo = ui.screen;
+        if (screen === 'contact') this.save();
+        return this.show(screen);
+      }
+      case 'contact-copy':
+        return this.copyReport();
     }
 
     const career = this.career;
@@ -1167,8 +1184,7 @@ export class CareerApp {
     try {
       this.handleForm(form.dataset.form, form);
     } catch (err) {
-      this.ui.flash = { kind: 'error', text: `Something went wrong: ${errorText(err)}` };
-      this.render();
+      showCrash(err);
     }
   }
 
@@ -1430,6 +1446,28 @@ export class CareerApp {
     if (!this.followPhase()) this.show('hub');
   }
 
+  /** "Club, season 2 week 14" for problem reports, or null with no career. */
+  private where(): string | null {
+    const c = this.career;
+    return c ? `${userTeam(c).name}, ${careerWeekLabel(c)}` : null;
+  }
+
+  private report() {
+    return buildReport({ where: this.where(), device: deviceSummary() });
+  }
+
+  private renderContactScreen(): string {
+    return renderContact(this.report(), !!this.career);
+  }
+
+  private copyReport(): void {
+    const text = this.report();
+    void copyText(text, this.root.querySelector<HTMLTextAreaElement>('#report-text')).then((ok) => {
+      this.ui.flash = ok ? { kind: 'ok', text: 'Report copied. Now open the contact form and paste it in.' } : { kind: 'error', text: 'Copy was blocked. The report is selected: use your phone’s Copy.' };
+      this.flashOnly();
+    });
+  }
+
   private copyCode(): void {
     const code = this.ui.saveCode;
     const done = (): void => {
@@ -1461,7 +1499,7 @@ export class CareerApp {
     if (!el) {
       el = document.createElement('p');
       el.className = 'code-flash small';
-      this.root.querySelector('#save-code')?.after(el);
+      this.root.querySelector('#save-code, #report-text')?.after(el);
     }
     el.textContent = flash?.text ?? '';
     el.classList.toggle('warn', flash?.kind === 'error');
