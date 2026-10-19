@@ -83,7 +83,8 @@ export function circleRounds(teamIds: readonly string[]): Pair[][] {
 function findBalancedPlan(rng: Rng, teamIds: string[]): Plan {
   for (let attempt = 0; attempt <= SEARCH.restarts; attempt++) {
     const plan = randomPlan(rng, teamIds);
-    if (improvePlan(rng, plan, teamIds)) return plan;
+    // The last round of the first half must not come straight back, reversed, as the first of the second.
+    if (improvePlan(rng, plan, teamIds) && plan.firstOrder[plan.firstOrder.length - 1] !== plan.secondOrder[0]) return plan;
   }
   throw new Error(`buildSchedule: no fixture list with venue streaks of at most ${SEARCH.maxVenueStreak} found`);
 }

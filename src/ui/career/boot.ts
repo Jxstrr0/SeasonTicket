@@ -5,7 +5,7 @@
  */
 import { renderCareerTitle } from '../views/career/title';
 import { loadTitleSummary } from './titleSummary';
-import { installCrashGuard } from './crash';
+import { installCrashGuard, showCrash } from './crash';
 import { registerServiceWorker } from '../../pwa/register';
 import { setTitleBackdrop } from './titleBackdrop';
 import { playSplash } from './splash';
@@ -52,7 +52,9 @@ export function bootCareer(root: HTMLElement): void {
       new CareerApp(root);
       replay(root, pending);
     })
-    .catch(() => {
+    .catch((err) => {
+      // The game may have started to draw before it failed: then the crash screen is the way out.
+      if (!root.contains(layer)) return showCrash(err);
       layer.insertAdjacentHTML(
         'afterbegin',
         '<p class="error shell" role="alert">The game could not finish loading. Check your connection, then <button type="button" class="btn-secondary" onclick="location.reload()">Reload</button></p>',

@@ -50,7 +50,8 @@ function showUpdate(worker: ServiceWorker): void {
     if (what === 'later') bar.remove();
     if (what !== 'reload') return;
     navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
-    worker.postMessage('skip-waiting');
+    // A newer build may have replaced the one this banner was shown for: ask whichever is waiting now.
+    void navigator.serviceWorker.getRegistration().then((reg) => (reg?.waiting ?? worker).postMessage('skip-waiting'));
   });
   document.body.append(bar);
 }

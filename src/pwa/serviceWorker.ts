@@ -16,7 +16,7 @@ const CORE = ${JSON.stringify(['./', ...files])};
 const CORE_URLS = new Set(CORE.map((f) => new URL(f, self.registration.scope).pathname));
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(STORE).then((c) => c.addAll(CORE)));
+  e.waitUntil(caches.open(STORE).then((c) => Promise.all(CORE.map((u) => c.add(new Request(u, { cache: 'reload' }))))));
 });
 
 self.addEventListener('activate', (e) => {

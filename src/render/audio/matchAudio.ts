@@ -42,6 +42,7 @@ export class MatchAudio {
   private excite = 0;
   private paused = true;
   private duck = 1;
+  private duckTimer = 0;
   /** A match screen wants sound (between `prepare` and `stop`). */
   private active = false;
 
@@ -91,7 +92,8 @@ export class MatchAudio {
     if (!this.active) return;
     this.duck = amount;
     this.mixBeds();
-    window.setTimeout(() => {
+    window.clearTimeout(this.duckTimer);
+    this.duckTimer = window.setTimeout(() => {
       this.duck = 1;
       this.mixBeds();
     }, seconds * 1000);
@@ -130,6 +132,7 @@ export class MatchAudio {
 
   /** Stop everything and let the context go (leaving match day). */
   stop(): void {
+    window.clearTimeout(this.duckTimer);
     this.active = false;
     this.paused = true;
     for (const { src } of this.beds.values()) {

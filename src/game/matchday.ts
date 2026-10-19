@@ -92,6 +92,9 @@ export function stepLiveView(career: Career): { events: MatchEvent[]; pause: str
 
 /** Plays straight to the final whistle (the head coach decides for both sides). */
 export function playToEnd(career: Career, maxSteps = 400): void {
+  // In full-control mode the user's side has no coach: hand it over, or it plays on with no subs or changes.
+  liveControl(career, 'home', true);
+  liveControl(career, 'away', true);
   for (let i = 0; i < maxSteps && career.liveMatch && !career.liveMatch.finished; i++) stepLiveMinute(career);
 }
 

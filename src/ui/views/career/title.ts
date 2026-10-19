@@ -35,6 +35,7 @@ export function renderCareerTitle(title: TitleState): string {
       <label class="card-title" for="import-code">Load a save code</label>
       <textarea id="import-code" name="code" class="field code-field" rows="3" placeholder="ST1:..." spellcheck="false" autocomplete="off">${esc(importText)}</textarea>
       <button type="submit" class="btn-secondary">Load code</button>
+      ${saved ? '<p class="muted small">Loading a code replaces the saved career. Use Menu → Save code first to keep it.</p>' : ''}
     </form>
     <p class="center row-actions title-links">
       <button type="button" class="btn-secondary" data-action="help">How to play</button>

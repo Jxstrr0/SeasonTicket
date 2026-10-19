@@ -57,7 +57,7 @@ function renderTickets(career: Career): string {
     </dl>
     <p class="muted small">${esc(hint)} A typical home gate at a fair price is about ${esc(money(gate))}.</p>
     <form data-form="ticket" class="inline-form">
-      <label class="small">New price ($)<input class="field small-field" type="number" name="price" inputmode="decimal" min="${t.minPrice}" max="${t.maxPrice}" step="0.5" value="${books.ticketPrice}"></label>
+      <label class="small">New price ($)<input class="field small-field" type="number" name="price" inputmode="decimal" min="${t.minPrice}" max="${t.maxPrice}" step="any" value="${books.ticketPrice}"></label>
       <button type="submit" class="btn-secondary">Set price</button>
     </form>
   </section>`;
