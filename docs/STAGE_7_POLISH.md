@@ -71,7 +71,7 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 
 ## Budgets
 
-- **First load:** title screen showing in under 3 seconds on a mid-range phone on 4G, with at most 200 KB of compressed script before it (325 KB today).
+- **First load:** title screen showing in under 3 seconds on a mid-range phone on 4G, with at most 200 KB of compressed script before it (4.1 KB since 7.4).
 - **Audio:** new sounds under 1.5 MB in all, loaded per scene.
 - **Frame rate:** unchanged: 30 fps at Medium on the 3D match, 60 fps aimed for at Low.
 - **Saves:** a 10-season save loads in under 1 second and its save code stays under the current limit.
@@ -152,6 +152,18 @@ Each step ships a playable build to Pages, like Stages 5 and 6.
 **Easy riches.** A do-nothing owner at an Easy club ends ten seasons with about 69M in the bank while finishing bottom, because the wage bill shrinks to almost nothing. Harmless (nobody plays that way), so left as it is.
 
 **Tests.** `tests/storyReach.test.ts` (every event reachable) and an emergency-signing test in `tests/career.test.ts` run with `npm test`. The slow suite (`npm run test:slow`) has four new files: `careers-easy`, `careers-normal` and `careers-hard` check the targets above on fewer seeds, and `careers-league` checks the league over ten seasons (no more than 7 points stronger, average age 23 to 28, youth intake in its band, strong squads winning, happier fans in good seasons, crowds not always full).
+
+### 7.4 Performance pass (built 2026-10-19)
+
+**First load.** The title screen now comes from a tiny starter script (4.1 KB compressed, was 344 KB before the title). The rest of the game downloads behind it. A tap made while it is still loading is remembered and carried out once the game is ready, and the button says "Loading…" meanwhile. The Continue card reads a small summary stored next to the save, so it shows straight away. three.js only loads when a 3D scene opens. A check in the deploy (`npm run check:first-load`) fails the build if the starter script grows past 200 KB.
+
+**A bug fixed on the way.** A guard against double taps ignored every tap in the first half second after the page opened.
+
+**Saves after ten seasons.** On the quick engine the save code is about 106 KB at the start of each season and 208 KB at the end of season 10. Only the history grows (about 220 bytes a season), so nothing needs trimming. With real match replays for season 10, the code is 286 KB (the limit is 400 KB) and it loads in 34 ms (budget 1 second).
+
+**Week time.** Playing a week's matches on the real engine in one thread takes 1.1 seconds (median; 1.5 s at most). It does not grow over the seasons, and the game spreads the matches over two background workers.
+
+**Long session.** Ten trips from the office to a 3D match and back, with memory measured in the office after each. Memory goes up 30 MB on the first trip, because the 3D match scene is built once and kept for next time. After that it adds only 2.2 MB over nine more trips (110.2 to 112.4 MB), mostly the longer match log. Geometries (59), textures (37), shader programs (17), page elements and event listeners stay flat. No console errors.
 
 ## Owner's answers (2026-10-18)
 
