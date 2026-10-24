@@ -1,134 +1,109 @@
 # CLAUDE.md: Season Ticket build brief
 
-You are building **Season Ticket**, a soccer club owner/GM sim with a live, changeable-tactics match engine, for Longlight Interactive. The full design is in `docs/DESIGN.md`. Read it before starting any stage.
+**Season Ticket** is a soccer club owner/GM sim with a live, changeable-tactics match engine, by Longlight Interactive. It launched as **version 1.0.0 on 2026-10-19** and is live at https://jxstrr0.github.io/SeasonTicket/. The design is in `docs/DESIGN.md`; read it (and its decisions log, section 15) before changing how the game plays.
 
-The owner of this repo is a beginner-plus coder who tests mostly on a phone. Explain what you changed in plain language at the end of each task, and say how to test it on a phone.
+## How Kelbo works
 
----
+- Kelbo is a beginner-plus coder who tests mostly on a phone, in landscape.
+- Explain what changed in plain language at the end of every task, and say how to test it on a phone (the live link and what to tap).
+- Work on a branch and open a pull request into `main`. Never push straight to `main`.
+- Once `npm test` and `npm run build` pass locally and the PR check is green, merge the PR yourself. Kelbo has given standing permission to merge.
+- Keep pull requests small enough to review on a phone.
+- When something is a real design decision, ask Kelbo instead of guessing, and record the answer in the decisions log in `docs/DESIGN.md`.
 
 ## Tech stack
 
-- **Vite + TypeScript**, no UI framework (plain DOM for menus and overlays).
-- **Three.js** (pinned to an exact, stable version in `package.json`), with `GLTFLoader`, `DRACOLoader` or Meshopt, and `KTX2Loader`.
-- **Vitest** for unit tests of the sim.
-- **GitHub Actions** builds and deploys to **GitHub Pages**. `base` in `vite.config.ts` is `/SeasonTicket/`.
+- **Vite 8.3.4 + TypeScript 7.0.2**, no UI framework. Menus and overlays are plain DOM built from HTML strings (`src/ui`).
+- **three.js 0.186.1** from npm (`@types/three` 0.186.0), bundled by Vite. It is loaded only by dynamic import when a 3D scene opens, so the plain menus never download it. Models are glTF with **Meshopt** geometry (`meshopt_decoder` from three's examples) and **KTX2** textures (`KTX2Loader`). No Draco.
+- **fflate 0.8.2** compresses save codes. **meshoptimizer 1.1.1** (its simplifier) makes the light far-away player bodies in the 3D match.
+- **Vitest 5.0.5** for tests. CI uses Node 22.
+- The sim runs on **Web Workers** for background matches (`src/game/matchRunner.ts`, `matchWorker.ts`), with a main-thread fallback.
+- Installable as an app: `public/manifest.webmanifest` plus a service worker written at build time by `vite.config.ts` from `src/pwa/serviceWorker.ts`.
 
-## Folder structure
+## Commands
 
 ```
-/docs/DESIGN.md        design doc (source of truth for decisions)
-/src/sim/              pure game logic: league, players, match engine, season, finances. NO three.js or DOM imports.
-/src/game/             game state, calendar, save/load, events
-/src/render/           three.js scenes: office, stadium, match day; quality tiers; asset loading
-/src/ui/               DOM menus, HUD, tactics screens, overlays
-/src/data/             JSON: clubs, nations and names, formations and tactics, tuning values
-/public/assets/        compressed models (.glb), textures (.ktx2), audio
-/tests/                vitest tests
-/.github/workflows/    deploy workflow
+npm ci                    # install (npm install also works)
+npm run dev               # local dev server
+npm test                  # unit tests: 40 files, about 2 to 3 minutes
+npm run test:perf         # the engine's time budgets (tests/perf), a few seconds
+npm run test:slow         # whole seasons and ten-season careers (tests/slow), many minutes
+npm run build             # tsc --noEmit, then vite build to dist/
+npm run check:first-load  # after a build: the script before the title screen must stay under 200 KB
+npm run typecheck         # tsc only
+npm run golden            # after an engine or tuning change: raise engineRev, then store the new golden outcomes
+npm run credits           # after editing src/data/meta/credits.json: rewrite CREDITS.md
+npm run preview           # serve dist/ locally
 ```
 
-## Non-negotiable rules
+## Deploy
 
-1. **Sim stays separate from rendering.** `src/sim` must run headless (in tests or Node) with no three.js or DOM. Rendering only reads sim output.
-2. **Deterministic sim.** All randomness goes through one seeded RNG (`src/sim/rng.ts`), so the same seed gives the same match. This makes bugs reproducible.
-3. **Data-driven tuning.** Ratings formulas, prices and probabilities live in `src/data`, not hard-coded in logic.
-4. **Phone-first.** Landscape layout, touch targets of at least 44 px, no hover-only interactions. Test every UI change at a phone viewport.
-5. **Quality tiers (Low, Medium, High) exist from the first 3D scene.** Tiers control pixel ratio, shadows, crowd density, level of detail and post-processing. Default to Medium on phones, High on desktop, user-adjustable.
-6. **Asset budget for GitHub Pages:**
-   - **No Git LFS.** Pages serves LFS pointer files, not the assets.
-   - Every file under 100 MB; keep the whole site well under 1 GB.
-   - Compress models (Draco or Meshopt) and textures (KTX2).
-   - Lazy-load heavy assets per scene.
-7. **Saves:** `localStorage` with a `version` field and migrations. Export/import as a copyable save code (compressed, base64). Never break old saves without a migration.
-8. **No real league, club, player, place or brand names.** Everything is fictional, including the country (Valmere) and every nationality.
-9. **Small, working commits.** The game should build and run after every task. Keep the deploy green. Push to `main`.
+- `.github/workflows/deploy.yml` runs on every push to `main`: `npm ci`, `npm test`, `npm run test:perf`, `npm run build`, `npm run check:first-load`, then publishes `dist/` to GitHub Pages. A second job, `believability`, runs `npm run test:slow` beside the build; a miss shows red there but does not hold back the deploy.
+- Pull requests get the same checks.
+- `base` in `vite.config.ts` is `/SeasonTicket/`. Anything in `public/` is referenced through `import.meta.env.BASE_URL` (`assetUrl` in `src/render/assets.ts`).
+- `__BUILD_ID__` (the first 7 characters of the commit) is shown in problem reports.
+- Hash routes: `#sandbox` is the Stage 1 season simulator, `#engine-lab` (or `#engine-lab/<seed>`) the 2D engine viewer. Both are linked from the title screen.
 
----
+## Code rules (the code follows these; keep it that way)
 
-## Match engine spec for the sim
+1. **Sim stays separate from rendering.** `src/sim` has no three.js or DOM imports and runs headless in Node and in tests. `src/render` never imports the sim; `src/ui` turns sim state into plain snapshots for the scenes (`match3d.ts`, `stadiumSnapshot.ts`).
+2. **Deterministic sim.** All randomness goes through the seeded RNG in `src/sim/rng.ts`. The spatial engine (`src/sim/spatial`) and the files it shares use only `det.ts` maths: no `Math.sin`, `Math.pow`, `**` and so on. A test in `tests/spatial.test.ts` scans those files and fails on banned maths (there is no ESLint). Saves keep a match as a recipe (seed, line-ups, every change), so a change that makes an old seed play a different match must raise `engineRev` in `src/data/tuning/spatial.json` and run `npm run golden`.
+3. **Data-driven.** Every tuning number lives in `src/data/tuning/*.json`. Content lives in `src/data` as JSON: clubs, names, formations, commentary, events, news, press questions, help, tips, credits, the version and What's new. No magic numbers in logic.
+4. **Saves.** One career in `localStorage["seasonticket.career"]`, the previous one in `seasonticket.career.backup`. A save is the career as JSON, zlib-compressed, base64, behind the prefix `ST1:`; the same string is the copy-and-paste save code. `CAREER_VERSION` (now 11, in `src/sim/career/create.ts`) and the migrations in `src/game/save.ts` bring old saves forward. Never break an old save without a migration. `src/game/saveCheck.ts` refuses damaged codes; a pasted code may not inflate past 60 MB. After a crash, saving is frozen so the last good save survives.
+5. **Per-device settings** are their own `seasonticket.*` keys (quality, tips, audio, radio, live pitch, 3D match, highlights, camera, shape overlay, fps, splash, title summary), never part of the save. Wrap every `localStorage` access in try/catch.
+6. **Phone-first.** Landscape, touch targets of at least 44 px, no hover-only interactions, nothing wider than a 640 by 360 screen. Test every UI change at a phone viewport.
+7. **Quality tiers** Low, Medium, High and Off (plain menus) in `src/data/tuning/office.json` (`quality`). Default Medium on phones, High on desktop. Tiers set pixel ratio, antialiasing, shadows, bloom, prop detail and crowd density.
+8. **Asset budget.** No Git LFS. Compress models (Meshopt) and textures (KTX2) with the tools in `scripts/assets/` and commit the output. Each scene lazy-loads its own assets. Sound files are mono MP3 from `scripts/assets/build-audio.py`.
+9. **Credits.** Every third-party asset is an entry in `src/data/meta/credits.json`; `CREDITS.md` is written from it (`npm run credits`), and a test fails if they disagree or a file under `public/assets` is not covered.
+10. **No real league, club, player, place or brand names.** Everything is fictional, including the country (Valmere) and every nationality. A test checks the name lists.
+11. **Small, working commits.** The game builds and runs after every task. Keep the deploy green.
 
-> **Note:** the spatial engine built in Stage 4.5 (see `docs/STAGE_4_5_SPATIAL_ENGINE.md`) replaces the per-minute tick engine described below. The rules, outputs and believability targets here still apply; the "one-minute ticks" model is what changes.
+## Where things live
 
-- 11 a side, 90 minutes plus stoppage time (1 to 6 minutes per half), five substitutions from a bench of nine.
-- Simulate in one-minute ticks. Each tick, the team in possession attempts a move; outcomes include nothing, a foul (free kick, possible card), a corner, a shot (with an expected-goals value and the players involved), or a turnover that may become a counter-attack.
-- Tactics change the numbers: formation, mentality, pressing, defensive line, width, tempo, passing directness, counter-attacks, time-wasting, set-piece takers, man-marking. Every tactic change takes effect at the next tick.
-- Fatigue drains per minute (faster with high pressing and tempo) and lowers attributes.
-- Cards, injuries, substitutions, and AI head-coach decisions (subs around 60 to 80 minutes, mentality shifts when chasing or protecting) all happen inside the engine so the headless season uses the same code as the live match.
-- Playoffs: extra time (two 15-minute halves) then a penalty shootout.
-- Output: a match result with team and player stats, a scoring summary, an event timeline (every tick that produced an event, with a one-line commentary string), and per-player match ratings.
-- Believability targets (tests check these over several simulated seasons): 2.4 to 3.1 goals per match; home win about 45%, draw about 25%; 9 to 16 shots per team; stronger squads finish higher. Document any simplification in `docs/DESIGN.md`.
+```
+index.html                 the page; link-preview tags; loads src/main.ts
+vite.config.ts             base path, build id, the service-worker plugin, the vitest projects (unit, perf, slow)
+src/main.ts                picks the career, #sandbox or #engine-lab
+src/sim/                   pure game logic. career/ (money, market, staff, stadium, story, news, press, rivalry,
+                           deadline, rollover, live match), spatial/ (the match engine), match/ (events, ratings,
+                           commentary, lineups), season, schedule, standings, playoffs, players, coach, rng
+src/game/                  save/load and migrations, the save check, the week runner, the match runner and worker
+src/render/                three.js scenes: office/, stadium/, match/ (players, rig, cameras, actions, weather),
+                           audio/ (crowd, office, synthesised menu sounds), quality tiers, asset loading
+src/ui/                    DOM screens. career/ (the app, state, boot, crash screen, 3D hosts, tips, title scene),
+                           views/career/ (one file per tab or screen), pitch2d (the 2D pitch), lab/ (Engine Lab)
+src/pwa/                   service worker source and its registration (update banner)
+src/data/                  clubs, names, formations, world, commentary, deadline calls, events/, news/, press/,
+                           help/, meta/ (credits, version), tuning/ (one JSON per system)
+public/assets/             compressed models, textures and sounds (office/, match/, audio/)
+public/                    manifest, icons, og.png (link preview)
+scripts/assets/            offline tools that make the compressed assets (never run by the build)
+scripts/check-first-load.mjs  the first-load budget check
+tests/                     vitest: unit tests at the top, perf/, slow/, golden/ (stored outcomes), bench/, helpers/
+.github/workflows/         deploy.yml
+```
 
----
+### Docs
+
+- **Living:** `CLAUDE.md` (this file), `docs/DESIGN.md` (the game as built, plus the decisions log), `README.md` (the short editing guide), `CREDITS.md` (generated).
+- **History, leave as they are:** `docs/STAGE_4_5_SPATIAL_ENGINE.md`, `docs/STAGE_5_MATCH_DAY.md`, `docs/STAGE_6_EVENTS.md`, `docs/STAGE_7_POLISH.md`, `docs/LAUNCH_CHECKLIST.md`, `docs/history/`. They record how each stage was planned and built; the Stage 7 doc holds the launch audit and the balance numbers.
 
 ## Build stages
 
-Work one stage at a time. Each stage ends with a playable build deployed to Pages and a short summary for the owner. Do not start a stage until the previous one meets its "done when".
+All seven stages are built and merged. In order: Stage 1 (league, match engine, season, playoffs), Stage 2 (the owner/GM loop in plain menus), Stage 3 (the 3D HQ office), Stage 4 (the stadium builder), Stage 4.5 (the spatial match engine, 2D viewer, replays, workers), Stage 5 (the 3D match: players, actions, cameras, weather, crowd, audio), Stage 6 (events, crises, rivalries, press conferences, newspaper and fan feed, deadline day), Stage 7 (tips and Help, audio pass, balance pass, performance pass, crash screen, install as an app, credits, launch audit, save safety). The plans and build notes are in the stage docs above.
 
-### Stage 1: Foundation and match engine
-- Repo setup: Vite + TS, Three.js, Vitest, deploy workflow, a placeholder page that loads on Pages and can run a season in the browser.
-- League data: 16 fictional clubs in one table; generated players with attributes, positions, ages and nationality; coaching staff.
-- The match engine described above, with AI head coaches picking formations, tactics and substitutions for every club.
-- Season schedule (30 rounds, mid-season break) and the top-6 playoffs with extra time and penalties.
-- **Done when:** a full season and playoffs simulate headless in seconds, and results and stats look believable (tests check goals per match, result split, shots, and that squad strength predicts the table).
+The match engine's rules, outputs and believability targets are in `docs/DESIGN.md` sections 5 and 17. The Stage 1 per-minute engine is gone from the game; it survives only as a test-only stand-in in `tests/helpers/stage1/`.
 
-### Stage 2: Owner/GM loop with plain UI (the concept test)
-- Plain DOM screens, no 3D yet: club selection by difficulty, branding editor (name, city, colours, simple crest builder), squad, lineup and tactics screens, contracts, wage cap and luxury tax, homegrown rule toggle at career start, transfer windows with AI valuations, loans, free agents, youth academy intake.
-- Business: ticket pricing, sponsors, staff hiring, finances, owner cash injections, loans with conditions, the five-step lender ladder.
-- Match day in text: a live match feed where you change tactics and make subs at any time. Include the "game plan + big calls" mode and head-coach delegation.
-- Save/load and export/import codes.
-- **Done when:** the owner can play a full season and offseason on a phone, and it's fun with plain screens. Pause here for the owner's verdict before going further.
+## Current status
 
-### Stage 3: HQ Office in 3D
-- A semi-realistic office diorama: swipe to look around, tap objects (phone, laptop, TV, window).
-- Visitors walk in for events.
-- Quality tiers implemented here.
-- **Done when:** the Stage 2 menus are reachable through the office, and it runs smoothly at Medium on a phone.
-
-### Stage 4: Stadium builder
-- A modular semi-realistic stadium (stands, boxes, roof, video board, pitch, signage) driven by purchases.
-- Branding applied (colours, crest, pitch design). Attendance drives crowd density.
-- Visible from the office window.
-- **Done when:** buying an upgrade changes the stadium you can see, and the change persists in saves.
-
-### Stage 4.5: Spatial match engine
-- Replace the Stage 1 statistical engine (one outcome rolled per minute, no player positions) with a spatial engine: 22 players and the ball have positions on a 105 m by 68 m pitch, tactics set the team's shape, and each player decides from his attributes.
-- One engine for the watched match and every background match, with a coarse mode for speed, running in a Web Worker. Matches replay from their seed and inputs, so no position frames go in saves.
-- The 2D top-down viewer (moved here from Stage 5) is built early and is the main tool for judging the engine.
-- Full spec, build steps, tests, performance budgets and "done when": `docs/STAGE_4_5_SPATIAL_ENGINE.md`. Start with its docs and design proposal, and stop for the owner's review before writing engine code.
-- **Hard gate:** do not start any Stage 5 work (3D players, match-day cameras, the 3D tactics overlay, match audio) until:
-  1. Stage 4 meets its "done when", and
-  2. Stage 4.5 meets its "done when" in `docs/STAGE_4_5_SPATIAL_ENGINE.md`, and
-  3. The owner has given his verdict on the new engine.
-
-  If a request seems to need Stage 5 work before then, say so and ask the owner first.
-
-### Stage 5: Match Day viewer
-Build in three playable steps:
-1. Text match feed (exists from Stage 2).
-2. 2D top-down viewer (exists from Stage 4.5).
-3. 3D replay viewer: semi-realistic highlights replayed from the engine's position data, with rigged GLB players re-coloured per club, broadcast and owner's-box cameras, the tactics overlay, weather, crowd and stadium audio, text commentary.
-- **Done when:** a full match can be managed and watched in 3D on a phone at Medium quality.
-
-### Stage 6: Events and story layer
-- Office visitors, crises, rivalries, press conferences, newspaper and social feed, deadline-day war room.
-- **Done when:** a season produces varied, consequential events.
-
-### Stage 7: Polish and launch
-- Tutorial, audio pass, balance pass, performance pass, credits.
-- **Done when:** ready to share publicly as a free web game.
-
----
-
-## Art pipeline notes
-
-- Art direction is **semi-realistic** (see `docs/DESIGN.md`).
-- Use freely licensed (CC0 or similarly permissive) rigged character models and animations. Keep a `CREDITS.md` listing every asset, its source and its licence.
-- One base player model, re-coloured via materials for club branding.
-- Animation set grows over time: idle, jog, sprint, pass, shoot, tackle, header, save, celebrate first.
-- Compress every asset before committing.
+- **Launched:** 1.0.0 on 2026-10-19. The version and What's new list are in `src/data/meta/version.json`; bump the version when a release changes what players see.
+- **Shipped:** a club career over any number of seasons (squad, market, loans in, youth, staff, money, lenders, stadium builder and branding), live matches in text, 2D and 3D with changeable tactics, three match-day modes (full control, game plan and big calls, coach), replays, the story layer (76 events in `src/data/events/`, press conferences, rivalries, the Valmere Courier and fan feed, deadline day), the 3D office with visitors and radio, first-time tips and Help, sound with three volume sliders, save codes with a backup, a crash screen, offline play and the update banner, Credits.
+- **Known gaps:** GoatCounter analytics are not on (waiting for Kelbo's site code; the Credits screen says the game sends nothing). Frame-rate numbers from a real phone are still wanted for a later performance pass. The league's average age drifts down over ten seasons (26.5 to about 24.6) and is flagged, not fixed. Some world generation uses `Math.log`, `Math.cos` and `Math.pow`, which could differ in the last digit between phone engines; changing it would change every existing world, so it is left. The other "found and left alone" items are at the end of `docs/STAGE_7_POLISH.md`.
+- **Not built, named in the design:** a kit designer, loaning your own players out, pre-season friendlies, end-of-season awards, a win-probability readout, a city view, the fan zone, owner's box guests, lower divisions and cups. Launch extras Kelbo passed on (a second save slot, a richer owner "new game plus", a share-your-season card) stay ideas.
+- **What is next:** nothing is scheduled. The launch checklist (`docs/LAUNCH_CHECKLIST.md`) is Kelbo's quick phone check after any update.
 
 ## How to report back after each task
 
 1. What changed, in plain language.
-2. How to test it on a phone (the Pages URL and what to tap).
-3. Anything the owner needs to decide.
+2. How to test it on a phone (the live link and what to tap).
+3. Anything Kelbo needs to decide.
