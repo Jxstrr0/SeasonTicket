@@ -2,7 +2,7 @@
 
 **Studio:** Longlight Interactive
 **Genre:** Soccer club owner/GM management sim with a live, changeable-tactics match engine. Think of a club-ownership game in the spirit of F1 Manager 24, where the business and the football are one system.
-**Status:** Stage 0 complete (design locked after the soccer pivot on 2026-10-16). Concept test first; a wider "universe" may follow if the concept holds up.
+**Status:** launched as version 1.0.0 on 2026-10-19. Stages 1 to 7 are built (the plans and build notes are in `docs/STAGE_*.md`). This document describes the game as built; anything described but not in the game is marked "Not built yet". The decisions log (section 15) overrides anything earlier in the document. A wider "universe" may follow if the concept holds up.
 
 ---
 
@@ -72,7 +72,7 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 
 ### Career start
 - Pick from clubs at different difficulty levels. Difficulty comes from what's under the hood (squad, staff, money, debt, stadium, market, fans), never from branding.
-- **Full branding customization on any club:** club name, city name, colours, an in-game crest builder (shape, icon, colours), a kit designer (home, away, third), stadium name and pitch design.
+- **Branding on any club (as built):** club name, short name, city, abbreviation, two colours and an in-game crest builder (shape, pattern, icon) on the new-career screen, plus the homegrown toggle and an optional world seed. On the Stadium tab: seat colours, mowing pattern and roof colour (free and instant). The stadium name changes only through naming rights. A kit designer (home, away, third): **Not built yet.** Kits use the two club colours.
 - Branding flows into the 3D world: kits, pitch-side boards, video board, stadium colours, office décor.
 
 ---
@@ -95,11 +95,11 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 
 ## 6. Season structure
 
-- **Pre-season:** training camp, friendlies (2, not simulated in the concept test), the **pre-season transfer window** closes the week before round 1.
+- **Pre-season:** four weeks (`calendar.preseasonWeeks` in `src/data/tuning/career.json`) with the **pre-season transfer window** open; it closes with deadline day the week before round 1. A training camp and friendlies: **Not built yet** (a training camp appears only as a story event).
 - **Regular season:** 30 rounds, one per week, with a two-week **mid-season break** after round 15. The **mid-season transfer window** is open during the break and the week after it (3 weeks).
 - **Playoffs:** top 6 of the table. Seeds 1 and 2 skip the quarter-finals. Quarter-finals: 3 v 6 and 4 v 5. Semi-finals: seed 1 plays the lowest remaining seed, seed 2 plays the other. **Championship Final** for the Founders' Cup. The higher seed hosts every playoff match, including the final.
 - The table winner lifts **the Valmere Shield**; the playoff winner lifts **the Founders' Cup**. Both count as titles.
-- **Offseason:** awards, contract renewals, retirements, youth academy intake, free agency, the opening of the pre-season transfer window, training camp, and stadium construction.
+- **Offseason** (`src/sim/career/rollover.ts`): the season review, contract renewals, retirements, player development, the staff year, youth academy intake, the free-agent pool refresh, AI squad upkeep, eight weeks of stadium construction, then the pre-season transfer window opens. Awards and a training camp: **Not built yet.**
 
 ---
 
@@ -109,7 +109,7 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 - **Positions:** GK, CB, FB (full-back), DM, CM, AM, W (winger), ST. Players have a main position and can play nearby positions at a penalty.
 - **Wage cap:** a soft cap on total wages with a **luxury tax**. Every dollar of wages over the cap is taxed, with higher rates for repeat offenders. The tax pool is shared among clubs under the cap.
 - **Transfers:** buy and sell players for fees in the two windows. AI clubs value players by ability, age, contract length and form. Fees are paid from cash (instalments can come later). Players have squad roles and happiness that affect whether they'll move.
-- **Loans:** take or send players out for a season or half-season, with a wage split.
+- **Loans:** take players in until the end of the season, paying a chosen share of the wage. Loaning your own players out: **Not built yet** (see the Stage 2 simplifications in section 15).
 - **Free agents:** out-of-contract players, signable outside the playoff weeks.
 - **Youth academy:** a yearly intake of 3 to 5 youth players (ages 16 to 19) with potential. Academy level is an upgradeable facility.
 - **Homegrown rule:** chosen when starting a career. On: at least **6 Valmeran players** in every starting eleven. Off: pure talent. Every player has a nationality regardless.
@@ -121,7 +121,7 @@ Spring to late autumn. Pre-season in February and March, league play from April,
 ## 8. Business and finances
 
 ### Revenue
-Tickets (pricing by section), concessions, parking, sponsorships and naming rights, merchandise, the league TV share, luxury-tax shares, player sales and loan fees, playoff gate money.
+The income lines in the books (`INCOME_KEYS` in `src/sim/career/types.ts`): tickets (one ticket price for the ground), concessions, merchandise, sponsors, naming rights, the league TV share, merit money for the league position, playoff gate money, player sales, loan fees, luxury-tax shares, hospitality from the boxes, and other (story events). Pricing by section and parking: **Not built yet.**
 
 ### Money sources
 1. **Club revenue.**
@@ -143,18 +143,18 @@ Breaking loan conditions escalates step by step. Every step can be reversed by f
 - **Full tactical control is the default.** Before kickoff you set the formation, the starting eleven, the mentality and the team instructions. During the match you can change any of them and make substitutions at any time. The sim resolves the play and the 3D view shows it. You never steer players directly.
 - **Tactical levers:** formation (4-4-2, 4-3-3, 4-2-3-1, 3-5-2, 5-3-2, 4-1-4-1, 3-4-3), mentality (five steps from very defensive to very attacking), pressing intensity, defensive line height, width, tempo, passing directness, counter-attack on/off, time-wasting, set-piece takers, man-marking a danger player.
 - **Optional "game plan + big calls" mode.** Set the plan before kickoff, then make only the key decisions when the head coach asks: chasing a goal late, protecting a lead, a sub after an injury or red card, a penalty taker.
-- **Pacing tools:** hand control to the head coach at any time; choose viewing speed (extended highlights, key moments, instant result).
-- **Spatial match engine (Stage 4.5).** The sim plays the whole 90 minutes with all 22 players and the ball on the pitch, so tactics, fatigue, chances, goals, cards and subs come out of real positions. You still watch at the speed you choose (extended highlights, key moments, instant result), with a live match feed, and every highlight is a replay of the simulated positions. Until Stage 4.5 is finished, the Stage 1 engine still rolls one outcome a minute. The design is in section 17.
-- **Tactics overlay:** shape, pressing zones, expected goals and win probability, toggleable during the match.
-- **Match day audio:** crowd and stadium sound, with text commentary.
+- **Pacing tools (as built):** hand control to the head coach at any time; the text feed at 1x, 2x or 5x; the 2D pitch at 2x to 16x; the 3D match; a Highlights option (2D between the big moments, 3D for each one); "Skip to the end"; and "Sim to end" for a whole stretch of weeks.
+- **Spatial match engine (Stage 4.5, built).** The sim plays the whole 90 minutes with all 22 players and the ball on the pitch, so tactics, fatigue, chances, goals, cards and subs come out of real positions. Every match in the career runs on it: the watched match in fine mode, the rest in coarse mode on Web Workers. Every highlight and replay is the simulated positions played back. The design is in section 17.
+- **Tactics overlay (as built):** a Shape toggle on the 3D match draws your side's lines, and the match stats show shots and expected goals. Pressing zones and a win probability: **Not built yet.**
+- **Match day audio:** crowd and stadium sound (CC0 recordings), chants, whistles and kicks, with text commentary.
 
 ---
 
 ## 10. The world you see
 
 ### HQ Office (3D)
-- The desk is the menu: phone (calls and offers), laptop (finances), TV (league news and highlights).
-- A window looking out at the stadium, with construction visible.
+- The desk is the menu: phone (offers and the fan feed), laptop (money), TV (the News tab), whiteboard (lineup), clipboard (squad), trophy cabinet (club), door (inbox), and a radio you can switch on (`HOTSPOT_TABS` in `src/ui/career/app.ts`).
+- A window looking out at the stadium, with construction visible as scaffolding and cranes.
 - **Visitors walk in with events:** the head coach with a lineup problem, agents with offers, sponsor reps, reporters, city councillors, angry season-ticket holders, lenders.
 - The office grows with the club (from a modest office to a tower suite) and the trophy cabinet fills.
 
@@ -173,7 +173,7 @@ Breaking loan conditions escalates step by step. Every step can be reversed by f
 - **Free, instant branding:**
   - Seat colours: club colours, mixed, or the club's initials picked out in the seats.
   - The mowing pattern, the roof colour and the crest on the pitch.
-  - The stadium name, and the sponsors on the boards. Naming rights rename the ground and put the buyer's brand on the boards.
+  - The sponsors on the boards. The stadium name changes only through naming rights (sold on the Club tab), which rename the ground and put the buyer's brand on the boards; the old name returns when the deal ends. A free rename: **Not built yet.**
 
 Building takes time:
 - Each project takes weeks, and at most three run at once.
@@ -192,8 +192,8 @@ The Stadium tab shows the ground in 3D:
 - Work in progress shows as scaffolding with cranes.
 - A Plan view (the flat diagram) is one tap away, and is the fallback when 3D is off.
 
-**Stadium catalogue and costs (proposed, waiting for the owner's confirmation).**
-- Money is in Valmeran dollars. The values live in `src/data/tuning/stadium.json`.
+**Stadium catalogue and costs (in use since Stage 4; the owner has not asked for changes).**
+- Money is in Valmeran dollars. The values live in `src/data/tuning/stadium.json` and the table below matches that file.
 - "Pays back" is a rough guide: the number of seasons the extra income takes to cover the cost.
   - Big club: Crowncaster City, 48,400 seats.
   - Small club: Prairie Junction, 13,600 seats.
@@ -225,22 +225,25 @@ In plain terms:
 - Weather and seasons (spring rain through to snowy playoffs).
 - Sponsors on the boards and video board.
 
-### Planned world extras
+### World extras
+Built:
+- Press conferences (Stage 6.3) for big matches and notable results, answered calm, bold or deflecting, or left to the assistant coach.
+- Transfer deadline day war room (Stage 6.6): on the last day of each window the owner moves a clock from 09:00 to 23:00 an hour at a time and answers late bids, panic sales, free agents, hijack chances and the odd silly call; the staff handle anything left. Details in `docs/STAGE_6_EVENTS.md`.
+- Newspaper and fan feed (Stage 6.2): *The Valmere Courier* and made-up fans react to results, signings and your decisions, on the News tab, the office TV and the desk phone.
+
+Not built yet:
 - A city view where your brand spreads as popularity grows (billboards, shirts, bars showing matches).
-- Press room after matches.
-- Transfer deadline day war room (built in Stage 6.6): on the last day of each window the owner moves a clock from 09:00 to 23:00 an hour at a time and answers late bids, panic sales, free agents, hijack chances and the odd silly call; the staff handle anything left. Details in `docs/STAGE_6_EVENTS.md`.
 - Supporters' fan zone that fills before kickoff.
 - Owner's box guests: VIPs you court for deals mid-match.
-- Newspaper and social feed reacting to your decisions.
 
 ---
 
 ## 11. Art direction
 
 - **Semi-realistic.** Realistic proportions, physically based materials, real lighting and atmosphere. A dusk night-match look is the reference mood.
-- **Rigged, animated GLB player models** (one base model re-coloured per club) with a growing animation library: idle, jog, sprint, pass, shoot, tackle, header, save, celebrate.
-- **Quality tiers from day one:** Low, Medium, High. Phone testing targets Medium; PC targets High.
-- Level of detail for players and an instanced crowd.
+- **Rigged, animated GLB player models** (the CC0 Quaternius base bodies, re-coloured per club by a shader, with a seeded skin tone and hair). The animation clips are idle, walk, jog and sprint; kicks, headers, tackles, slides, falls, keeper dives and catches, throw-ins and celebrations are hand-keyed poses laid over the running animation in code (`src/render/match/actions.ts`, tuned in `src/data/tuning/match3d.json`).
+- **Quality tiers:** Low, Medium, High, plus Off (plain menus). Phone testing targets Medium; PC targets High.
+- Level of detail for players (lighter far-away bodies) and an instanced crowd.
 
 ---
 
@@ -248,7 +251,8 @@ In plain terms:
 
 - Built in **Claude Code** on a **GitHub repo**, deployed to **GitHub Pages**.
 - Phone-first testing, played on phone and PC, **landscape** layout, touch-first controls with mouse and keyboard support.
-- **Saves:** stored in the browser, moved between devices with an **export/import save code**.
+- **Saves:** stored in the browser (`localStorage`, one career plus one backup), moved between devices with an **export/import save code** (the career as compressed JSON behind the prefix `ST1:`). Saves carry a version (`CAREER_VERSION`, 11 at launch) and are migrated forward in `src/game/save.ts`.
+- **Installable as an app:** a web manifest and a service worker, so the game opens from a home-screen icon, full screen in landscape, and plays offline after the first visit. A new version waits until the player taps Reload.
 
 ---
 
@@ -353,7 +357,7 @@ HQ Office (Stage 3):
   | Trophy cabinet | Club |
   | Door | Inbox |
 
-  The Office tab brings the room back. Every screen is still reachable through the tabs, so nothing depends on finding an object.
+  The Office tab brings the room back. Every screen is still reachable through the tabs, so nothing depends on finding an object. (Later changes, as built: since Stage 6.2 the TV opens the News tab, and since Stage 7.2 the radio on the credenza switches the office radio. The map is `HOTSPOT_TABS` in `src/ui/career/app.ts`.)
 - The laptop, TV and whiteboard show live data (cash, the table, the planned eleven) drawn onto canvas textures. The laptop's screen had no texture coordinates in the source model, so the game generates flat ones when it loads.
 - Graphics setting: Low, Medium, High or Off (plain menus). It is stored per device, not in the save, so a save code moved to a laptop gets High there. Default is Medium on phones, High on desktop. The tiers control pixel ratio, antialiasing, shadows, bloom (High only), prop detail, the crowd in the window view and the city blocks behind it.
 - If the 3D office cannot start, or the browser drops it three times, the game falls back to the plain menus and says so.
@@ -401,21 +405,24 @@ Owner's decisions (2026-10-18):
 
 ---
 
-## 16. Open items (decide during development)
+## 16. Open items
 
-- Starting cash, debt and squad quality per difficulty tier.
-- The stadium upgrade catalogue and costs: proposed in section 10, waiting for the owner's confirmation.
-- The spatial match engine questions (section 17.14): the proposed answers are in use until the owner decides.
-- Wage cap level, luxury-tax rates and the typical fee range for a star.
-- Youth intake size by academy level.
-- Which tactical presets ship for the concept test.
-- The exact owner's fortune per difficulty tier, and whether it grows over time.
+These were open during development. Each is now settled by a value in the data files, which the owner can change at any time:
+
+- Starting cash, debt and the owner's fortune per difficulty tier: `tiers` in `src/data/tuning/career.json` (Easy 6M cash, no debt, 20M fortune; Normal 3M, 1M, 10M; Hard 1.5M, 2M, 5M; Very hard 0.5M, 3M, 2M). The fortune grows 3% a year (`owner.fortuneGrowth`).
+- The stadium catalogue and costs: section 10 and `src/data/tuning/stadium.json`, in use since Stage 4.
+- The spatial match engine questions (section 17.14): the proposed answers are in use; two were answered by the owner.
+- Wage cap and luxury tax: `wageCap` in `career.json` (6M soft cap, 50% tax, 100% for repeat offenders).
+- Youth intake size by academy level: `youth.intakeByLevel` in `career.json` (3, 3, 4, 4, 5).
+- Tactical presets: none ship. The AI coaches pick shapes by `selection.formationPopularity` in `coach.json`; the owner sets every dial by hand.
+
+Still open: the typical fee range for a star is whatever the market produces; nothing pins it.
 
 ---
 
 ## 17. Spatial match engine (Stage 4.5 design)
 
-**Status:** the owner said to build it ("start on 4.5 and onward") without a separate review, so the build has started. Until the owner answers the questions in 17.14, the engine uses the proposed answer; any of them can still change, and so can anything else here. Detailed values, sketch evidence, formulas, test mechanics and the risk list are in the appendix, `docs/history/STAGE_4_5_SKETCH_NOTES.md`.
+**Status:** built and in use for every match since build step 7; the owner's verdict was "it feels good" (section 15). Sections 17.1 to 17.14 are the design as proposed, with "as built" notes where the build differed; 17.15 is the step-by-step build record, newest first. For the questions in 17.14 the engine uses the proposed answer unless the note says otherwise. Detailed values, sketch evidence, formulas, test mechanics and the risk list are in the appendix, `docs/history/STAGE_4_5_SKETCH_NOTES.md`. The engine revision (`engineRev` in `src/data/tuning/spatial.json`) is 15 at launch.
 
 **The idea.** 22 players and a ball move on a 105 m by 68 m pitch. Tactics decide where each player wants to stand, each player chooses from what he sees and his attributes, and the referee judges real positions. One engine runs every match: "fine" mode for the match on your screen, a faster "coarse" mode for the rest. A match replays from its seed plus the log of changes made during it, so saves hold no positions.
 
@@ -659,10 +666,10 @@ The same seed must give the same match on every phone and browser; replays and b
 - Directions use vectors, not angles; curves use lookup tables or simple shapes.
 - Any real curve comes from `det.ts`, built from those five operations only: bit-for-bit the same everywhere and accurate to about 15 digits.
 - The engine uses a new `Rng.normalDet`; `Rng.normal` stays for player generation, so existing worlds do not change.
-- A lint rule (an automatic code check) and a test ban the built-ins and `**` in `src/sim/spatial/**` and the shared files the engine calls (`match/clock.ts`, `match/strength.ts`, `match/ratings.ts`, `rng.ts`). `Rng.normal` is the one marked exception; the engine may not call it.
+- A test (`tests/spatial.test.ts`, "has no banned maths") bans the built-ins and `**` in `src/sim/spatial/**` and the shared files the engine calls. There is no lint tool in the project, so the test is the only guard. `Rng.normal` is the one marked exception; the engine may not call it.
 - Players run in a fixed order, inputs land on whole seconds, and nothing reads the system clock.
 
-**Proof so far:** the sketch gave identical golden fingerprints in Node, Bun (Safari's engine family), the main thread and a worker. CI will play a golden match in Chromium, Firefox and WebKit, on Linux only; the **Engine check** plays it on your real iPhone and shows "matches" or "differs". You tap it once.
+**Proof so far:** the sketch gave identical golden fingerprints in Node, Bun (Safari's engine family), the main thread and a worker. CI plays the golden matches in Node (`tests/golden.test.ts`), and the Engine Lab's "Play a league week in the background" compares the workers with the main thread on a real phone. Golden matches in Chromium, Firefox and WebKit on CI, and an **Engine check** button in the settings: **Not built yet.**
 
 ### 17.13 What we simplify, and why
 
