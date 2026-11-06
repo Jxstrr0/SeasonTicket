@@ -19,6 +19,7 @@ Launched: version 1.0.0 on 2026-10-19. All seven build stages are in:
 - Stage 6: events, press conferences, rivalries, the newspaper and fan feed, deadline day. `docs/STAGE_6_EVENTS.md`.
 - Stage 7: tips and Help, sound, balance, performance, crash screen, install as an app, credits, launch audit. `docs/STAGE_7_POLISH.md`.
 - 1.1.0.0: save safety. Menu → Save code has **Save backup file** (the save code as a .txt; on a phone, Save to Files), the title screen has **Load backup file**, the game asks the browser to keep its storage, and a quiet note on the hub reminds you to back up. Timings in `src/data/tuning/saves.json`.
+- 1.1.2.0: a **Settings** button on the title screen (graphics, sound, tips) that works with no career; the in-career menu splits into Career and Settings.
 
 The version and the What's new list live in `src/data/meta/version.json`. Versions have four numbers, `x.x.x.x` = Major.Minor.Patch.Build (Build is a republish), like every Longlight game. `package.json` keeps three numbers because npm needs that.
 

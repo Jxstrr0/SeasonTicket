@@ -87,6 +87,7 @@ import { renderGameOver, renderSaveCode } from '../views/career/saves';
 import { renderHelp, renderTip } from '../views/career/help';
 import { renderContact, renderWhatsNew } from '../views/career/contact';
 import { renderCredits } from '../views/career/credits';
+import { renderSettings } from '../views/career/settings';
 import { buildReport, deviceSummary } from './report';
 import { checkStorage, deliverBackupFile, lastBackupText, loadLastBackup, needsBackupReminder, noteBackup, readBackupFile, requestPersist, storageLine, storageState } from './saveSafety';
 import { hasCrashed, setCrashWhere, showCrash } from './crash';
@@ -213,6 +214,8 @@ export class CareerApp {
   /** The crowd's sound and the commentary ticker, shared like the 3D view. */
   private readonly atmosphere = new Atmosphere();
   private readonly uiSounds = new UiSounds();
+  /** Where Back on the Settings screen goes. */
+  private settingsFrom: Screen = 'title';
   private readonly officeAudio = new OfficeAudio();
   /** What was on screen at the last render, for the menus' sounds. */
   private cues: CueState | null = null;
@@ -722,6 +725,8 @@ export class CareerApp {
         return renderWhatsNew();
       case 'credits':
         return renderCredits();
+      case 'settings':
+        return renderSettings(ui);
       default:
         break;
     }
@@ -893,7 +898,26 @@ export class CareerApp {
         ui.backupNudge = false;
         return this.render();
       case 'back':
+        // Settings returns to where it was opened; a page opened from Settings returns to it.
+        if (ui.screen === 'settings') return this.show(this.settingsFrom);
+        if (ui.returnTo === 'settings') return this.show('settings');
         return this.show(this.career ? ui.returnTo : 'title');
+      case 'settings':
+        if (ui.screen !== 'settings') this.settingsFrom = INFO_SCREENS.includes(ui.screen) ? 'title' : ui.screen;
+        return this.show('settings');
+      case 'set-quality':
+        // A device setting: works on the title screen too, with no career or 3D scene open.
+        if (!isQualitySetting(d.quality)) return;
+        ui.quality = d.quality;
+        storeQuality(d.quality);
+        this.office.reset();
+        this.stadium.reset();
+        this.match3d.reset();
+        ui.stadium3dFailed = false;
+        ui.match3dFailed = false;
+        // Turning 3D on (or changing tier) in a career shows the office straight away.
+        ui.inOffice = !!this.career && d.quality !== 'off';
+        return this.render();
       case 'dismiss-flash':
         ui.flash = null;
         return this.render();
@@ -933,18 +957,6 @@ export class CareerApp {
       case 'office':
         ui.inOffice = this.officeTier() !== null;
         ui.menuOpen = false;
-        return this.render();
-      case 'set-quality':
-        if (!isQualitySetting(d.quality)) return;
-        ui.quality = d.quality;
-        storeQuality(d.quality);
-        this.office.reset();
-        this.stadium.reset();
-        this.match3d.reset();
-        ui.stadium3dFailed = false;
-        ui.match3dFailed = false;
-        // Turning 3D on (or changing tier) shows the office straight away.
-        ui.inOffice = d.quality !== 'off';
         return this.render();
       case 'live-sound':
         this.setMix({ ...this.ui.mix, muted: !this.ui.mix.muted });
@@ -1394,8 +1406,6 @@ export class CareerApp {
       storeTips(this.tips);
       return;
     }
-    const career = this.career;
-    if (!kind || !career) return;
     if (kind === 'show-fps') {
       // A device setting, not part of the career.
       this.ui.showFps = (el as HTMLInputElement).checked;
@@ -1403,6 +1413,8 @@ export class CareerApp {
       this.match3d.showFps(this.ui.showFps);
       return;
     }
+    const career = this.career;
+    if (!kind || !career) return;
     const live = this.ui.screen === 'live';
     const apply = (patch: Partial<Tactics>): void => {
       if (live) this.flashLive(liveTactics(career, patch));
