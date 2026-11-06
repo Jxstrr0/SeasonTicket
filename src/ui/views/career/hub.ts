@@ -3,7 +3,7 @@ import { C, LADDER_NAMES, type StoryPace, matchLock, money, transferWindowOpen, 
 import { cls, each, esc } from '../../html';
 import { weekLabel } from '../../model';
 import { HUB_TABS, type HubTab, type UiState } from '../../career/state';
-import { QUALITY_OPTIONS } from '../../../render/quality';
+import { renderDeviceSettings } from './settings';
 import { MATCH_MODES } from './newCareer';
 import { renderCrest } from './crest';
 import { GAME_VERSION } from '../../career/report';
@@ -90,25 +90,6 @@ function renderTopBar(career: Career, ui: UiState): string {
   </header>`;
 }
 
-const SLIDERS = [
-  { bus: 'crowd', label: 'Crowd', hint: 'the match crowd and the office' },
-  { bus: 'effects', label: 'Effects', hint: 'whistle, ball, taps, knocks and the phone' },
-  { bus: 'music', label: 'Music', hint: 'the office radio' },
-] as const;
-
-/** Mute, the three volume sliders and the office radio. */
-function renderSound(ui: UiState): string {
-  const mix = ui.mix;
-  return `<div class="card-title">Sound</div>
-    <label class="check"><input type="checkbox" data-change="mix-on"${mix.muted ? '' : ' checked'}> Sound on</label>
-    ${each(SLIDERS, (s) => {
-      const v = Math.round(mix[s.bus] * 100);
-      return `<label class="slider${mix.muted ? ' off' : ''}"><span class="slider-name">${esc(s.label)}</span><input type="range" min="0" max="100" step="5" value="${v}" data-change="mix-level" data-bus="${s.bus}" aria-label="${esc(s.label)} volume" aria-valuetext="${v}%"${mix.muted ? ' disabled' : ''}><span class="slider-hint small muted">${esc(s.hint)}</span></label>`;
-    })}
-    <label class="check"><input type="checkbox" data-change="radio-on"${ui.radio ? ' checked' : ''}> Office radio on</label>
-    <p class="muted small">Tap the radio on the office credenza to switch it on or off. On iPhones the ring/silent switch mutes the game.</p>`;
-}
-
 function renderMenu(career: Career, ui: UiState): string {
   if (!ui.menuOpen) return '';
   const mode = career.delegation.matchMode;
@@ -117,27 +98,20 @@ function renderMenu(career: Career, ui: UiState): string {
       <button type="button" class="btn-secondary" data-action="help">Help</button>
       <button type="button" class="btn-secondary" data-action="menu">Close</button>
     </div>
+    <h2 class="menu-heading">Career</h2>
     <div class="card-title">Match-day mode</div>
     <div class="segmented stack" role="group">
       ${each(MATCH_MODES, (m) => `<button type="button" class="${cls('seg', m.id === mode && 'on')}" data-action="set-mode" data-mode="${esc(m.id)}" aria-pressed="${m.id === mode}"><strong>${esc(m.label)}</strong><span class="small">${esc(m.hint)}</span></button>`)}
     </div>
-    <div class="card-title">Graphics</div>
-    <div class="segmented" role="group">
-      ${each(QUALITY_OPTIONS, (q) => `<button type="button" class="${cls('seg', q.id === ui.quality && 'on')}" data-action="set-quality" data-quality="${q.id}" aria-pressed="${q.id === ui.quality}">${esc(q.label)}</button>`)}
-    </div>
-    <p class="muted small">Low runs best on older phones. Off uses the plain menus with no 3D office.</p>
-    <label class="check"><input type="checkbox" data-change="show-fps"${ui.showFps ? ' checked' : ''}> Show the frame rate on the 3D match</label>
-    ${renderSound(ui)}
     <div class="card-title">Story pace</div>
     <div class="segmented" role="group">
       ${each(PACE_OPTIONS, (o) => `<button type="button" class="${cls('seg', o.id === career.story.pace && 'on')}" data-action="set-pace" data-pace="${o.id}" aria-pressed="${o.id === career.story.pace}">${esc(o.label)}</button>`)}
     </div>
     <p class="muted small">How often people bring you decisions. Normal is one or two a week, more in transfer windows.</p>
     <label class="check"><input type="checkbox" data-change="auto-lineup"${career.delegation.autoLineup ? ' checked' : ''}> Head coach picks the lineup each week</label>
-    <div class="card-title">Tips</div>
-    <label class="check"><input type="checkbox" data-change="tips-on"${ui.tipsOn ? ' checked' : ''}> Show first-time tips</label>
-    <div class="menu-row"><button type="button" class="btn-secondary" data-action="tips-reset">Show tips again</button></div>
-    <p class="muted small">A short tip the first time you open each screen. Show tips again brings back the ones you've seen.</p>
+    <h2 class="menu-heading">Settings</h2>
+    <p class="muted small">For this device, not the career. Also on the title screen.</p>
+    ${renderDeviceSettings(ui)}
     <div class="menu-row">
       <button type="button" class="btn-secondary" data-action="save-code">Save code</button>
       <button type="button" class="btn-secondary" data-action="to-title">Quit to title</button>

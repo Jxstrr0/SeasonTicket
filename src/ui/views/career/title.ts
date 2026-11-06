@@ -20,6 +20,7 @@ export function renderCareerTitle(title: TitleState): string {
     : '';
   return `<main class="shell title-screen">
     <header class="masthead">
+      <button type="button" class="btn-secondary title-settings" data-action="settings">Settings</button>
       <h1>Season Ticket</h1>
       <p class="tagline">Own the club. Hire the coach. Change the game from the touchline.</p>
     </header>
