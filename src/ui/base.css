@@ -567,6 +567,21 @@ label .field { color: var(--text); }
 @keyframes flash-out { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { .hub > .flash:not(.flash-error) { animation-duration: 0.01s; animation-delay: 6s; } }
 .flash .btn-icon { font-size: 1rem; flex: none; }
+/* The backup reminder: a quiet note at the top of the hub that stays until answered. */
+.nudge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 12px;
+  background: rgba(242, 193, 78, 0.12);
+  border: 1px solid rgba(242, 193, 78, 0.4);
+}
+.nudge > span { flex: 1 1 auto; }
+.nudge > button { flex: none; }
+.nudge .btn-icon { font-size: 1rem; }
+.office-hud > .nudge { background: rgba(38, 32, 14, 0.95); }
 
 .subtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
 .subtab { flex: 1 1 0; background: transparent; color: var(--muted); border-radius: 10px 10px 0 0; border-bottom: 3px solid transparent; }

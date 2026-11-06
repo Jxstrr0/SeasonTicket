@@ -65,6 +65,8 @@ export function bootCareer(root: HTMLElement): void {
 function replay(root: HTMLElement, pending: Pending): void {
   if (!pending) return;
   if ('action' in pending) {
+    // A file picker only opens from a real tap: the fresh button waits for the next one.
+    if (pending.action === 'load-file') return;
     root.querySelector<HTMLElement>(`[data-action="${CSS.escape(pending.action)}"]`)?.click();
     return;
   }

@@ -1,0 +1,13 @@
+{
+  "_about": "Keeping a career safe beyond this browser: when to remind the owner to keep a backup. Read by src/ui/career/saveSafety.ts.",
+  "backup": {
+    "_remindAfterDays": "Days since the last backup (code copied, file saved or a code loaded) before the quiet reminder shows again.",
+    "remindAfterDays": 14,
+    "_progressWeeks": "Weeks played before a career counts as worth a reminder; a brand-new career has nothing to lose yet.",
+    "progressWeeks": 3,
+    "_fileName": "Backup files are named <fileSlug>-backup-YYYY-MM-DD.txt, by the phone's local date.",
+    "fileSlug": "season-ticket",
+    "_maxFileMB": "A chosen backup file bigger than this is refused before it is read. A real save code is far smaller.",
+    "maxFileMB": 20
+  }
+}
