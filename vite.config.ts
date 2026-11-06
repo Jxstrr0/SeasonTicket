@@ -26,12 +26,30 @@ function serviceWorker(): Plugin {
   };
 }
 
+/**
+ * Makes the built stylesheet non-blocking, so a phone paints index.html's inline loading
+ * screen on the first frame instead of waiting for the stylesheet. `media="print"` loads it
+ * without holding up the page and the onload swaps it in; src/main.ts waits for it before
+ * drawing the title screen (`stylesReady` in src/ui/bootScreen.ts).
+ */
+function deferStyles(): Plugin {
+  return {
+    name: 'season-ticket-defer-styles',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler: (html) =>
+        html.replace(/<link rel="stylesheet"([^>]*?)>/g, `<link rel="stylesheet"$1 media="print" data-deferred onload="this.media='all'">`),
+    },
+  };
+}
+
 // Deployed to GitHub Pages at https://jxstrr0.github.io/SeasonTicket/
 export default defineConfig({
   base: '/SeasonTicket/',
   // Shown in problem reports so a report names the exact build.
   define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
-  plugins: [serviceWorker()],
+  plugins: [deferStyles(), serviceWorker()],
   build: {
     target: 'es2022',
     sourcemap: false,
