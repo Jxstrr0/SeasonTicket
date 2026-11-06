@@ -251,7 +251,7 @@ Not built yet:
 
 - Built in **Claude Code** on a **GitHub repo**, deployed to **GitHub Pages**.
 - Phone-first testing, played on phone and PC, **landscape** layout, touch-first controls with mouse and keyboard support.
-- **Saves:** stored in the browser (`localStorage`, one career plus one backup), moved between devices with an **export/import save code** (the career as compressed JSON behind the prefix `ST1:`). Saves carry a version (`CAREER_VERSION`, 11 at launch) and are migrated forward in `src/game/save.ts`.
+- **Saves:** stored in the browser (`localStorage`, one career plus one backup), moved between devices with an **export/import save code** (the career as compressed JSON behind the prefix `ST1:`), which can also be kept as a backup file. Saves carry a version (`CAREER_VERSION`, 11 at launch) and are migrated forward in `src/game/save.ts`.
 - **Installable as an app:** a web manifest and a service worker, so the game opens from a home-screen icon, full screen in landscape, and plays offline after the first visit. A new version waits until the player taps Reload.
 
 ---
@@ -402,6 +402,7 @@ Owner's decisions (2026-10-18):
 - Performance (Stage 7.4): the title screen loads from a 4 KB starter script and the rest of the game downloads behind it (a tap made early is carried out once it arrives). three.js loads only with a 3D scene. A ten-season save stays well inside its limits, and ten office-to-match trips show no memory leak. Numbers in `docs/STAGE_7_POLISH.md`.
 - Safety net (Stage 7.5): a crash shows a calm screen with Reload, Copy save code and Report the problem, and stops all saving so the last good save is kept. Problem reports are copied text for the studio website's contact form (a save is too long to include). The game installs as an app and plays offline; updates wait for the player to tap Reload. Notes in `docs/STAGE_7_POLISH.md`.
 - Credits and title (Stage 7.6): one credits list (`src/data/meta/credits.json`) feeds both the Credits screen and `CREDITS.md`, and a test checks every asset file is credited. The title screen opens with the Longlight studio card and shows your ground at dusk: a still picture everywhere, a slow 3D turn when graphics are on. Notes in `docs/STAGE_7_POLISH.md`.
+- Save safety (1.1.0, asked for by Kelbo on 2026-11-06 for every Longlight game): all the studio's games share one web address, so one browser storage that a phone low on space may clear all at once. The game asks the browser to keep its storage (`navigator.storage.persist`, once per page load, after the first save, a backup or a restore) and the save-code screen says whether it will. Save backup file writes the same `ST1:` code to `season-ticket-backup-YYYY-MM-DD.txt` (the share sheet on phones, so iPhone offers Save to Files; a download elsewhere); Load backup file on the title screen feeds the file through the same check and Replace confirm as a pasted code. A quiet note on the hub, at most once per visit and never during a week, match, scene or menu, reminds an owner with 3+ weeks played who has no backup of this career on this device, or none in 14 days (`src/data/tuning/saves.json`). The last backup (code copied, file saved, code loaded) is a per-device key, `seasonticket.lastBackup`, not part of the save. Code in `src/ui/career/saveSafety.ts`.
 
 ---
 
