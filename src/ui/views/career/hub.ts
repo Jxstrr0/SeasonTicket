@@ -161,6 +161,16 @@ export function renderFlash(ui: UiState): string {
   </div>`;
 }
 
+/** The quiet reminder to keep a backup (at most once per visit, dismissible). */
+function renderBackupNudge(ui: UiState): string {
+  if (!ui.backupNudge) return '';
+  return `<div class="nudge" role="status">
+    <span class="small">No recent backup of this career. Save a backup file in case this browser clears its storage.</span>
+    <button type="button" class="btn-secondary" data-action="save-code">Back up</button>
+    <button type="button" class="btn-icon" data-action="dismiss-nudge" aria-label="Not now">✕</button>
+  </div>`;
+}
+
 function tabLabel(career: Career, id: HubTab, label: string): string {
   if (id !== 'inbox') return esc(label);
   const n = unreadCount(career);
@@ -216,10 +226,10 @@ export function renderHub(career: Career, ui: UiState): string {
     return `${renderTopBar(career, ui)}
   ${renderMenu(career, ui)}
   ${renderTabs(career, ui)}
-  <div class="office-hud">${renderFlash(ui)}${renderScene(career, ui)}</div>`;
+  <div class="office-hud">${renderFlash(ui)}${renderBackupNudge(ui)}${renderScene(career, ui)}</div>`;
   }
   return `${renderTopBar(career, ui)}
   ${renderMenu(career, ui)}
   ${renderTabs(career, ui)}
-  <main class="shell hub">${renderFlash(ui)}${renderTab(career, ui)}</main>`;
+  <main class="shell hub">${renderFlash(ui)}${renderBackupNudge(ui)}${renderTab(career, ui)}</main>`;
 }

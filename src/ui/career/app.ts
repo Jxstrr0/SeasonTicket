@@ -43,6 +43,7 @@ import {
   toggleBench,
   upgradeAcademy,
   liveOf,
+  matchLock,
   userTeam,
   type Career,
   type CrestIcon,
@@ -87,6 +88,7 @@ import { renderHelp, renderTip } from '../views/career/help';
 import { renderContact, renderWhatsNew } from '../views/career/contact';
 import { renderCredits } from '../views/career/credits';
 import { buildReport, deviceSummary } from './report';
+import { checkStorage, deliverBackupFile, lastBackupText, loadLastBackup, needsBackupReminder, noteBackup, readBackupFile, requestPersist, storageLine, storageState } from './saveSafety';
 import { hasCrashed, setCrashWhere, showCrash } from './crash';
 import { copyText } from '../clipboard';
 import { loadTips, markSeen, nextTip, onScreenOf, storeTips, tipCandidates, tipsPaused, type TipId } from './tips';
@@ -219,6 +221,10 @@ export class CareerApp {
   private saveWarned = false;
   /** A decoded save code waiting for "Replace and load" (Stage 7.8). */
   private pendingImport: Career | null = null;
+  /** The last backup made on this device (code copied, file saved, code loaded), for the reminder. */
+  private lastBackup = loadLastBackup();
+  /** The backup reminder shows at most once per visit. */
+  private nudged = false;
   /** When a confirm button was armed, and the last form sent: see CONFIRM_GAP_MS. */
   private armedAt = 0;
   private lastForm = { name: '', at: 0 };
@@ -320,6 +326,7 @@ export class CareerApp {
       return this.show('title');
     }
     this.loadStored();
+    void requestPersist();
     storeBackupSummary(putAside);
     // The Continue card now names the career that came back.
     this.ui.title.backup = putAside;
@@ -339,6 +346,8 @@ export class CareerApp {
     if (hasCrashed()) return;
     const ok = saveCareer(this.career);
     if (ok) this.refreshSummary();
+    // Now there is a career worth keeping: ask the browser not to clear it (once per page load).
+    if (ok) void requestPersist();
     if (!ok && !this.saveWarned) {
       this.saveWarned = true;
       this.ui.flash = { kind: 'error', text: 'This browser would not save the game. Use Menu → Save code to keep your progress.' };
@@ -347,6 +356,7 @@ export class CareerApp {
 
   private render(): void {
     this.ui.tipsOn = !this.tips.off;
+    this.armBackupNudge();
     const html = this.view() + (this.ui.weekRun ? renderWeekRun(this.ui.weekRun) : '');
     const tip = this.pickTip(html);
     this.uiLayer.innerHTML = tip ? html + renderTip(tip) : html;
@@ -363,6 +373,42 @@ export class CareerApp {
     this.syncUiSound(html);
     this.syncFullscreen();
     this.scheduleWarm();
+  }
+
+  /**
+   * Shows the quiet "keep a backup" note on the hub, at most once per visit, when a career with
+   * real progress has no recent backup here. Only at a calm moment: never during a week, a
+   * match, a story scene, an open menu, a message or a tip.
+   */
+  private armBackupNudge(): void {
+    const { ui, career } = this;
+    if (this.nudged || !career || ui.screen !== 'hub' || ui.weekRun || this.weeks.playing) return;
+    if (ui.flash || ui.menuOpen || ui.sceneId || this.tipShown || matchLock(career)) return;
+    if (!needsBackupReminder(career, this.lastBackup)) return;
+    this.nudged = true;
+    ui.backupNudge = true;
+  }
+
+  /** Remembers a backup of the career, and asks the browser to keep the storage. */
+  private noteBackedUp(career: Career | null = this.career): void {
+    if (career) {
+      noteBackup(career.seed);
+      this.lastBackup = loadLastBackup() ?? { at: Date.now(), seed: career.seed };
+    }
+    this.ui.backupNudge = false;
+    void requestPersist().then(() => this.showStorageLine());
+  }
+
+  /** Fills the storage line on the save-code screen in place (a re-render would drop the code's selection). */
+  private showStorageLine(): void {
+    const el = this.root.querySelector<HTMLElement>('[data-storage-line]');
+    if (!el) return;
+    const text = storageLine(storageState());
+    el.textContent = text;
+    el.hidden = !text;
+    const last = this.root.querySelector<HTMLElement>('[data-last-backup]');
+    const when = this.career ? lastBackupText(this.career, this.lastBackup) : null;
+    if (last && when) last.textContent = `Last backup on this device: ${when}.`;
   }
 
   /** The first-time tip for what is on screen, if one is still unseen. */
@@ -662,7 +708,10 @@ export class CareerApp {
       case 'new':
         return ui.draft ? renderNewCareer(ui.draft) : renderCareerTitle(ui.title);
       case 'saveCode':
-        return renderSaveCode(ui);
+        return renderSaveCode(ui, {
+          storage: storageLine(storageState()),
+          lastBackup: career ? lastBackupText(career, this.lastBackup) : null,
+        });
       case 'gameOver':
         return renderGameOver(career);
       case 'help':
@@ -836,6 +885,13 @@ export class CareerApp {
         return this.copyCode();
       case 'download-code':
         return this.downloadCode();
+      case 'load-file':
+        // Opens the phone's file picker; the chosen file arrives in onChange ('backup-file').
+        this.root.querySelector<HTMLInputElement>('#backup-file')?.click();
+        return;
+      case 'dismiss-nudge':
+        ui.backupNudge = false;
+        return this.render();
       case 'back':
         return this.show(this.career ? ui.returnTo : 'title');
       case 'dismiss-flash':
@@ -900,7 +956,10 @@ export class CareerApp {
         this.save();
         ui.saveCode = encodeSave(career);
         ui.returnTo = ui.screen === 'saveCode' ? 'hub' : ui.screen;
-        return this.show('saveCode');
+        ui.backupNudge = false;
+        this.show('saveCode');
+        void checkStorage().then(() => this.showStorageLine());
+        return;
       case 'next-week':
         void this.nextWeek();
         return;
@@ -1315,6 +1374,7 @@ export class CareerApp {
   private onChange(e: Event): void {
     const el = e.target;
     if (el instanceof HTMLElement && el.dataset.draft) return this.onDraft(e);
+    if (el instanceof HTMLInputElement && el.dataset.change === 'backup-file') return this.loadBackupFile(el);
     if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement) || this.weeks.playing) return;
     const kind = el.dataset.change;
     if (kind === 'mix-level') return this.slideMix(el as HTMLInputElement, true);
@@ -1499,12 +1559,39 @@ export class CareerApp {
   private importCode(form: HTMLFormElement): void {
     const code = (form.elements.namedItem('code') as HTMLTextAreaElement | null)?.value ?? '';
     this.ui.title.importText = code;
+    this.importText(code);
+  }
+
+  /** A backup file from the phone: its text goes through the same check and confirm as a pasted code. */
+  private loadBackupFile(input: HTMLInputElement): void {
+    const file = input.files?.[0];
+    // Clear the picker so choosing the same file again still counts as a change.
+    input.value = '';
+    if (!file || this.ui.screen !== 'title') return;
+    void readBackupFile(file).then((text) => {
+      if (this.ui.screen !== 'title') return;
+      if (!text) {
+        this.ui.title.error = 'That file could not be read. Choose the .txt backup file the game saved.';
+        return this.showTitleError();
+      }
+      this.importText(text);
+    });
+  }
+
+  /** Shows the title screen's error where the owner can see it: the Load buttons sit below the fold on a phone. */
+  private showTitleError(): void {
+    this.render();
+    this.root.querySelector('.title-screen .error')?.scrollIntoView({ block: 'center' });
+  }
+
+  /** Checks a save code (pasted or from a file), then loads it or asks before replacing the saved career. */
+  private importText(code: string): void {
     let career: Career;
     try {
       career = decodeSave(code);
     } catch (err) {
       this.ui.title.error = err instanceof SaveError ? err.message : `That code did not load: ${errorText(err)}`;
-      return this.render();
+      return this.showTitleError();
     }
     this.ui.title.error = null;
     if (this.ui.title.saved) {
@@ -1530,6 +1617,8 @@ export class CareerApp {
     this.ui.flash = { kind: 'ok', text: 'Save code loaded.' };
     this.save();
     this.refreshSummary();
+    // The code came from somewhere the owner keeps it: that counts as a backup.
+    this.noteBackedUp(career);
     if (!this.followPhase()) this.show('hub');
   }
 
@@ -1560,6 +1649,7 @@ export class CareerApp {
     const done = (): void => {
       this.ui.flash = { kind: 'ok', text: 'Copied.' };
       this.flashOnly();
+      this.noteBackedUp();
     };
     const fallback = (): void => {
       const area = this.root.querySelector<HTMLTextAreaElement>('#save-code');
@@ -1592,19 +1682,17 @@ export class CareerApp {
     el.classList.toggle('warn', flash?.kind === 'error');
   }
 
+  /** Save backup file: the save code as a .txt, shared to Files on a phone or downloaded. */
   private downloadCode(): void {
-    const career = this.career;
-    const name = career ? userTeam(career).shortName.replace(/[^A-Za-z0-9]+/g, '-') : 'career';
-    const season = career ? career.season.league.season : 0;
-    const blob = new Blob([this.ui.saveCode], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `season-ticket-${name}-s${season}.txt`;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const code = this.ui.saveCode;
+    if (!code) return;
+    void deliverBackupFile(code).then((saved) => {
+      // Cancelled from the share sheet: nothing saved, nothing to say.
+      if (!saved) return;
+      this.ui.flash = { kind: 'ok', text: 'Backup file saved.' };
+      this.flashOnly();
+      this.noteBackedUp();
+    });
   }
 
   // -------------------------------------------------------------------------

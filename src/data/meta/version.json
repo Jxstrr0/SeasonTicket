@@ -1,7 +1,16 @@
 {
   "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Bump the version when a release changes what players see.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "notes": [
+    {
+      "version": "1.1.0",
+      "date": "2026-11-06",
+      "lines": [
+        "Save backup file: keep your save code as a small file (on a phone, Save to Files), and load it back from the title screen with Load backup file.",
+        "The game asks your browser to keep its storage, and the save code screen says whether it will.",
+        "A quiet reminder to keep a backup if you have not made one in a while."
+      ]
+    },
     {
       "version": "1.0.0",
       "date": "2026-10-19",

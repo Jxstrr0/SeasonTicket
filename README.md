@@ -18,6 +18,7 @@ Launched: version 1.0.0 on 2026-10-19. All seven build stages are in:
 - Stage 5: the 3D match. `docs/STAGE_5_MATCH_DAY.md`.
 - Stage 6: events, press conferences, rivalries, the newspaper and fan feed, deadline day. `docs/STAGE_6_EVENTS.md`.
 - Stage 7: tips and Help, sound, balance, performance, crash screen, install as an app, credits, launch audit. `docs/STAGE_7_POLISH.md`.
+- 1.1.0: save safety. Menu → Save code has **Save backup file** (the save code as a .txt; on a phone, Save to Files), the title screen has **Load backup file**, the game asks the browser to keep its storage, and a quiet note on the hub reminds you to back up. Timings in `src/data/tuning/saves.json`.
 
 The version and the What's new list live in `src/data/meta/version.json`.
 

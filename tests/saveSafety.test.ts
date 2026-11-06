@@ -4,6 +4,7 @@ import { C, advanceCareer, advanceToReview, continueToNextSeason, createCareer, 
 import { BACKUP_KEY, STORAGE_KEY, SaveError, backupSavedCareer, decodeSave, encodeSave, hasBackup, saveCareer, swapBackup, type SaveStore } from '../src/game/save';
 import { careerProblem } from '../src/game/saveCheck';
 import { playToEnd } from '../src/game/matchday';
+import { backupFileName, checkStorage, loadLastBackup, needsBackupReminder, noteBackup, readBackupFile, requestPersist, resetPersistAsk, storageLine } from '../src/ui/career/saveSafety';
 
 function newCareer(seed = 31, tier: 'easy' | 'normal' = 'normal'): Career {
   return createCareer({ seed, teamId: (C.tiers[tier].clubs as string[])[0], tier, homegrownRule: false });
@@ -132,5 +133,71 @@ describe('match lock (Stage 7.8)', () => {
     expect(career.liveMatch?.finished).toBe(true);
     expect(matchLock(career)).toBeNull();
     expect(releasePlayer(career, mine.id).message).not.toMatch(/under way/);
+  });
+});
+
+describe('backup files, storage and the reminder', () => {
+  it('names backup files by the local date', () => {
+    expect(backupFileName(new Date(2026, 10, 6, 23, 30))).toBe('season-ticket-backup-2026-11-06.txt');
+    expect(backupFileName(new Date(2027, 0, 9))).toBe('season-ticket-backup-2027-01-09.txt');
+  });
+
+  it('reads a backup file back into the same career, trailing newline and all', async () => {
+    const career = newCareer(41);
+    const text = await readBackupFile(new Blob([`${encodeSave(career)}\r\n  `], { type: 'text/plain' }));
+    expect(text).not.toBeNull();
+    expect(decodeSave(text!).userTeamId).toBe(career.userTeamId);
+    // A file that is not a save code gets the same message as a bad pasted code.
+    const junk = await readBackupFile(new Blob(['shopping list\nmilk']));
+    expect(() => decodeSave(junk!)).toThrow(SaveError);
+  });
+
+  it('remembers the last backup per career, and shrugs off bad data', () => {
+    const store = memoryStore();
+    expect(loadLastBackup(store)).toBeNull();
+    noteBackup(7, 1000, store);
+    expect(loadLastBackup(store)).toEqual({ at: 1000, seed: 7 });
+    store.data['seasonticket.lastBackup'] = '{not json';
+    expect(loadLastBackup(store)).toBeNull();
+    store.data['seasonticket.lastBackup'] = JSON.stringify({ at: 'yesterday', seed: 7 });
+    expect(loadLastBackup(store)).toBeNull();
+  });
+
+  it('reminds only with real progress and no recent backup of this career', () => {
+    const day = 86_400_000;
+    const now = 100 * day;
+    const fresh = { seed: 5, weekIndex: 0 };
+    const played = { seed: 5, weekIndex: 10 };
+    expect(needsBackupReminder(fresh, null, now)).toBe(false);
+    expect(needsBackupReminder(played, null, now)).toBe(true);
+    expect(needsBackupReminder(played, { at: now - 2 * day, seed: 5 }, now)).toBe(false);
+    expect(needsBackupReminder(played, { at: now - 14 * day, seed: 5 }, now)).toBe(true);
+    // A backup of another career does not count for this one.
+    expect(needsBackupReminder(played, { at: now, seed: 6 }, now)).toBe(true);
+  });
+
+  it('asks the browser to keep storage once per page load, and never throws', async () => {
+    resetPersistAsk();
+    let asks = 0;
+    const api = { persisted: async () => false, persist: async () => (asks++, true) };
+    expect(await requestPersist(api)).toBe('protected');
+    expect(await requestPersist(api)).toBe('protected');
+    expect(asks).toBe(1);
+
+    resetPersistAsk();
+    const kept = { persisted: async () => true, persist: async () => (asks++, true) };
+    expect(await requestPersist(kept)).toBe('protected');
+    expect(asks).toBe(1);
+
+    resetPersistAsk();
+    expect(await requestPersist(null)).toBeNull();
+    expect(await checkStorage(null)).toBeNull();
+
+    resetPersistAsk();
+    const broken = { persisted: async () => false, persist: async (): Promise<boolean> => { throw new Error('no'); } };
+    expect(await requestPersist(broken)).toBe('at-risk');
+    expect(storageLine('at-risk')).toMatch(/backup file/);
+    expect(storageLine(null)).toBe('');
+    resetPersistAsk();
   });
 });
