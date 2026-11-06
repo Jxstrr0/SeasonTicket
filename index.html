@@ -23,8 +23,75 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Season Ticket" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!--
+      The loading screen's look. It is inline so the first frame is already the game, before
+      the stylesheet or any script has arrived. Colours are the title screen's dusk sky and
+      gold accent (src/ui/base.css, src/ui/career/titleBackdrop.ts). src/ui/bootScreen.ts
+      moves the bar and fades it out once the title screen is drawn underneath.
+    -->
+    <style>
+      html { background: #0b1020; }
+      #boot { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 2.5vmin, 16px); padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(48px, calc(env(safe-area-inset-bottom) + 36px)) max(16px, env(safe-area-inset-left)); overflow: hidden; text-align: center; color: #f4f5fa; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: linear-gradient(180deg, #1c1430 0%, #3a2566 40%, #583696 68%, #8f5a7e 88%, #c2826a 100%); transition: opacity 0.35s ease; }
+      #boot.boot-out { opacity: 0; pointer-events: none; }
+      #boot .boot-ground { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: clamp(90px, 34vh, 48vw); pointer-events: none; }
+      #boot > :not(.boot-ground) { position: relative; }
+      #boot h1 { margin: 0; font-size: clamp(1.7rem, 7vmin, 3rem); line-height: 1.1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; padding-left: 0.16em; text-shadow: 0 2px 18px rgba(11, 16, 32, 0.5); }
+      #boot .boot-line { margin: 0; max-width: 30em; color: #e1ded7; font-size: clamp(0.9rem, 3.2vmin, 1.05rem); line-height: 1.35; }
+      #boot .boot-bar { width: min(260px, 64vw); height: 6px; margin-top: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+      #boot .boot-bar span { display: block; height: 100%; border-radius: inherit; background: #f2c14e; transform-origin: left center; transform: scaleX(var(--boot-p, 0.2)); transition: transform 0.3s ease; }
+      #boot .boot-help { display: none; flex-direction: column; align-items: center; gap: 10px; margin: 4px 0 0; max-width: 26em; font-size: 0.95rem; line-height: 1.35; }
+      #boot .boot-help button { min-height: 44px; min-width: 44px; padding: 10px 16px; border: 0; border-radius: 10px; background: #f2c14e; color: #1a1400; font: 700 1rem system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; }
+      #boot .boot-help button:focus-visible { outline: 3px solid #4ecdc4; outline-offset: 2px; }
+      #boot .boot-failed-text { display: none; }
+      #boot.boot-slow .boot-help, #boot.boot-failed .boot-help { display: flex; }
+      #boot.boot-failed .boot-slow-text { display: none; }
+      #boot.boot-failed .boot-failed-text { display: inline; }
+      #boot.boot-failed .boot-bar, #boot.boot-failed > .boot-line { display: none; }
+      #boot .boot-credit { position: absolute; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom)); margin: 0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.32em; padding-left: 0.32em; text-transform: uppercase; color: #e1ded7; opacity: 0.85; }
+      @media (prefers-reduced-motion: no-preference) {
+        /* A soft glint sweeps along the bar so it reads as busy between real steps. */
+        #boot .boot-bar { position: relative; }
+        #boot .boot-bar::after { content: ""; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent); animation: boot-sweep 1.4s ease-in-out infinite; }
+        @keyframes boot-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot, #boot .boot-bar span { transition: none; }
+      }
+      @media (max-height: 300px) { #boot .boot-line { display: none; } }
+    </style>
   </head>
   <body>
+    <!-- The loading screen: shown from the first frame until the title screen is drawn. -->
+    <div id="boot" role="status" aria-live="polite">
+      <svg class="boot-ground" viewBox="0 0 1600 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <path d="M0 160 Q180 100 360 135 T760 120 T1180 130 T1600 100 V300 H0z" fill="#2b2038" opacity="0.7"/>
+        <path d="M220 300 V135 Q800 55 1380 135 V300z" fill="#1c1820"/>
+        <path d="M250 170 Q800 96 1350 170" fill="none" stroke="#c2826a" stroke-width="2" opacity="0.55"/>
+      </svg>
+      <h1>Season Ticket</h1>
+      <p class="boot-line">Getting the ground ready…</p>
+      <div class="boot-bar" aria-hidden="true"><span></span></div>
+      <p class="boot-help" role="alert">
+        <span class="boot-slow-text">Still loading. A slow connection can take a minute.</span>
+        <span class="boot-failed-text">The game could not load. Check your connection, then try again.</span>
+        <button type="button" onclick="location.reload()">Reload</button>
+      </p>
+      <noscript><p class="boot-line">Season Ticket needs JavaScript turned on to play.</p></noscript>
+      <p class="boot-credit">Longlight Interactive</p>
+    </div>
+    <script>
+      // Before the game's code arrives: if a file fails to download, or nothing has happened
+      // after a while, offer Reload instead of a loading bar that never ends.
+      (function () {
+        var boot = document.getElementById('boot');
+        addEventListener('error', function (e) {
+          var t = e.target;
+          if (!boot.isConnected || !t || !t.tagName) return;
+          if (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && /stylesheet|modulepreload/.test(t.rel))) boot.classList.add('boot-failed');
+        }, true);
+        setTimeout(function () { if (boot.isConnected) boot.classList.add('boot-slow'); }, 15000);
+      })();
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
