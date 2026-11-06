@@ -1,7 +1,14 @@
 {
   "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Four numbers, Major.Minor.Patch.Build: Major = overhaul, Minor = feature batch, Patch = tweak or fix, Build = republish. Bump the version when a release changes what players see.",
-  "version": "1.1.0.0",
+  "version": "1.1.1.0",
   "notes": [
+    {
+      "version": "1.1.1.0",
+      "date": "2026-11-06",
+      "lines": [
+        "A loading screen: the game shows its name and a loading bar the moment the page opens, instead of a blank screen, and offers Reload if it cannot load."
+      ]
+    },
     {
       "version": "1.1.0.0",
       "date": "2026-11-06",
