@@ -7,7 +7,7 @@
         { "q": "What am I doing?", "a": "You own the club and run its football side too. Each week you sort out the squad, the money and whatever people bring you, then play the match. A season is {preseasonWeeks} pre-season weeks, 30 league rounds with a break in the middle, and the playoffs." },
         { "q": "How do I move the week on?", "a": "The big button at the top right: Next week, or Match day when your team plays. Quick sim plays your match without you watching." },
         { "q": "Does the game save?", "a": "Yes, after every action, in this browser. To move a career to another phone or keep a backup, open the menu and tap Save code, then paste that code on the title screen." },
-        { "q": "Where are the menus when I'm in the office?", "a": "The tabs along the top still work. The labelled office objects are shortcuts to the same screens: the laptop is Money, the phone is offers (or the fan feed when there are none), the TV is the paper, the window is the stadium, the whiteboard is the lineup, the clipboard is the squad and the trophy cabinet is the club. Visitors come through the door. Graphics Off in the menu turns the office off." }
+        { "q": "Where are the menus when I'm in the office?", "a": "The tabs along the top still work. The labelled office objects are shortcuts to the same screens: the laptop is Money, the phone is offers (or the fan feed when there are none), the TV is the paper, the window is the stadium, the whiteboard is the lineup, the clipboard is the squad and the trophy cabinet is the club. Visitors come through the door. Graphics Off in Settings (in the menu, or on the title screen) turns the office off." }
       ]
     },
     {
@@ -56,7 +56,7 @@
       "title": "Phone and settings",
       "items": [
         { "q": "The game is slow or my phone gets hot.", "a": "Open the menu and set Graphics to Low, or Off for the plain menus with no 3D." },
-        { "q": "There's no sound.", "a": "Check Match sound in the menu. On an iPhone the ring/silent switch mutes the game too." },
+        { "q": "There's no sound.", "a": "Check Sound in Settings (in the menu, or on the title screen). On an iPhone the ring/silent switch mutes the game too." },
         { "q": "Can I see the tips again?", "a": "Yes: open the menu and tap Show tips again. You can also turn them off there." }
       ]
     }

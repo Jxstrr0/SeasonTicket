@@ -523,6 +523,11 @@ label .field { color: var(--text); }
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 .menu-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+/* The two parts of the in-career menu: Career (this club) and Settings (this device). */
+.menu-heading { margin: 18px 0 2px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 1.05rem; }
+.menu-top + .menu-heading { margin-top: 10px; padding-top: 0; border-top: 0; }
+.settings-screen .settings-card { max-width: 560px; margin-left: auto; margin-right: auto; }
+.settings-screen > .flash { max-width: 560px; margin: 0 auto 12px; }
 
 /* Eight tabs do not fit a phone: they scroll sideways instead. */
 .career-tabs {
@@ -1292,6 +1297,9 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 #title-backdrop .title-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(28, 24, 32, 0.1) 0%, rgba(28, 24, 32, 0.2) 45%, rgba(28, 24, 32, 0.7) 100%); }
 .has-title-backdrop body { background: #1c1430; }
 .has-title-backdrop .title-screen .masthead { min-height: 34vh; display: flex; flex-direction: column; justify-content: flex-end; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55); }
+.title-screen .masthead { position: relative; }
+/* Settings sits at the top right of the title, in reach without scrolling. */
+.title-settings { position: absolute; top: 0; right: 0; z-index: 1; min-height: 44px; text-shadow: none; }
 .title-screen .masthead h1 { text-transform: uppercase; letter-spacing: 0.16em; font-weight: 700; }
 .has-title-backdrop .title-screen .card { background: rgba(28, 24, 32, 0.78); border: 1px solid rgba(194, 130, 106, 0.35); }
 .has-title-backdrop .title-screen .continue-card { border-color: rgba(194, 130, 106, 0.7); }
