@@ -1,5 +1,5 @@
 /**
- * Settings (1.1.1.0): the device settings sit on their own screen from the title, and the
+ * Settings (1.1.2.0): the device settings sit on their own screen from the title, and the
  * in-career menu shows the same block under a Settings heading, apart from the career options.
  */
 import { describe, expect, it } from 'vitest';
