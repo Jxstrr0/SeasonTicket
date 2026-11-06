@@ -1,5 +1,5 @@
 {
-  "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Bump the version when a release changes what players see.",
+  "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Four numbers, Major.Minor.Patch.Build: Major = overhaul, Minor = feature batch, Patch = tweak or fix, Build = republish. Bump the version when a release changes what players see.",
   "version": "1.1.2.0",
   "notes": [
     {
@@ -18,7 +18,7 @@
       ]
     },
     {
-      "version": "1.1.0",
+      "version": "1.1.0.0",
       "date": "2026-11-06",
       "lines": [
         "Save backup file: keep your save code as a small file (on a phone, Save to Files), and load it back from the title screen with Load backup file.",
@@ -27,7 +27,7 @@
       ]
     },
     {
-      "version": "1.0.0",
+      "version": "1.0.0.0",
       "date": "2026-10-19",
       "lines": [
         "Season Ticket is out: the first public release, free to play in your browser.",
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "version": "0.9.0",
+      "version": "0.9.0.0",
       "date": "2026-10-19",
       "lines": [
         "Help, and a short tip the first time you open each screen.",
