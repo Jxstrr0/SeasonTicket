@@ -36,6 +36,13 @@ describe('the crash safety net', () => {
     expect(decodeSave(good!).userTeamId).toBe(club);
   });
 
+  it('numbers every version Major.Minor.Patch.Build (four numbers)', () => {
+    const fourPart = /^\d+\.\d+\.\d+\.\d+$/;
+    expect(VERSION.version).toMatch(fourPart);
+    for (const n of VERSION.notes) expect(n.version).toMatch(fourPart);
+    expect(VERSION.notes[0].version).toBe(VERSION.version);
+  });
+
   it('writes a short report with the version that fits the contact form', () => {
     const text = buildReport({ where: 'Harbour FC, season 2 week 14', device: 'Test phone, screen 844x390', build: 'abc1234', error: 'TypeError: ' + 'x'.repeat(5000) });
     expect(text).toContain(`Version: ${VERSION.version} (build abc1234)`);
