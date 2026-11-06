@@ -49,8 +49,12 @@ function renderImport(importText: string, saved: boolean): string {
   return `<form class="card" data-form="import">
       <label class="card-title" for="import-code">Load a save code</label>
       <textarea id="import-code" name="code" class="field code-field" rows="3" placeholder="ST1:..." spellcheck="false" autocomplete="off">${esc(importText)}</textarea>
-      <button type="submit" class="btn-secondary">Load code</button>
-      ${saved ? '<p class="muted small">Loading a code replaces the saved career. The saved one is put aside as a backup first.</p>' : ''}
+      <div class="row-actions">
+        <button type="submit" class="btn-secondary">Load code</button>
+        <button type="button" class="btn-secondary" data-action="load-file">Load backup file</button>
+      </div>
+      <input type="file" id="backup-file" hidden accept=".txt,text/plain" data-change="backup-file" tabindex="-1" aria-hidden="true">
+      ${saved ? '<p class="muted small">Loading a code or file replaces the saved career. The saved one is put aside as a backup first.</p>' : ''}
     </form>`;
 }
 

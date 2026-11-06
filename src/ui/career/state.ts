@@ -356,6 +356,8 @@ export interface UiState {
   weekRun: WeekRun | null;
   live: LiveView;
   saveCode: string;
+  /** The quiet "keep a backup" note on the hub (at most once per visit). */
+  backupNudge: boolean;
 }
 
 export interface WeekRun {
@@ -413,5 +415,6 @@ export function initialUi(): UiState {
     weekRun: null,
     live: { running: false, speed: 350, panel: 'none', subOut: null, pause: null, showAll: false, pitch: loadLivePitch(), pitchSpeed: 8, full: loadLiveFull() },
     saveCode: '',
+    backupNudge: false,
   };
 }
