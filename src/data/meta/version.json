@@ -1,13 +1,20 @@
 {
   "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Bump the version when a release changes what players see.",
-  "version": "1.1.1.0",
+  "version": "1.1.2.0",
   "notes": [
     {
-      "version": "1.1.1.0",
+      "version": "1.1.2.0",
       "date": "2026-11-06",
       "lines": [
         "Settings on the title screen: graphics, sound and tips, with or without a career.",
         "The in-career menu is split into Career and Settings, so it is clear which choices belong to your club and which to this device."
+      ]
+    },
+    {
+      "version": "1.1.1.0",
+      "date": "2026-11-06",
+      "lines": [
+        "A loading screen: the game shows its name and a loading bar the moment the page opens, instead of a blank screen, and offers Reload if it cannot load."
       ]
     },
     {
