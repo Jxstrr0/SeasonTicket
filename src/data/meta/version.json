@@ -1,7 +1,14 @@
 {
   "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Four numbers, Major.Minor.Patch.Build: Major = overhaul, Minor = feature batch, Patch = tweak or fix, Build = republish. Bump the version when a release changes what players see.",
-  "version": "1.1.2.0",
+  "version": "1.1.2.1",
   "notes": [
+    {
+      "version": "1.1.2.1",
+      "date": "2026-11-08",
+      "lines": [
+        "Behind the scenes: the game now runs from any web address, ready for its own domain later. Nothing changes in play, and saves are untouched."
+      ]
+    },
     {
       "version": "1.1.2.0",
       "date": "2026-11-06",
