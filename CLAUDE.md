@@ -1,6 +1,6 @@
 # CLAUDE.md: Season Ticket build brief
 
-**Season Ticket** is a soccer club owner/GM sim with a live, changeable-tactics match engine, by Longlight Interactive. It launched as **version 1.0.0 on 2026-10-19** (1.0.0.0 in today's four-number scheme) and is live at https://jxstrr0.github.io/SeasonTicket/. The design is in `docs/DESIGN.md`; read it (and its decisions log, section 15) before changing how the game plays.
+**Season Ticket** is a soccer club owner/GM sim with a live, changeable-tactics match engine, by Longlight Interactive. It launched as **version 1.0.0 on 2026-10-19** (1.0.0.0 in today's four-number scheme) and is live at https://seasonticket.longlight.games/ (the old jxstrr0.github.io/SeasonTicket/ address forwards there). The design is in `docs/DESIGN.md`; read it (and its decisions log, section 15) before changing how the game plays.
 
 ## How Kelbo works
 
@@ -40,7 +40,7 @@ npm run preview           # serve dist/ locally
 
 - `.github/workflows/deploy.yml` runs on every push to `main`: `npm ci`, `npm test`, `npm run test:perf`, `npm run build`, `npm run check:first-load`, then publishes `dist/` to GitHub Pages. A second job, `believability`, runs `npm run test:slow` beside the build; a miss shows red there but does not hold back the deploy.
 - Pull requests get the same checks.
-- `base` in `vite.config.ts` is `./` (relative), so the same build works under the GitHub Pages sub-path (`/SeasonTicket/`) and at the root of its own domain (`seasonticket.longlight.games`, later). Anything in `public/` is referenced through `import.meta.env.BASE_URL` (`./` at runtime; `assetUrl` in `src/render/assets.ts`), never a hard-coded `/SeasonTicket/`. The service worker's file list and scope are relative to where it is served (`src/pwa/serviceWorker.ts`).
+- `base` in `vite.config.ts` is `./` (relative), so the same build works at the root of its own domain (`seasonticket.longlight.games`, set as the custom domain in Settings → Pages) and under any sub-path. Anything in `public/` is referenced through `import.meta.env.BASE_URL` (`./` at runtime; `assetUrl` in `src/render/assets.ts`), never a hard-coded `/SeasonTicket/`. The service worker's file list and scope are relative to where it is served (`src/pwa/serviceWorker.ts`).
 - `__BUILD_ID__` (the first 7 characters of the commit) is shown in problem reports.
 - Hash routes: `#sandbox` is the Stage 1 season simulator, `#engine-lab` (or `#engine-lab/<seed>`) the 2D engine viewer. Both are linked from the title screen.
 
@@ -96,7 +96,7 @@ The match engine's rules, outputs and believability targets are in `docs/DESIGN.
 
 ## Current status
 
-- **Launched:** 1.0.0 on 2026-10-19. Now 1.1.2.1 (a relative build base so the game works at any address, 2026-11-08); 1.1.2.0 was the Settings screen on the title (2026-11-06; the loading screen was 1.1.1.0 and save safety 1.1.0.0). Versions use four numbers, `x.x.x.x` = Major.Minor.Patch.Build (Major = overhaul, Minor = feature batch, Patch = tweak or fix, Build = republish), the same scheme as every Longlight game; 1.1.0 was rolled over to 1.1.0.0 on 2026-11-06. The version and What's new list are in `src/data/meta/version.json`; bump the version when a release changes what players see. `package.json` keeps a three-number `version` because npm requires semver there; it is not the player-facing version.
+- **Launched:** 1.0.0 on 2026-10-19. Now 1.1.2.2 (the new longlight.games addresses: link preview and the feedback link, 2026-11-08); 1.1.2.1 was a relative build base so the game works at any address; 1.1.2.0 was the Settings screen on the title (2026-11-06; the loading screen was 1.1.1.0 and save safety 1.1.0.0). Versions use four numbers, `x.x.x.x` = Major.Minor.Patch.Build (Major = overhaul, Minor = feature batch, Patch = tweak or fix, Build = republish), the same scheme as every Longlight game; 1.1.0 was rolled over to 1.1.0.0 on 2026-11-06. The version and What's new list are in `src/data/meta/version.json`; bump the version when a release changes what players see. `package.json` keeps a three-number `version` because npm requires semver there; it is not the player-facing version.
 - **Shipped:** a club career over any number of seasons (squad, market, loans in, youth, staff, money, lenders, stadium builder and branding), live matches in text, 2D and 3D with changeable tactics, three match-day modes (full control, game plan and big calls, coach), replays, the story layer (76 events in `src/data/events/`, press conferences, rivalries, the Valmere Courier and fan feed, deadline day), the 3D office with visitors and radio, first-time tips and Help, a Settings screen on the title (1.1.2.0), sound with three volume sliders, save codes with a backup, backup files and a backup reminder (1.1.0.0, `src/ui/career/saveSafety.ts`), a loading screen from the first frame (1.1.1.0, inline in `index.html`, driven by `src/ui/bootScreen.ts`), a crash screen, offline play and the update banner, Credits.
 - **Known gaps:** GoatCounter analytics are not on (waiting for Kelbo's site code; the Credits screen says the game sends nothing). Frame-rate numbers from a real phone are still wanted for a later performance pass. The league's average age drifts down over ten seasons (26.5 to about 24.6) and is flagged, not fixed. Some world generation uses `Math.log`, `Math.cos` and `Math.pow`, which could differ in the last digit between phone engines; changing it would change every existing world, so it is left. The other "found and left alone" items are at the end of `docs/STAGE_7_POLISH.md`.
 - **Not built, named in the design:** a kit designer, loaning your own players out, pre-season friendlies, end-of-season awards, a win-probability readout, a city view, the fan zone, owner's box guests, lower divisions and cups. Launch extras Kelbo passed on (a second save slot, a richer owner "new game plus", a share-your-season card) stay ideas.
@@ -118,7 +118,7 @@ screen, and any link back to the studio site.
 
 - **Logo:** the horizon lockup, a half-set clay sun on a long horizon line
   with LONGLIGHT above INTERACTIVE. Use the official files from the studio
-  site's press kit (https://jxstrr0.github.io/Kelbo.Website/press.html; the
+  site's press kit (https://longlight.games/press.html; the
   files are `assets/press/longlight-logo-dark` and `longlight-logo-light`,
   SVG plus 2x PNG, in `Jxstrr0/Kelbo.Website`). Copy them into this repo;
   never hotlink, redraw or recolour them, or swap the letters for live text.
@@ -130,12 +130,12 @@ screen, and any link back to the studio site.
 - **Name:** always "Longlight Interactive" in full. Credit line:
   "© year Kelbo / Longlight Interactive" (the studio isn't a registered
   business yet). Never Kelbo's real name or initials.
-- **Studio site:** https://jxstrr0.github.io/Kelbo.Website/
+- **Studio site:** https://longlight.games/
 
 ## Studio catalogue
 
 `LONGLIGHT-STUDIO.md` (repo root) covers every Longlight game: looks, names
-already taken, storage and cache prefixes on the shared origin, a reuse map and
+already taken, storage and cache prefixes (kept from the shared-origin days), a reuse map and
 improvement ideas. Read it before pitching new ideas, names or looks, and
 before building a system another Longlight game may already have. This file
 wins where the two disagree. Don't edit the copy here: the master is

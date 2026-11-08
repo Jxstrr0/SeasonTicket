@@ -1,8 +1,8 @@
 /**
  * Keeping a career safe beyond this browser.
  *
- * All Longlight games share one web address, so they share one browser storage. If a phone
- * runs low on space the browser may clear all of it at once. Three things help:
+ * The game has its own web address (seasonticket.longlight.games) and so its own browser
+ * storage, but if a phone runs low on space the browser may still clear it. Three things help:
  *
  * 1. Asking the browser to keep our storage (`navigator.storage.persist`), once per page load,
  *    and only once there is a career worth keeping (after a save, a backup or a restore).
