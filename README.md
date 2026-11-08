@@ -20,6 +20,7 @@ Launched: version 1.0.0 on 2026-10-19. All seven build stages are in:
 - Stage 7: tips and Help, sound, balance, performance, crash screen, install as an app, credits, launch audit. `docs/STAGE_7_POLISH.md`.
 - 1.1.0.0: save safety. Menu → Save code has **Save backup file** (the save code as a .txt; on a phone, Save to Files), the title screen has **Load backup file**, the game asks the browser to keep its storage, and a quiet note on the hub reminds you to back up. Timings in `src/data/tuning/saves.json`.
 - 1.1.2.0: a **Settings** button on the title screen (graphics, sound, tips) that works with no career; the in-career menu splits into Career and Settings.
+- 1.1.2.1: the build uses a relative base, so the same game works at the GitHub Pages address and, later, at the root of its own domain.
 
 The version and the What's new list live in `src/data/meta/version.json`. Versions have four numbers, `x.x.x.x` = Major.Minor.Patch.Build (Build is a republish), like every Longlight game. `package.json` keeps three numbers because npm needs that.
 
@@ -39,6 +40,6 @@ The sim in `src/sim` is pure TypeScript with no DOM or three.js imports, so it r
 
 ## Deploy
 
-Every push to `main` runs `.github/workflows/deploy.yml`: install, unit tests, perf tests, build, the first-load check, then publish `dist/` to GitHub Pages. A separate `believability` job runs the slow season suite beside the build; it does not hold back the deploy.
+Every push to `main` runs `.github/workflows/deploy.yml`: install, unit tests, perf tests, build, the first-load check, then publish `dist/` to GitHub Pages. Vite's `base` is `./` (relative), so the built files work under `/SeasonTicket/` and at the root of a custom domain alike. A separate `believability` job runs the slow season suite beside the build; it does not hold back the deploy.
 
 One-time setup (the Actions token cannot do this itself): in the repo on GitHub open **Settings → Pages**, and under **Build and deployment** set **Source** to **GitHub Actions**. After that, re-run the latest "Build and deploy to GitHub Pages" workflow from the Actions tab, or push a new commit, and the site appears at the live-build link above.
