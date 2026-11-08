@@ -39,7 +39,7 @@ npm run preview           # serve dist/ locally
 ## Deploy
 
 - `.github/workflows/deploy.yml` runs on every push to `main`: `npm ci`, `npm test`, `npm run test:perf`, `npm run build`, `npm run check:first-load`, then publishes `dist/` to GitHub Pages. A second job, `believability`, runs `npm run test:slow` beside the build; a miss shows red there but does not hold back the deploy.
-- Pull requests get the same checks.
+- Pull requests run `.github/workflows/pr-check.yml`: the same fast checks (tests, perf, build, first-load), no deploy and no slow seasons. Its green check is the one to wait for before merging.
 - `base` in `vite.config.ts` is `./` (relative), so the same build works at the root of its own domain (`seasonticket.longlight.games`, set as the custom domain in Settings → Pages) and under any sub-path. Anything in `public/` is referenced through `import.meta.env.BASE_URL` (`./` at runtime; `assetUrl` in `src/render/assets.ts`), never a hard-coded `/SeasonTicket/`. The service worker's file list and scope are relative to where it is served (`src/pwa/serviceWorker.ts`).
 - `__BUILD_ID__` (the first 7 characters of the commit) is shown in problem reports.
 - Hash routes: `#sandbox` is the Stage 1 season simulator, `#engine-lab` (or `#engine-lab/<seed>`) the 2D engine viewer. Both are linked from the title screen.

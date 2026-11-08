@@ -1,0 +1,33 @@
+# PR check: runs the same fast checks as the deploy (tests, perf budgets,
+# build, first-load budget) on every pull request, so a broken change shows
+# red before it's merged. It never deploys. The slow believability seasons
+# stay on main only (deploy.yml), since they take many minutes.
+name: PR check
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: true   # a new push to the PR replaces the old run
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:perf
+      - run: npm run build
+      - run: npm run check:first-load
