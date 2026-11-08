@@ -8,7 +8,8 @@ import { join } from 'node:path';
 const LIMIT_KB = 200;
 const dist = 'dist';
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
-const entry = html.match(/<script type="module"[^>]*src="\/SeasonTicket\/(assets\/[^"]+\.js)"/)?.[1];
+// The base is relative ('./'), so the entry reads ./assets/...; an old absolute /SeasonTicket/ also matches.
+const entry = html.match(/<script type="module"[^>]*src="(?:\.\/|\/SeasonTicket\/)(assets\/[^"]+\.js)"/)?.[1];
 if (!entry) throw new Error('No entry script in dist/index.html');
 
 const seen = new Set();
