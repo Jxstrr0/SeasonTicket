@@ -44,9 +44,12 @@ function deferStyles(): Plugin {
   };
 }
 
-// Deployed to GitHub Pages at https://jxstrr0.github.io/SeasonTicket/
+// Deployed to GitHub Pages at https://jxstrr0.github.io/SeasonTicket/, moving later to
+// seasonticket.longlight.games. A relative base ('./') keeps every built path relative to
+// index.html, so the same dist/ works under a sub-path and at a domain's root; at runtime
+// import.meta.env.BASE_URL is './'. The service worker's file list is relative too (src/pwa).
 export default defineConfig({
-  base: '/SeasonTicket/',
+  base: './',
   // Shown in problem reports so a report names the exact build.
   define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
   plugins: [deferStyles(), serviceWorker()],
