@@ -4,7 +4,7 @@
  */
 import VERSION from '../../data/meta/version.json';
 
-export const CONTACT_URL = 'https://jxstrr0.github.io/Kelbo.Website/#contact-heading';
+export const CONTACT_URL = 'https://longlight.games/#contact-heading';
 /**
  * The website's message box takes this many characters. A save code is 100,000 or more,
  * so a report never carries the save: the screens say how to send it another way.

@@ -1,6 +1,6 @@
 # Season Ticket: launch checklist
 
-For the owner to tick off on their own phone before sharing the game: https://jxstrr0.github.io/SeasonTicket/
+For the owner to tick off on their own phone before sharing the game: https://seasonticket.longlight.games/
 
 Everything here was also checked by script in 7.7; this list is what only a real phone can confirm.
 
