@@ -44,10 +44,11 @@ function deferStyles(): Plugin {
   };
 }
 
-// Deployed to GitHub Pages at https://jxstrr0.github.io/SeasonTicket/, moving later to
-// seasonticket.longlight.games. A relative base ('./') keeps every built path relative to
-// index.html, so the same dist/ works under a sub-path and at a domain's root; at runtime
-// import.meta.env.BASE_URL is './'. The service worker's file list is relative too (src/pwa).
+// Deployed to GitHub Pages at https://seasonticket.longlight.games/ (the custom domain; the
+// old jxstrr0.github.io/SeasonTicket/ address forwards there). A relative base ('./') keeps
+// every built path relative to index.html, so the same dist/ works at a domain's root and
+// under a sub-path; at runtime import.meta.env.BASE_URL is './'. The service worker's file
+// list is relative too (src/pwa).
 export default defineConfig({
   base: './',
   // Shown in problem reports so a report names the exact build.
