@@ -50,6 +50,34 @@
     "aisle": 6.5,
     "full": [0.45, 0.9]
   },
+  "country": {
+    "_about": "Beyond the streets: a patchwork of fields out to fieldsTo, each about fieldSize across with a gap for its hedge, some with a line of trees along one side (hedgeTrees, by detail) and woods of woodTrees trees each (woods, by detail) between woodsFrom and woodsTo. The hills are one model, a ring from 780 m to 1,500 m out.",
+    "fieldSize": 130,
+    "fieldsTo": 860,
+    "hedge": 5,
+    "hedgeTrees": [0, 0.25, 0.4],
+    "woods": [5, 10, 18],
+    "woodTrees": [8, 22],
+    "woodsFrom": 560,
+    "woodsTo": 800
+  },
+  "skyline": {
+    "_about": "The city centre on the horizon: towers (by detail) scattered within spread of the point at, at least gap apart, taller towards the middle.",
+    "at": [640, -610],
+    "spread": [170, 120],
+    "towers": [9, 16, 26],
+    "gap": 40,
+    "scale": [0.55, 1.4]
+  },
+  "clouds": {
+    "_about": "Clouds (by detail) between from and to metres out, between the two heights, so they never come between the Stadium tab's camera and the ground. glow is how much they shine by themselves by day and by night, on top of the sky's light (it keeps their undersides from going dark).",
+    "count": [5, 9, 14],
+    "from": 950,
+    "to": 1500,
+    "height": [300, 480],
+    "glow": [0.42, 0.03],
+    "scale": [0.8, 2.3]
+  },
   "colours": {
     "ground": "#61734f",
     "road": "#3b3d42",
@@ -65,6 +93,8 @@
     "leaves": ["#3f6b34", "#4a7a3a", "#34602f", "#567f3c", "#2f5a36"],
     "pines": ["#2c4f33", "#33583a", "#274a31"],
     "cars": ["#c9ccd1", "#2b2d31", "#8a9099", "#a8322b", "#2c4f8a", "#e9e9e6", "#5b6168", "#3f6b4f", "#c79a2a"],
+    "fields": ["#6f8552", "#7a8f58", "#64794b", "#8a9461", "#b5a865", "#9c8a5c", "#738a54", "#6a8050"],
+    "towers": ["#8fa0ae", "#a9b4bd", "#77828f", "#b9b2a4", "#93a7b5", "#c2c6c9"],
     "glass": "#7f93a8",
     "glassNight": "#0d1118",
     "lit": ["#ffd98a", "#ffe7b0", "#f6c56b"],
