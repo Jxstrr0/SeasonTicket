@@ -1,0 +1,74 @@
+{
+  "_about": "The town round the ground (src/render/stadium/town.ts lays it out, scenery.ts draws it from public/assets/stadium/scenery.glb, modelled by scripts/assets/scenery-kit.py). Distances in metres. The ground's plaza reaches 130 by 115 from the centre spot.",
+  "seed": 7,
+  "grid": {
+    "_about": "Streets run on a grid. plazaHalf is how far the ground's own plaza reaches (src/render/stadium/model.ts); plaza is the centre line of the ring road round it; inner are the extra streets that split the blocks beside the plaza; block is the spacing of the streets further out and count how many of them there are each way. road is a street's width, kerb to kerb.",
+    "plazaHalfX": 130,
+    "plazaHalfZ": 115,
+    "plazaX": 136,
+    "plazaZ": 121,
+    "innerX": [46],
+    "innerZ": [40],
+    "blockX": 80,
+    "blockZ": 62,
+    "countX": 4,
+    "countZ": 5,
+    "road": 8,
+    "pavement": 2
+  },
+  "levels": {
+    "_about": "Heights of the flat ground, far enough apart not to flicker from a long way off.",
+    "road": 0.02,
+    "pavement": 0.16,
+    "lawn": 0.3
+  },
+  "tiers": {
+    "_about": "Per graphics detail (0 Low, 1 Medium, 2 High): how many blocks are built (nearest the ground first), how many of those get the detailed houses and trees, and whether cars park along the streets.",
+    "blocks": [22, 46, 84],
+    "near": [6, 12, 22],
+    "streetCars": [false, false, true]
+  },
+  "mix": {
+    "_about": "How often each kind of block turns up (weights). Shops face the ground from the blocks beside the plaza, car parks sit off its two ends, and there is one church; works only stand at least worksFrom metres out.",
+    "terraces": 56,
+    "detached": 16,
+    "park": 9,
+    "flats": 8,
+    "works": 6,
+    "worksFrom": 260
+  },
+  "houses": {
+    "terraceWidth": 6,
+    "detachedEvery": 15,
+    "shopWidth": 7,
+    "setback": 3,
+    "rowSameColour": 0.7
+  },
+  "parking": {
+    "bay": 2.7,
+    "row": 5.2,
+    "aisle": 6.5,
+    "full": [0.45, 0.9]
+  },
+  "colours": {
+    "ground": "#61734f",
+    "road": "#3b3d42",
+    "pavement": "#8d8a84",
+    "lawn": ["#5f7a48", "#688050", "#586f47"],
+    "park": "#5c8a46",
+    "yard": "#6e6a66",
+    "walls": ["#c4745a", "#b86a50", "#d6c6ad", "#ece6d8", "#aaa096", "#d19a72", "#e0d4bd", "#cbb298"],
+    "roofs": ["#6e493a", "#8c5540", "#5d5f67", "#7c6a5c", "#52565f"],
+    "awnings": ["#a8322b", "#2f6f4f", "#2c4f8a", "#c79a2a", "#44474d"],
+    "flats": ["#c9c4b8", "#b9b0a2", "#d6d2c8", "#a9a39a"],
+    "works": ["#7d8b93", "#8a7f72", "#6f7f8c", "#9a8d7a"],
+    "leaves": ["#3f6b34", "#4a7a3a", "#34602f", "#567f3c", "#2f5a36"],
+    "pines": ["#2c4f33", "#33583a", "#274a31"],
+    "cars": ["#c9ccd1", "#2b2d31", "#8a9099", "#a8322b", "#2c4f8a", "#e9e9e6", "#5b6168", "#3f6b4f", "#c79a2a"],
+    "glass": "#7f93a8",
+    "glassNight": "#0d1118",
+    "lit": ["#ffd98a", "#ffe7b0", "#f6c56b"],
+    "litShare": 0.38,
+    "lamp": "#ffe2a6"
+  }
+}
