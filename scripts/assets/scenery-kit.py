@@ -25,7 +25,7 @@ from pathlib import Path
 
 import bpy  # before bmesh and mathutils, which it provides
 import bmesh
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, noise
 from mathutils.bvhtree import BVHTree
 
 FIXED, TINT_A, TINT_B, WINDOW = 0, 1, 2, 3
@@ -49,8 +49,10 @@ METAL = rgb('#8d949c')
 class Piece:
     """One model: faces with a colour and a zone each."""
 
-    def __init__(self, name):
+    def __init__(self, name, shadows=True):
         self.name = name
+        # Baked soft shadows suit a building; a range of hills or a cloud goes without.
+        self.shadows = shadows
         self.bm = bmesh.new()
         self.colour = self.bm.faces.layers.float_vector.new('colour')
         self.zone = self.bm.faces.layers.int.new('zone')
@@ -172,7 +174,7 @@ class Piece:
             for v in f.verts:
                 origin = v.co + n * 0.03 + (f.calc_center_median() - v.co) * 0.08
                 hit = 0.0
-                rays = 24
+                rays = 24 if self.shadows else 0
                 for _ in range(rays):
                     d = Vector((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1))).normalized()
                     if d.dot(n) < 0:
@@ -180,7 +182,7 @@ class Piece:
                     loc, _, _, dist = tree.ray_cast(origin, d, reach)
                     if loc is not None:
                         hit += d.dot(n) * (1 - dist / reach)
-                ao = 1.0 if f[self.zone] == WINDOW else max(0.6, 1 - 1.3 * hit / rays)
+                ao = 1.0 if f[self.zone] == WINDOW or not self.shadows else max(0.6, 1 - 1.3 * hit / rays)
                 c = f[self.colour]
                 # Blender's z-up to the game's y-up, front towards +z.
                 key = (round(v.co.x, 4), round(v.co.z, 4), round(-v.co.y, 4), round(n.x, 3), round(n.z, 3), round(-n.y, 3),
@@ -415,7 +417,104 @@ def lamp():
     return p
 
 
-PIECES = [terrace, detached, shop, flats, church, works, house_far, tree_round, tree_tall, tree_pine, tree_far, bush, car, van, lamp]
+def tower(name, w, d, h, cols, rows, crown):
+    """A far-off office tower: bands of windows on every side, and something on the roof."""
+    p = Piece(name)
+    p.box(0, 0, 0, w, d, h, WHITE, TINT_A)
+    fw, fh = 0.62, 0.55
+    for side, span, wall in (('front', w, -d / 2), ('back', w, d / 2), ('left', d, -w / 2), ('right', d, w / 2)):
+        step = span / cols
+        xs = [-span / 2 + step * (i + 0.5) for i in range(cols)]
+        zs = [6 + (h - 10) / rows * j for j in range(rows)]
+        for x in xs:
+            for z in zs:
+                p.panel(x, z, step * fw, (h - 10) / rows * fh, wall, GLASS, WINDOW, side)
+    crown(p, h)
+    return p
+
+
+def tower_a():
+    def crown(p, h):
+        p.box(0, 0, h, 16, 16, 5, STONE)
+        p.cone(0, 0, h + 5, 0.6, 0.2, 22, METAL, sides=4)
+    return tower('tower_a', 28, 28, 96, 4, 11, crown)
+
+
+def tower_b():
+    def crown(p, h):
+        p.box(-8, 0, h, 12, 10, 4, METAL)
+    return tower('tower_b', 44, 18, 58, 6, 7, crown)
+
+
+def tower_c():
+    def crown(p, h):
+        p.box(0, 0, h, 18, 18, 26, WHITE, TINT_A)
+        p.box(0, 0, h + 26, 10, 10, 14, WHITE, TINT_A)
+        p.cone(0, 0, h + 40, 3.5, 0.1, 16, WHITE, TINT_B, sides=4)
+    return tower('tower_c', 30, 30, 62, 4, 7, crown)
+
+
+def hills():
+    """The ring of hills round the whole scene, 780 m to 1,500 m out: a low patchwork at
+    its inner edge rising to ridges 150 to 300 m high, with gaps where valleys run through."""
+    p = Piece('hills', shadows=False)
+    segs, rings = 96, 7
+    r0, r1 = 780.0, 1500.0
+    low, wood, heath, rock = rgb('#6f8552'), rgb('#4c6944'), rgb('#7c7d5e'), rgb('#8b8a80')
+
+    def height(r, a):
+        t = (r - r0) / (r1 - r0)
+        rise = smooth(0.0, 0.42, t)
+        c, s = math.cos(a), math.sin(a)
+        ridge = 0.55 + 0.45 * noise.noise(Vector((c * 1.3, s * 1.3, 0.37)))
+        gap = smooth(-0.25, 0.2, noise.noise(Vector((c * 0.8 + 5, s * 0.8, 2.1))))
+        rough = noise.noise(Vector((c * 4.2, s * 4.2, t * 2.4 + 9)))
+        return rise * (230 * ridge * (0.35 + 0.65 * gap) + 55 * rough * t + 30)
+
+    grid = []
+    for i in range(rings + 1):
+        r = r0 + (r1 - r0) * (i / rings) ** 0.8
+        row = []
+        for j in range(segs):
+            a = 2 * math.pi * (j + 0.5 * (i % 2)) / segs
+            row.append(p.bm.verts.new((r * math.cos(a), r * math.sin(a), max(0.0, height(r, a)))))
+        grid.append(row)
+    rng = random.Random(5)
+    for i in range(rings):
+        for j in range(segs):
+            k = (j + 1) % segs
+            a, b, c, d = grid[i][j], grid[i][k], grid[i + 1][k], grid[i + 1][j]
+            tris = ((a, b, d), (b, c, d)) if i % 2 == 0 else ((a, b, c), (a, c, d))
+            for tri in tris:
+                f = p.bm.faces.new(tri)
+                f.normal_update()
+                z = sum(v.co.z for v in tri) / 3
+                steep = 1 - abs(f.normal.z) if f.normal.length else 0
+                base = low if z < 45 else wood if z < 150 else heath if z < 230 else rock
+                if z >= 45 and rng.random() < 0.3:
+                    base = wood
+                k2 = 0.9 + 0.2 * rng.random() - 0.25 * steep
+                p.paint([f], tuple(min(1.0, ch * k2) for ch in base), FIXED)
+    return p
+
+
+def smooth(a, b, x):
+    t = min(1.0, max(0.0, (x - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+
+
+def cloud():
+    """A flat-bottomed heap of cloud, about 150 m across."""
+    p = Piece('cloud', shadows=False)
+    white = rgb('#f4f6f8')
+    for x, y, z, r, seed in ((0, 0, 14, 34, 41), (38, 6, 8, 26, 42), (-36, -4, 9, 28, 43), (70, 0, 4, 18, 44), (-66, 4, 3, 16, 45), (10, 18, 6, 22, 46)):
+        p.blob(x, y, z, r, white, FIXED, squash=0.42, seed=seed)
+    for v in p.bm.verts:
+        v.co.z = max(v.co.z, 0.0)
+    return p
+
+
+PIECES = [terrace, detached, shop, flats, church, works, house_far, tree_round, tree_tall, tree_pine, tree_far, bush, car, van, lamp, tower_a, tower_b, tower_c, hills, cloud]
 
 
 # ---- preview render (only to look at; nothing here reaches the game) --------------------
@@ -434,6 +533,8 @@ def preview(pieces, work):
     mat.node_tree.links.new(attr.outputs['Color'], bsdf.inputs['Base Color'])
     x = 0.0
     for k, data in enumerate(pieces):
+        if data['name'] in ('hills', 'cloud'):
+            continue
         P = data['positions']
         mesh = bpy.data.meshes.new(data['name'])
         idx = data['index']

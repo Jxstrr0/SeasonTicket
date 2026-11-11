@@ -1,7 +1,9 @@
 /**
  * Lays out the town round the ground: a grid of streets, and on each block between them a
  * row of terraces, detached houses, shops facing the ground, a park, flats, a works, the
- * church or a match-day car park. Pure numbers: scenery.ts turns the result into meshes.
+ * church or a match-day car park. Beyond the streets come fields and woods, the towers of
+ * the city centre on the horizon, a ring of hills and a few clouds. Pure numbers: scenery.ts
+ * turns the result into meshes.
  *
  * The layout is the same for every club and every visit (a fixed seed), and a lower
  * graphics tier builds the same town with fewer blocks, nearest the ground first.
@@ -16,6 +18,7 @@ const C = T.colours;
 export const PIECES = [
   'house_terrace', 'house_detached', 'shop', 'flats', 'church', 'works', 'house_far',
   'tree_round', 'tree_tall', 'tree_pine', 'tree_far', 'bush', 'car', 'van', 'lamp',
+  'tower_a', 'tower_b', 'tower_c', 'hills', 'cloud',
 ] as const;
 export type PieceName = (typeof PIECES)[number];
 
@@ -30,6 +33,8 @@ export interface Placement {
   /** The colours of its two tinted zones (walls and roof, a car's body, a tree's crown). */
   a: string;
   b: string;
+  /** In the sky (a cloud): drawn clear of the ground's haze. */
+  sky?: boolean;
 }
 
 /** A flat rectangle of ground at height y. */
@@ -296,6 +301,93 @@ export function layoutTown(detail: number): Town {
       }
     }
   });
+
+  // ---- the country beyond the streets ---------------------------------------------
+  const K = T.country;
+  const field = (x0: number, z0: number, x1: number, z1: number): void => {
+    patches.push({ x0: x0 + K.hedge, z0: z0 + K.hedge, x1: x1 - K.hedge, z1: z1 - K.hedge, y: L.road, colour: pick(C.fields) });
+    if (rand() >= K.hedgeTrees[tier]) return;
+    // A line of trees down one side.
+    const alongX = rand() < 0.5;
+    const edge = rand() < 0.5;
+    const len = alongX ? x1 - x0 : z1 - z0;
+    for (let t = 8; t < len - 8; t += between(14, 30)) {
+      tree(alongX ? x0 + t : edge ? x0 + 2 : x1 - 2, alongX ? (edge ? z0 + 2 : z1 - 2) : z0 + t, true);
+    }
+  };
+  // Blocks a lower tier leaves unbuilt are fields between the streets' lines.
+  for (const b of blocks.slice(built.length)) field(b.x0, b.z0, b.x1, b.z1);
+  const edgeX = xs[xs.length - 1];
+  const edgeZ = zs[zs.length - 1];
+  const size = K.fieldSize;
+  const span = Math.ceil(K.fieldsTo / size);
+  for (let i = -span; i < span; i++) {
+    for (let j = -span; j < span; j++) {
+      // Fields start where the street grid ends, a little unevenly.
+      const x0 = Math.sign(i + 0.5) * edgeX + (i >= 0 ? i : i + 1) * size;
+      const z0 = Math.sign(j + 0.5) * edgeZ + (j >= 0 ? j : j + 1) * size;
+      const fx0 = i >= 0 ? x0 : x0 - size;
+      const fz0 = j >= 0 ? z0 : z0 - size;
+      if (Math.hypot(fx0 + size / 2, fz0 + size / 2) > K.fieldsTo) continue;
+      field(fx0, fz0, fx0 + size, fz0 + size);
+    }
+  }
+  // The strips beside the grid: out past its ends but level with its rows and columns.
+  for (const s of [-1, 1]) {
+    for (let k = 0; k < span; k++) {
+      const from = edgeX + k * size;
+      if (from + size / 2 > K.fieldsTo) break;
+      for (let z = -edgeZ; z < edgeZ - 1; z += (edgeZ * 2) / Math.round((edgeZ * 2) / size)) {
+        const dz = (edgeZ * 2) / Math.round((edgeZ * 2) / size);
+        field(s > 0 ? from : -from - size, z, s > 0 ? from + size : -from, z + dz);
+      }
+    }
+    for (let k = 0; k < span; k++) {
+      const from = edgeZ + k * size;
+      if (from + size / 2 > K.fieldsTo) break;
+      for (let x = -edgeX; x < edgeX - 1; x += (edgeX * 2) / Math.round((edgeX * 2) / size)) {
+        const dx = (edgeX * 2) / Math.round((edgeX * 2) / size);
+        field(x, s > 0 ? from : -from - size, x + dx, s > 0 ? from + size : -from);
+      }
+    }
+  }
+  for (let i = 0; i < K.woods[tier]; i++) {
+    const a = rand() * Math.PI * 2;
+    const r = between(K.woodsFrom, K.woodsTo);
+    const wx = Math.cos(a) * r;
+    const wz = Math.sin(a) * r;
+    if (Math.abs(wx) < edgeX + 20 && Math.abs(wz) < edgeZ + 20) continue;
+    const count = Math.round(between(K.woodTrees[0], K.woodTrees[1]));
+    const pine = rand() < 0.4;
+    for (let k = 0; k < count; k++) {
+      const ta = rand() * Math.PI * 2;
+      const tr = Math.sqrt(rand()) * (14 + count * 1.6);
+      tree(wx + Math.cos(ta) * tr, wz + Math.sin(ta) * tr, true, pine);
+    }
+  }
+
+  // ---- the city centre on the horizon -------------------------------------------
+  const S = T.skyline;
+  const towers: [number, number][] = [];
+  for (let tries = 0; towers.length < S.towers[tier] && tries < 400; tries++) {
+    const a = rand() * Math.PI * 2;
+    const r = Math.sqrt(rand());
+    const x = S.at[0] + Math.cos(a) * r * S.spread[0];
+    const z = S.at[1] + Math.sin(a) * r * S.spread[1];
+    if (towers.some(([tx, tz]) => Math.hypot(tx - x, tz - z) < S.gap)) continue;
+    towers.push([x, z]);
+    const tall = S.scale[0] + (S.scale[1] - S.scale[0]) * (1 - r) * between(0.6, 1);
+    put(pick(['tower_a', 'tower_b', 'tower_c'] as const), x, z, Math.floor(rand() * 4) * (Math.PI / 2), pick(C.towers), pick(C.roofs), tall, 0);
+  }
+
+  // ---- hills all round, and clouds over them ------------------------------------
+  put('hills', 0, 0, 0, '#ffffff', '#ffffff', 1, 0);
+  const W = T.clouds;
+  for (let i = 0; i < W.count[tier]; i++) {
+    const a = rand() * Math.PI * 2;
+    const r = between(W.from, W.to);
+    placements.push({ piece: 'cloud', x: Math.cos(a) * r, y: between(W.height[0], W.height[1]), z: Math.sin(a) * r, rot: rand() * Math.PI * 2, scale: between(W.scale[0], W.scale[1]), a: '#ffffff', b: '#ffffff', sky: true });
+  }
 
   const reach = built.reduce((m, b) => Math.max(m, Math.hypot(Math.max(Math.abs(b.x0), Math.abs(b.x1)), Math.max(Math.abs(b.z0), Math.abs(b.z1)))), 0);
   return { placements, patches, reach };
