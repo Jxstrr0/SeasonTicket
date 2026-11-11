@@ -39,6 +39,7 @@ npm run preview           # serve dist/ locally
 ## Deploy
 
 - `.github/workflows/deploy.yml` runs on every push to `main`: `npm ci`, `npm test`, `npm run test:perf`, `npm run build`, `npm run check:first-load`, then publishes `dist/` to GitHub Pages. A second job, `believability`, runs `npm run test:slow` beside the build; a miss shows red there but does not hold back the deploy.
+- `.github/workflows/publish-release.yml` publishes a GitHub Release (`v<version>`) whenever the version in `src/data/meta/version.json` changes on `main`; the studio site reads that release for this game's version number and "what's new" line. Free, no keys, and it doesn't touch the deploy.
 - Pull requests run `.github/workflows/pr-check.yml`: the same fast checks (tests, perf, build, first-load), no deploy and no slow seasons. Its green check is the one to wait for before merging.
 - `base` in `vite.config.ts` is `./` (relative), so the same build works at the root of its own domain (`seasonticket.longlight.games`, set as the custom domain in Settings → Pages) and under any sub-path. Anything in `public/` is referenced through `import.meta.env.BASE_URL` (`./` at runtime; `assetUrl` in `src/render/assets.ts`), never a hard-coded `/SeasonTicket/`. The service worker's file list and scope are relative to where it is served (`src/pwa/serviceWorker.ts`).
 - `__BUILD_ID__` (the first 7 characters of the commit) is shown in problem reports.
@@ -80,7 +81,7 @@ public/                    manifest, icons, og.png (link preview)
 scripts/assets/            offline tools that make the compressed assets (never run by the build)
 scripts/check-first-load.mjs  the first-load budget check
 tests/                     vitest: unit tests at the top, perf/, slow/, golden/ (stored outcomes), bench/, helpers/
-.github/workflows/         deploy.yml
+.github/workflows/         deploy.yml, pr-check.yml, publish-release.yml (a GitHub Release per version, for the studio site)
 ```
 
 ### Docs
