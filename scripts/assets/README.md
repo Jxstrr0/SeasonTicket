@@ -24,6 +24,25 @@ The output is:
 | `anims.glb` | Only the animation clips the office plays, with no mesh. |
 | `*.ktx2` | Carpet, parquet and wall textures (colour, normal, AO/rough/metal). |
 
+## Match players (`public/assets/match/players.glb`)
+
+The players are the office's base body wearing a kit modelled in Blender. Nothing is
+downloaded: the body comes from `public/assets/office/people.glb`.
+
+1. Install the tools here (`npm install`) and Blender as a Python module in a virtual
+   environment: `python3 -m venv .venv && .venv/bin/pip install bpy` (Blender 5.3 wants
+   Python 3.13).
+2. `node build-players.mjs extract <work-dir>` writes the body in its rest pose.
+3. `.venv/bin/python players-kit.py <work-dir> --preview` models the outfield and keeper
+   kits and renders pictures of each into `<work-dir>` to look at.
+4. `node build-players.mjs pack <work-dir>` puts the two dressed bodies back on the
+   body's own skeleton and writes `players.glb`.
+
+Shapes (hem heights, how loose the shirt hangs, sleeve lengths) are the numbers at the top
+of `players-kit.py` and in each garment's function. Each vertex's colour tells the game
+which part it is (`PART` there, `KIT_PAINT` in `src/render/match/players.ts`): add a part
+in both places. Colours come from the clubs and `src/data/tuning/match3d.json` (`kit`).
+
 ## Match-day sound (`public/assets/audio`)
 
 1. Install FFmpeg (with `libmp3lame`) and NumPy.

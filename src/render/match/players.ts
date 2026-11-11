@@ -1,8 +1,10 @@
 /**
- * The 22 players on the 3D pitch. Each is a clone of the office's base body (Quaternius'
- * Universal Base Characters, CC0) running the Universal Animation Library's gaits (CC0).
- * A shader paints the kit on by body region, as the office paints suits, and hair and
- * skin come from a hash of the player's id, so a player looks the same every match.
+ * The 22 players on the 3D pitch. Each is a clone of the footballer in players.glb: the
+ * office's base body (Quaternius' Universal Base Characters, CC0) wearing a kit modelled over
+ * it in Blender (scripts/assets/players-kit.py), on the same skeleton, running the Universal
+ * Animation Library's gaits (CC0). Each vertex says which part of the kit it is and a shader
+ * colours it in the club's colours; hair and skin come from a hash of the player's id, so a
+ * player looks the same every match.
  *
  * Gaits blend by ground speed: idle, walk, jog, sprint. The three running clips share one
  * stride phase, so blending between them never puts the legs out of step. Actions (kicks,
@@ -22,7 +24,6 @@ import {
   VectorKeyframeTrack,
   type AnimationAction,
   type Bone,
-  type MeshStandardMaterial,
   type Object3D,
   type PerspectiveCamera,
   type SkinnedMesh,
@@ -30,7 +31,7 @@ import {
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import tuning from '../../data/tuning/match3d.json';
 import type { Assets } from '../assets';
-import { addRest, restoreBoneNames, splitTrack } from '../rig';
+import { restoreBoneNames, splitTrack } from '../rig';
 import { lightGeometries } from './lod';
 import { Move, Pose, Rig, goalRole, holdPose, type MoveContext } from './actions';
 import { ACT, type KitColours, type MatchFrame3D, type MatchScene3D } from './types';
@@ -61,8 +62,8 @@ export interface PlayerTemplates {
   sharesSkeleton: Set<SkinnedMesh>;
 }
 
-/** Eyes and brows are too small to see from the stands. */
-const tooSmall = (m: SkinnedMesh): boolean => /eye/i.test(m.name) || /brow/i.test(m.name);
+/** The two dressed bodies in players.glb; a player keeps the one for his job. */
+const BODY_MESH = { outfield: 'kit_outfield', keeper: 'kit_keeper' };
 
 /**
  * Moves `hair` onto `body`'s skeleton when it can ride it: the bones it hangs from, bound in
@@ -124,18 +125,25 @@ function shareSkeleton(hair: SkinnedMesh, body: SkinnedMesh): boolean {
 
 /** Loads the body, hair and gaits once per view. */
 export async function loadPlayerTemplates(assets: Assets): Promise<PlayerTemplates> {
-  const [people, anims] = await Promise.all([assets.model('assets/office/people.glb'), assets.model('assets/match/anims.glb')]);
+  const [players, people, anims] = await Promise.all([
+    assets.model('assets/match/players.glb'),
+    assets.model('assets/office/people.glb'),
+    assets.model('assets/match/anims.glb'),
+  ]);
+  players.scene.updateMatrixWorld(true);
   people.scene.updateMatrixWorld(true);
   restoreBoneNames(people);
-  const body = people.scene.getObjectByName('body_m');
-  if (!body) throw new Error('people.glb is missing body_m');
+  const body = players.scene.getObjectByName('player');
+  if (!body) throw new Error('players.glb is missing player');
   const bones = new Set<string>();
-  const inv = new Matrix4().copy(body.matrixWorld).invert();
+  const bodies: SkinnedMesh[] = [];
   body.traverse((o) => {
     if ((o as Bone).isBone) bones.add(o.name);
-    const m = o as SkinnedMesh;
-    if (m.isSkinnedMesh && !m.geometry.getAttribute('aRest')) addRest(m, inv);
+    if ((o as SkinnedMesh).isSkinnedMesh) bodies.push(o as SkinnedMesh);
   });
+  for (const name of Object.values(BODY_MESH)) {
+    if (!bodies.some((m) => m.name === name)) throw new Error(`players.glb is missing ${name}`);
+  }
   const hair = new Map<string, SkinnedMesh[]>();
   for (const id of HAIR_IDS) {
     const list: SkinnedMesh[] = [];
@@ -144,18 +152,14 @@ export async function loadPlayerTemplates(assets: Assets): Promise<PlayerTemplat
     });
     hair.set(id, list);
   }
-  let bodyMesh: SkinnedMesh | null = null;
-  body.traverse((o) => {
-    const m = o as SkinnedMesh;
-    if (m.isSkinnedMesh && !tooSmall(m)) bodyMesh ??= m;
-  });
+  // Both bodies are on one skeleton.
+  const bodyMesh = bodies[0];
   const sharesSkeleton = new Set<SkinnedMesh>();
-  const geos: BufferGeometry[] = [];
-  if (bodyMesh) geos.push((bodyMesh as SkinnedMesh).geometry);
+  const geos: BufferGeometry[] = bodies.map((m) => m.geometry);
   for (const list of hair.values()) {
     for (const h of list) {
       geos.push(h.geometry);
-      if (bodyMesh && shareSkeleton(h, bodyMesh)) sharesSkeleton.add(h);
+      if (shareSkeleton(h, bodyMesh)) sharesSkeleton.add(h);
     }
   }
   // Without the simplifier every player keeps the full body.
@@ -211,37 +215,33 @@ function pick<T>(r: () => number, list: readonly T[]): T {
 /** A number as a GLSL float literal (a bare "1" is an int there). */
 const glf = (n: number): string => n.toFixed(4);
 
+/** Which part of the kit a vertex is: the red of its colour in players.glb (PART in players-kit.py). */
 const KIT_VERT = /* glsl */ `
-  attribute vec3 aRest;
-  varying vec3 vRest;
+  attribute vec4 color;
+  varying float vPart;
+  varying float vShade;
 `;
 
 const KIT_FRAG = /* glsl */ `
-  varying vec3 vRest;
+  varying float vPart;
+  varying float vShade;
   uniform vec3 uSkin; uniform vec3 uShirt; uniform vec3 uTrim; uniform vec3 uShorts;
-  uniform vec3 uSocks; uniform vec3 uBoots; uniform vec3 uHands; uniform float uGloved;
-  uniform float uSleeve;
+  uniform vec3 uSocks; uniform vec3 uBoots; uniform vec3 uHands; uniform vec3 uSole;
 `;
 
 const KIT_PAINT = /* glsl */ `
   {
-    float lum = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)) / 0.21;
-    float ax = abs(vRest.x);
-    float y = vRest.y;
-    vec3 cloth = uShirt;
-    bool skin = false;
-    if (y < ${glf(K.bootsTo)}) cloth = uBoots;
-    else if (y < ${glf(K.socksTo)}) cloth = uSocks;
-    else if (y < ${glf(K.shortsFrom)}) skin = true;
-    else if (y < ${glf(K.waist)}) cloth = uShorts;
-    else if (y > 1.3 && ax > 0.2) {
-      // The arms, out to the side in the rest pose.
-      if (ax > uSleeve) {
-        if (uGloved > 0.5) cloth = uHands; else skin = true;
-      } else if (ax > uSleeve - ${glf(K.cuff)}) cloth = uTrim;
-    } else if (y > ${glf(K.neck)}) skin = true;
-    else if (y > ${glf(K.neck - K.collar)}) cloth = uTrim;
-    diffuseColor.rgb = skin ? uSkin * clamp(lum, 0.6, 1.3) : cloth * mix(1.0, lum, 0.25);
+    int part = int(vPart + 0.5);
+    vec3 c = uSkin;
+    if (part == 1) c = uShirt;
+    else if (part == 2) c = uTrim;
+    else if (part == 3) c = uShorts;
+    else if (part == 4) c = uSocks;
+    else if (part == 5) c = uBoots;
+    else if (part == 6) c = uHands;
+    else if (part == 7) c = uSole;
+    // The soft shadow baked into the model: under the arms, between the legs, inside hems.
+    diffuseColor.rgb = c * mix(${glf(K.shadow)}, 1.0, vShade);
   }
 `;
 
@@ -305,8 +305,7 @@ class Player {
       uSocks: { value: new Color() },
       uBoots: { value: new Color(K.boots) },
       uHands: { value: new Color(K.gloves) },
-      uGloved: { value: keeper ? 1 : 0 },
-      uSleeve: { value: keeper ? K.keeperSleeveTo : K.sleeveTo },
+      uSole: { value: new Color(K.sole) },
     };
     let kit: MeshLambertMaterial | null = null;
     const drop: Object3D[] = [];
@@ -314,22 +313,22 @@ class Player {
       if ((o as Bone).isBone) this.bones.set(o.name, o as Bone);
       const m = o as SkinnedMesh;
       if (!m.isSkinnedMesh) return;
-      // Skip the eyes' and brows' draw calls.
-      if (tooSmall(m)) {
+      // The other job's body.
+      if (m.name !== (keeper ? BODY_MESH.keeper : BODY_MESH.outfield)) {
         drop.push(m);
         return;
       }
       m.frustumCulled = false;
       this.skeleton ??= m.skeleton;
       this.addPart(m, m.geometry);
-      kit ??= this.kitMaterial(m.material as MeshStandardMaterial);
+      kit ??= this.kitMaterial();
       m.material = kit;
     });
     for (const o of drop) o.removeFromParent();
-    if (!kit) throw new Error('body_m has no body mesh');
+    if (!kit) throw new Error('the player has no body mesh');
     this.kit = kit;
     this.hairMat = new MeshLambertMaterial({ color: '#000000' });
-    const src = t.hair.get('hair_buzzed')?.[0]?.material as MeshStandardMaterial | undefined;
+    const src = t.hair.get('hair_buzzed')?.[0]?.material as { map?: MeshLambertMaterial['map'] } | undefined;
     if (src?.map) this.hairMat.map = src.map;
 
     // Before any clip runs, while the bones are in the rest pose.
@@ -370,16 +369,16 @@ class Player {
     for (const p of this.parts) p.mesh.geometry = light ? p.light : p.full;
   }
 
-  private kitMaterial(src: MeshStandardMaterial): MeshLambertMaterial {
-    const mat = new MeshLambertMaterial({ map: src.map ?? null, color: src.map ? '#ffffff' : src.color });
+  private kitMaterial(): MeshLambertMaterial {
+    const mat = new MeshLambertMaterial({ color: '#ffffff' });
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, this.uniforms);
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', `#include <common>\n${KIT_VERT}`)
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRest = aRest;');
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPart = color.r * 255.0;\nvShade = color.g;');
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', `#include <common>\n${KIT_FRAG}`)
-        .replace('#include <map_fragment>', `#include <map_fragment>\n${KIT_PAINT}`);
+        .replace('#include <color_fragment>', `#include <color_fragment>\n${KIT_PAINT}`);
     };
     mat.customProgramCacheKey = () => 'match-kit';
     return mat;
