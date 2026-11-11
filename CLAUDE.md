@@ -15,7 +15,7 @@
 
 - **Vite 8.3.4 + TypeScript 7.0.2**, no UI framework. Menus and overlays are plain DOM built from HTML strings (`src/ui`).
 - **three.js 0.186.1** from npm (`@types/three` 0.186.0), bundled by Vite. It is loaded only by dynamic import when a 3D scene opens, so the plain menus never download it. Models are glTF with **Meshopt** geometry (`meshopt_decoder` from three's examples) and **KTX2** textures (`KTX2Loader`). No Draco.
-- **fflate 0.8.2** compresses save codes. **meshoptimizer 1.1.1** (its simplifier) makes the light far-away player bodies in the 3D match.
+- **fflate 0.8.3** compresses save codes. **meshoptimizer 1.1.1** (its simplifier) makes the light far-away player bodies in the 3D match.
 - **Vitest 5.0.5** for tests. CI uses Node 22.
 - The sim runs on **Web Workers** for background matches (`src/game/matchRunner.ts`, `matchWorker.ts`), with a main-thread fallback.
 - Installable as an app: `public/manifest.webmanifest` plus a service worker written at build time by `vite.config.ts` from `src/pwa/serviceWorker.ts`.
