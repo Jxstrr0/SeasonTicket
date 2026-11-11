@@ -22,6 +22,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import tuning from '../../data/tuning/stadium.json';
+import { Assets } from '../assets';
 import { QUALITY_TIERS, type QualityTier } from '../quality';
 import { END_FRONT, SIDE_FRONT } from './layout';
 import { buildStadiumModel, partOf, stadiumExtent } from './model';
@@ -130,7 +131,10 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
     shadows,
     animate: true,
   });
-  const surroundings = buildSurroundings(tier.cityBlocks, shadows);
+  const assets = new Assets(renderer);
+  const surroundings = buildSurroundings(tier.detail, assets, () => {
+    dirty = true;
+  });
   scene.add(model.root, surroundings.root);
 
   // The camera orbits the centre spot; `goal` is where it is heading.
@@ -215,6 +219,7 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
     if (duskSky) {
       // Dusk: a low copper sun under a purple sky, the stands' lights coming on.
       model.setLit(AMBIENT.selfLit);
+      surroundings.setNight(true);
       scene.background = duskSky;
       (scene.fog as Fog).color.set(AMBIENT.fog);
       sky.color.set('#b9a6e8');
@@ -227,6 +232,7 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
       return;
     }
     model.setLit(night ? VIEW.nightSelfLit : VIEW.daySelfLit);
+    surroundings.setNight(night);
     scene.background = night ? nightSky : daySky;
     (scene.fog as Fog).color.set(night ? '#1a2340' : '#d5e3ef');
     if (night) {
@@ -458,6 +464,7 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
       canvas.removeEventListener('wheel', onWheel);
       model.dispose();
       surroundings.dispose();
+      assets.dispose();
       daySky.dispose();
       nightSky.dispose();
       duskSky?.dispose();

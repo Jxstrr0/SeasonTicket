@@ -45,6 +45,16 @@
       ]
     },
     {
+      "asset": "Town scenery: houses, shops, flats, a church, a works, trees, cars and street lamps",
+      "source": "Longlight Interactive",
+      "url": "https://longlight.games/",
+      "licence": "Made for this game",
+      "usedFor": "The town round the ground, on the Stadium tab, the title screen and the 3D match. Modelled by the game's own Blender script",
+      "files": [
+        "stadium/scenery.glb"
+      ]
+    },
+    {
       "asset": "Universal Animation Library [Standard]",
       "source": "Quaternius",
       "url": "https://quaternius.com",
@@ -273,7 +283,7 @@
       "licence": "Apache-2.0"
     },
     {
-      "name": "Blender, as the `bpy` Python module (`players-kit.py`)",
+      "name": "Blender, as the `bpy` Python module (`players-kit.py`, `scenery-kit.py`)",
       "licence": "GPL-3.0-or-later"
     },
     {

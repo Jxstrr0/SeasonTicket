@@ -12,6 +12,7 @@ Every asset shipped with the game is listed here with its source and licence.
 | Textures: herringbone parquet, beige wall 001 | [Poly Haven](https://polyhaven.com/textures) | CC0 | HQ Office parquet floor and walls |
 | Texture: Carpet 012 | [ambientCG](https://ambientcg.com/view?id=Carpet012) | CC0 | HQ Office carpet |
 | Universal Base Characters [Standard] | [Quaternius](https://quaternius.com) | CC0 | Office visitors and the 3D match players (bodies and hair). The match players' kit is modelled over the body by the game's own Blender script |
+| Town scenery: houses, shops, flats, a church, a works, trees, cars and street lamps | [Longlight Interactive](https://longlight.games/) | Made for this game | The town round the ground, on the Stadium tab, the title screen and the 3D match. Modelled by the game's own Blender script |
 | Universal Animation Library [Standard] | [Quaternius](https://quaternius.com) | CC0 | Office visitor animations (walk, idle, talk, sit) and the 3D match players' idle, walk, jog and sprint |
 | Sound: Football match ambience | [habbis92 on Freesound](https://freesound.org/people/habbis92/sounds/206003/) | CC0 | The crowd murmur under every match |
 | Sound: Stadium crowd reaction, general ambience | [itmightgetloud on Freesound](https://freesound.org/people/itmightgetloud/sounds/829454/) | CC0 | The crowd swell as attacks near a goal |
@@ -53,7 +54,7 @@ The app icon (`public/icons/`, the Longlight copper half-sun on a bar) is the st
 | glTF Transform | MIT |
 | meshoptimizer | MIT |
 | sharp | Apache-2.0 |
-| Blender, as the `bpy` Python module (`players-kit.py`) | GPL-3.0-or-later |
+| Blender, as the `bpy` Python module (`players-kit.py`, `scenery-kit.py`) | GPL-3.0-or-later |
 | KTX-Software (`toktx`) | Apache-2.0 |
 | FFmpeg with LAME (`build-audio.py`) | LGPL-2.1 or later |
 | NumPy (`build-audio.py`) | BSD-3-Clause |
