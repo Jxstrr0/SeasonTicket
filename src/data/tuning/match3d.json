@@ -52,20 +52,13 @@
     "backAt": 1.15
   },
   "kit": {
-    "_about": "Kits are painted onto the bare base body by region, measured on the model's rest pose (a T-pose, about 1.8 m tall). y is height, ax the distance out along the arms.",
-    "bootsTo": 0.115,
-    "socksTo": 0.47,
-    "shortsFrom": 0.7,
-    "waist": 1.0,
-    "neck": 1.5,
-    "sleeveTo": 0.36,
-    "keeperSleeveTo": 0.66,
-    "collar": 0.035,
-    "cuff": 0.03,
-    "boots": "#151515",
+    "_about": "The kit is modelled on the player (public/assets/match/players.glb, made by scripts/assets/players-kit.py); each part takes its colour from the club. These are the colours no club sets, and shadow is how dark the model's baked soft shadows go (1 is no shadow).",
+    "boots": "#26282e",
+    "sole": "#d9dde2",
     "keeperShorts": "#1d2029",
     "keeperTrim": "#1d2029",
-    "gloves": "#eef1f4"
+    "gloves": "#eef1f4",
+    "shadow": 0.5
   },
   "looks": {
     "_about": "Each player's skin tone, hair colour and hair, seeded from his id. Styles list the hair pieces worn together; an empty list is a shaved head.",
