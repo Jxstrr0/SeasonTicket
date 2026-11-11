@@ -407,6 +407,7 @@ export function createStadiumView(container: HTMLElement, opts: StadiumViewOptio
     update(snap) {
       lastSnap = snap;
       model.update(snap);
+      surroundings.setClub(snap.primary, snap.secondary);
       refit(snap);
       if (snap.upgrades.floodlights !== floodlights) {
         floodlights = snap.upgrades.floodlights;

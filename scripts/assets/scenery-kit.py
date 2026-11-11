@@ -68,9 +68,13 @@ class Piece:
             f[self.zone] = zone
             f[self.window] = self.windows_made % 250 if zone == WINDOW else 0
 
-    def face(self, points, colour, zone=FIXED):
+    def face(self, points, colour, zone=FIXED, both=False):
+        """One flat face; with `both`, a second one back to back with it, for a thin sheet
+        seen from either side (a flag, a clear roof)."""
         f = self.bm.faces.new([self.bm.verts.new(p) for p in points])
         self.paint([f], colour, zone)
+        if both:
+            self.paint([self.bm.faces.new([self.bm.verts.new(p) for p in reversed(points)])], colour, zone)
         return f
 
     def box(self, x, y, z0, w, d, h, colour, zone=FIXED, top=1.0, bottom=False):
@@ -514,7 +518,114 @@ def cloud():
     return p
 
 
-PIECES = [terrace, detached, shop, flats, church, works, house_far, tree_round, tree_tall, tree_pine, tree_far, bush, car, van, lamp, tower_a, tower_b, tower_c, hills, cloud]
+# ---- the ground's own furniture -------------------------------------------------------------
+
+def dugout():
+    """A team's dugout, 8 m long, open towards the pitch (-y here): a low back wall, a clear
+    curved roof, glazed ends and a row of seats."""
+    p = Piece('dugout')
+    w, d = 8.0, 1.9
+    clear = rgb('#c7d6df')
+    frame = rgb('#e8eaec')
+    p.box(0, 0, 0, w + 0.4, d + 0.5, 0.12, rgb('#7c7f85'))
+    p.box(0, d / 2 - 0.06, 0.12, w, 0.12, 1.1, frame)
+    # The roof: up from the back wall, then forward over the seats.
+    back, front = d / 2, -d / 2
+    for x0, x1 in ((-w / 2, 0), (0, w / 2)):
+        p.face([(x0, back, 1.22), (x1, back, 1.22), (x1, back - 0.25, 2.1), (x0, back - 0.25, 2.1)], clear, both=True)
+        p.face([(x0, back - 0.25, 2.1), (x1, back - 0.25, 2.1), (x1, front - 0.2, 2.3), (x0, front - 0.2, 2.3)], clear, both=True)
+    for x in (-w / 2, 0, w / 2):
+        p.box(x, back - 0.12, 0.12, 0.1, 0.1, 2.0, frame)
+        p.box(x, front + 0.3, 2.16, 0.1, d + 0.1, 0.08, frame)
+    for s in (-1, 1):
+        x = s * w / 2
+        p.face([(x, back, 0.12), (x, front + 0.4, 0.12), (x, front - 0.1, 2.26), (x, back - 0.25, 2.1)], clear, both=True)
+    # The bench: a plinth and a seat for each man.
+    p.box(0, 0.25, 0.12, w - 0.5, 0.6, 0.32, DARK)
+    for i in range(10):
+        x = -w / 2 + 0.65 + i * (w - 1.3) / 9
+        p.box(x, 0.2, 0.44, 0.5, 0.5, 0.1, WHITE, TINT_A)
+        p.box(x, 0.48, 0.5, 0.5, 0.1, 0.55, WHITE, TINT_A)
+    return p
+
+
+def corner_flag():
+    p = Piece('corner_flag')
+    p.cone(0, 0, 0, 0.03, 0.02, 1.6, rgb('#f2f2f0'), sides=4)
+    flag = [(0.02, 0, 1.58), (0.02, 0, 1.22), (0.5, 0.04, 1.4)]
+    p.face(flag, WHITE, TINT_A, both=True)
+    return p
+
+
+def tunnel():
+    """The players' tunnel: a ribbed cover running out from the main stand, its mouth
+    towards the pitch (-y here)."""
+    p = Piece('tunnel')
+    w, h, length = 4.4, 2.7, 2.6
+    ribs = 5
+    cover, rib = rgb('#e6e8ea'), rgb('#9aa0a8')
+    for i in range(ribs):
+        y = -length / 2 + (i + 0.5) * length / ribs
+        d = length / ribs
+        k = 1.0 - 0.03 * (i % 2)
+        col = cover if i % 2 else rib
+        p.box(-w / 2 * k, y, 0, 0.12, d, h * k * 0.82, col)
+        p.box(w / 2 * k, y, 0, 0.12, d, h * k * 0.82, col)
+        p.box(0, y, h * k * 0.82, w * k + 0.12, d, 0.12, col, top=0.8)
+        p.box(0, y, h * k * 0.82 + 0.12, w * k * 0.8, d, 0.2, col, top=0.6)
+    p.panel(0, 0, w - 0.3, h * 0.8, length / 2 - 0.1, rgb('#15171b'), side='front')
+    return p
+
+
+def gate():
+    """A way in from the street: brick pillars, a sign across the top, a row of turnstile
+    booths and a rail either side. Front (-y) towards the street."""
+    p = Piece('gate')
+    w = 22.0
+    for x in (-w / 2, w / 2):
+        p.box(x, 0, 0, 1.4, 1.4, 5.4, BRICK)
+        p.box(x, 0, 5.4, 1.7, 1.7, 0.35, STONE)
+    p.box(0, 0, 4.1, w - 1.4, 0.5, 1.1, WHITE, TINT_A)
+    p.box(0, 0, 3.95, w - 1.4, 0.7, 0.15, DARK)
+    p.box(0, 0, 5.2, w - 1.4, 0.7, 0.12, DARK)
+    for i in range(7):
+        x = -w / 2 + 2.6 + i * (w - 5.2) / 6
+        p.box(x, 0, 0, 1.3, 2.2, 2.5, rgb('#2f333a'))
+        p.box(x, 0, 2.5, 1.5, 2.4, 0.15, DARK)
+        p.panel(x, 1.3, 0.8, 0.8, -1.1, GLASS, WINDOW)
+    return p
+
+
+def flagpole():
+    p = Piece('flagpole')
+    p.cone(0, 0, 0, 0.09, 0.05, 10.0, rgb('#dfe2e6'), sides=5)
+    flag = [(0.06, 0, 9.8), (0.06, 0, 8.0), (1.5, 0.25, 8.1), (2.9, 0, 8.0), (2.9, 0, 9.8), (1.5, 0.25, 9.9)]
+    p.face(flag, WHITE, TINT_A, both=True)
+    return p
+
+
+def coach():
+    """A team coach, its nose towards +x."""
+    p = Piece('coach')
+    p.box(0, 0, 0.2, 10.6, 2.3, 0.4, TYRE)
+    p.box(0, 0, 0.55, 12.0, 2.55, 1.25, WHITE, TINT_A)
+    band = p.box(0, 0, 1.8, 11.9, 2.5, 1.0, GLASS, WINDOW)
+    p.paint([band[-1]], WHITE, TINT_A)
+    p.box(0, 0, 2.8, 11.8, 2.5, 0.3, WHITE, TINT_A, top=0.96)
+    p.box(-2.0, 0, 3.1, 3.0, 1.6, 0.25, rgb('#c9ccd1'))
+    return p
+
+
+def planter():
+    """A stone planter for a tree to stand in."""
+    p = Piece('planter')
+    p.box(0, 0, 0, 3.2, 3.2, 0.55, STONE)
+    p.box(0, 0, 0.55, 2.7, 2.7, 0.05, rgb('#4a3a2c'))
+    return p
+
+
+PIECES = [terrace, detached, shop, flats, church, works, house_far, tree_round, tree_tall, tree_pine, tree_far, bush, car, van, lamp, tower_a, tower_b, tower_c, hills, cloud,
+          dugout, corner_flag, tunnel, gate, flagpole, coach, planter]
 
 
 # ---- preview render (only to look at; nothing here reaches the game) --------------------

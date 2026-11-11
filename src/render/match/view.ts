@@ -203,6 +203,7 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   const surroundings = buildSurroundings(tier.detail, assets, () => {
     dirty = true;
   });
+  surroundings.setClub(opts.scene.ground.primary, opts.scene.ground.secondary);
   scene.add(model.root, surroundings.root);
 
   const weather = buildWeather(opts.scene.weather ?? 'clear', opts.tier);
