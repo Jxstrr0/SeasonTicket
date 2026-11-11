@@ -199,8 +199,12 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
     animate: true,
   });
   model.update(opts.scene.ground);
-  const surroundings = buildSurroundings(tier.cityBlocks, shadows);
+  const assets = new Assets(renderer);
+  const surroundings = buildSurroundings(tier.detail, assets, () => {
+    dirty = true;
+  });
   scene.add(model.root, surroundings.root);
+
   const weather = buildWeather(opts.scene.weather ?? 'clear', opts.tier);
   scene.add(weather.root);
   const look = weatherLook(opts.scene.weather ?? 'clear');
@@ -237,7 +241,6 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   const blobS = new Vector3();
 
   // Players load after the ground, so the stands show while the bodies download.
-  const assets = new Assets(renderer);
   let squads: Squads | null = null;
   // For checking the scene from the browser's console while developing.
   if (import.meta.env.DEV) (globalThis as { match3dScene?: unknown }).match3dScene = { scene, renderer, camera, squads: () => squads };
@@ -340,6 +343,7 @@ export function createMatchView(container: HTMLElement, opts: MatchViewOptions):
   let floodlights = opts.scene.ground.upgrades.floodlights;
   const applyTime = (): void => {
     model.setLit(night ? stadiumTuning.view.nightSelfLit : stadiumTuning.view.daySelfLit);
+    surroundings.setNight(night);
     scene.background = night ? nightSky : daySky;
     const fog = scene.fog as Fog;
     fog.color.set(night ? '#1a2340' : (look?.fog?.[0] ?? '#d5e3ef'));

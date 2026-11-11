@@ -15,6 +15,11 @@ export function readSource(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
+/** A file's bytes (a model or other binary asset). */
+export function readBytes(rel) {
+  return new Uint8Array(readFileSync(join(ROOT, rel)));
+}
+
 /** A file's size in bytes, or -1 if it is not there. */
 export function fileSize(rel) {
   const p = join(ROOT, rel);

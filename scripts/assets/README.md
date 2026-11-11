@@ -43,6 +43,22 @@ of `players-kit.py` and in each garment's function. Each vertex's colour tells t
 which part it is (`PART` there, `KIT_PAINT` in `src/render/match/players.ts`): add a part
 in both places. Colours come from the clubs and `src/data/tuning/match3d.json` (`kit`).
 
+## The town (`public/assets/stadium/scenery.glb`)
+
+The houses, shops, flats, church, works, trees, cars and lamps round the ground are
+modelled from scratch by a Blender script. Nothing is downloaded.
+
+1. `.venv/bin/python scenery-kit.py <work-dir> --preview` models every piece and renders
+   `<work-dir>/scenery.png`, all of them in a row, to look at.
+2. `node build-scenery.mjs <work-dir>` packs them into `scenery.glb`.
+
+A piece is a function in `scenery-kit.py` built from boxes, roofs, panels, cones and
+blobs, listed in `PIECES`. Each face has a colour and a zone (fixed, wall tint, roof tint
+or window); the game colours the tinted zones per building and lights the windows at
+night. To add a piece: write its function, add it to `PIECES` there and to `PIECES` in
+`src/render/stadium/town.ts`, then place it in `layoutTown`. Where things stand, how many,
+and every colour are in `src/data/tuning/scenery.json`.
+
 ## Match-day sound (`public/assets/audio`)
 
 1. Install FFmpeg (with `libmp3lame`) and NumPy.
