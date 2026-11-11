@@ -6,8 +6,9 @@
  *
  * The town's pieces are modelled in Blender (scripts/assets/scenery-kit.py) and arrive in
  * one small file, scenery.glb. town.ts decides where each one stands; here they are all
- * baked into a few meshes, so the whole town costs four draw calls: the flat ground, the
- * buildings, trees and hills, the windows (which light up at night) and the clouds.
+ * baked into a few meshes, so the whole town costs six draw calls: the flat ground, the
+ * buildings, trees and hills, the windows (which light up at night), the clouds, and the
+ * ground's own furniture and its windows (baked apart, so it can wear the club's colours).
  */
 import {
   BufferAttribute,
@@ -51,6 +52,8 @@ export function skyTexture(top: string, horizon: string): CanvasTexture {
 
 export interface Surroundings {
   root: Group;
+  /** Colours the ground's furniture (flags, the home dugout's seats, the gates) for the club. */
+  setClub(primary: string, secondary: string): void;
   /** Lights the town's windows (night) or puts them out (day). */
   setNight(night: boolean): void;
   dispose(): void;
@@ -188,7 +191,7 @@ function bake(pieces: Map<string, Piece>, placements: readonly Placement[]): { s
     a.set(p.a);
     b.set(p.b);
     const lamp = p.piece === 'lamp';
-    const dark = p.piece === 'car' || p.piece === 'van';
+    const dark = p.piece === 'car' || p.piece === 'van' || p.piece === 'coach';
     const count = piece.zone.length;
     for (let i = 0; i < count; i++) {
       const x = piece.pos[i * 3];
@@ -259,14 +262,49 @@ export function buildSurroundings(detail: number, assets: Assets, onChange: () =
 
   let disposed = false;
   let night = false;
-  let glass: { mesh: Mesh; day: Float32Array; night: Float32Array } | null = null;
+  interface Glass {
+    mesh: Mesh;
+    day: Float32Array;
+    night: Float32Array;
+  }
+  const glass: Glass[] = [];
   let clouds: MeshLambertMaterial | null = null;
   const applyNight = (): void => {
     if (clouds) clouds.emissiveIntensity = tuning.clouds.glow[night ? 1 : 0];
-    if (!glass) return;
-    const attr = glass.mesh.geometry.getAttribute('color') as BufferAttribute;
-    (attr.array as Float32Array).set(night ? glass.night : glass.day);
-    attr.needsUpdate = true;
+    for (const g of glass) {
+      const attr = g.mesh.geometry.getAttribute('color') as BufferAttribute;
+      (attr.array as Float32Array).set(night ? g.night : g.day);
+      attr.needsUpdate = true;
+    }
+  };
+
+  // The ground's furniture is baked on its own, so it can be re-coloured for the club.
+  let pieces: Map<string, Piece> | null = null;
+  let club = ['#c9ccd1', '#e9e9e6'];
+  let furniture: { solid: Mesh; glass: Glass } | null = null;
+  const solidMat = new MeshLambertMaterial({ vertexColors: true });
+  const glassMat = new MeshBasicMaterial({ vertexColors: true });
+  const flat = (mesh: Mesh): Mesh => {
+    mesh.frustumCulled = false;
+    mesh.matrixAutoUpdate = false;
+    root.add(mesh);
+    return mesh;
+  };
+  const dressGround = (): void => {
+    if (!pieces || disposed) return;
+    if (furniture) {
+      glass.splice(glass.indexOf(furniture.glass), 1);
+      for (const m of [furniture.solid, furniture.glass.mesh]) {
+        m.geometry.dispose();
+        m.removeFromParent();
+      }
+    }
+    const own = (c: string): string => (c === 'club1' ? club[0] : c === 'club2' ? club[1] : c);
+    const baked = bake(pieces, town.furniture.map((p) => ({ ...p, a: own(p.a), b: own(p.b) })));
+    furniture = { solid: flat(new Mesh(baked.solid, solidMat)), glass: { mesh: flat(new Mesh(baked.glass, glassMat)), day: baked.day, night: baked.night } };
+    glass.push(furniture.glass);
+    applyNight();
+    onChange();
   };
 
   assets
@@ -274,11 +312,12 @@ export function buildSurroundings(detail: number, assets: Assets, onChange: () =
     .then((gltf) => {
       if (disposed) return;
       gltf.scene.updateMatrixWorld(true);
-      const pieces = new Map<string, Piece>();
+      const loaded = new Map<string, Piece>();
       gltf.scene.traverse((o) => {
         const m = o as Mesh;
-        if (m.isMesh) pieces.set(m.name || m.parent?.name || '', unpack(m));
+        if (m.isMesh) loaded.set(m.name || m.parent?.name || '', unpack(m));
       });
+      pieces = loaded;
       const baked = bake(pieces, town.placements.filter((p) => !p.sky));
       add(new Mesh(baked.solid, new MeshLambertMaterial({ vertexColors: true })));
       // Clouds stand clear of the ground's haze, lit by the same sky as everything else.
@@ -286,15 +325,19 @@ export function buildSurroundings(detail: number, assets: Assets, onChange: () =
       clouds = new MeshLambertMaterial({ vertexColors: true, fog: false, emissive: '#ffffff' });
       add(new Mesh(sky.solid, clouds));
       sky.glass.dispose();
-      glass = { mesh: add(new Mesh(baked.glass, new MeshBasicMaterial({ vertexColors: true }))), day: baked.day, night: baked.night };
-      applyNight();
-      onChange();
+      glass.push({ mesh: add(new Mesh(baked.glass, new MeshBasicMaterial({ vertexColors: true }))), day: baked.day, night: baked.night });
+      dressGround();
     })
     // Without the file the ground still stands on its streets.
     .catch(() => {});
 
   return {
     root,
+    setClub(primary: string, secondary: string) {
+      if (primary === club[0] && secondary === club[1]) return;
+      club = [primary, secondary];
+      dressGround();
+    },
     setNight(on: boolean) {
       if (on === night) return;
       night = on;
@@ -306,6 +349,9 @@ export function buildSurroundings(detail: number, assets: Assets, onChange: () =
         o.geometry.dispose();
         o.material.dispose();
       }
+      if (furniture) for (const m of [furniture.solid, furniture.glass.mesh]) m.geometry.dispose();
+      solidMat.dispose();
+      glassMat.dispose();
       root.removeFromParent();
     },
   };

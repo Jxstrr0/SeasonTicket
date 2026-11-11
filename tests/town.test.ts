@@ -62,6 +62,36 @@ describe('the town round the ground', () => {
     }
   });
 
+  it("furnishes the ground: dugouts, a tunnel, corner flags, gates and planted trees", () => {
+    const G = tuning.grid;
+    const F = tuning.ground;
+    // The furniture is the same on every tier, and the same every time.
+    expect(layoutTown(0).furniture).toEqual(layoutTown(2).furniture);
+    const all = layoutTown(1).furniture;
+    const of = (piece: string) => all.filter((p) => p.piece === piece);
+    expect(of('dugout')).toHaveLength(2);
+    expect(of('tunnel')).toHaveLength(1);
+    expect(of('corner_flag')).toHaveLength(4);
+    expect(of('gate')).toHaveLength(4);
+    expect(of('flagpole')).toHaveLength(4 * 2 * F.poles);
+    expect(of('planter').length).toBeGreaterThan(20);
+    expect(of('tree_round')).toHaveLength(of('planter').length);
+    // The home dugout wears the club's colour.
+    expect(of('dugout').map((p) => p.a)).toContain('club1');
+    for (const p of all) {
+      // Everything stands on the plaza...
+      expect(Math.abs(p.x) <= G.plazaHalfX && Math.abs(p.z) <= G.plazaHalfZ, `${p.piece} at ${p.x}, ${p.z}`).toBe(true);
+      const pitchSide = ['dugout', 'tunnel', 'corner_flag'].includes(p.piece);
+      if (pitchSide) {
+        // ...the pitch's own pieces off the grass but in front of the stands (40 m from the middle),
+        expect(Math.abs(p.z) >= F.pitch[1] && Math.abs(p.z) < 40, `${p.piece} at z ${p.z}`).toBe(true);
+      } else {
+        // ...and the rest outside the biggest stands, the shop and the floodlights.
+        expect(Math.abs(p.x) > 112 || Math.abs(p.z) > 101, `${p.piece} at ${p.x}, ${p.z}`).toBe(true);
+      }
+    }
+  });
+
   it('only uses pieces that are in scenery.glb', () => {
     // A .glb starts with a 12-byte header, then a JSON chunk: its length, "JSON", the text.
     const bytes: Uint8Array = readBytes('public/assets/stadium/scenery.glb');
@@ -69,6 +99,7 @@ describe('the town round the ground', () => {
     const json = JSON.parse(new TextDecoder().decode(bytes.subarray(20, 20 + view.getUint32(12, true)))) as { nodes: { name?: string }[] };
     const inFile = new Set(json.nodes.map((n) => n.name));
     for (const name of PIECES) expect(inFile.has(name), name).toBe(true);
-    for (const p of layoutTown(2).placements) expect(PIECES).toContain(p.piece);
+    const town = layoutTown(2);
+    for (const p of [...town.placements, ...town.furniture]) expect(PIECES).toContain(p.piece);
   });
 });

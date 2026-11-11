@@ -19,6 +19,7 @@ export const PIECES = [
   'house_terrace', 'house_detached', 'shop', 'flats', 'church', 'works', 'house_far',
   'tree_round', 'tree_tall', 'tree_pine', 'tree_far', 'bush', 'car', 'van', 'lamp',
   'tower_a', 'tower_b', 'tower_c', 'hills', 'cloud',
+  'dugout', 'corner_flag', 'tunnel', 'gate', 'flagpole', 'coach', 'planter',
 ] as const;
 export type PieceName = (typeof PIECES)[number];
 
@@ -49,6 +50,11 @@ export interface Patch {
 
 export interface Town {
   placements: Placement[];
+  /**
+   * The ground's own furniture: dugouts, the tunnel, corner flags, gates, flagpoles, planted
+   * trees and the team coaches. Colours here may be 'club1' or 'club2', the club's own.
+   */
+  furniture: Placement[];
   patches: Patch[];
   /** How far the built town reaches from the centre spot. */
   reach: number;
@@ -389,6 +395,50 @@ export function layoutTown(detail: number): Town {
     placements.push({ piece: 'cloud', x: Math.cos(a) * r, y: between(W.height[0], W.height[1]), z: Math.sin(a) * r, rot: rand() * Math.PI * 2, scale: between(W.scale[0], W.scale[1]), a: '#ffffff', b: '#ffffff', sky: true });
   }
 
+  // ---- the ground's own furniture -----------------------------------------------
+  const F = T.ground;
+  const furniture: Placement[] = [];
+  // Its own run of random numbers, so the furniture is the same on every graphics tier.
+  seed = T.seed + 1;
+  const stand = (piece: PieceName, x: number, y: number, z: number, rot: number, a: string, b = a, scale = 1): void => {
+    furniture.push({ piece, x, y, z, rot, scale, a, b });
+  };
+  // Pitch level: the grass stands a little over the plaza.
+  const grass = 0.1;
+  for (const s of [-1, 1]) stand('dugout', s * F.dugoutsAt, grass, F.dugoutZ, Math.PI, s < 0 ? 'club1' : '#3a3f48');
+  stand('tunnel', 0, grass, F.tunnelZ, Math.PI, '#ffffff');
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) stand('corner_flag', sx * F.pitch[0], grass, sz * F.pitch[1], facing(-sx, -sz), F.cornerFlag);
+  // A gate in the middle of each side of the plaza, its front to the street, poles beside it.
+  const gates: [number, number, number][] = [[0, F.gateZ, 0], [0, -F.gateZ, Math.PI], [F.gateX, 0, Math.PI / 2], [-F.gateX, 0, -Math.PI / 2]];
+  for (const [gx, gz, rot] of gates) {
+    stand('gate', gx, 0, gz, rot, 'club1', 'club2');
+    const alongX = gz !== 0;
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < F.poles; i++) {
+        const t = side * (14 + i * F.poleEvery);
+        stand('flagpole', alongX ? gx + t : gx, 0, alongX ? gz : gz + t, rot + Math.PI / 2, i % 2 === 0 ? 'club1' : 'club2');
+      }
+    }
+  }
+  // Trees in planters round the plaza's edge, leaving the gates clear.
+  const ringX = G.plazaHalfX - F.treeInset;
+  const ringZ = G.plazaHalfZ - F.treeInset;
+  const planted = (x: number, z: number): void => {
+    stand('planter', x, 0, z, 0, '#ffffff');
+    stand('tree_round', x, 0.5, z, rand() * 6.28, pick(C.leaves), undefined, between(0.6, 0.8));
+  };
+  for (let x = -ringX; x <= ringX + 1; x += (ringX * 2) / Math.round((ringX * 2) / F.treeEvery)) {
+    if (Math.abs(x) < F.treeClear) continue;
+    planted(x, ringZ);
+    planted(x, -ringZ);
+  }
+  for (let z = -ringZ; z <= ringZ + 1; z += (ringZ * 2) / Math.round((ringZ * 2) / F.treeEvery)) {
+    if (Math.abs(z) < F.treeClear || Math.abs(z) > ringZ - 4) continue;
+    planted(ringX, z);
+    planted(-ringX, z);
+  }
+  for (const [x, z, colour] of F.coaches as [number, number, string][]) stand('coach', x, 0, z, 0, colour, colour);
+
   const reach = built.reduce((m, b) => Math.max(m, Math.hypot(Math.max(Math.abs(b.x0), Math.abs(b.x1)), Math.max(Math.abs(b.z0), Math.abs(b.z1)))), 0);
-  return { placements, patches, reach };
+  return { placements, furniture, patches, reach };
 }

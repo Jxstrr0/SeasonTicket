@@ -1,7 +1,14 @@
 {
   "_about": "The game's version, shown in the menu and in problem reports, and the 'What's new' list (newest first). Four numbers, Major.Minor.Patch.Build: Major = overhaul, Minor = feature batch, Patch = tweak or fix, Build = republish. Bump the version when a release changes what players see.",
-  "version": "1.2.2.0",
+  "version": "1.2.3.0",
   "notes": [
+    {
+      "version": "1.2.3.0",
+      "date": "2026-11-11",
+      "lines": [
+        "Your ground is furnished: two dugouts and the players' tunnel in front of the main stand, corner flags, a gate with turnstiles on each side of the plaza, flagpoles and gates in your club's colours, trees in planters, and the team coaches parked by the main stand."
+      ]
+    },
     {
       "version": "1.2.2.0",
       "date": "2026-11-11",
