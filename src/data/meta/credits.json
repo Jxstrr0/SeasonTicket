@@ -45,11 +45,11 @@
       ]
     },
     {
-      "asset": "Town scenery: houses, shops, flats, a church, a works, trees, cars, street lamps, office towers, hills and clouds",
+      "asset": "Town scenery and stadium furniture: houses, shops, flats, a church, a works, trees, cars, street lamps, office towers, hills and clouds; dugouts, the players' tunnel, corner flags, gates, flagpoles, team coaches and planters",
       "source": "Longlight Interactive",
       "url": "https://longlight.games/",
       "licence": "Made for this game",
-      "usedFor": "The town round the ground and the country beyond it, on the Stadium tab, the title screen and the 3D match. Modelled by the game's own Blender script",
+      "usedFor": "The town round the ground, the country beyond it and the ground's own furniture, on the Stadium tab, the title screen and the 3D match. Modelled by the game's own Blender script",
       "files": [
         "stadium/scenery.glb"
       ]
