@@ -1,12 +1,13 @@
 /**
  * What sits around the ground: a sky gradient and the town (streets, houses, shops, flats,
- * a church, a works, parks and match-day car parks). Shared by the Stadium tab, the title
+ * a church, a works, parks and match-day car parks), with fields, the city centre's towers,
+ * hills and clouds beyond. Shared by the Stadium tab, the title
  * screen and the match-day view.
  *
  * The town's pieces are modelled in Blender (scripts/assets/scenery-kit.py) and arrive in
  * one small file, scenery.glb. town.ts decides where each one stands; here they are all
- * baked into two meshes, so the whole town costs three draw calls: the flat ground, the
- * buildings and trees, and the windows (which light up at night).
+ * baked into a few meshes, so the whole town costs four draw calls: the flat ground, the
+ * buildings, trees and hills, the windows (which light up at night) and the clouds.
  */
 import {
   BufferAttribute,
@@ -259,7 +260,9 @@ export function buildSurroundings(detail: number, assets: Assets, onChange: () =
   let disposed = false;
   let night = false;
   let glass: { mesh: Mesh; day: Float32Array; night: Float32Array } | null = null;
+  let clouds: MeshLambertMaterial | null = null;
   const applyNight = (): void => {
+    if (clouds) clouds.emissiveIntensity = tuning.clouds.glow[night ? 1 : 0];
     if (!glass) return;
     const attr = glass.mesh.geometry.getAttribute('color') as BufferAttribute;
     (attr.array as Float32Array).set(night ? glass.night : glass.day);
@@ -276,8 +279,13 @@ export function buildSurroundings(detail: number, assets: Assets, onChange: () =
         const m = o as Mesh;
         if (m.isMesh) pieces.set(m.name || m.parent?.name || '', unpack(m));
       });
-      const baked = bake(pieces, town.placements);
+      const baked = bake(pieces, town.placements.filter((p) => !p.sky));
       add(new Mesh(baked.solid, new MeshLambertMaterial({ vertexColors: true })));
+      // Clouds stand clear of the ground's haze, lit by the same sky as everything else.
+      const sky = bake(pieces, town.placements.filter((p) => p.sky));
+      clouds = new MeshLambertMaterial({ vertexColors: true, fog: false, emissive: '#ffffff' });
+      add(new Mesh(sky.solid, clouds));
+      sky.glass.dispose();
       glass = { mesh: add(new Mesh(baked.glass, new MeshBasicMaterial({ vertexColors: true }))), day: baked.day, night: baked.night };
       applyNight();
       onChange();

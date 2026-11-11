@@ -14,13 +14,15 @@ describe('the town round the ground', () => {
     expect(medium).toBeGreaterThan(low);
     expect(high).toBeGreaterThan(medium);
     // A phone on Medium should not be handed a city.
-    expect(medium).toBeLessThan(2500);
+    expect(medium).toBeLessThan(3000);
   });
 
   it("keeps clear of the ground's own plaza", () => {
     const G = tuning.grid;
     const town = layoutTown(2);
     for (const p of town.placements) {
+      // The hills are one ring round everything, centred on the ground.
+      if (p.piece === 'hills') continue;
       expect(Math.abs(p.x) > G.plazaHalfX || Math.abs(p.z) > G.plazaHalfZ, `${p.piece} at ${p.x}, ${p.z}`).toBe(true);
     }
     for (const p of town.patches) {
@@ -35,6 +37,29 @@ describe('the town round the ground', () => {
     expect(count('church')).toBe(1);
     expect(count('shop')).toBeGreaterThan(20);
     expect(count('car')).toBeGreaterThan(60);
+  });
+
+  it('puts fields, a skyline, hills and clouds beyond the streets', () => {
+    for (const detail of [0, 1, 2]) {
+      const town = layoutTown(detail);
+      const of = (test: (piece: string) => boolean) => town.placements.filter((p) => test(p.piece));
+      expect(of((p) => p === 'hills')).toHaveLength(1);
+      const towers = of((p) => p.startsWith('tower_'));
+      expect(towers).toHaveLength(tuning.skyline.towers[detail]);
+      // The city centre stands outside the streets, and the clouds further out and overhead.
+      for (const t of towers) expect(Math.hypot(t.x, t.z)).toBeGreaterThan(town.reach);
+      const clouds = of((p) => p === 'cloud');
+      expect(clouds).toHaveLength(tuning.clouds.count[detail]);
+      for (const c of clouds) {
+        expect(c.sky).toBe(true);
+        expect(Math.hypot(c.x, c.z)).toBeGreaterThanOrEqual(tuning.clouds.from);
+        expect(c.y).toBeGreaterThanOrEqual(tuning.clouds.height[0]);
+      }
+      // Everything else stands on the ground, in the haze.
+      expect(town.placements.filter((p) => p.sky && p.piece !== 'cloud')).toEqual([]);
+      const fields = town.patches.filter((p) => (tuning.colours.fields as string[]).includes(p.colour));
+      expect(fields.length).toBeGreaterThan(60);
+    }
   });
 
   it('only uses pieces that are in scenery.glb', () => {
