@@ -12,9 +12,9 @@ function noteHtml(text: string): string {
   return esc(text).replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
-/** What the game sends, in the player's words (analytics are not on yet). */
+/** What the game sends, in the player's words. */
 export const SENDS_NOTHING =
-  'The game sends nothing about you or your play anywhere. Your career is kept only in this browser.';
+  'The game sends nothing about you or your play. The page counts visits with Cloudflare Web Analytics, which uses no cookies and knows nothing about you or your career. Your career is kept only in this browser.';
 
 export function renderCredits(): string {
   return `<main class="shell credits-screen">
