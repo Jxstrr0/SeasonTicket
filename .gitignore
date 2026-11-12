@@ -4,3 +4,8 @@ dist/
 *.log
 .DS_Store
 .venv
+
+# Key files never go in the repo
+.env
+.env.*
+!.env.example
