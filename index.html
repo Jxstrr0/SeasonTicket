@@ -87,6 +87,7 @@
         addEventListener('error', function (e) {
           var t = e.target;
           if (!boot.isConnected || !t || !t.tagName) return;
+          if (t.hasAttribute && t.hasAttribute('data-cf-beacon')) return; // visit counts are optional (an ad blocker may stop them)
           if (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && /stylesheet|modulepreload/.test(t.rel))) boot.classList.add('boot-failed');
         }, true);
         setTimeout(function () { if (boot.isConnected) boot.classList.add('boot-slow'); }, 15000);
@@ -94,5 +95,7 @@
     </script>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
+    <!-- Cloudflare Web Analytics: cookieless visit counts for Longlight (no personal data). -->
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "3e02338befe84e638f2501d2f4ce4d97"}'></script>
   </body>
 </html>

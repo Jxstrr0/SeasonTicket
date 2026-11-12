@@ -10,7 +10,7 @@ export function renderContact(report: string, hasCareer: boolean): string {
       <h1>Report a problem</h1>
     </header>
     <section class="card">
-      <p>Found a bug, or have an idea? Tell us through the contact form on the Longlight website. The game sends nothing by itself.</p>
+      <p>Found a bug, or have an idea? Tell us through the contact form on the Longlight website. The game never sends your career or reports anywhere by itself.</p>
       <ol class="small">
         <li>Tap <strong>Copy report</strong>. It says which version and device you are on.</li>
         <li>Tap <strong>Open the contact form</strong>, paste the report into the message box, and add what happened.</li>
