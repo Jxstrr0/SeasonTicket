@@ -5,16 +5,16 @@
 > when something matters, check the live repo. A game's own `CLAUDE.md` always
 > wins over this file inside that game's repo.
 >
-> **Public edition.** It covers the nine games in the studio site's
+> **Public edition.** It covers the eight games in the studio site's
 > `projects.json` and leaves out Kelbo's private and parked repos. Ask Kelbo
 > about those.
 >
-> **Only six are listed on the site.** Since 11 November 2026 Escapement
+> **Only five are listed on the site.** Since 11 November 2026 Escapement
 > and The Whip carry `"hidden": true` in `projects.json`:
 > no card, no game page, no devlog or release lines. Their repos and live
 > games stay up, and everything in this file still applies to them. The
-> listed six are Prairie Engine Works, Season Ticket, Scrapline, Lombard,
-> Frontier Lab and Red Skies. Quench, the newest game, was added hidden on
+> listed five are Prairie Engine Works, Season Ticket, Scrapline, Lombard
+> and Frontier Lab. Quench, the newest game, was added hidden on
 > the same day and stays hidden until Kelbo says to show it.
 
 ---
@@ -35,7 +35,7 @@ can do three jobs:
    repeat of another Longlight game.
 3. **Pitch improvements.** Each profile ends with gaps and improvement ideas,
    and section 12 lists studio-wide ones. A good idea from one game (say, daily
-   seeds in The Whip) can often be pitched to another (Red Skies).
+   seeds in The Whip) can often be pitched to another (Frontier Lab).
 
 **Ground rules**
 
@@ -68,7 +68,6 @@ on its own subdomain of **longlight.games** (November 2026; the old
 | Season Ticket | [Jxstrr0/SeasonTicket](https://github.com/Jxstrr0/SeasonTicket) | https://seasonticket.longlight.games/ | Listed |
 | Frontier Lab | [Jxstrr0/FrontierLab](https://github.com/Jxstrr0/FrontierLab) | https://frontierlab.longlight.games/ | Listed |
 | The Whip | [Jxstrr0/The-Whip](https://github.com/Jxstrr0/The-Whip) | https://thewhip.longlight.games/ | Hidden |
-| Red Skies | [Jxstrr0/RedSkies](https://github.com/Jxstrr0/RedSkies) | https://redskies.longlight.games/ | Listed |
 | Quench | [Jxstrr0/Quench](https://github.com/Jxstrr0/Quench) | https://quench.longlight.games/ | Hidden |
 | Studio site | [Jxstrr0/Kelbo.Website](https://github.com/Jxstrr0/Kelbo.Website) | https://longlight.games/ | — |
 
@@ -115,7 +114,6 @@ choice, not a rule.
 | The Whip | `longlightMark()` in `src/ui/text.js`, the loading mark and the favicon are a hand-drawn sun; `--brand #6c46b5` and `--brand-paper #e1ded5` are off-palette. |
 | Season Ticket | `src/ui/brand.ts` and `public/icons/` use older colours (purple `#6F45B8`, copper `#C2826A`, ink `#1C1820`, paper `#E1DED7`); no `©` line anywhere. |
 | Frontier Lab | Title, boot and credits say only "A Longlight Interactive game": no logo, no `©` line. |
-| Red Skies | Credit is text only ("A GAME BY LONGLIGHT INTERACTIVE"); old names "Weapons Hold" and "Prairie Blue Studio" linger in file headers and `dist/` names. |
 
 ---
 
@@ -124,7 +122,7 @@ choice, not a rule.
 - **Kelbo** is a beginner-plus coder who tests on his phone from the live site.
   End every task with a plain-language summary and how to test it on a phone.
 - **Phone first.** Touch must work before a feature is done. Portrait unless
-  the game says otherwise (Season Ticket is landscape; Red Skies is portrait only).
+  the game says otherwise (Season Ticket is landscape).
 - **Four-number versions**, `Major.Minor.Patch.Build` (Major = overhaul,
   Minor = feature batch, Patch = tweak or fix, Build = republish). npm projects
   keep a three-number `package.json` version that players never see.
@@ -172,7 +170,6 @@ cost nothing, keep old copies apart, and let a game move again safely.
 | Season Ticket | `seasonticket.*` | build-time service worker | `ST1:` |
 | Frontier Lab | `frontierlab.*` + IndexedDB `frontierlab` | content-hash name | `FL<schema>:` |
 | The Whip | `whip:*`; sessionStorage `whip:backup-reminded` | none (no service worker) | no prefix: plain base64 JSON (see profile) |
-| Red Skies | `redskies.v1.*` | none (no service worker) | `RS1:` |
 | Quench | `quench.*` | `quench-` | `QNC1:` |
 
 > **Fixed on 7 November 2026:** the studio site's `sw.js` used to delete every
@@ -199,7 +196,6 @@ new and hidden until Kelbo says to show it.
 | Season Ticket | Released | 1.1.2.0 | Football club owner/GM with live tactics | Valmere, a fictional northern republic | **Landscape** | TypeScript, Vite, three 0.186 |
 | Frontier Lab | In development | 0.1.63.0 | AI-lab tycoon (fork of Vault Street) | Real cities on procedural maps | Portrait | TypeScript, Preact, 2D canvas/SVG |
 | The Whip | Released, **hidden** | 1.0.0.0 | Political career: votes, deals, whip | Dominion of Caledor (Westminster) | Portrait first | ES modules, no build, three 0.160 (CDN) |
-| Red Skies | Complete | 1.6.1.0 | SAM air-defence: identify, hold fire | Republic of Varenna | **Portrait only** | Plain JS + inline build, three r128 vendored |
 | Quench | Polishing, **hidden** | 1.0.0.0 (11 Nov) | Bladesmithing: heat, hammer, grind, quench, temper, trial | Aldersay, the Skerrow Isles (present day) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 
 Studio site trading projects (not games): Pre-market brief, AI Trading Journal,
@@ -583,50 +579,6 @@ are as of this snapshot.
   - Swap the hand-drawn sun and off-palette brand colours for the press-kit files.
   - Vendor three.js and add a service worker (needs Kelbo's OK, since the CDN is a hard rule there).
 
-### Red Skies
-
-- **Status:** Complete. 1.6.1.0 (`VERSION`; CLAUDE.md and DESIGN.md lag behind).
-- **Pitch:** you're the fire-control officer of SAM battery *Kessel*. Watch the radar, sort friendly jets from hostiles, and hold fire until you're sure.
-- **Loop:**
-  - On watch: a radar scope and IFF. Classify each track FRIEND or HOSTILE, assign a launcher, and fire under HOLD / TIGHT / FREE rules.
-  - Cameras: an EO TV/IR camera and a kill cam.
-  - After: a debrief graded A–F.
-  - Modes: a 25-step Training Watch, a six-shift campaign with B/C variants and a resupply shop, Free watch, Survival, and 7 medals.
-- **Setting and tone:** the Republic of Varenna. Callsigns: Viper, Hammer, Cobra, Saber, Anvil, Lancer, Talon, Heavy, Angel, Dustoff. The currency is "credits". Terse military radio; the ethics of friendly fire.
-- **Look:** a realistic 3D operator cabin, with the DOM console projected onto its monitors via `matrix3d` (`src/cabin.js`).
-  - Fonts: Russo One + Big Shoulders Display for the title (Google Fonts); system monospace for the UI.
-  - Console: bg `#050707`, panel `#0b100e` / `#111a15`, line `#1f2e25`, green `#45ff84`, amber `#ffb020`, cyan `#3ff0d0`, red `#ff4b3a`, text `#b9d6c2`, muted `#6d8a76`.
-  - Shelf: `#eef0ec`, text `#1d2327`, green `#16733a`, amber `#a86400`, red `#c0281b`.
-  - Scope glass: `#c4e6f2`, with NATO-style symbols.
-- **Platform:** **portrait only**; a rotate cover appears below 560 px tall.
-- **Stack:** plain JS on `window.RS`. `build.js` inlines the vendored three r128 and the `src/` modules (in its ORDER list) into `index.html` (about 1.6 MB). CI runs the node tests; the Playwright checks run by hand. No service worker.
-- **Saves:** `redskies.v1.*` (`campaign`, `settings`, `free`, `survival`, `tutorial`).
-  - Code `RS1:` (LZW + base64url + checksum).
-  - Backup file `red-skies-backup-YYYY-MM-DD.txt`; `RS.storage`.
-- **Audio:** fully procedural (`src/audio.js`, `src/audio_weapons.js`), with haptics.
-- **Reusable:**
-  - Core: `src/savecode.js`; `RS.bus` (8 lines); `mulberry32`; `RS.storage`; the fixed-step loop in `src/main.js`.
-  - Procedural models: `src/models_ground.js` (standalone), `models_jets.js`, `jet_friend.js`, `models_weapons*.js`, `models_launchers.js`.
-  - Cabin and camera: `src/cabin.js`, `src/eo.js`.
-  - Tutorial: `src/tutorial.js`.
-  - Tests and tools: `tools/balance.js`; `test/run.js` + `_browser.js`; `tools/make-icons.js`; `build.js` with its ORDER check.
-- **Names:**
-  - Weapons: Lance, Dart, Harrow.
-  - Aircraft: Kestrel, Wasp, Shade, Anvil, Lantern (hostile); Gyrfalcon (friendly).
-  - Stores: Spire, Needle, Ember, Hatchet, Kite, Farstrike, Sable, Sting, Pike, Longbow, Longshot, Boulder, Cinder.
-  - Old names still in file headers: "Weapons Hold" (the game) and "Prairie Blue Studio" (the studio).
-- **Gaps:**
-  - Accessibility (back-burner list): contrast, 36 px rows, no keyboard access, the toast isn't a live region, no `aria-selected`, and blinks ignore reduced motion.
-  - Speed: perf ideas that need a device test.
-  - Sim: LEAKER and ASSET_HIT events lack attacker ids; the Dustoff landing; the salvo MISS question.
-  - Testing: browser checks are off in CI.
-- **Pitches:**
-  - An accessibility PR.
-  - Daily seeds for Free watch and Survival.
-  - Self-hosted title fonts and a service worker.
-  - Settle salvo MISS and add attacker ids.
-  - A docs sync, the press-kit logo, and new wording for the real "Pantsir" mentions in comments.
-
 ### Quench
 
 - **Status:** the site's label is "Polishing"; 1.0.0.0 on 11 November 2026 (`VERSION` file). Every stage of its plan is built (`docs/QUENCH-PLAN.md` section 13, PR 0 to PR 13); `docs/STATUS.md` says where it stands and holds the tuning questions still open. Not yet played by a person, so tuning carries on as 1.0.x. Hidden on the studio site until Kelbo says otherwise.
@@ -656,27 +608,24 @@ noted, so a repeated name reads as a mistake.
 | Valmere (Valmeran dollar), Kestrel Football League | Season Ticket |
 | Dominion of Caledor, capital Ostrava | The Whip |
 | Aldersay, a harbour town on the Skerrow Isles; Skerrow crown (`kr`) | Quench |
-| Republic of Varenna, battery and airbase Kessel | Red Skies |
 | Real world cities on procedural maps | Frontier Lab |
 
 **Names used in more than one game** (already clashing; avoid adding more):
 
 | Name | Where |
 | --- | --- |
-| **Kestrel** | Season Ticket (Kestrel Football League), The Whip (Kestrel Isle province), Red Skies (Kestrel hostile jet), Frontier Lab (Kestrel model family). **Retire it.** |
-| **Kessel / Kessler** | Red Skies (battery and airbase Kessel), Escapement (Kessel Peak Observatory and Trial; rival Kessler), Scrapline (rival Rudi Kessler) |
+| **Kestrel** | Season Ticket (Kestrel Football League), The Whip (Kestrel Isle province), Frontier Lab (Kestrel model family). **Retire it.** |
+| **Kessel / Kessler** | Escapement (Kessel Peak Observatory and Trial; rival Kessler), Scrapline (rival Rudi Kessler) |
 | **Harbourline** | Season Ticket (Harbourline Bank), Frontier Lab (Harbourline AI, Harbourline Policy Group) |
 | **Hollis** | Prairie Engine Works (Hollis Hot Rods, Dale Hollis), Frontier Lab (Hollis Crane & Co.) |
-| **Harrow** | Red Skies (Harrow missile), The Whip (Harrow Point riding) |
-| **Lantern** | Red Skies (Lantern hostile aircraft), The Whip (Lantern Island riding), Frontier Lab (Lantern model family) |
-| **Sable, Ember, Kite** | Red Skies (stores), Frontier Lab (Sable and Ember models, Kite 350 jet) |
+| **Lantern** | The Whip (Lantern Island riding), Frontier Lab (Lantern model family) |
 | **Corvid** | Prairie Engine Works (sponsor), Frontier Lab (Corvid 600 jet) |
 | **Tidewater** | The Whip (province), Prairie Engine Works (Tidewater Diesel & Marine), Frontier Lab (Tidewater AI) |
 | **Northwind** | Prairie Engine Works (Northwind Tyre), Frontier Lab (Northwind & Pike) |
 | **Courier** | Season Ticket (*The Valmere Courier*), The Whip (Valmont Courier) |
 | **Ledger** | The Whip (*The Ostrava Ledger*), Frontier Lab (the Ledger archive) |
 | **Ostrander** | Escapement (rival Ostrander Frères and staff Mette Ostrander) |
-| **V-countries** | Velmark, Varenna, Valmere, Valmont (a Whip province): four invented places that sound alike. Pick another starting letter. |
+| **V-countries** | Velmark, Valmere, Valmont (a Whip province): three invented places that sound alike. Pick another starting letter. |
 | **"Prairie"** | Prairie Engine Works, Prairie Open Models and Prairie State (Frontier Lab), Prairie Junction (Season Ticket) |
 | **Nimbus** | Lombard (Nimbus game consoles), Frontier Lab (Nimbus Labs, Nimbus Health) |
 
@@ -711,7 +660,6 @@ date or institution.
 | Craft career: build or make something part by part, test it, compete or sell, in a workshop that grows | Prairie Engine Works (engines), Escapement (watches), Scrapline (combat robots), Quench (blades) |
 | Tycoon and management | Season Ticket (football club), Frontier Lab (AI lab), Lombard (pawn shop) |
 | Politics and negotiation | The Whip (parliament) |
-| Tense real-time sim | Red Skies (air defence) |
 
 **Shared habits across the line-up** (worth breaking on purpose in a new pitch):
 
@@ -719,7 +667,7 @@ date or institution.
 - Almost every game is **dark-themed** (slate, navy, felt, console green). Only
   The Whip (cream paper) and the light themes of PEW, Escapement and
   Scrapline break that.
-- Most are **single-player management**; only Red Skies and Scrapline's
+- Most are **single-player management**; only Scrapline's
   fights are real-time action.
 - Three games share a near-identical classic-JS stack (PEW, Escapement and
   Scrapline); the TypeScript games each set up their own.
@@ -738,7 +686,6 @@ date or institution.
 | "Banknote Deco": engraved isometric map, Bodoni Moda / Public Sans | Frontier Lab |
 | "The Order Paper": cream paper, ink, stamps, Newsreader | The Whip |
 | Chalk and slate with a heat-colour ramp, Zilla Slab / Atkinson Hyperlegible | Quench |
-| Green radar console in a 3D cabin, Russo One / Big Shoulders | Red Skies |
 
 **Open space** (observations, not decisions; Kelbo picks):
 
@@ -765,22 +712,20 @@ Pick the source that matches your stack.
 
 | Need | Best source | Path | Notes |
 | --- | --- | --- | --- |
-| Save code, classic JS | Red Skies | `src/savecode.js` | Smallest and easiest to lift; needs only load/save/remove helpers. `RS1:` shape = LZW + base64url + 6-char checksum. |
 | Save code + backup file + persist + reminder, classic JS | Prairie Engine Works / Escapement / Scrapline | `src/app/savecode.js` + `check-savecode.js` | Atomic restore and node tests with a pretend localStorage. Tied to `S`, `snapshot`/`hydrate`. |
 | Compressed save + crash freeze, TypeScript | Season Ticket | `src/game/save.ts`, `saveKey.ts`, `saveCheck.ts` | fflate zlib, 60 MB inflate cap, a backup slot, saving frozen after a crash. |
 | Save-safety UI on its own | Season Ticket | `src/ui/career/saveSafety.ts` | Persist, backup file via share sheet, reminder; imports only a JSON config. |
 | IndexedDB slots with localStorage fallback | Frontier Lab | `src/sim/save/slotData.ts` | Migrations and `persist()`. |
 | Slice build with checks + service worker | Prairie Engine Works (also Escapement, Scrapline) | `build.js` + `src/manifest.txt` | Zero dependencies; `--check` catches stale output, compile errors and duplicate functions; content-hashed cache name. Change the prefix. |
-| Inline build with an order check | Red Skies | `build.js` | Inlines vendored three.js and modules into one page. |
 | Graphics tiers + auto step-down | Prairie Engine Works | `src/app/perf.js` | Lite/Full/Ultra; drops a tier under about 27 fps for about 8 s. TS: Season Ticket `src/render/quality.ts`. |
 | PWA update bar, install, iOS tip | Prairie Engine Works | `src/app/pwa.js` | TS versions: Season Ticket `src/pwa/`, Frontier Lab `src/app/pwa/` (with a `?nosw` escape hatch). |
 | Loading screen with real progress | Prairie Engine Works | `#boot` in `src/html/head.html` | TypeScript: Season Ticket's inline loading screen in `index.html` + `src/ui/bootScreen.ts`. |
 | Seeded RNG with saveable state | The Whip | `src/sim/rng.js` | sfc32 seeded by cyrb128, no imports. Named streams per system: Frontier Lab `src/sim/rng.ts`. |
 | Deterministic maths (sin, cos, exp, log, pow) | Season Ticket | `src/sim/spatial/det.ts` | IEEE-exact ops only; its test scans for banned `Math` calls. Also Frontier Lab `src/sim/detmath.ts`. |
 | Daily and shared seeds | The Whip | `src/sim/modes.js` `dailySeed()` | |
-| Headless balance bot | The Whip `src/sim/bot.js` + `tests.html`; Red Skies `tools/balance.js`; Frontier Lab `scripts/balance.ts`; Scrapline `tools/fight-test.js` | | Pick by stack. |
+| Headless balance bot | The Whip `src/sim/bot.js` + `tests.html`; Frontier Lab `scripts/balance.ts`; Scrapline `tools/fight-test.js` | | Pick by stack. |
 | Sim test harness with named builds | Escapement | `tools/sim-test.js` | Cuts the sim block from the built page and runs it with `vm`; `--brief` for commit messages. |
-| Coach-card tour + tap-to-explain glossary | Escapement | `src/app/help.js` (`TUT`, `GLOSS`, `data-g`) | Also Red Skies `src/tutorial.js`. |
+| Coach-card tour + tap-to-explain glossary | Escapement | `src/app/help.js` (`TUT`, `GLOSS`, `data-g`) | |
 | Glossary tagging in rendered text | The Whip | `src/ui/gloss.js` + `data/glossary.json` | |
 | All UI text in data with `{slot}` filling | The Whip | `src/sim/fill.js`, `src/ui/text.js`, `data/strings.en.json` | |
 | Sheets the phone's Back button closes | Escapement | `openSheet` / `sheetHist` in `src/app/state.js` | |
@@ -791,11 +736,9 @@ Pick the source that matches your stack.
 | Metal materials, studio HDRI | Escapement | `src/vis/studio.js`, `src/vis/finish.js` | Perlage, Côtes de Genève, graining; cheap Lite path. |
 | Scripted Blender props (no Blender UI) | Escapement `tools/blender/`; Scrapline `tools/blender-*.py`; Lombard bake in Actions | | Commit the `.glb` output. |
 | glTF packer for phones | Prairie Engine Works | `tools/pack-model.py` | Shrinks textures, quantizes vertices; needs Pillow and numpy. |
-| Home-screen icons from an SVG | PEW / Red Skies / Escapement | `tools/make-icons.js` | Needs Playwright. |
+| Home-screen icons from an SVG | PEW / Escapement | `tools/make-icons.js` | Needs Playwright. |
 | Instanced crowds of jointed figures | The Whip | `src/body.js`, `src/figures.js`, `src/motion.js` | A full House in about 11 draw calls. |
 | Camera framing around a bottom sheet | The Whip | `src/framing.js` | Portrait sheet or landscape side panel. |
-| DOM panels projected onto 3D screens | Red Skies | `src/cabin.js` | CSS `matrix3d`. |
-| Procedural military models, no textures | Red Skies | `src/models_ground.js` and friends | |
 | Procedural modular stadium, instanced crowd | Season Ticket | `src/render/stadium/` | |
 | GPU weather particles | Season Ticket `src/render/match/weather.ts`; The Whip `src/weatherFx.js` | | |
 | Engraved isometric city map | Frontier Lab | `src/art/isoRenderer.ts` + `chunkGrid.ts` | With `pixelLru.ts` for iOS canvas memory. |
@@ -810,7 +753,6 @@ Pick the source that matches your stack.
 | SVG crest builder | Season Ticket | `src/ui/views/career/crest.ts` | |
 | First-load size budget check | Season Ticket | `scripts/check-first-load.mjs` | |
 | Every asset credited, tested | Season Ticket | `tests/credits.test.ts` | Writes `CREDITS.md`. |
-| Procedural audio: SFX and haptics | Red Skies | `src/audio.js`, `src/audio_weapons.js` | |
 | Engine voice from the build | Prairie Engine Works | `src/sound/profile.js`, `synth.js`, `samples.js` | |
 | Watch tick at any beat rate | Escapement | `src/sound/tick.js` | 53 lines, standalone. |
 | Haptics pattern table | The Whip | `src/haptics.js` | |
@@ -845,11 +787,11 @@ of them has it.
 
 Each is a pitch for Kelbo, not a plan. Repo names in brackets.
 
-1. **Fix brand drift** (The Whip, Season Ticket, Frontier Lab,
-   Red Skies): official logo files, the five colours, and the
+1. **Fix brand drift** (The Whip, Season Ticket, Frontier Lab):
+   official logo files, the five colours, and the
    `© <year> Kelbo / Longlight Interactive` line on splash and credits (section 3).
 2. **Offline for every installed game**: add a service worker and self-host
-   fonts (The Whip, Red Skies' title fonts). PEW,
+   fonts (The Whip). PEW,
    Escapement and Scrapline show the pattern.
 3. **Cache cleanup on the shared origin**: done for the studio site on
    7 November 2026 (section 5). Check each game's service worker follows the
@@ -857,7 +799,7 @@ Each is a pitch for Kelbo, not a plan. Repo names in brackets.
 4. **Deterministic maths everywhere replays or shared codes matter**: Season
    Ticket's `det.ts` could become the studio standard (Scrapline replays, Season
    Ticket world generation for new careers).
-5. **Daily seeds** from The Whip for Red Skies' Free watch and Survival, Frontier
+5. **Daily seeds** from The Whip for Frontier
    Lab challenge codes, Scrapline "beat my bot" codes.
 6. **One save-code shape**: The Whip's export is uncompressed base64 with no
    prefix or checksum; move it to the LZW + base64url + checksum shape under a
@@ -868,7 +810,7 @@ Each is a pitch for Kelbo, not a plan. Repo names in brackets.
    the right version (Scrapline still shows 0.1.12.0; others drift too).
 9. **Tidy stray screenshots committed by accident**: Scrapline `undefined/`.
 10. **Docs drift**: several CLAUDE.md files quote older versions or counts
-    (PEW, Red Skies, Season Ticket, Escapement). A docs refresh each release
+    (PEW, Season Ticket, Escapement). A docs refresh each release
     keeps sessions from trusting stale numbers.
 11. **Lombard offline**: Lombard has no service worker yet. Add one with a
     `lombard-` cache prefix (PEW's pattern, or Season Ticket's for a Vite build).
