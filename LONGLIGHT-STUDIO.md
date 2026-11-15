@@ -1,12 +1,21 @@
 # Longlight Interactive: studio catalogue
 
-> **Snapshot: 7 November 2026.** One reference file for every Longlight game.
+> **Snapshot: 7 November 2026** (Quench added 11 November). One reference file for every Longlight game.
 > The same file is dropped into each game repo. Versions and details drift;
 > when something matters, check the live repo. A game's own `CLAUDE.md` always
 > wins over this file inside that game's repo.
 >
-> **Public edition.** It covers the ten games on the studio site and leaves
-> out Kelbo's private and parked repos. Ask Kelbo about those.
+> **Public edition.** It covers the nine games in the studio site's
+> `projects.json` and leaves out Kelbo's private and parked repos. Ask Kelbo
+> about those.
+>
+> **Only six are listed on the site.** Since 11 November 2026 Escapement
+> and The Whip carry `"hidden": true` in `projects.json`:
+> no card, no game page, no devlog or release lines. Their repos and live
+> games stay up, and everything in this file still applies to them. The
+> listed six are Prairie Engine Works, Season Ticket, Scrapline, Lombard,
+> Frontier Lab and Red Skies. Quench, the newest game, was added hidden on
+> the same day and stays hidden until Kelbo says to show it.
 
 ---
 
@@ -50,19 +59,18 @@ Every game is a public repo under **github.com/Jxstrr0**, served by GitHub Pages
 on its own subdomain of **longlight.games** (November 2026; the old
 `https://jxstrr0.github.io/<Repo>/` addresses forward there).
 
-| Game | Repo | Live |
-| --- | --- | --- |
-| Prairie Engine Works | [Jxstrr0/350Chev](https://github.com/Jxstrr0/350Chev) | https://pew.longlight.games/ |
-| Lombard | [Jxstrr0/Lombard](https://github.com/Jxstrr0/Lombard) | https://lombard.longlight.games/ |
-| Escapement | [Jxstrr0/Escapement](https://github.com/Jxstrr0/Escapement) | https://escapement.longlight.games/ |
-| Scrapline | [Jxstrr0/Scrapline](https://github.com/Jxstrr0/Scrapline) | https://scrapline.longlight.games/ |
-| Ink | [Jxstrr0/Ink](https://github.com/Jxstrr0/Ink) | https://ink.longlight.games/ |
-| Station Keeper | [Jxstrr0/StationKeeper](https://github.com/Jxstrr0/StationKeeper) | https://stationkeeper.longlight.games/ |
-| Season Ticket | [Jxstrr0/SeasonTicket](https://github.com/Jxstrr0/SeasonTicket) | https://seasonticket.longlight.games/ |
-| Frontier Lab | [Jxstrr0/FrontierLab](https://github.com/Jxstrr0/FrontierLab) | https://frontierlab.longlight.games/ |
-| The Whip | [Jxstrr0/The-Whip](https://github.com/Jxstrr0/The-Whip) | https://thewhip.longlight.games/ |
-| Red Skies | [Jxstrr0/RedSkies](https://github.com/Jxstrr0/RedSkies) | https://redskies.longlight.games/ |
-| Studio site | [Jxstrr0/Kelbo.Website](https://github.com/Jxstrr0/Kelbo.Website) | https://longlight.games/ |
+| Game | Repo | Live | On the site |
+| --- | --- | --- | --- |
+| Prairie Engine Works | [Jxstrr0/350Chev](https://github.com/Jxstrr0/350Chev) | https://pew.longlight.games/ | Listed |
+| Lombard | [Jxstrr0/Lombard](https://github.com/Jxstrr0/Lombard) | https://lombard.longlight.games/ | Listed |
+| Escapement | [Jxstrr0/Escapement](https://github.com/Jxstrr0/Escapement) | https://escapement.longlight.games/ | Hidden |
+| Scrapline | [Jxstrr0/Scrapline](https://github.com/Jxstrr0/Scrapline) | https://scrapline.longlight.games/ | Listed |
+| Season Ticket | [Jxstrr0/SeasonTicket](https://github.com/Jxstrr0/SeasonTicket) | https://seasonticket.longlight.games/ | Listed |
+| Frontier Lab | [Jxstrr0/FrontierLab](https://github.com/Jxstrr0/FrontierLab) | https://frontierlab.longlight.games/ | Listed |
+| The Whip | [Jxstrr0/The-Whip](https://github.com/Jxstrr0/The-Whip) | https://thewhip.longlight.games/ | Hidden |
+| Red Skies | [Jxstrr0/RedSkies](https://github.com/Jxstrr0/RedSkies) | https://redskies.longlight.games/ | Listed |
+| Quench | [Jxstrr0/Quench](https://github.com/Jxstrr0/Quench) | https://quench.longlight.games/ | Hidden |
+| Studio site | [Jxstrr0/Kelbo.Website](https://github.com/Jxstrr0/Kelbo.Website) | https://longlight.games/ | — |
 
 Kelbo's private and parked repos are not covered here (section 11).
 
@@ -97,7 +105,7 @@ block on a credits or about screen, and any link back to the studio site.
 | Studio link | https://longlight.games/ |
 
 Some games chose the Longlight colours as their own in-game look too (Prairie
-Engine Works, Scrapline, Station Keeper, Lombard's menus). That's their
+Engine Works, Scrapline, Lombard's menus). That's their
 choice, not a rule.
 
 **Brand drift found in this snapshot** (good small fixes to pitch):
@@ -107,7 +115,6 @@ choice, not a rule.
 | The Whip | `longlightMark()` in `src/ui/text.js`, the loading mark and the favicon are a hand-drawn sun; `--brand #6c46b5` and `--brand-paper #e1ded5` are off-palette. |
 | Season Ticket | `src/ui/brand.ts` and `public/icons/` use older colours (purple `#6F45B8`, copper `#C2826A`, ink `#1C1820`, paper `#E1DED7`); no `©` line anywhere. |
 | Frontier Lab | Title, boot and credits say only "A Longlight Interactive game": no logo, no `©` line. |
-| Station Keeper | Same: no logo, no `©` line, no studio link. No CLAUDE.md or brand section. |
 | Red Skies | Credit is text only ("A GAME BY LONGLIGHT INTERACTIVE"); old names "Weapons Hold" and "Prairie Blue Studio" linger in file headers and `dist/` names. |
 
 ---
@@ -162,12 +169,11 @@ cost nothing, keep old copies apart, and let a game move again safely.
 | Lombard | `lombard.*` (settings) + IndexedDB database `lombard` (careers) | none (no service worker yet; use `lombard-` when one is added) | `LMB1.` (dots, not a colon: `LMB1.<data>.<checksum>`) |
 | Escapement | `esc-save`, `esc-slot1..3` | `esc-` | `ESC1:` (next `ESC2:`) |
 | Scrapline | `scr-save`, `scr-slot1..3` | `scr-` | `SCR1:` (next `SCR2:`) |
-| Ink | `ink-save`, `ink-slot1..3` | `ink-` | `INK1:` |
-| Station Keeper | `stationkeeper.*` | none (no service worker) | `SK1:` |
 | Season Ticket | `seasonticket.*` | build-time service worker | `ST1:` |
 | Frontier Lab | `frontierlab.*` + IndexedDB `frontierlab` | content-hash name | `FL<schema>:` |
 | The Whip | `whip:*`; sessionStorage `whip:backup-reminded` | none (no service worker) | no prefix: plain base64 JSON (see profile) |
 | Red Skies | `redskies.v1.*` | none (no service worker) | `RS1:` |
+| Quench | `quench.*` | `quench-` | `QNC1:` |
 
 > **Fixed on 7 November 2026:** the studio site's `sw.js` used to delete every
 > cache that wasn't its own when it updated, which wiped the games' offline
@@ -180,19 +186,21 @@ cost nothing, keep old copies apart, and let a game move again safely.
 
 Status is Kelbo's label on the studio site (`projects.json`); version is what
 the repo's code says on 7 November 2026. Order is Kelbo's own ranking.
+**Hidden** marks the two games taken off the site on 11 November 2026
+(`"hidden": true`); they are still live at their own addresses. Quench is
+new and hidden until Kelbo says to show it.
 
 | Game | Status | Version | Genre | Setting | Screen | Stack |
 | --- | --- | --- | --- | --- | --- | --- |
 | Prairie Engine Works | Released | 1.76.78.0 | Engine builder, dyno, ten race events, race-team career | Prairie engine shop (Saskatoon) | Phone, both ways; desktop layout | Classic JS + `build.js`, three r128 (CDN) |
 | Lombard | In development (site); repo shipped 1.0.0.0 on 6 Nov | 1.0.0.0 | First-person pawn shop sim: inspect, appraise, haggle; a crime layer | Mostograd, a 2010s Russian river city | Portrait first | TypeScript, Vite, three 0.187 (npm) |
-| Escapement | Prototype | 1.0.2.3 | Watchmaking career: build, regulate, certify, sell | The Haldis, Velmark (alpine, 2000–2030) | Portrait (side by side in landscape) | Classic JS + `build.js` (PEW stack), three r128 |
+| Escapement | Prototype, **hidden** | 1.0.2.3 | Watchmaking career: build, regulate, certify, sell | The Haldis, Velmark (alpine, 2000–2030) | Portrait (side by side in landscape) | Classic JS + `build.js` (PEW stack), three r128 |
 | Scrapline | In development | 0.1.16.2 | Combat-robot builder, arena fights, career | Velmark and the Haldis (shared with Escapement) | Portrait (side by side in landscape) | Classic JS + `build.js` (PEW stack), three r128 |
-| Ink | Prototype | 0.1.15.1 | Tattoo artist career: consult, design, tattoo, heal, see it age | Mostograd (shared with Lombard), 2000–2030 | Portrait (landscape layout too) | Classic JS + `build.js` (PEW stack), three r128 |
-| Station Keeper | In development | 0.1.2.0 | Space-station tycoon, cascading systems | Real low Earth orbit, 2041–2045 | Any | TypeScript, Vite, three 0.187 |
 | Season Ticket | Released | 1.1.2.0 | Football club owner/GM with live tactics | Valmere, a fictional northern republic | **Landscape** | TypeScript, Vite, three 0.186 |
 | Frontier Lab | In development | 0.1.63.0 | AI-lab tycoon (fork of Vault Street) | Real cities on procedural maps | Portrait | TypeScript, Preact, 2D canvas/SVG |
-| The Whip | Released | 1.0.0.0 | Political career: votes, deals, whip | Dominion of Caledor (Westminster) | Portrait first | ES modules, no build, three 0.160 (CDN) |
+| The Whip | Released, **hidden** | 1.0.0.0 | Political career: votes, deals, whip | Dominion of Caledor (Westminster) | Portrait first | ES modules, no build, three 0.160 (CDN) |
 | Red Skies | Complete | 1.6.1.0 | SAM air-defence: identify, hold fire | Republic of Varenna | **Portrait only** | Plain JS + inline build, three r128 vendored |
+| Quench | Polishing, **hidden** | 1.0.0.0 (11 Nov) | Bladesmithing: heat, hammer, grind, quench, temper, trial | Aldersay, the Skerrow Isles (present day) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 
 Studio site trading projects (not games): Pre-market brief, AI Trading Journal,
 Agent Fleet.
@@ -259,7 +267,7 @@ are as of this snapshot.
   - Wider systems: 5 specialists on retainer; a crime layer (police heat and Detective Volkova, mob protection, a fence); 8 story arcs plus specialist arcs and 20 regular threads; upgrades; an appraiser hire.
   - Endings: retire from day 90 or hit a forced ending. One of 19 ending titles is picked from 4 hidden axes, then a newspaper epilogue and a card for each character.
 - **Setting and tone:**
-  - Place: Mostograd, a fictional St Petersburg-like river city, shared with Ink. The shop is on Kanatnaya Street in the Kanal district.
+  - Place: Mostograd, a fictional St Petersburg-like river city. The shop is on Kanatnaya Street in the Kanal district.
   - Time and money: the career starts 2014-03-03; money is rubles (₽).
   - The default shop name is "Lombard No. 7" (the player can rename it). The player has no name or face.
   - Tone: warm slice-of-life with dark-comedy edges; the crime is grounded. Some signage is in Cyrillic.
@@ -326,8 +334,7 @@ are as of this snapshot.
   - A `lombard-` service worker so installed copies work offline.
   - Walk-outs who come back later with the remembered offer, and standing that sets the daily customer count.
   - Temperament idles as haggle tells.
-  - A shareable ending card (the `share.js` pattern from Escapement and Ink).
-  - Tattoo machines brought in by someone from Sedov's (a crossover with Ink).
+  - A shareable ending card (the `share.js` pattern from Escapement).
 
 ### Escapement
 
@@ -424,109 +431,6 @@ are as of this snapshot.
   - A team post-mortem.
   - Delete `undefined/` and add a studio link.
 
-### Ink
-
-- **Status:** the site shows "Prototype" 0.1.0.0; the repo is at 0.1.15.1 (`const VERSION` in `src/app/state.js`). Every item in `docs/INK-PLAN.md` (PR 0–10) is ticked; no 1.0 has been declared. Playable and live.
-- **Pitch:** a tattoo artist career. Start as an apprentice sweeping floors in Mostograd and finish with a two-year waiting list and a body of work that has aged on clients who keep coming back: "the canvas remembers".
-- **Loop:** Consult → Design → Stencil → Session → Heal → Years later. Career › Next moves the week on.
-  - Consult: a 3–5 line chat that reveals must-haves and dealbreakers ("ID checked, 18+").
-  - Design: a board of 135 curated SVG elements in 9 styles over 26 placements, with live ▲/▼ scores (readability, flow, skin contrast, fit) and an aging preview. No freehand drawing.
-  - Session: trace the stencil at a target pace; shading and colour are hold-and-swipe meters; pain, fatigue and breaks. A kit build (machine, needles, inks, voltage).
-  - Heal: the reveal comes two weeks later.
-  - Results: reviews, loyalty, and 3 reputation tracks (walk-ins, peers, collectors).
-  - Career in 4 acts: apprentice (years 0–3, which doubles as the tutorial), rented chair (3–8), your own studio with build-out and staff (8–20), legacy (20–30).
-  - Events: conventions, guest spots, rivals, social media from 2016, cover-ups, once-per-career reckonings, a TV offer, and a Legacy screen at year 30.
-  - Going broke sends you back to a rented chair; there's no game over.
-- **Setting and tone:** Mostograd, shared with Lombard, 2000–2030. Rubles, with a `PRICE_INDEX` inflation curve. "A working shop, not dark comedy": no crime or mob. Every client is an adult.
-- **Look:** "warm studio light, black ink on a cream board, hand-lettered signage, not neon".
-  - Scenes: a 3D studio (5 rooms by career stage) with a seated stylised mannequin wearing the tattoos as UV decals, plus a 2D SVG design board and body diagram.
-  - Fonts: Space Grotesk 400/500/700 (UI) and Oswald 500/600 (flash headers), from Google Fonts.
-  - Dark: bg `#17130f`, panels `#211c17` / `#2b241d`, line `#3b3229`, text `#f2ebdd`, mute `#a39a8b`. Accents: red `#c8553d` / `#e06a50`, teal `#3f8f86`, gold `#d9a441`. Board `#f3ead8` with ink `#16120e`.
-  - Light: bg `#f4efe6`, panel `#fffaf1`, text `#1c1813`, red `#b3432c`.
-  - Theme: dark, light or auto; the board stays cream in both.
-- **Platform:** phone portrait, with a landscape layout for short screens.
-  - Five bottom tabs: Studio, Design, Session, Clients, Career.
-  - Touch first: trace, drag, pinch, and drag the stencil onto the 3D body. Handedness and assist settings.
-  - The 3D draws only when something changes, capped at 30 fps on Lite.
-- **Stack:** the PEW shape. `INK_SIM` (runs in node), `INK_VIS` and `src/app/`.
-  - `build.js` writes `index.html` (about 944 KB) and `sw.js`.
-  - three r128 from cdnjs. GLTFLoader for Full/Ultra comes via `INK_LIBS`.
-  - Checks: `node build.js --check`, `node check-savecode.js`, `node tools/sim-test.js`, `node tools/session-test.js`, `node tools/element-sheet.js`.
-- **Saves:** `ink-save`, `ink-slot1..3`; caches start `ink-`.
-  - Code `INK1:` (LZW with 9–16-bit codes, base64url, a 6-character checksum). Restore writes all keys or none, with a rollback.
-  - Backup file `ink-backup-YYYY-MM-DD.txt`; `persist()` is asked on save.
-  - Tattoos are saved as parameters, never as images; old clients are compacted past `CLIENT_CAP` 200.
-  - A year-30 save is about 1.5 MB of JSON, or a 0.9 MB code.
-  - `S.bkAt` is saved, but no reminder bar reads it yet.
-- **Audio:** a Web Audio synth (`src/sound/synth.js`) with a buzz for each machine; its pitch follows your pace and it stutters when you rush. Two Kenney CC0 samples for taps and important toasts.
-- **Reusable:**
-  - The body: `src/vis/body.js` + `decals.js` + `assets.js` (a coded mannequin with one UV island per zone, decal compositing, and real models swapped in on Full/Ultra with a silent fallback); `src/app/bodymap.js` (the SVG body diagram).
-  - Sim: `src/sim/aging.js` (the ink aging model); `src/sim/rng.js` (seeded, with fork).
-  - Sharing and help: `src/app/share.js` (1080×1350 share cards, `shSave`); `src/app/help.js` (spotlight tips that show once each).
-  - Sound: `src/sound/synth.js`.
-  - Blender: `tools/blender/` (`mannequin.py`, `props.py`, `check_mannequin.py`) + `tools/pack-model.py` (with a triangle budget).
-  - Tests and tools: `tools/sim-test.js` (with an `advanceWeek` timing check under 50 ms); `tools/element-sheet.js` (validates the SVG library and renders a contact sheet).
-  - Shared with the PEW line: `build.js`, `savecode.js`, `perf.js`, `#boot`.
-- **Names:**
-  - Mentor: Arkady Lvovich Sedov and his shop, Sedov's on Kanatnaya Street.
-  - Rival shops: Seventh Bridge Tattoo, the Grey Heron (Lodochnaya Embankment), Atelier Nochnoy (Kanatnaya Street), Konveyer (outer ring).
-  - The scene: the Mostograd Tattoo Guild and its Drawbridge Prize; the *Kontur* quarterly; the Mostograd Tattoo Fair at the old port warehouses.
-  - The studio sign reads ИГЛА ("needle").
-  - Client names are procedural, from `NAMES` in `src/sim/clients.js`.
-- **Gaps:**
-  - Rib pieces are partly hidden in the seated pose; a raised-arm pose is pending.
-  - The Blender models are scripted first versions.
-  - The plan has no open questions left, so the next step is unclear.
-  - The backup reminder isn't wired up.
-- **Pitches:**
-  - Port Lombard's 14-day reminder and storage line (`S.bkAt` already exists).
-  - Shrink the 0.9 MB save code (deflate via `CompressionStream`; ask Kelbo first).
-  - A shop ambience loop using Lombard's crossfade engine.
-  - A once-per-career spring flood that matches Lombard's canon.
-  - Check the dates on `RECKONINGS.pawn`: it fires from 2010, but Lombard's player only takes over the shop in 2014.
-  - A raised-arm pose for rib pieces.
-
-### Station Keeper
-
-- **Status:** In development, 0.1.2.0 (`GAME_VERSION` in `src/version.ts`). **There's no CLAUDE.md**; read `docs/STATUS.md`.
-- **Pitch:** a commercial space-station tycoon where one failing system drags down the others.
-- **Loop:**
-  - Time: 1 sim tick per game minute, and a 92.6-minute orbit with an eclipse.
-  - Power: tiered load shedding.
-  - Building: 12 module types, a 6-hour delivery wait, and a forecast.
-  - Upkeep: cooling, life support, wear, crew.
-  - Money: guests, research contracts, a loan.
-  - Five postings, then Company mode (endless).
-- **Setting and tone:** real low Earth orbit, 2041–2045. Money as `$x.xM`. The company is Longlight Orbital. Stations: Longlight One, Kittiwake Outpost, Halyard Sunward, Saltglass Rest, Velvet Reach.
-- **Look:** a shader Earth and grey-box modules. Font: Space Grotesk (Google Fonts).
-  - Palette: bg `#141413`, surface `#1c1b19`, card `#1f1e1b`, line `#2e2c28`, text `#faf9f5`, muted `#a8a49b`, clay `#d97757`, lilac `#b48ce8`, purple `#7b3fc4`. Extras: `#e6b48c`, `#ff5a3c`, `#f4d27a`.
-  - Dark only.
-- **Stack:** TypeScript strict, Vite ~8.3.6, three ~0.187, Vitest, and ESLint (which bans three.js and the DOM in `src/sim`). A deploy workflow. No service worker.
-- **Saves:** `stationkeeper.*`.
-  - Code `SK1:`: base64url JSON (uncompressed) + an FNV checksum (`src/backup.ts`).
-  - Backup file `station-keeper-backup-YYYY-MM-DD.txt`.
-  - `tutorial` and `hudCompact` are missing from `BACKUP_KEYS`.
-- **Audio:** synth only (`src/audio/sound.ts`).
-- **Reusable:**
-  - Sim: `src/sim/network.ts` (a tiered resource solver, about 140 lines); `src/sim/orbit.ts`; `fork()` + `src/sim/forecast.ts`; `src/sim/warnings.ts`.
-  - 3D: `src/view/earth.ts`, `camera.ts`, `detail.ts` (`mergeStatic`), `wear.ts`, `sparks.ts`.
-  - Saves: `src/backup.ts`, `storageCare.ts`, `slots.ts`.
-  - UI: `src/ui/bootScreen.ts` (with `compileAsync`), `helpSheet.ts`, `src/tutorial.ts` + `src/ui/coach.ts`, `photoBar.ts` + `download.ts`.
-  - Company mode: `src/company/*`.
-- **Names:**
-  - Sponsors: Halvorsen Biologics, Kestrel Materials, Northmere Agricultural Institute, Lumen Fibreworks, Aster Coast Space Agency, Calder Medical Research Trust.
-  - Crew: Ines Varga, Tomas Okafor, Mei Lindqvist, Dara Quinlan, Sefa Moana, Hugo Albrecht, Marguerite Osei, Pavel Rasmussen, Delphine Achebe, Rory Szabo, Ottilie Brandvold, Kwame Ashdown.
-- **Gaps:**
-  - Testing: no phone playtest yet.
-  - Balance: checking in every 12 hours tends to lose; the interest wording is unclear.
-  - Tidying: `public/models` is empty; a `pp/` screenshot folder is committed.
-  - Brand: no © line or studio link.
-- **Pitches:**
-  - A service worker and a self-hosted font.
-  - An "away mode" for long gaps between check-ins.
-  - A crew-morale posting.
-  - Modules scripted in Blender.
-  - A CLAUDE.md with the brand section, and a fix for `BACKUP_KEYS`.
 
 ### Season Ticket
 
@@ -723,6 +627,17 @@ are as of this snapshot.
   - Settle salvo MISS and add attacker ids.
   - A docs sync, the press-kit logo, and new wording for the real "Pantsir" mentions in comments.
 
+### Quench
+
+- **Status:** the site's label is "Polishing"; 1.0.0.0 on 11 November 2026 (`VERSION` file). Every stage of its plan is built (`docs/QUENCH-PLAN.md` section 13, PR 0 to PR 13); `docs/STATUS.md` says where it stands and holds the tuning questions still open. Not yet played by a person, so tuning carries on as 1.0.x. Hidden on the studio site until Kelbo says otherwise.
+- **What is in it:** Free forge, a Career through the Guild ratings with knives and swords as one thread, a Collection of kept blades with share cards, san-mai and pattern-welded billets from Journeyman, a daily commission (one bar a day, a UTC day, the same for everyone, no server), offline play and install, a crash card that keeps the save safe, and `npm run sim` bot smiths for balance.
+- **Pitch:** a bladesmithing game. Heat a bar, read its colour, hammer it to shape, grind it, harden it in the quench, temper it, then find out at the trial what you really made.
+- **Setting and tone:** Aldersay, a harbour town on the invented Skerrow Isles, present day. Money is the Skerrow crown (`kr`). No fantasy, no combat, no gore: blades are tools, sport cutting pieces and collector pieces. Steel grades are real generic standards (1084, 5160, W2).
+- **Look:** chalk and slate, Zilla Slab and Atkinson Hyperlegible, a heat-colour ramp. Reading heat always has a non-colour path.
+- **Stack:** TypeScript (strict), Vite, three.js 0.187 from npm, plain DOM UI, Vitest. Pages from Actions, `base: './'`. Much of the setup is adapted from Lombard.
+- **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic: seeded RNG, fixed step, its own `det.ts` maths, every number in a table. Names live in `docs/NAMES.md`.
+- **Saves:** localStorage `quench.*`, caches `quench-`, save code `QNC1:`.
+
 ---
 
 ## 8. Names already taken
@@ -736,59 +651,50 @@ noted, so a repeated name reads as a mistake.
 | World | Games |
 | --- | --- |
 | Velmark, an alpine country; the Haldis valley (money in euros) | Escapement, Scrapline (one shared world on purpose) |
-| Mostograd, a fictional 2010s Russian river city; rubles | Lombard, Ink (one shared world on purpose) |
+| Mostograd, a fictional 2010s Russian river city; rubles | Lombard |
 | The prairie, Saskatoon | Prairie Engine Works, the studio site's sky |
 | Valmere (Valmeran dollar), Kestrel Football League | Season Ticket |
 | Dominion of Caledor, capital Ostrava | The Whip |
+| Aldersay, a harbour town on the Skerrow Isles; Skerrow crown (`kr`) | Quench |
 | Republic of Varenna, battery and airbase Kessel | Red Skies |
-| Real low Earth orbit | Station Keeper |
 | Real world cities on procedural maps | Frontier Lab |
 
 **Names used in more than one game** (already clashing; avoid adding more):
 
 | Name | Where |
 | --- | --- |
-| **Kestrel** | Season Ticket (Kestrel Football League), The Whip (Kestrel Isle province), Red Skies (Kestrel hostile jet), Frontier Lab (Kestrel model family), Station Keeper (Kestrel Materials sponsor). **Retire it.** |
+| **Kestrel** | Season Ticket (Kestrel Football League), The Whip (Kestrel Isle province), Red Skies (Kestrel hostile jet), Frontier Lab (Kestrel model family). **Retire it.** |
 | **Kessel / Kessler** | Red Skies (battery and airbase Kessel), Escapement (Kessel Peak Observatory and Trial; rival Kessler), Scrapline (rival Rudi Kessler) |
 | **Harbourline** | Season Ticket (Harbourline Bank), Frontier Lab (Harbourline AI, Harbourline Policy Group) |
 | **Hollis** | Prairie Engine Works (Hollis Hot Rods, Dale Hollis), Frontier Lab (Hollis Crane & Co.) |
 | **Harrow** | Red Skies (Harrow missile), The Whip (Harrow Point riding) |
 | **Lantern** | Red Skies (Lantern hostile aircraft), The Whip (Lantern Island riding), Frontier Lab (Lantern model family) |
-| **Halyard** | Station Keeper (Halyard Sunward station), Frontier Lab (Halyard model family) |
 | **Sable, Ember, Kite** | Red Skies (stores), Frontier Lab (Sable and Ember models, Kite 350 jet) |
 | **Corvid** | Prairie Engine Works (sponsor), Frontier Lab (Corvid 600 jet) |
 | **Tidewater** | The Whip (province), Prairie Engine Works (Tidewater Diesel & Marine), Frontier Lab (Tidewater AI) |
 | **Northwind** | Prairie Engine Works (Northwind Tyre), Frontier Lab (Northwind & Pike) |
 | **Courier** | Season Ticket (*The Valmere Courier*), The Whip (Valmont Courier) |
 | **Ledger** | The Whip (*The Ostrava Ledger*), Frontier Lab (the Ledger archive) |
-| **Ottilie Brandt / Brandvold** | Scrapline (rival Ottilie Brandt), Station Keeper (crew Ottilie Brandvold) |
 | **Ostrander** | Escapement (rival Ostrander Frères and staff Mette Ostrander) |
 | **V-countries** | Velmark, Varenna, Valmere, Valmont (a Whip province): four invented places that sound alike. Pick another starting letter. |
 | **"Prairie"** | Prairie Engine Works, Prairie Open Models and Prairie State (Frontier Lab), Prairie Junction (Season Ticket) |
 | **Nimbus** | Lombard (Nimbus game consoles), Frontier Lab (Nimbus Labs, Nimbus Health) |
-| **Heron** | Prairie Engine Works (Blue Heron sponsor), Ink (the Grey Heron rival shop) |
 
 Each game's full name lists are in its profile under **Names**.
 
 **Shared worlds: who owns the canon**
 
-Two worlds are shared on purpose. One game owns each; the other borrows from
-it and must not contradict it. Check the owner's file before adding a place,
+A game owns each world below; any game that borrows from it must not
+contradict it. Check the owner's file before adding a place,
 date or institution.
 
 - **Mostograd** (Lombard owns it): Lombard `docs/01-GDD.md`, the **Setting**
   and **Brands** sections.
-  - Shared places so far: Kanatnaya Street (Kanal district), the Old Bridge,
-    Lodochnaya Embankment, the Seventh Bridge, the outer ring, the port.
-  - Lombard only: the Lion Bridge, the Kupetsky drawbridge (opens 1:25 to
+  - Places: Kanatnaya Street (Kanal district), the Old Bridge,
+    Lodochnaya Embankment, the Seventh Bridge, the outer ring, the port,
+    the Lion Bridge, the Kupetsky drawbridge (opens 1:25 to
     4:50), Sennaya market, the Sukhov Canal; the paper *Вечерний Мостоград /
     Evening Mostograd*; one spring flood each career, in April.
-  - Ink's additions (2000 to 2030): the Mostograd Tattoo Guild, the
-    Drawbridge Prize (week 48), Kontur, the Mostograd Tattoo Fair, four rival
-    shops, the ИГЛА sign.
-  - The one cross-reference so far is Ink's `RECKONINGS.pawn` (a pawn-shop
-    event). It fires from 2010, but Lombard's player only takes the shop over
-    in 2014, so keep it vague (no owner's name) or move it.
 - **Velmark and the Haldis** (Escapement owns it): Escapement
   `docs/DESIGN.md`, the **Setting** and **Money** lines (euros; Kessel Peak; the Haldis Chronometry Bureau). Scrapline borrowed the
   names only: its `CLAUDE.md` says not to read or follow the Escapement repo
@@ -802,8 +708,8 @@ date or institution.
 
 | Family | Games |
 | --- | --- |
-| Craft career: build or make something part by part, test it, compete or sell, in a workshop that grows | Prairie Engine Works (engines), Escapement (watches), Scrapline (combat robots), Ink (tattoos) |
-| Tycoon and management | Season Ticket (football club), Frontier Lab (AI lab), Station Keeper (space station), Lombard (pawn shop) |
+| Craft career: build or make something part by part, test it, compete or sell, in a workshop that grows | Prairie Engine Works (engines), Escapement (watches), Scrapline (combat robots), Quench (blades) |
+| Tycoon and management | Season Ticket (football club), Frontier Lab (AI lab), Lombard (pawn shop) |
 | Politics and negotiation | The Whip (parliament) |
 | Tense real-time sim | Red Skies (air defence) |
 
@@ -811,12 +717,12 @@ date or institution.
 
 - Almost every game is a **career on a weekly clock** ("act, then Close week").
 - Almost every game is **dark-themed** (slate, navy, felt, console green). Only
-  The Whip (cream paper) and the light themes of PEW, Escapement, Scrapline
-  and Ink break that.
+  The Whip (cream paper) and the light themes of PEW, Escapement and
+  Scrapline break that.
 - Most are **single-player management**; only Red Skies and Scrapline's
   fights are real-time action.
-- Four games share a near-identical classic-JS stack (PEW, Escapement,
-  Scrapline and Ink); the TypeScript games each set up their own.
+- Three games share a near-identical classic-JS stack (PEW, Escapement and
+  Scrapline); the TypeScript games each set up their own.
 - All four craft careers share a weekly clock, a workshop that grows and rival
   shops. A new craft game should change at least two of those.
 
@@ -828,11 +734,10 @@ date or institution.
 | Dark felt, brass and steel, Space Grotesk / JetBrains Mono | Escapement |
 | Longlight slate and clay workshop, Space Grotesk / JetBrains Mono | Scrapline |
 | Paper tags, receipts, worn plastic, Space Grotesk / IBM Plex Mono (Longlight menus) | Lombard |
-| Warm studio light, black ink on a cream board, red / teal / gold, Space Grotesk / Oswald | Ink |
-| Slate, ivory, clay and lilac over a shader Earth, Space Grotesk | Station Keeper |
 | Navy, gold and teal, system fonts, semi-realistic 3D | Season Ticket |
 | "Banknote Deco": engraved isometric map, Bodoni Moda / Public Sans | Frontier Lab |
 | "The Order Paper": cream paper, ink, stamps, Newsreader | The Whip |
+| Chalk and slate with a heat-colour ramp, Zilla Slab / Atkinson Hyperlegible | Quench |
 | Green radar console in a 3D cabin, Russo One / Big Shoulders | Red Skies |
 
 **Open space** (observations, not decisions; Kelbo picks):
@@ -854,15 +759,14 @@ date or institution.
 
 ## 10. Reuse map: where the best version of each system lives
 
-Paths are as of this snapshot. Classic-JS games (PEW, Escapement, Scrapline,
-Ink) share globals and one `S` state object; TypeScript games are modules.
+Paths are as of this snapshot. Classic-JS games (PEW, Escapement, Scrapline)
+share globals and one `S` state object; TypeScript games are modules.
 Pick the source that matches your stack.
 
 | Need | Best source | Path | Notes |
 | --- | --- | --- | --- |
 | Save code, classic JS | Red Skies | `src/savecode.js` | Smallest and easiest to lift; needs only load/save/remove helpers. `RS1:` shape = LZW + base64url + 6-char checksum. |
 | Save code + backup file + persist + reminder, classic JS | Prairie Engine Works / Escapement / Scrapline | `src/app/savecode.js` + `check-savecode.js` | Atomic restore and node tests with a pretend localStorage. Tied to `S`, `snapshot`/`hydrate`. |
-| Save code, TypeScript | Station Keeper | `src/backup.ts`, `src/storageCare.ts`, `src/slots.ts` | `SK1:` with FNV-1a checksum, all-or-nothing restore. Uncompressed; add LZW or fflate for big saves. |
 | Compressed save + crash freeze, TypeScript | Season Ticket | `src/game/save.ts`, `saveKey.ts`, `saveCheck.ts` | fflate zlib, 60 MB inflate cap, a backup slot, saving frozen after a crash. |
 | Save-safety UI on its own | Season Ticket | `src/ui/career/saveSafety.ts` | Persist, backup file via share sheet, reminder; imports only a JSON config. |
 | IndexedDB slots with localStorage fallback | Frontier Lab | `src/sim/save/slotData.ts` | Migrations and `persist()`. |
@@ -870,39 +774,33 @@ Pick the source that matches your stack.
 | Inline build with an order check | Red Skies | `build.js` | Inlines vendored three.js and modules into one page. |
 | Graphics tiers + auto step-down | Prairie Engine Works | `src/app/perf.js` | Lite/Full/Ultra; drops a tier under about 27 fps for about 8 s. TS: Season Ticket `src/render/quality.ts`. |
 | PWA update bar, install, iOS tip | Prairie Engine Works | `src/app/pwa.js` | TS versions: Season Ticket `src/pwa/`, Frontier Lab `src/app/pwa/` (with a `?nosw` escape hatch). |
-| Loading screen with real progress | Station Keeper | inline `#boot` in `index.html` + `src/ui/bootScreen.ts` | Shader warm-up and a download-failure catcher. Classic JS: PEW `#boot` in `src/html/head.html`. |
+| Loading screen with real progress | Prairie Engine Works | `#boot` in `src/html/head.html` | TypeScript: Season Ticket's inline loading screen in `index.html` + `src/ui/bootScreen.ts`. |
 | Seeded RNG with saveable state | The Whip | `src/sim/rng.js` | sfc32 seeded by cyrb128, no imports. Named streams per system: Frontier Lab `src/sim/rng.ts`. |
 | Deterministic maths (sin, cos, exp, log, pow) | Season Ticket | `src/sim/spatial/det.ts` | IEEE-exact ops only; its test scans for banned `Math` calls. Also Frontier Lab `src/sim/detmath.ts`. |
 | Daily and shared seeds | The Whip | `src/sim/modes.js` `dailySeed()` | |
 | Headless balance bot | The Whip `src/sim/bot.js` + `tests.html`; Red Skies `tools/balance.js`; Frontier Lab `scripts/balance.ts`; Scrapline `tools/fight-test.js` | | Pick by stack. |
 | Sim test harness with named builds | Escapement | `tools/sim-test.js` | Cuts the sim block from the built page and runs it with `vm`; `--brief` for commit messages. |
-| Coach-card tour + tap-to-explain glossary | Escapement | `src/app/help.js` (`TUT`, `GLOSS`, `data-g`) | Also Station Keeper `src/tutorial.ts` + `src/ui/coach.ts` (steps wait for the player), Red Skies `src/tutorial.js`. |
+| Coach-card tour + tap-to-explain glossary | Escapement | `src/app/help.js` (`TUT`, `GLOSS`, `data-g`) | Also Red Skies `src/tutorial.js`. |
 | Glossary tagging in rendered text | The Whip | `src/ui/gloss.js` + `data/glossary.json` | |
 | All UI text in data with `{slot}` filling | The Whip | `src/sim/fill.js`, `src/ui/text.js`, `data/strings.en.json` | |
 | Sheets the phone's Back button closes | Escapement | `openSheet` / `sheetHist` in `src/app/state.js` | |
 | "Where to fix it" jump | Escapement | `CERT_FIX` / `goFix` in `src/app/test.js` | Rings the control to change. |
 | Share a canvas (share sheet or download) | Escapement | `src/app/share.js` | 13 lines, standalone. |
 | Certificate and trophy cards | Escapement `src/app/cards.js`; PEW `src/app/rcard.js` (ghost curve, holographic tilt) | | |
-| Photo mode | Prairie Engine Works `src/app/photo.js` + `src/vis/photo.js`; Station Keeper `src/ui/photoBar.ts` | | |
+| Photo mode | Prairie Engine Works `src/app/photo.js` + `src/vis/photo.js` | | |
 | Metal materials, studio HDRI | Escapement | `src/vis/studio.js`, `src/vis/finish.js` | Perlage, Côtes de Genève, graining; cheap Lite path. |
-| Scripted Blender props (no Blender UI) | Escapement `tools/blender/`; Scrapline `tools/blender-*.py`; Ink `tools/blender`; Lombard bake in Actions | | Commit the `.glb` output. |
+| Scripted Blender props (no Blender UI) | Escapement `tools/blender/`; Scrapline `tools/blender-*.py`; Lombard bake in Actions | | Commit the `.glb` output. |
 | glTF packer for phones | Prairie Engine Works | `tools/pack-model.py` | Shrinks textures, quantizes vertices; needs Pillow and numpy. |
 | Home-screen icons from an SVG | PEW / Red Skies / Escapement | `tools/make-icons.js` | Needs Playwright. |
 | Instanced crowds of jointed figures | The Whip | `src/body.js`, `src/figures.js`, `src/motion.js` | A full House in about 11 draw calls. |
 | Camera framing around a bottom sheet | The Whip | `src/framing.js` | Portrait sheet or landscape side panel. |
 | DOM panels projected onto 3D screens | Red Skies | `src/cabin.js` | CSS `matrix3d`. |
 | Procedural military models, no textures | Red Skies | `src/models_ground.js` and friends | |
-| Shader Earth, no textures | Station Keeper | `src/view/earth.ts` | Clouds, city lights, atmosphere. |
-| Grime and scorch shader patch, GPU sparks | Station Keeper | `src/view/wear.ts`, `src/view/sparks.ts` | |
-| Canvas textures with bump maps, merged statics | Station Keeper `src/view/detail.ts` | | |
 | Procedural modular stadium, instanced crowd | Season Ticket | `src/render/stadium/` | |
 | GPU weather particles | Season Ticket `src/render/match/weather.ts`; The Whip `src/weatherFx.js` | | |
 | Engraved isometric city map | Frontier Lab | `src/art/isoRenderer.ts` + `chunkGrid.ts` | With `pixelLru.ts` for iOS canvas memory. |
 | Engraved portraits, guilloche, hatching | Frontier Lab | `src/art/portraits.ts`, `engrave.ts`, `guilloche.ts` | |
 | Preact charts | Frontier Lab | `src/app/components/LineChart.tsx`, `Donut.tsx`, `RadarRosette.tsx` | |
-| Resource network solver with load shedding | Station Keeper | `src/sim/network.ts` | Pure TS, about 140 lines. |
-| Run the sim ahead to preview a change | Station Keeper | `fork()` + `src/sim/forecast.ts` | |
-| Root-cause warnings | Station Keeper | `src/sim/warnings.ts` | |
 | Deterministic 2D physics fight + replay log | Scrapline | `src/sim/fight.js` | |
 | One input shape from stick, tap, keyboard, gamepad | Scrapline | `src/app/controls.js` | |
 | Sparks, flying parts, camera shake | Scrapline | `src/vis/fx.js` | |
@@ -931,10 +829,6 @@ Pick the source that matches your stack.
 | Scripted low-poly people | Lombard | `art/customers/build.py` | Blender script; commit the output. |
 | Quality tiers by render resolution + `?perf=1` overlay | Lombard | `src/render/perf.ts` | Auto steps down on the median frame rate. |
 | Loading screen | Lombard | `#loading` in `index.html` + `src/ui/loading.ts` | |
-| A body you can draw on (UV islands per limb) | Ink | `src/vis/body.js` + `src/vis/decals.js` | Code-built mannequin; ink drawn onto its skin texture with canvas. |
-| Tappable front/back body diagram | Ink | `src/app/bodymap.js` | SVG zones, keyboard friendly. |
-| Check and contact-sheet an art library | Ink | `tools/element-sheet.js` | Validates the data, renders a PNG sheet, imports SVG icons. |
-| 3D that only redraws when something changes | Ink | `src/vis/core.js` (`TIER`) + `src/app/perf.js` | Classic JS. A still scene draws nothing and reports no frame rate, so auto-adjust waits; skin and studio textures repaint only when their contents change. |
 
 ---
 
@@ -951,11 +845,11 @@ of them has it.
 
 Each is a pitch for Kelbo, not a plan. Repo names in brackets.
 
-1. **Fix brand drift** (The Whip, Season Ticket, Frontier Lab, Station Keeper,
+1. **Fix brand drift** (The Whip, Season Ticket, Frontier Lab,
    Red Skies): official logo files, the five colours, and the
    `© <year> Kelbo / Longlight Interactive` line on splash and credits (section 3).
 2. **Offline for every installed game**: add a service worker and self-host
-   fonts (Station Keeper, The Whip, Red Skies' title fonts). PEW,
+   fonts (The Whip, Red Skies' title fonts). PEW,
    Escapement and Scrapline show the pattern.
 3. **Cache cleanup on the shared origin**: done for the studio site on
    7 November 2026 (section 5). Check each game's service worker follows the
@@ -972,23 +866,13 @@ Each is a pitch for Kelbo, not a plan. Repo names in brackets.
    Hollis, Kessel) the next time each game is touched.
 8. **Publish a GitHub Release on every version bump** so the studio site shows
    the right version (Scrapline still shows 0.1.12.0; others drift too).
-9. **Tidy stray screenshots committed by accident**: Scrapline `undefined/`
-   and Station Keeper `pp/`.
+9. **Tidy stray screenshots committed by accident**: Scrapline `undefined/`.
 10. **Docs drift**: several CLAUDE.md files quote older versions or counts
     (PEW, Red Skies, Season Ticket, Escapement). A docs refresh each release
     keeps sessions from trusting stale numbers.
-11. **Station Keeper needs a CLAUDE.md** with the brand section, like every other game.
-12. **Lombard offline**: Lombard has no service worker yet. Add one with a
+11. **Lombard offline**: Lombard has no service worker yet. Add one with a
     `lombard-` cache prefix (PEW's pattern, or Season Ticket's for a Vite build).
-13. **Ink save safety**: Ink saves `S.bkAt` but never shows the backup
-    reminder bar; wire it up like PEW's. Ink's save code also reaches about
-    0.9 MB by year 30, which is a lot to paste; trim what the code carries or
-    lean on the backup file.
-14. **A Mostograd canon file**: Lombard and Ink share a city. A short
-    `MOSTOGRAD.md` (places, dates, institutions, who owns what) copied into
-    both repos would stop drift, and opens the door to cross-events: the April
-    flood in both games, a tattoo machine turning up at the pawn counter.
-15. **The studio site lags Lombard**: Lombard shipped 1.0.0.0, but the site's
+12. **The studio site lags Lombard**: Lombard shipped 1.0.0.0, but the site's
     `projects.json` still shows it as "In development" 0.1.1.0 with no GitHub
     Release behind it. Publish a release and update its status.
 
