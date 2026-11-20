@@ -26,7 +26,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # --ignore-scripts: packages may not run their own scripts on install.
+      - run: npm ci --ignore-scripts
       - run: npm test
       - run: npm run test:perf
       - run: npm run build
@@ -50,7 +51,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # --ignore-scripts: packages may not run their own scripts on install.
+      - run: npm ci --ignore-scripts
       - run: npm run test:slow
 
   deploy:
