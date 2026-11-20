@@ -69,7 +69,7 @@ import { personOf, type SpatialSetup } from '../../sim/spatial/types';
 import { buildStadiumSnapshot } from './stadiumSnapshot';
 import { setTitleBackdrop } from './titleBackdrop';
 import { findMatch } from '../model';
-import { SaveError, backupSavedCareer, decodeSave, encodeSave, hasBackup, loadCareer, saveCareer, swapBackup } from '../../game/save';
+import { SaveError, backupSavedCareer, decodeSave, encodeSave, hasBackup, loadCareer, saveCareer, savedMark, swapBackup } from '../../game/save';
 import { createMatchRunner, type MatchRunner } from '../../game/matchRunner';
 import { WeekPlayer } from '../../game/week';
 import { renderWeekRun, weekRunCount } from '../views/career/weekRun';
@@ -248,6 +248,8 @@ export class CareerApp {
   private stadiumFocus = false;
   private runner: MatchRunner | null = null;
   /** Plays the weeks' matches in the background workers (17.8). */
+  /** The mark of the saved career as this tab last read or wrote it (see `behind`). */
+  private savedSeen: string | null = null;
   private readonly weeks = new WeekPlayer(() => (this.runner ??= createMatchRunner(2)));
   private warmTimer: number | null = null;
 
@@ -288,7 +290,10 @@ export class CareerApp {
     root.addEventListener('change', (e) => this.onChange(e));
     document.addEventListener('visibilitychange', () => {
       const hidden = document.visibilityState === 'hidden';
-      if (hidden) this.save();
+      // A tab still on the title is not playing the career: it has nothing new to keep (1.2.5.0).
+      if (hidden && this.ui.screen !== 'title') this.save();
+      // Back in view: if another tab has played on since, carry on from its save.
+      if (!hidden) this.catchUp();
       audioHub.sleep(hidden);
     });
     audioHub.setMix(this.ui.mix);
@@ -307,12 +312,39 @@ export class CareerApp {
       this.career = null;
       this.ui.title.error = err instanceof SaveError ? err.message : `The saved career could not be read: ${errorText(err)}`;
     }
+    this.savedSeen = savedMark();
     this.refreshSummary();
     this.ui.title.backup = hasBackup() ? loadBackupSummary() : null;
   }
 
+  /** True when another tab has saved the career since this tab last read or wrote it. */
+  private behind(): boolean {
+    const now = savedMark();
+    // No save at all (storage was cleared, or is blocked) is not a newer save: this tab's copy is the one to keep.
+    return now !== null && now !== this.savedSeen;
+  }
+
+  /**
+   * Two tabs share one saved career. When the other tab has saved since, this tab's copy is the
+   * older one and must never be written over the newer (1.2.5.0). It takes up the newer save and
+   * steps back to the title, where Continue carries on from it.
+   */
+  private catchUp(): void {
+    if (!this.behind() || this.weeks.playing || hasCrashed()) return;
+    // Half way through setting up a new career: keep the form. Starting it puts the saved career aside first.
+    if (this.ui.screen === 'new' && this.ui.draft) return this.loadStored();
+    this.stopLoops();
+    this.loadStored();
+    // A code waiting for "Replace and load" named the older save: ask again.
+    this.pendingImport = null;
+    this.ui = { ...initialUi(), title: { ...this.ui.title, confirm: null } };
+    this.show('title');
+  }
+
   /** Puts the saved career aside before a code or a new career replaces it, even one this version can't read. */
   private backupCurrent(): void {
+    // What follows replaces the saved career on purpose, whichever tab wrote it last.
+    this.savedSeen = savedMark();
     const saved = this.ui.title.saved;
     if (!backupSavedCareer()) return;
     storeBackupSummary(saved);
@@ -347,7 +379,14 @@ export class CareerApp {
     if (!this.career || this.weeks.playing) return;
     // After a crash the career in memory may be half way through what broke: keep the last good save.
     if (hasCrashed()) return;
+    // Another tab has saved since this one last did: its save is the newer one, so leave it be and catch up
+    // (after whatever called this has finished).
+    if (this.behind()) {
+      window.setTimeout(() => this.catchUp(), 0);
+      return;
+    }
     const ok = saveCareer(this.career);
+    if (ok) this.savedSeen = savedMark();
     if (ok) this.refreshSummary();
     // Now there is a career worth keeping: ask the browser not to clear it (once per page load).
     if (ok) void requestPersist();
@@ -850,7 +889,9 @@ export class CareerApp {
     // Screens without a career.
     switch (action) {
       case 'continue':
-        if (!this.career) return;
+        // Another tab may have played on while this one sat on the title: carry on from the newest save.
+        if (this.behind()) this.loadStored();
+        if (!this.career) return this.render();
         this.goHome();
         if (!this.followPhase()) this.show('hub');
         return;
