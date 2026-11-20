@@ -299,6 +299,26 @@ export function loadCareer(store: SaveStore | null = defaultStore()): Career | n
   return code ? decodeSave(code) : null;
 }
 
+/**
+ * A short fingerprint of the career as it is stored right now (null if there is none, or storage
+ * is blocked). Every tab of the game shares the one saved career. A tab keeps the mark of the save
+ * it last read or wrote; a different mark later means another tab has saved since, and this tab's
+ * copy is the older one (1.2.5.0).
+ */
+export function savedMark(store: SaveStore | null = defaultStore()): string | null {
+  let code: string | null = null;
+  try {
+    code = store?.getItem(STORAGE_KEY) ?? null;
+  } catch {
+    return null;
+  }
+  if (!code) return null;
+  // FNV-1a over the text: quick, and any change to a save changes it.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < code.length; i++) hash = Math.imul(hash ^ code.charCodeAt(i), 0x01000193);
+  return `${code.length}:${(hash >>> 0).toString(36)}`;
+}
+
 export function deleteSavedCareer(store: SaveStore | null = defaultStore()): void {
   try {
     store?.removeItem(STORAGE_KEY);

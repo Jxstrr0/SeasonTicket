@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import './helpers/quickCareer';
 import { C, advanceCareer, advanceToReview, continueToNextSeason, createCareer, matchLock, releasePlayer, signFreeAgent, squadOf, startUserMatch, type Career } from '../src/sim/career';
-import { BACKUP_KEY, STORAGE_KEY, SaveError, backupSavedCareer, decodeSave, encodeSave, hasBackup, saveCareer, swapBackup, type SaveStore } from '../src/game/save';
+import { BACKUP_KEY, STORAGE_KEY, SaveError, backupSavedCareer, decodeSave, encodeSave, hasBackup, saveCareer, savedMark, swapBackup, type SaveStore } from '../src/game/save';
 import { careerProblem } from '../src/game/saveCheck';
 import { playToEnd } from '../src/game/matchday';
 import { backupFileName, checkStorage, loadLastBackup, needsBackupReminder, noteBackup, readBackupFile, requestPersist, resetPersistAsk, storageLine } from '../src/ui/career/saveSafety';
@@ -199,5 +199,41 @@ describe('backup files, storage and the reminder', () => {
     expect(storageLine('at-risk')).toMatch(/backup file/);
     expect(storageLine(null)).toBe('');
     resetPersistAsk();
+  });
+});
+
+describe('two tabs, one saved career (1.2.5.0)', () => {
+  it('marks the stored save so a tab can tell another tab has saved since', () => {
+    const store = memoryStore();
+    expect(savedMark(store)).toBeNull();
+    expect(savedMark(null)).toBeNull();
+    const career = newCareer();
+    expect(saveCareer(career, store)).toBe(true);
+    const mine = savedMark(store);
+    expect(mine).toMatch(/^\d+:[0-9a-z]+$/);
+    // Reading it again, or saving the same career again, is not a newer save.
+    expect(savedMark(store)).toBe(mine);
+    saveCareer(career, store);
+    expect(savedMark(store)).toBe(mine);
+    // The other tab plays a week and saves: the mark moves, so this tab's copy is the older one.
+    const other = decodeSave(store.data[STORAGE_KEY]);
+    advanceCareer(other);
+    saveCareer(other, store);
+    expect(savedMark(store)).not.toBe(mine);
+    // Putting the save aside as the backup does not touch the saved career.
+    const now = savedMark(store);
+    backupSavedCareer(store);
+    expect(savedMark(store)).toBe(now);
+  });
+
+  it('gives no mark when storage cannot be read', () => {
+    const blocked: SaveStore = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+      setItem: () => undefined,
+      removeItem: () => undefined,
+    };
+    expect(savedMark(blocked)).toBeNull();
   });
 });
