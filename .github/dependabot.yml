@@ -8,6 +8,11 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 2
+    # Wait a week after a release before proposing it (GitHub's own default is 3 days): a package
+    # published by mistake, or by someone who took over an account, is usually pulled within days.
+    # Security fixes don't wait; they still arrive at once.
+    cooldown:
+      default-days: 7
     groups:
       minor-and-patch:
         update-types: [minor, patch]
