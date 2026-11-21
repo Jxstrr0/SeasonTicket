@@ -1,20 +1,20 @@
 # Longlight Interactive: studio catalogue
 
-> **Snapshot: 7 November 2026**, tables refreshed 16 November (Hull Down, Funded, Burn Rate and Laminar added; Escapement retired). One reference file for every Longlight game.
+> **Snapshot: 7 November 2026**, tables refreshed 16 November (Hull Down, Funded, Burn Rate and Laminar added; Escapement retired); Outwash added 21 November. One reference file for every Longlight game.
 > The same file is dropped into each game repo. Versions and details drift;
 > when something matters, check the live repo. A game's own `CLAUDE.md` always
 > wins over this file inside that game's repo.
 >
-> **Public edition.** It covers the ten games in the studio site's
+> **Public edition.** It covers the eleven games in the studio site's
 > `projects.json` and leaves out Kelbo's private and parked repos. Ask Kelbo
 > about those.
 >
 > **Six games are listed on the site** (16 November 2026): Prairie Engine
-> Works, Scrapline, Season Ticket, Funded, Lombard and Burn Rate. Four more
+> Works, Scrapline, Season Ticket, Funded, Lombard and Burn Rate. Five more
 > carry `"hidden": true` in `projects.json`: Frontier Lab (hidden on
 > 15 November, when Burn Rate took its place), The Whip (11 November), and
-> the newest games Hull Down and Laminar, hidden until Kelbo says to
-> show them. A hidden game has no card, no game page and no devlog or
+> the newest games Hull Down, Laminar and Outwash, hidden until Kelbo says
+> to show them. A hidden game has no card, no game page and no devlog or
 > release lines; its repo and live game stay up, and everything in this file
 > still applies to it.
 >
@@ -76,6 +76,7 @@ on its own subdomain of **longlight.games** (November 2026; the old
 | The Whip | [Jxstrr0/The-Whip](https://github.com/Jxstrr0/The-Whip) | https://thewhip.longlight.games/ | Hidden |
 | Hull Down | [Jxstrr0/hull-down](https://github.com/Jxstrr0/hull-down) | https://hulldown.longlight.games/ | Hidden |
 | Laminar | [Jxstrr0/Laminar](https://github.com/Jxstrr0/Laminar) | https://laminar.longlight.games/ | Hidden |
+| Outwash | [Jxstrr0/Outwash](https://github.com/Jxstrr0/Outwash) | https://outwash.longlight.games/ | Hidden |
 | Studio site | [Jxstrr0/Kelbo.Website](https://github.com/Jxstrr0/Kelbo.Website) | https://longlight.games/ | — |
 
 Kelbo's private and parked repos are not covered here (section 11).
@@ -180,6 +181,7 @@ cost nothing, keep old copies apart, and let a game move again safely.
 | Funded | `funded.*` (`funded.run.v1`, `funded.meta.v1`, `funded.audio.v1`) | none (no service worker) | none |
 | Burn Rate | `brn-settings`, `brn-save`, `brn-slot1..3` | `brn-` | `BRN1:` |
 | Laminar | `laminar.*` + IndexedDB `laminar` (slots) | none yet (use `laminar-` when one is added) | `LAM1:` (designs `LAMD1:`) |
+| Outwash | `outwash.*` + IndexedDB `outwash` | `outwash-` | `OUT1:` (designs `OUTD1:`) |
 
 > **Fixed on 7 November 2026:** the studio site's `sw.js` used to delete every
 > cache that wasn't its own when it updated, which wiped the games' offline
@@ -206,6 +208,7 @@ site (`"hidden": true`); they are still live at their own addresses.
 | Frontier Lab | Polishing, **hidden** | 0.1.64.2 | AI-lab tycoon (fork of Vault Street) | Real cities on procedural maps | Portrait | TypeScript, Preact, 2D canvas/SVG |
 | Hull Down | Prototype, **hidden** | 1.8.5.2 | Tank design bureau: design to a weight limit, trial, after-action report | Tarnovia, 1980s to today | Portrait first | TypeScript, Vite; 2D office, three (npm) for trials |
 | Laminar | In development, **hidden** | 0.9.15.0 | Aero consultancy: shape in 3D, scale model, wind tunnel, real event | Tarnovia, Stavren (2010–2040; rubles) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
+| Outwash | In development, **hidden** | 0.9.0.0 | A Laminar game: head of aero at a grand prix team; CFD, tunnel, dirty air, twelve rounds a season | Laminar's Tarnovia and a fictional world series (2026–2050; rubles) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 | The Whip | Released, **hidden** | 1.0.0.0 | Political career: votes, deals, whip | Dominion of Caledor (Westminster) | Portrait first | ES modules, no build, three 0.160 (CDN) |
 
 Studio site trading projects (not games): Pre-market brief, AI Trading Journal,
@@ -580,6 +583,16 @@ are as of this snapshot.
 - **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic, with its own `det.ts` maths and named RNG streams; one truth, three views (hidden full-scale truth, the tunnel reading, the field result); the renderer only draws what the sim says. Names live in `docs/NAMES.md`.
 - **Saves:** three slots in IndexedDB `laminar` (falling back to `laminar.slot.<n>`), other keys `laminar.*`, save code `LAM1:`, design codes `LAMD1:`. No service worker yet (plan PR 14); its caches will start `laminar-`.
 
+### Outwash
+
+- **Status:** the site's label is "In development", hidden on the studio site (added 21 November 2026). 0.9.0.0 on 21 November (`VERSION` file): PR 0 and PR 1 of `docs/OUTWASH-PLAN.md` section 16 are built (the repo, the car's eight components and setup, yaw, flex and flutter, the circuits with bumps and curbs, wind, the ten teams and twenty drivers, qualifying). The plan lists it publicly on the studio site at PR 7, the first playable. `docs/STATUS.md` says where it stands.
+- **Pitch:** a Laminar game. You're head of aerodynamics at a grand prix team: shape parts, prove them in CFD and the wind tunnel, build them, and find out on Sunday whether a car that's fast on its own can race in a crowd. Dirty air is the lead twist; testing is rationed by championship position, under a cost cap.
+- **Setting and tone:** Laminar's Tarnovia (the Dolgo Ring, Stavren Park, the Tarnovian Motor Racing Federation, rubles) plus a fictional Grand Prix World Series of twelve rounds, 2026 to 2050. **Laminar owns the canon**: Outwash never contradicts it, and Laminar's teams appear only in news lines and a feeder series. Drivers are never hurt. Grey areas are rule interpretation only, no cheating storyline.
+- **Look:** "Pit wall": warm grey and off-white, light first with a graphite dark mode, one accent that becomes the player's team livery (fallback `#C2410C`), Saira and Red Hat Mono.
+- **Stack:** TypeScript (strict), Vite, three.js 0.187 from npm, plain DOM UI, Vitest. Pages from Actions, `base: './'`. Release per `VERSION`, titled from the `PR <n>: summary — v<version>` merge. A standalone repo, not a fork of Laminar: code is copied and marked `// Adapted from Laminar <path> (<date>)`.
+- **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic, with its own `det.ts` maths and named RNG streams; truth, instruments, track, race (the player only sees readings with error bars); every number on the car has one address (`rear-wing.chord`). Names live in `docs/NAMES.md`.
+- **Saves:** keys `outwash.*`, IndexedDB `outwash`, caches `outwash-`, save code `OUT1:`, design codes `OUTD1:` (saves arrive with plan PR 7).
+
 ---
 
 ## 8. Names already taken
@@ -597,7 +610,8 @@ noted, so a repeated name reads as a mistake.
 | The prairie, Saskatoon | Prairie Engine Works, the studio site's sky |
 | Valmere (Valmeran dollar), Kestrel Football League | Season Ticket |
 | Dominion of Caledor, capital Ostrava | The Whip |
-| Tarnovia (rubles), the town of Stavren; Mostograd borrowed from Lombard | Laminar (its own take on Tarnovia, separate from Hull Down's) |
+| Tarnovia (rubles), the town of Stavren; Mostograd borrowed from Lombard | Laminar (its own take on Tarnovia, separate from Hull Down's); Outwash borrows it |
+| The Grand Prix World Series (twelve fictional countries and circuits), 2026–2050 | Outwash |
 | Tarnovia, a state tank design bureau, 1980s to today | Hull Down |
 | Aqsor Range (Site 41), a decommissioned test range on a steppe salt flat, 2030s | Burn Rate |
 | A prop-trading firm's floor; fictional tickers | Funded |
@@ -640,6 +654,10 @@ date or institution.
   `src/app/state.js` and `docs/DESIGN.md`. Money is euros.
 - **Mostograd in Laminar:** Laminar puts Mostograd in its Tarnovia; any
   Mostograd place or institution there follows Lombard's file above.
+- **Laminar's Tarnovia** (Laminar owns it): Laminar `docs/NAMES.md` and
+  `docs/LAMINAR-PLAN.md` section 12. Outwash borrows the Dolgo Ring,
+  Stavren Park, the Tarnovian Motor Racing Federation, Gornova and Zelenia;
+  its own names are in Outwash `docs/NAMES.md`.
 
 ---
 
@@ -650,7 +668,7 @@ date or institution.
 | Family | Games |
 | --- | --- |
 | Craft career: build or make something part by part, test it, compete or sell, in a workshop that grows | Prairie Engine Works (engines), Scrapline (combat robots) |
-| Engineering to a brief: design against a spec, test, read the report | Burn Rate (rocket motors), Hull Down (tanks), Laminar (aerodynamics) |
+| Engineering to a brief: design against a spec, test, read the report | Burn Rate (rocket motors), Hull Down (tanks), Laminar (aerodynamics), Outwash (a grand prix car's aero) |
 | Roguelike runs | Funded (prop-firm trading) |
 | Tycoon and management | Season Ticket (football club), Frontier Lab (AI lab), Lombard (pawn shop) |
 | Politics and negotiation | The Whip (parliament) |
@@ -682,6 +700,7 @@ date or institution.
 | Rendered trading desk with green, red, ivory and lilac monitors, Space Grotesk | Funded |
 | "Faded state-range": concrete, state green, stencil red, Saira / Martian Mono | Burn Rate |
 | "Cobalt lab": bright wind-tunnel lab, Instrument Sans / Spline Sans Mono | Laminar |
+| "Pit wall": warm grey and off-white, one livery accent, Saira / Red Hat Mono | Outwash |
 
 **Open space** (observations, not decisions; Kelbo picks):
 
