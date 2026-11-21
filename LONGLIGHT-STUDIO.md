@@ -1,21 +1,26 @@
 # Longlight Interactive: studio catalogue
 
-> **Snapshot: 7 November 2026** (Quench added 11 November). One reference file for every Longlight game.
+> **Snapshot: 7 November 2026**, tables refreshed 16 November (Hull Down, Funded, Burn Rate and Laminar added; Escapement retired). One reference file for every Longlight game.
 > The same file is dropped into each game repo. Versions and details drift;
 > when something matters, check the live repo. A game's own `CLAUDE.md` always
 > wins over this file inside that game's repo.
 >
-> **Public edition.** It covers the eight games in the studio site's
+> **Public edition.** It covers the ten games in the studio site's
 > `projects.json` and leaves out Kelbo's private and parked repos. Ask Kelbo
 > about those.
 >
-> **Only five are listed on the site.** Since 11 November 2026 Escapement
-> and The Whip carry `"hidden": true` in `projects.json`:
-> no card, no game page, no devlog or release lines. Their repos and live
-> games stay up, and everything in this file still applies to them. The
-> listed five are Prairie Engine Works, Season Ticket, Scrapline, Lombard
-> and Frontier Lab. Quench, the newest game, was added hidden on
-> the same day and stays hidden until Kelbo says to show it.
+> **Six games are listed on the site** (16 November 2026): Prairie Engine
+> Works, Scrapline, Season Ticket, Funded, Lombard and Burn Rate. Four more
+> carry `"hidden": true` in `projects.json`: Frontier Lab (hidden on
+> 15 November, when Burn Rate took its place), The Whip (11 November), and
+> the newest games Hull Down and Laminar, hidden until Kelbo says to
+> show them. A hidden game has no card, no game page and no devlog or
+> release lines; its repo and live game stay up, and everything in this file
+> still applies to it.
+>
+> **Escapement is retired.** Kelbo deleted its repo on 16 November 2026 and
+> it was taken off the site entirely. Scrapline now owns the Velmark and
+> Haldis world it shared.
 
 ---
 
@@ -63,12 +68,14 @@ on its own subdomain of **longlight.games** (November 2026; the old
 | --- | --- | --- | --- |
 | Prairie Engine Works | [Jxstrr0/350Chev](https://github.com/Jxstrr0/350Chev) | https://pew.longlight.games/ | Listed |
 | Lombard | [Jxstrr0/Lombard](https://github.com/Jxstrr0/Lombard) | https://lombard.longlight.games/ | Listed |
-| Escapement | [Jxstrr0/Escapement](https://github.com/Jxstrr0/Escapement) | https://escapement.longlight.games/ | Hidden |
 | Scrapline | [Jxstrr0/Scrapline](https://github.com/Jxstrr0/Scrapline) | https://scrapline.longlight.games/ | Listed |
 | Season Ticket | [Jxstrr0/SeasonTicket](https://github.com/Jxstrr0/SeasonTicket) | https://seasonticket.longlight.games/ | Listed |
-| Frontier Lab | [Jxstrr0/FrontierLab](https://github.com/Jxstrr0/FrontierLab) | https://frontierlab.longlight.games/ | Listed |
+| Funded | [Jxstrr0/Funded](https://github.com/Jxstrr0/Funded) | https://funded.longlight.games/ | Listed |
+| Burn Rate | [Jxstrr0/BurnRate](https://github.com/Jxstrr0/BurnRate) | https://burnrate.longlight.games/ | Listed |
+| Frontier Lab | [Jxstrr0/FrontierLab](https://github.com/Jxstrr0/FrontierLab) | https://frontierlab.longlight.games/ | Hidden |
 | The Whip | [Jxstrr0/The-Whip](https://github.com/Jxstrr0/The-Whip) | https://thewhip.longlight.games/ | Hidden |
-| Quench | [Jxstrr0/Quench](https://github.com/Jxstrr0/Quench) | https://quench.longlight.games/ | Hidden |
+| Hull Down | [Jxstrr0/hull-down](https://github.com/Jxstrr0/hull-down) | https://hulldown.longlight.games/ | Hidden |
+| Laminar | [Jxstrr0/Laminar](https://github.com/Jxstrr0/Laminar) | https://laminar.longlight.games/ | Hidden |
 | Studio site | [Jxstrr0/Kelbo.Website](https://github.com/Jxstrr0/Kelbo.Website) | https://longlight.games/ | — |
 
 Kelbo's private and parked repos are not covered here (section 11).
@@ -165,12 +172,14 @@ cost nothing, keep old copies apart, and let a game move again safely.
 | Studio site | `kelbo.*` | `longlight-*` (now `longlight-3`) | none |
 | Prairie Engine Works | `pew2-save`, `pew2-slot1..3`, `pew2-legacy` | `pew-` | `PEW1:` (old `PEW2:` still loads; next is `PEW3:`) |
 | Lombard | `lombard.*` (settings) + IndexedDB database `lombard` (careers) | none (no service worker yet; use `lombard-` when one is added) | `LMB1.` (dots, not a colon: `LMB1.<data>.<checksum>`) |
-| Escapement | `esc-save`, `esc-slot1..3` | `esc-` | `ESC1:` (next `ESC2:`) |
 | Scrapline | `scr-save`, `scr-slot1..3` | `scr-` | `SCR1:` (next `SCR2:`) |
 | Season Ticket | `seasonticket.*` | build-time service worker | `ST1:` |
 | Frontier Lab | `frontierlab.*` + IndexedDB `frontierlab` | content-hash name | `FL<schema>:` |
 | The Whip | `whip:*`; sessionStorage `whip:backup-reminded` | none (no service worker) | no prefix: plain base64 JSON (see profile) |
-| Quench | `quench.*` | `quench-` | `QNC1:` |
+| Hull Down | `hulldown.*` + IndexedDB `hulldown` | `hulldown-` | `HD1:` |
+| Funded | `funded.*` (`funded.run.v1`, `funded.meta.v1`, `funded.audio.v1`) | none (no service worker) | none |
+| Burn Rate | `brn-settings`, `brn-save`, `brn-slot1..3` | `brn-` | `BRN1:` |
+| Laminar | `laminar.*` + IndexedDB `laminar` (slots) | none yet (use `laminar-` when one is added) | `LAM1:` (designs `LAMD1:`) |
 
 > **Fixed on 7 November 2026:** the studio site's `sw.js` used to delete every
 > cache that wasn't its own when it updated, which wiped the games' offline
@@ -181,22 +190,23 @@ cost nothing, keep old copies apart, and let a game move again safely.
 
 ## 6. The games at a glance
 
-Status is Kelbo's label on the studio site (`projects.json`); version is what
-the repo's code says on 7 November 2026. Order is Kelbo's own ranking.
-**Hidden** marks the two games taken off the site on 11 November 2026
-(`"hidden": true`); they are still live at their own addresses. Quench is
-new and hidden until Kelbo says to show it.
+Status and version are what the live studio site showed on 16 November 2026
+(the deploy fills versions from each game's newest GitHub Release). Order is
+Kelbo's own ranking, listed games first. **Hidden** marks the games off the
+site (`"hidden": true`); they are still live at their own addresses.
 
 | Game | Status | Version | Genre | Setting | Screen | Stack |
 | --- | --- | --- | --- | --- | --- | --- |
-| Prairie Engine Works | Released | 1.76.78.0 | Engine builder, dyno, ten race events, race-team career | Prairie engine shop (Saskatoon) | Phone, both ways; desktop layout | Classic JS + `build.js`, three r128 (CDN) |
-| Lombard | In development (site); repo shipped 1.0.0.0 on 6 Nov | 1.0.0.0 | First-person pawn shop sim: inspect, appraise, haggle; a crime layer | Mostograd, a 2010s Russian river city | Portrait first | TypeScript, Vite, three 0.187 (npm) |
-| Escapement | Prototype, **hidden** | 1.0.2.3 | Watchmaking career: build, regulate, certify, sell | The Haldis, Velmark (alpine, 2000–2030) | Portrait (side by side in landscape) | Classic JS + `build.js` (PEW stack), three r128 |
-| Scrapline | In development | 0.1.16.2 | Combat-robot builder, arena fights, career | Velmark and the Haldis (shared with Escapement) | Portrait (side by side in landscape) | Classic JS + `build.js` (PEW stack), three r128 |
-| Season Ticket | Released | 1.1.2.0 | Football club owner/GM with live tactics | Valmere, a fictional northern republic | **Landscape** | TypeScript, Vite, three 0.186 |
-| Frontier Lab | In development | 0.1.63.0 | AI-lab tycoon (fork of Vault Street) | Real cities on procedural maps | Portrait | TypeScript, Preact, 2D canvas/SVG |
+| Prairie Engine Works | Released | 1.76.135.4 | Engine builder, dyno, ten race events, race-team career | Prairie engine shop (Saskatoon) | Phone, both ways; desktop layout | Classic JS + `build.js`, three r128 (CDN) |
+| Scrapline | Polishing | 0.1.68.1 | Combat-robot builder, arena fights, career | Velmark and the Haldis | Portrait (side by side in landscape) | Classic JS + `build.js` (PEW stack), three r128 |
+| Season Ticket | Released | 1.2.4.0 | Football club owner/GM with live tactics | Valmere, a fictional northern republic | **Landscape** | TypeScript, Vite, three 0.186 |
+| Funded | Polishing | 0.9.0.4 | Prop-firm trading roguelike: five-day evals, three desks, edge cards | A trading firm's desk (fictional tickers) | Portrait 9:16 frame | Plain ES modules, no build; Blender-rendered backdrops |
+| Lombard | Polishing | 1.4.6.1 | First-person pawn shop sim: inspect, appraise, haggle; a crime layer | Mostograd, a 2010s Russian river city | Portrait first | TypeScript, Vite, three 0.187 (npm) |
+| Burn Rate | Released | 1.6.1.1 | Solid rocket motor design: design, predict, static fire, incident report | Aqsor Range (Site 41), a steppe salt flat, 2030s | Portrait first | Classic JS + `build.js` (PEW stack), three vendored in `lib/` |
+| Frontier Lab | Polishing, **hidden** | 0.1.64.2 | AI-lab tycoon (fork of Vault Street) | Real cities on procedural maps | Portrait | TypeScript, Preact, 2D canvas/SVG |
+| Hull Down | Prototype, **hidden** | 1.8.5.2 | Tank design bureau: design to a weight limit, trial, after-action report | Tarnovia, 1980s to today | Portrait first | TypeScript, Vite; 2D office, three (npm) for trials |
+| Laminar | In development, **hidden** | 0.9.15.0 | Aero consultancy: shape in 3D, scale model, wind tunnel, real event | Tarnovia, Stavren (2010–2040; rubles) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 | The Whip | Released, **hidden** | 1.0.0.0 | Political career: votes, deals, whip | Dominion of Caledor (Westminster) | Portrait first | ES modules, no build, three 0.160 (CDN) |
-| Quench | Polishing, **hidden** | 1.0.0.0 (11 Nov) | Bladesmithing: heat, hammer, grind, quench, temper, trial | Aldersay, the Skerrow Isles (present day) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 
 Studio site trading projects (not games): Pre-market brief, AI Trading Journal,
 Agent Fleet.
@@ -244,10 +254,9 @@ are as of this snapshot.
   - 24-hour teams: Moose Jaw Speed, Estevan Oilpatch, Canola Speedworks. Trucks: Prairie Thunder, Sod Buster.
 - **Gaps:** turbo spool, supercharger whine and nitrous are still synthesized; there's no Deltic recording; the first load is 3.8 MB.
 - **Pitches:**
-  - A node sim-test harness like Escapement's `tools/sim-test.js`.
+  - A node sim-test harness like Scrapline's `tools/sim-test.js`.
   - "Watch it" replays for pull, bog, boat and hill.
   - Lazy-load chunks of the 3.8 MB page.
-  - Escapement's metal materials (`studio.js`, `finish.js`) and its Blender prop scripts.
   - A CI check on PRs (Kelbo's call).
 
 ### Lombard
@@ -330,56 +339,7 @@ are as of this snapshot.
   - A `lombard-` service worker so installed copies work offline.
   - Walk-outs who come back later with the remembered offer, and standing that sets the daily customer count.
   - Temperament idles as haggle tells.
-  - A shareable ending card (the `share.js` pattern from Escapement).
-
-### Escapement
-
-- **Status:** the site shows "Prototype" 1.0.1.0; the repo is at 1.0.2.1 (`const VERSION` in `src/app/state.js`). The whole plan is built. Paused until Kelbo answers `docs/OPEN-QUESTIONS.md` (balance and design questions).
-- **Pitch:** a watchmaking career. Build mechanical movements part by part, put them on the timegrapher, chase chronometer certification, and grow a shared repair bench into a manufacture with its own calibres.
-- **Loop:** PEW's build-test-compete loop, with the race swapped for the market.
-  - Build and test: 12 part slots, about 55 options, 17 stress COMBOS. A timegrapher where you regulate, adjust the beat and poise.
-  - Certify: a 15-day trial at Bench, Chronometer (BCH) or Observatory grade.
-  - Business: repairs, retail, commissions, trade batches, upgrades, staff, a once-only bank loan.
-  - Calendar: the Haldis Valley Fair, the Kessel Peak Trial against 5 rivals, two auction nights, the 2015–18 smartwatch slump.
-  - R&D: 17 projects, up to 4 calibres.
-  - Time: act, then Close week. New game offers Repair bench 2000, Skip ahead 2008, or a Sandbox.
-- **Setting and tone:** the Haldis, a watchmaking valley in northern Velmark, an invented alpine country (shared with Scrapline). The city is Velm. 2000–2030. Money: euros, `€4,850` (whole amounts; Kelbo, November 2026). Quiet, warm, gently wry.
-- **Look:** dark felt, brass and steel, with a 3D movement, a dial view and a workshop that grows by stage. Fonts: Space Grotesk + JetBrains Mono (Google Fonts).
-  - Dark: felt `#121815` / `#0c110f`, panels `#19201c` / `#212a25`, chalk `#f2efe6`, muted `#b3bab4`, brass `#c9a45c` / `#e0c07e`, steel `#9fa8ad`. Status colours: good `#6cc08f`, warn `#e2b24a`, crit `#e0625a`, info `#7fa9d6`.
-  - Light ("pale workshop"): felt `#f3efe6`, panel `#fffdf8`, text `#18201b`, brass text `#7a5c1c`.
-  - The 3D view stays dark in both themes.
-- **Platform:** portrait; side by side in landscape. No haptics.
-- **Stack:** the PEW shape, with globals `WATCH_SIM` / `WATCH_VIS` / `WATCH_SOUND` / `WORKSHOP_SOUND`.
-  - `index.html` is about 498 KB. three r128 from cdnjs; bloom via `ESC_LIBS` / `__escPost`.
-  - Checks: `node build.js --check`, `node check-savecode.js` (16 checks), `node tools/sim-test.js`.
-- **Saves:** `esc-save`, `esc-slot1..3`; caches start `esc-`.
-  - Code `ESC1:` (the next format is `ESC2:`).
-  - Backup file `escapement-backup-YYYY-MM-DD.txt`; last backup time in `S.lastBackup` inside `esc-save`.
-- **Audio:** a synthesized tick at any beat rate (`src/sound/tick.js`) and 6 CC0 workshop recordings (`src/sound/workshop.js`).
-- **Reusable:**
-  - Sharing and cards: `src/app/share.js` (`shareCanvas`, 13 lines); `src/app/cards.js` (1080×1350 certificate and trophy cards).
-  - Sound: `tick.js`, `workshop.js`.
-  - Materials: `src/vis/studio.js` (an HDRI baked per tier); `src/vis/finish.js` (perlage, Côtes de Genève, `metalMat`, `gemMat`).
-  - Tools: `tools/blender/*.py`, `tools/sim-test.js`.
-  - Help: `help.js` (`TUT`, `GLOSS`, `data-g`); `CERT_FIX` / `goFix` in `src/app/test.js`.
-  - UI and speed: the 60 fps cap `FRAME` (`src/vis/bench.js`); `openSheet` / `sheetHist`.
-- **Names:**
-  - Places and bodies: Haldis, Velmark, Velm, Kessel Peak, the Haldis Chronometry Bureau (BCH), Kessel Peak Observatory, Haldis Savings Bank.
-  - Events: the Haldis Valley Fair, the Kessel Peak Trial; auction house Brugg & Lell.
-  - Rivals: Varn & Söhne, Halvard, Atelier Amsel, Kessler, Ostrander Frères. Collectors: Judge Falk, Dr Abelard.
-  - Staff: Anneli Brask, Joris Halm, Mette Ostrander, Tobin Vael, Ilse Karrow, Pieter Lund, Saskia Dorn, Emil Fasch, Runa Velt, Kasimir Ott, Lotte Hesse, Bram Iversen.
-  - The first calibre: "Haldis 1".
-- **Gaps (from the 1.0.2.1 audit):**
-  - Balance: prices run away late; trial results ignore skill; a 2008 start can go broke; commission budgets are fixed; the Kessel Peak Trial becomes unwinnable.
-  - Missing pieces: no ending at 2030; climate control does nothing; staff have no skills.
-  - Blockers: the bench is blocked while a piece is away; trade batches can't be handed back.
-  - Polish: font sizes in px; share not tried on a real phone.
-- **Pitches:**
-  - A 2031 end-of-career card.
-  - Trial noise that shrinks with skill and climate control.
-  - Six-figure pieces sell only at auction or to top collectors.
-  - A ghost curve on the timegrapher, plus haptics.
-  - Font sizes from px to rem.
+  - A shareable ending card.
 
 ### Scrapline
 
@@ -390,7 +350,7 @@ are as of this snapshot.
   - Build: part slots and a layout grid; six bench tests.
   - Fight: a deterministic 60 Hz fight sim shown in 3D, in 1v1, rumble, tag team and minibot formats. A 60-second pit window, a post-mortem and a replay.
   - Career: 52-week seasons over 4 acts.
-- **Setting and tone:** the present day from 2026, in Velmark and the Haldis, **the same world as Escapement**. Money is euros (`€4,850`). Venues: Haldis Gemeindehalle, Stahlbrück, Eisenau, Grauwald, the Eisenhalle. German-flavoured alpine names.
+- **Setting and tone:** the present day from 2026, in Velmark and the Haldis. Money is euros (`€4,850`). Venues: Haldis Gemeindehalle, Stahlbrück, Eisenau, Grauwald, the Eisenhalle. German-flavoured alpine names.
 - **Look:** uses the Longlight palette as its own look. Fonts: Space Grotesk + JetBrains Mono (Google Fonts).
   - Dark: base `#141413`, surface `#1C1B19`, card `#1F1E1B`, ink `#F2EFE8`, muted `#ABA79E`, clay `#D97757` (light-theme text `#A8482A`), lilac `#B48CE8` / purple `#6A33AD`. Status colours: good `#4CC38A`, warn `#E2A93B`, crit `#E5484D` (text `#F06A6E`).
   - Light: base `#FAF9F5`, surface `#F1EEE7`, card `#FFFFFF`, ink `#1C1B19`.
@@ -579,16 +539,46 @@ are as of this snapshot.
   - Swap the hand-drawn sun and off-palette brand colours for the press-kit files.
   - Vendor three.js and add a service worker (needs Kelbo's OK, since the CDN is a hard rule there).
 
-### Quench
+### Hull Down (repo `hull-down`)
 
-- **Status:** the site's label is "Polishing"; 1.0.0.0 on 11 November 2026 (`VERSION` file). Every stage of its plan is built (`docs/QUENCH-PLAN.md` section 13, PR 0 to PR 13); `docs/STATUS.md` says where it stands and holds the tuning questions still open. Not yet played by a person, so tuning carries on as 1.0.x. Hidden on the studio site until Kelbo says otherwise.
-- **What is in it:** Free forge, a Career through the Guild ratings with knives and swords as one thread, a Collection of kept blades with share cards, san-mai and pattern-welded billets from Journeyman, a daily commission (one bar a day, a UTC day, the same for everyone, no server), offline play and install, a crash card that keeps the save safe, and `npm run sim` bot smiths for balance.
-- **Pitch:** a bladesmithing game. Heat a bar, read its colour, hammer it to shape, grind it, harden it in the quench, temper it, then find out at the trial what you really made.
-- **Setting and tone:** Aldersay, a harbour town on the invented Skerrow Isles, present day. Money is the Skerrow crown (`kr`). No fantasy, no combat, no gore: blades are tools, sport cutting pieces and collector pieces. Steel grades are real generic standards (1084, 5160, W2).
-- **Look:** chalk and slate, Zilla Slab and Atkinson Hyperlegible, a heat-colour ramp. Reading heat always has a non-colour path.
-- **Stack:** TypeScript (strict), Vite, three.js 0.187 from npm, plain DOM UI, Vitest. Pages from Actions, `base: './'`. Much of the setup is adapted from Lombard.
-- **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic: seeded RNG, fixed step, its own `det.ts` maths, every number in a table. Names live in `docs/NAMES.md`.
-- **Saves:** localStorage `quench.*`, caches `quench-`, save code `QNC1:`.
+- **Status:** the site's label is "Prototype", hidden on the studio site. Plan of record `docs/HULL-DOWN-PLAN.md` (staged PRs in section 14); progress in `docs/STATUS.md`.
+- **Pitch:** run a state tank design bureau. Design a tank against a weight limit, watch it at trial, read the after-action report, fix it. An engineering game about trade-offs.
+- **Setting and tone:** Tarnovia, from the 1980s to today (its own take on the country; Laminar's Tarnovia is separate). No real countries, wars, vehicles, companies or insignia; no gore, crew are status icons. Generic engineering terms are fine.
+- **Look:** a drawing office. Paper `#e9ece6`, grid `#c9d0c8`, ink `#1f3558`, pencil red `#b23a2e`, stamp green `#3d6b4f`; "blueprint" is the dark option (`#12305a`). Archivo Narrow, Archivo and Spline Sans Mono, self-hosted. The protection map never relies on colour alone.
+- **Stack:** TypeScript (strict), Vite (`base: './'`), Vitest, ESLint, no UI framework. The design office is 2D (DOM, SVG, canvas); trials load three.js only when one opens. Release per `VERSION`.
+- **Rules worth knowing:** `src/sim/` is pure and deterministic (seeded RNG, fixed step, `det.ts` maths); every number in `src/data/`; player text in `src/data/strings.ts`; names in `docs/NAMES.md`.
+- **Saves:** localStorage `hulldown.*`, IndexedDB `hulldown`, caches `hulldown-`, save code `HD1:`.
+
+### Funded
+
+- **Status:** listed on the site since 12 November 2026, "Polishing". The design spec is `docs/HANDOFF.md`; progress is in the repo's `CLAUDE.md`.
+- **Pitch:** a prop-firm trading game. The firm gives you an account and five days: hit the target without breaking the daily loss limit or the drawdown floor. Pass to climb from the stock desk to futures, then options.
+- **Loop:** a roguelike career. Pick 1 of 3 edge cards after each day survived, optional mandates (handicaps) for more Reputation, a perk shop between careers; a firing sends the next career back to the first desk.
+- **Setting and tone:** a trading firm's desk that changes with the career (back row, mid-floor, window seat, the cardboard box). Fictional tickers only.
+- **Look:** Blender-rendered desk backdrops with percentage-placed monitor overlays; Space Grotesk, self-hosted. On the monitors only green `#2FBF71`, red `#E5484D`, ivory and lilac `#B48CE8`; clay stays off them. Every P&L carries a sign and an arrow.
+- **Stack:** plain HTML, CSS and ES modules, no build step, no npm. Tests with `node --test`. A CSP meta tag; audio made with ElevenLabs.
+- **Saves:** localStorage `funded.*`; no save code and no service worker yet.
+
+### Burn Rate (repo `BurnRate`)
+
+- **Status:** listed on the site since 15 November 2026 (it took Frontier Lab's place), "Released". The plan is `docs/BURN-RATE-PLAN.md`; progress in `docs/PROGRESS.md`.
+- **Pitch:** a solid rocket motor design game. Clients bring a spec; you design a motor (grain, nozzle, case, igniter), the predictor draws the curve you expect, then you fire it for real and the real motor never quite matches.
+- **Setting and tone:** a two-person startup renting a stand at Aqsor Range, the old state programme's Site 41, on a steppe salt flat in the 2030s. Ruslan Abenov, the Range Safety Officer, signs the incident reports. **Propellants are stat blocks, never recipes**: fictional named grades with performance numbers only.
+- **Look:** "Faded state-range", light first: concrete greys, faded state green, stencil red, hazard amber; the startup's own controls in graphite and cobalt. Saira Semi Condensed, Saira Stencil One and Martian Mono, self-hosted. Measured traces red `#C8341E`, predicted blue `#1F5FA8`.
+- **Stack:** the PEW shape (classic JS slices, `build.js`, generated `sw.js`), globals `BURN_SIM` / `BURN_VIS` / `BURN_SOUND`. Everything self-hosted, three.js vendored in `lib/`; CI runs the build check, sim tests and the balance bot.
+- **Rules worth knowing:** the sim is pure with named RNG streams (`rngStreams`, adapted from The Whip); SI units inside the sim; every physics change comes with an invariant test.
+- **Saves:** localStorage `brn-settings`, `brn-save`, `brn-slot1..3`; caches `brn-`; save code `BRN1:`.
+
+### Laminar
+
+- **Status:** the site's label is "In development", hidden on the studio site (added 16 November 2026). 0.8.0.0 on 16 November (`VERSION` file): PRs 0 to 7 of `docs/LAMINAR-PLAN.md` section 14 are built (the aero sim, shaping, the tunnel and its quirks, contracts and bids, failures, the career to the 2040 ending) and PR 8, the rest of sport, has started with speed skating. `docs/STATUS.md` says where it stands.
+- **What is in it:** a cycling career from a rented university tunnel: bid for a client's brief, shape the rider's position and kit in 3D, order a scale model, run it on the yaw turntable (smoke wand, rake, tufts, pressure taps), correct for the tunnel's hidden quirks, deliver a prediction, then watch the real event as a 3D replay. Rival firms, your own tunnel, workshop tools, staff, a soft landing when broke, save slots, save codes and backup files.
+- **Pitch:** an aerodynamics consultancy game. Shape a fix in 3D, build a scale model, prove it in the wind tunnel, then find out at the real event whether your tunnel told the truth.
+- **Setting and tone:** Laminar's own Tarnovia, 2010 to 2040, money in rubles (₽); Mostograd is one of its cities (Lombard owns Mostograd's canon). It is a separate take on the country from Hull Down's and shares none of its names. People are never hurt: riders lose time, pilots abort, models break. Real aero terms (CdA, Reynolds number, yaw); a fictional Tarnovian Cycling Federation, never the real UCI.
+- **Look:** "Cobalt lab": a bright, clean wind-tunnel lab, light first with a dark mode, cobalt instruments (`#2456E8`), Instrument Sans and Spline Sans Mono (no other Longlight game uses either).
+- **Stack:** TypeScript (strict), Vite, three.js 0.187 from npm, plain DOM UI, Vitest. Pages from Actions, `base: './'`. Release per `VERSION`, titled from the `PR <n>: summary — v<version>` merge.
+- **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic, with its own `det.ts` maths and named RNG streams; one truth, three views (hidden full-scale truth, the tunnel reading, the field result); the renderer only draws what the sim says. Names live in `docs/NAMES.md`.
+- **Saves:** three slots in IndexedDB `laminar` (falling back to `laminar.slot.<n>`), other keys `laminar.*`, save code `LAM1:`, design codes `LAMD1:`. No service worker yet (plan PR 14); its caches will start `laminar-`.
 
 ---
 
@@ -602,12 +592,15 @@ noted, so a repeated name reads as a mistake.
 
 | World | Games |
 | --- | --- |
-| Velmark, an alpine country; the Haldis valley (money in euros) | Escapement, Scrapline (one shared world on purpose) |
+| Velmark, an alpine country; the Haldis valley (money in euros) | Scrapline |
 | Mostograd, a fictional 2010s Russian river city; rubles | Lombard |
 | The prairie, Saskatoon | Prairie Engine Works, the studio site's sky |
 | Valmere (Valmeran dollar), Kestrel Football League | Season Ticket |
 | Dominion of Caledor, capital Ostrava | The Whip |
-| Aldersay, a harbour town on the Skerrow Isles; Skerrow crown (`kr`) | Quench |
+| Tarnovia (rubles), the town of Stavren; Mostograd borrowed from Lombard | Laminar (its own take on Tarnovia, separate from Hull Down's) |
+| Tarnovia, a state tank design bureau, 1980s to today | Hull Down |
+| Aqsor Range (Site 41), a decommissioned test range on a steppe salt flat, 2030s | Burn Rate |
+| A prop-trading firm's floor; fictional tickers | Funded |
 | Real world cities on procedural maps | Frontier Lab |
 
 **Names used in more than one game** (already clashing; avoid adding more):
@@ -615,7 +608,6 @@ noted, so a repeated name reads as a mistake.
 | Name | Where |
 | --- | --- |
 | **Kestrel** | Season Ticket (Kestrel Football League), The Whip (Kestrel Isle province), Frontier Lab (Kestrel model family). **Retire it.** |
-| **Kessel / Kessler** | Escapement (Kessel Peak Observatory and Trial; rival Kessler), Scrapline (rival Rudi Kessler) |
 | **Harbourline** | Season Ticket (Harbourline Bank), Frontier Lab (Harbourline AI, Harbourline Policy Group) |
 | **Hollis** | Prairie Engine Works (Hollis Hot Rods, Dale Hollis), Frontier Lab (Hollis Crane & Co.) |
 | **Lantern** | The Whip (Lantern Island riding), Frontier Lab (Lantern model family) |
@@ -624,7 +616,6 @@ noted, so a repeated name reads as a mistake.
 | **Northwind** | Prairie Engine Works (Northwind Tyre), Frontier Lab (Northwind & Pike) |
 | **Courier** | Season Ticket (*The Valmere Courier*), The Whip (Valmont Courier) |
 | **Ledger** | The Whip (*The Ostrava Ledger*), Frontier Lab (the Ledger archive) |
-| **Ostrander** | Escapement (rival Ostrander Frères and staff Mette Ostrander) |
 | **V-countries** | Velmark, Valmere, Valmont (a Whip province): three invented places that sound alike. Pick another starting letter. |
 | **"Prairie"** | Prairie Engine Works, Prairie Open Models and Prairie State (Frontier Lab), Prairie Junction (Season Ticket) |
 | **Nimbus** | Lombard (Nimbus game consoles), Frontier Lab (Nimbus Labs, Nimbus Health) |
@@ -644,10 +635,11 @@ date or institution.
     the Lion Bridge, the Kupetsky drawbridge (opens 1:25 to
     4:50), Sennaya market, the Sukhov Canal; the paper *Вечерний Мостоград /
     Evening Mostograd*; one spring flood each career, in April.
-- **Velmark and the Haldis** (Escapement owns it): Escapement
-  `docs/DESIGN.md`, the **Setting** and **Money** lines (euros; Kessel Peak; the Haldis Chronometry Bureau). Scrapline borrowed the
-  names only: its `CLAUDE.md` says not to read or follow the Escapement repo
-  for anything else, and that rule wins inside Scrapline.
+- **Velmark and the Haldis** (Scrapline owns it since Escapement was
+  retired on 16 November 2026): Scrapline's `WORLD` table in
+  `src/app/state.js` and `docs/DESIGN.md`. Money is euros.
+- **Mostograd in Laminar:** Laminar puts Mostograd in its Tarnovia; any
+  Mostograd place or institution there follows Lombard's file above.
 
 ---
 
@@ -657,7 +649,9 @@ date or institution.
 
 | Family | Games |
 | --- | --- |
-| Craft career: build or make something part by part, test it, compete or sell, in a workshop that grows | Prairie Engine Works (engines), Escapement (watches), Scrapline (combat robots), Quench (blades) |
+| Craft career: build or make something part by part, test it, compete or sell, in a workshop that grows | Prairie Engine Works (engines), Scrapline (combat robots) |
+| Engineering to a brief: design against a spec, test, read the report | Burn Rate (rocket motors), Hull Down (tanks), Laminar (aerodynamics) |
+| Roguelike runs | Funded (prop-firm trading) |
 | Tycoon and management | Season Ticket (football club), Frontier Lab (AI lab), Lombard (pawn shop) |
 | Politics and negotiation | The Whip (parliament) |
 
@@ -665,13 +659,13 @@ date or institution.
 
 - Almost every game is a **career on a weekly clock** ("act, then Close week").
 - Almost every game is **dark-themed** (slate, navy, felt, console green). Only
-  The Whip (cream paper) and the light themes of PEW, Escapement and
+  The Whip (cream paper) and the light themes of PEW and
   Scrapline break that.
 - Most are **single-player management**; only Scrapline's
   fights are real-time action.
-- Three games share a near-identical classic-JS stack (PEW, Escapement and
-  Scrapline); the TypeScript games each set up their own.
-- All four craft careers share a weekly clock, a workshop that grows and rival
+- Three games share a near-identical classic-JS stack (PEW, Scrapline and
+  Burn Rate); the TypeScript games each set up their own.
+- All three craft careers share a weekly clock, a workshop that grows and rival
   shops. A new craft game should change at least two of those.
 
 **Looks already in use** (pick something visibly different for a new game)
@@ -679,13 +673,15 @@ date or institution.
 | Look | Game |
 | --- | --- |
 | Slate and clay "Shop Glass", Chakra Petch / Barlow / IBM Plex Mono | Prairie Engine Works |
-| Dark felt, brass and steel, Space Grotesk / JetBrains Mono | Escapement |
 | Longlight slate and clay workshop, Space Grotesk / JetBrains Mono | Scrapline |
 | Paper tags, receipts, worn plastic, Space Grotesk / IBM Plex Mono (Longlight menus) | Lombard |
 | Navy, gold and teal, system fonts, semi-realistic 3D | Season Ticket |
 | "Banknote Deco": engraved isometric map, Bodoni Moda / Public Sans | Frontier Lab |
 | "The Order Paper": cream paper, ink, stamps, Newsreader | The Whip |
-| Chalk and slate with a heat-colour ramp, Zilla Slab / Atkinson Hyperlegible | Quench |
+| Drawing-office paper and ink (blueprint as the dark option), Archivo Narrow / Archivo / Spline Sans Mono | Hull Down |
+| Rendered trading desk with green, red, ivory and lilac monitors, Space Grotesk | Funded |
+| "Faded state-range": concrete, state green, stencil red, Saira / Martian Mono | Burn Rate |
+| "Cobalt lab": bright wind-tunnel lab, Instrument Sans / Spline Sans Mono | Laminar |
 
 **Open space** (observations, not decisions; Kelbo picks):
 
@@ -706,17 +702,17 @@ date or institution.
 
 ## 10. Reuse map: where the best version of each system lives
 
-Paths are as of this snapshot. Classic-JS games (PEW, Escapement, Scrapline)
+Paths are as of this snapshot. Classic-JS games (PEW, Scrapline, Burn Rate)
 share globals and one `S` state object; TypeScript games are modules.
 Pick the source that matches your stack.
 
 | Need | Best source | Path | Notes |
 | --- | --- | --- | --- |
-| Save code + backup file + persist + reminder, classic JS | Prairie Engine Works / Escapement / Scrapline | `src/app/savecode.js` + `check-savecode.js` | Atomic restore and node tests with a pretend localStorage. Tied to `S`, `snapshot`/`hydrate`. |
+| Save code + backup file + persist + reminder, classic JS | Prairie Engine Works / Scrapline | `src/app/savecode.js` + `check-savecode.js` | Atomic restore and node tests with a pretend localStorage. Tied to `S`, `snapshot`/`hydrate`. |
 | Compressed save + crash freeze, TypeScript | Season Ticket | `src/game/save.ts`, `saveKey.ts`, `saveCheck.ts` | fflate zlib, 60 MB inflate cap, a backup slot, saving frozen after a crash. |
 | Save-safety UI on its own | Season Ticket | `src/ui/career/saveSafety.ts` | Persist, backup file via share sheet, reminder; imports only a JSON config. |
 | IndexedDB slots with localStorage fallback | Frontier Lab | `src/sim/save/slotData.ts` | Migrations and `persist()`. |
-| Slice build with checks + service worker | Prairie Engine Works (also Escapement, Scrapline) | `build.js` + `src/manifest.txt` | Zero dependencies; `--check` catches stale output, compile errors and duplicate functions; content-hashed cache name. Change the prefix. |
+| Slice build with checks + service worker | Prairie Engine Works (also Scrapline, Burn Rate) | `build.js` + `src/manifest.txt` | Zero dependencies; `--check` catches stale output, compile errors and duplicate functions; content-hashed cache name. Change the prefix. |
 | Graphics tiers + auto step-down | Prairie Engine Works | `src/app/perf.js` | Lite/Full/Ultra; drops a tier under about 27 fps for about 8 s. TS: Season Ticket `src/render/quality.ts`. |
 | PWA update bar, install, iOS tip | Prairie Engine Works | `src/app/pwa.js` | TS versions: Season Ticket `src/pwa/`, Frontier Lab `src/app/pwa/` (with a `?nosw` escape hatch). |
 | Loading screen with real progress | Prairie Engine Works | `#boot` in `src/html/head.html` | TypeScript: Season Ticket's inline loading screen in `index.html` + `src/ui/bootScreen.ts`. |
@@ -724,19 +720,14 @@ Pick the source that matches your stack.
 | Deterministic maths (sin, cos, exp, log, pow) | Season Ticket | `src/sim/spatial/det.ts` | IEEE-exact ops only; its test scans for banned `Math` calls. Also Frontier Lab `src/sim/detmath.ts`. |
 | Daily and shared seeds | The Whip | `src/sim/modes.js` `dailySeed()` | |
 | Headless balance bot | The Whip `src/sim/bot.js` + `tests.html`; Frontier Lab `scripts/balance.ts`; Scrapline `tools/fight-test.js` | | Pick by stack. |
-| Sim test harness with named builds | Escapement | `tools/sim-test.js` | Cuts the sim block from the built page and runs it with `vm`; `--brief` for commit messages. |
-| Coach-card tour + tap-to-explain glossary | Escapement | `src/app/help.js` (`TUT`, `GLOSS`, `data-g`) | |
+| Sim test harness with named builds | Scrapline (also PEW) | `tools/sim-test.js` | Cuts the sim block from the built page and runs it with `vm`; `--brief` for commit messages. |
 | Glossary tagging in rendered text | The Whip | `src/ui/gloss.js` + `data/glossary.json` | |
 | All UI text in data with `{slot}` filling | The Whip | `src/sim/fill.js`, `src/ui/text.js`, `data/strings.en.json` | |
-| Sheets the phone's Back button closes | Escapement | `openSheet` / `sheetHist` in `src/app/state.js` | |
-| "Where to fix it" jump | Escapement | `CERT_FIX` / `goFix` in `src/app/test.js` | Rings the control to change. |
-| Share a canvas (share sheet or download) | Escapement | `src/app/share.js` | 13 lines, standalone. |
-| Certificate and trophy cards | Escapement `src/app/cards.js`; PEW `src/app/rcard.js` (ghost curve, holographic tilt) | | |
+| Trophy cards | PEW `src/app/rcard.js` (ghost curve, holographic tilt) | | |
 | Photo mode | Prairie Engine Works `src/app/photo.js` + `src/vis/photo.js` | | |
-| Metal materials, studio HDRI | Escapement | `src/vis/studio.js`, `src/vis/finish.js` | Perlage, Côtes de Genève, graining; cheap Lite path. |
-| Scripted Blender props (no Blender UI) | Escapement `tools/blender/`; Scrapline `tools/blender-*.py`; Lombard bake in Actions | | Commit the `.glb` output. |
+| Scripted Blender props (no Blender UI) | Scrapline `tools/blender-*.py`; Lombard bake in Actions | | Commit the `.glb` output. |
 | glTF packer for phones | Prairie Engine Works | `tools/pack-model.py` | Shrinks textures, quantizes vertices; needs Pillow and numpy. |
-| Home-screen icons from an SVG | PEW / Escapement | `tools/make-icons.js` | Needs Playwright. |
+| Home-screen icons from an SVG | PEW / Scrapline | `tools/make-icons.js` | Needs Playwright. |
 | Instanced crowds of jointed figures | The Whip | `src/body.js`, `src/figures.js`, `src/motion.js` | A full House in about 11 draw calls. |
 | Camera framing around a bottom sheet | The Whip | `src/framing.js` | Portrait sheet or landscape side panel. |
 | Procedural modular stadium, instanced crowd | Season Ticket | `src/render/stadium/` | |
@@ -754,7 +745,6 @@ Pick the source that matches your stack.
 | First-load size budget check | Season Ticket | `scripts/check-first-load.mjs` | |
 | Every asset credited, tested | Season Ticket | `tests/credits.test.ts` | Writes `CREDITS.md`. |
 | Engine voice from the build | Prairie Engine Works | `src/sound/profile.js`, `synth.js`, `samples.js` | |
-| Watch tick at any beat rate | Escapement | `src/sound/tick.js` | 53 lines, standalone. |
 | Haptics pattern table | The Whip | `src/haptics.js` | |
 | Save code, TypeScript, deflate | Lombard | `src/game/save/code.ts` | `LMB1.<data>.<checksum>`: raw deflate (fflate), base64url, FNV-1a in base36. |
 | IndexedDB career slots + migration fixtures | Lombard | `src/persist/` + `tests/` | Three slots, settings in localStorage, old saves tested. |
@@ -791,8 +781,8 @@ Each is a pitch for Kelbo, not a plan. Repo names in brackets.
    official logo files, the five colours, and the
    `© <year> Kelbo / Longlight Interactive` line on splash and credits (section 3).
 2. **Offline for every installed game**: add a service worker and self-host
-   fonts (The Whip). PEW,
-   Escapement and Scrapline show the pattern.
+   fonts (The Whip). PEW
+   and Scrapline show the pattern.
 3. **Cache cleanup on the shared origin**: done for the studio site on
    7 November 2026 (section 5). Check each game's service worker follows the
    same rule when it's next touched.
@@ -805,12 +795,12 @@ Each is a pitch for Kelbo, not a plan. Repo names in brackets.
    prefix or checksum; move it to the LZW + base64url + checksum shape under a
    new prefix, keeping the old import.
 7. **Retire the clashing names** in section 8 (Kestrel first, then Harbourline,
-   Hollis, Kessel) the next time each game is touched.
+   Hollis) the next time each game is touched.
 8. **Publish a GitHub Release on every version bump** so the studio site shows
    the right version (Scrapline still shows 0.1.12.0; others drift too).
 9. **Tidy stray screenshots committed by accident**: Scrapline `undefined/`.
 10. **Docs drift**: several CLAUDE.md files quote older versions or counts
-    (PEW, Season Ticket, Escapement). A docs refresh each release
+    (PEW, Season Ticket). A docs refresh each release
     keeps sessions from trusting stale numbers.
 11. **Lombard offline**: Lombard has no service worker yet. Add one with a
     `lombard-` cache prefix (PEW's pattern, or Season Ticket's for a Vite build).
