@@ -7,7 +7,9 @@
  * Not every field is checked: the ones money, squads, the table and the fixtures hang on are.
  */
 import { C, type Career } from '../sim/career';
+import { CORNER_IDS, STAND_IDS, UPGRADE_IDS } from '../sim/career/types';
 import { POSITIONS } from '../sim/types';
+import { crestProblem } from './crestCheck';
 
 const PHASES = new Set(['preseason', 'season', 'review', 'gameOver']);
 
@@ -55,6 +57,20 @@ function playerProblem(id: string, v: unknown): string | null {
   return null;
 }
 
+/** A ground is drawn behind the title screen too, so its parts are checked the same way. */
+function stadiumProblem(id: string, v: unknown): string | null {
+  if (!isObj(v) || !isObj(v.stands) || !isObj(v.look)) return `stadium for ${id}`;
+  const stands = v.stands;
+  if (!STAND_IDS.every((side) => nums(stands[side], ['level', 'roof', 'boxRows']))) return `stands for ${id}`;
+  if (!nums(v.corners, CORNER_IDS) || !nums(v.upgrades, UPGRADE_IDS) || !nums(v, ['demand', 'startDemand'])) return `stadium for ${id} has a bad number`;
+  if (typeof v.look.seats !== 'string' || typeof v.look.mow !== 'string' || typeof v.look.roof !== 'string') return `stadium look for ${id}`;
+  if (!Array.isArray(v.projects)) return `stadium projects for ${id}`;
+  for (const p of v.projects as unknown[]) {
+    if (!isObj(p) || typeof p.id !== 'string' || typeof p.kind !== 'string' || typeof p.target !== 'string' || !nums(p, ['toLevel', 'weeks', 'weeksLeft', 'cost'])) return `stadium project for ${id}`;
+  }
+  return null;
+}
+
 /** The first thing wrong with the career, or null if it looks whole. */
 export function careerProblem(career: Career): string | null {
   const c = career as unknown as Obj;
@@ -63,6 +79,13 @@ export function careerProblem(career: Career): string | null {
   if (!nums(c.owner, ['fortune', 'injected'])) return 'owner';
   if (!nums(c.ladder, ['level', 'goodWeeks'])) return 'lender ladder';
   if (!isObj(c.crest) || !isObj(c.delegation) || !isObj(c.story) || !isObj(c.news) || !isObj(c.replays)) return 'missing part';
+  const crestBad = crestProblem(c.crest);
+  if (crestBad) return crestBad;
+  // The lists the story and the paper are read from on the first screens of a career.
+  for (const k of ['events', 'timers', 'decisions'] as const) if (!Array.isArray(c.story[k])) return `story ${k}`;
+  for (const k of ['items', 'posts', 'wire'] as const) if (!Array.isArray(c.news[k])) return `news ${k}`;
+  const pick = c.userSelection;
+  if (pick !== null && pick !== undefined && (!isObj(pick) || !isObj(pick.tactics) || !isObj(pick.lineup) || !strings(pick.lineup.starters) || !strings(pick.lineup.bench))) return 'your line-up';
   for (const k of ['loansIn', 'incomingBids', 'sponsorOffers', 'staffPool', 'inbox', 'history'] as const) if (!Array.isArray(c[k])) return k;
   if (!isObj(c.counters) || !Object.values(c.counters).every(num)) return 'counters';
   if (!isObj(c.playerSeason) || !isObj(c.books) || !isObj(c.stadiums) || !isObj(c.owners)) return 'club records';
@@ -90,7 +113,8 @@ export function careerProblem(career: Career): string | null {
     for (const sid of t.staffIds) if (!isObj(league.staff[sid])) return `club ${id} staff ${sid}`;
     const bad = booksProblem(id, (c.books as Obj)[id]);
     if (bad) return bad;
-    if (!isObj((c.stadiums as Obj)[id])) return `stadium for ${id}`;
+    const groundBad = stadiumProblem(id, (c.stadiums as Obj)[id]);
+    if (groundBad) return groundBad;
   }
   if (!teamIds.has(c.userTeamId)) return 'your club is missing';
 

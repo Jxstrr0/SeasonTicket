@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import './helpers/quickCareer';
 import { C, advanceCareer, createCareer } from '../src/sim/career';
 import { decodeSave, freezeSaves, loadCareer, saveCareer, STORAGE_KEY, type SaveStore } from '../src/game/save';
 import { buildReport, REPORT_LIMIT } from '../src/ui/career/report';
-import { isNoise } from '../src/ui/career/crash';
+import { isNoise, titleIsSafeMode } from '../src/ui/career/crash';
 import VERSION from '../src/data/meta/version.json';
 
 function memoryStore(): SaveStore & { data: Map<string, string> } {
@@ -50,6 +50,16 @@ describe('the crash safety net', () => {
     expect(text).toContain('Error: TypeError');
     expect(text.length).toBeLessThan(REPORT_LIMIT / 4);
     expect(buildReport({ where: null, device: 'x' })).toContain('Career: none');
+  });
+
+  it('opens the title without the saved career once after a crash there, then forgets (1.2.6.0)', () => {
+    const notes = new Map<string, string>([['seasonticket.safeTitle', '1']]);
+    vi.stubGlobal('sessionStorage', { getItem: (k: string) => notes.get(k) ?? null, setItem: (k: string, v: string) => void notes.set(k, v), removeItem: (k: string) => void notes.delete(k) });
+    expect(titleIsSafeMode()).toBe(true);
+    // The note is used up, so the load after this one opens the saved career again; this load keeps its answer.
+    expect(notes.has('seasonticket.safeTitle')).toBe(false);
+    expect(titleIsSafeMode()).toBe(true);
+    vi.unstubAllGlobals();
   });
 
   it('ignores browser noise but not the game breaking', () => {

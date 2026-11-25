@@ -30,6 +30,15 @@ describe('title summary', () => {
     expect(loadTitleSummary()).toBeNull();
   });
 
+  it('reads a crest the title could not draw as nothing saved (1.2.6.0)', () => {
+    const s = fakeStorage();
+    vi.stubGlobal('localStorage', s);
+    for (const crest of [{}, [], { ...summary.crest, initials: null }, { ...summary.crest, primary: 4 }, { ...summary.crest, shape: 'blob' }]) {
+      s.setItem('seasonticket.title', JSON.stringify({ ...summary, crest }));
+      expect(loadTitleSummary(), JSON.stringify(crest)).toBeNull();
+    }
+  });
+
   it('reads garbled or missing storage as nothing saved', () => {
     const s = fakeStorage();
     vi.stubGlobal('localStorage', s);

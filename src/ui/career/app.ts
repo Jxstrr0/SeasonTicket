@@ -90,7 +90,7 @@ import { renderCredits } from '../views/career/credits';
 import { renderSettings } from '../views/career/settings';
 import { buildReport, deviceSummary } from './report';
 import { checkStorage, deliverBackupFile, lastBackupText, loadLastBackup, needsBackupReminder, noteBackup, readBackupFile, requestPersist, storageLine, storageState } from './saveSafety';
-import { hasCrashed, setCrashWhere, showCrash } from './crash';
+import { hasCrashed, setCrashOnTitle, setCrashWhere, showCrash, titleIsSafeMode } from './crash';
 import { copyText } from '../clipboard';
 import { loadTips, markSeen, nextTip, onScreenOf, storeTips, tipCandidates, tipsPaused, type TipId } from './tips';
 import { isQualitySetting, storeQuality, type QualityTier } from '../../render/quality';
@@ -280,8 +280,9 @@ export class CareerApp {
         this.render();
       },
     );
-    this.loadStored();
+    this.loadStored(titleIsSafeMode());
     setCrashWhere(() => this.where());
+    setCrashOnTitle(() => this.ui.screen === 'title');
     root.addEventListener('click', (e) => this.onClick(e));
     // Turning the phone changes how tall the top bar is.
     window.addEventListener('resize', () => this.syncOffice());
@@ -304,10 +305,27 @@ export class CareerApp {
   // Saving and rendering
   // -------------------------------------------------------------------------
 
-  private loadStored(): void {
+  /**
+   * Reads the saved career. `safe` is the load after a crash on the title screen: the saved
+   * career is left where it is and not opened, so the title can be used (1.2.6.0).
+   */
+  private loadStored(safe = false): void {
     try {
-      this.career = loadCareer();
-      this.ui.title.error = null;
+      if (safe && savedMark() !== null) {
+        this.career = null;
+        this.ui.title.error =
+          'The game stopped on the title screen last time, so the saved career was not opened. It is still stored on this device: reload to try it again. Starting a new career or loading a save code keeps it as the backup.';
+      } else {
+        const career = loadCareer();
+        // A dry run of what the title screen draws from the career. A save that can't get through it is
+        // treated as unreadable here, where there is a message, and not later, where there was a dead end.
+        if (career) {
+          userTeam(career).name.trim();
+          buildStadiumSnapshot(career);
+        }
+        this.career = career;
+        this.ui.title.error = null;
+      }
     } catch (err) {
       this.career = null;
       this.ui.title.error = err instanceof SaveError ? err.message : `The saved career could not be read: ${errorText(err)}`;
@@ -674,7 +692,14 @@ export class CareerApp {
   private syncTitle(): void {
     const { ui, career } = this;
     const on = ui.screen === 'title' || (ui.screen === 'new' && !ui.draft);
-    setTitleBackdrop(on, on ? this.officeTier() : null, on && career ? buildStadiumSnapshot(career) : null);
+    let ground: ReturnType<typeof buildStadiumSnapshot> | null = null;
+    try {
+      ground = on && career ? buildStadiumSnapshot(career) : null;
+    } catch {
+      // The ground could not be read from this career: the title keeps its plain backdrop.
+      ground = null;
+    }
+    setTitleBackdrop(on, on ? this.officeTier() : null, ground);
   }
 
   /** The tier the office runs at, or null when the plain menus are on. */

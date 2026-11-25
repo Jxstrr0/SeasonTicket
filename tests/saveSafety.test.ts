@@ -70,6 +70,27 @@ describe('save check (Stage 7.8)', () => {
     for (const [what, edit] of breaks) expect(() => decodeSave(edited(career, edit)), what).toThrow(SaveError);
   });
 
+  it('refuses edits to what the title screen draws: the crest, the ground, the line-up (1.2.6.0)', () => {
+    const career = newCareer();
+    const user = career.userTeamId;
+    const breaks: [string, (c: any) => void][] = [
+      ['a crest with no initials', (c) => delete c.crest.initials],
+      ['a crest colour as a number', (c) => (c.crest.primary = 7)],
+      ['a crest shape the game does not have', (c) => (c.crest.shape = 'star-fort')],
+      ['an empty crest', (c) => (c.crest = {})],
+      ['a ground with no stands', (c) => (c.stadiums[user] = {})],
+      ['a stand as a number', (c) => (c.stadiums[user].stands.north = 3)],
+      ['a stand level as words', (c) => (c.stadiums[user].stands.north.level = 'huge')],
+      ['a corner missing', (c) => delete c.stadiums[user].corners.ne],
+      ['building work as a string', (c) => (c.stadiums[user].projects = 'soon')],
+      ['a null club in the list', (c) => (c.season.league.teams[2] = null)],
+      ['a line-up as a list', (c) => (c.userSelection = ['p1'])],
+      ['the paper as a string', (c) => (c.news.items = 'stop press')],
+      ['story events missing', (c) => delete c.story.events],
+    ];
+    for (const [what, edit] of breaks) expect(() => decodeSave(edited(career, edit)), what).toThrow(SaveError);
+  });
+
   it('still loads an edit that keeps the shape, such as more cash', () => {
     const career = newCareer();
     const code = edited(career, (c) => (c.books[career.userTeamId].cash = 99_000_000));

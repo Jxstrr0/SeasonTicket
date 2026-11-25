@@ -175,7 +175,7 @@ export function decodeSave(code: string): Career {
   if (!career.season || !career.books || !career.userTeamId) throw new SaveError('The save code holds no career.');
   // A code can inflate and parse yet be cut short or hand-edited: check the parts every screen reads.
   const league = career.season.league;
-  if (!league || !Array.isArray(league.teams) || !league.players || !league.teams.some((t) => t.id === career.userTeamId) || !career.books[career.userTeamId] || careerProblem(career)) {
+  if (!league || !Array.isArray(league.teams) || !league.players || !league.teams.some((t) => t?.id === career.userTeamId) || !career.books[career.userTeamId] || careerProblem(career)) {
     throw new SaveError('The save code is damaged or incomplete. Check it was copied in full.');
   }
   return career;

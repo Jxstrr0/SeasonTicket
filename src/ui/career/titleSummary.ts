@@ -3,6 +3,7 @@
  * so the start-up screen can show "Continue" before the game's code has downloaded
  * (Stage 7.4). The save itself stays the truth: the game rewrites this once it loads.
  */
+import { crestProblem } from '../../game/crestCheck';
 import type { SavedSummary } from './state';
 
 const KEY = 'seasonticket.title';
@@ -22,7 +23,8 @@ export function loadTitleSummary(key = KEY): SavedSummary | null {
     const raw = store()?.getItem(key);
     if (!raw) return null;
     const s = JSON.parse(raw) as Partial<SavedSummary> | null;
-    return s && typeof s.club === 'string' && typeof s.season === 'number' && s.crest && typeof s.crest === 'object' ? (s as SavedSummary) : null;
+    // The crest is drawn straight from this note, so one the game can't draw is treated as no note (1.2.6.0).
+    return s && typeof s.club === 'string' && typeof s.season === 'number' && !crestProblem(s.crest) ? (s as SavedSummary) : null;
   } catch {
     return null;
   }
