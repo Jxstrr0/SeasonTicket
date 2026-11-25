@@ -5,7 +5,7 @@
  */
 import { renderCareerTitle } from '../views/career/title';
 import { loadTitleSummary } from './titleSummary';
-import { installCrashGuard, showCrash } from './crash';
+import { installCrashGuard, showCrash, titleIsSafeMode } from './crash';
 import { registerServiceWorker } from '../../pwa/register';
 import { setTitleBackdrop } from './titleBackdrop';
 import { playSplash } from './splash';
@@ -17,7 +17,15 @@ export function bootCareer(root: HTMLElement): void {
   registerServiceWorker();
   const layer = document.createElement('div');
   layer.id = 'ui-layer';
-  layer.innerHTML = renderCareerTitle({ saved: loadTitleSummary(), error: null, importText: '', backup: null, confirm: null });
+  // After a crash on the title screen the saved career is left out once, so the page can be used (1.2.6.0).
+  const saved = titleIsSafeMode() ? null : loadTitleSummary();
+  const blank = { saved: null, error: null, importText: '', backup: null, confirm: null };
+  try {
+    layer.innerHTML = renderCareerTitle({ ...blank, saved });
+  } catch {
+    // The note about the saved career could not be drawn: show the title without it. The game checks the save itself once it loads.
+    layer.innerHTML = renderCareerTitle(blank);
+  }
   root.replaceChildren(layer);
   setTitleBackdrop(true);
   playSplash();

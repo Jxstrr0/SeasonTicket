@@ -7,6 +7,11 @@
  * career in memory may be half way through the action that broke). Reloading carries on
  * from the stored save.
  *
+ * A crash on the title screen is the one a reload could not get past: the title opens the
+ * saved career again and breaks again. So a crash there leaves a note for the next load
+ * (`seasonticket.safeTitle`, this tab only), which opens the title once without the saved
+ * career. The save stays stored; reloading again tries it again (1.2.6.0).
+ *
  * This file is plain DOM with no game imports, so the start-up script installs it before
  * the rest of the game has downloaded.
  */
@@ -22,6 +27,32 @@ let where: () => string | null = () => {
   const s = loadTitleSummary();
   return s ? `${s.club}, season ${s.season}` : null;
 };
+
+/** Until the game says which screen it is on, a crash counts as one on the title (the start-up screen is the title). */
+let onTitle: () => boolean = () => true;
+const SAFE_KEY = 'seasonticket.safeTitle';
+
+/** Lets the running game say whether the title screen is the one showing. */
+export function setCrashOnTitle(fn: () => boolean): void {
+  onTitle = fn;
+}
+
+/**
+ * True when the last load in this tab broke on the title screen. Asking uses the note up,
+ * so only the next load skips the saved career. Call it once per load, before anything draws.
+ */
+let safeTitle: boolean | null = null;
+export function titleIsSafeMode(): boolean {
+  if (safeTitle !== null) return safeTitle;
+  safeTitle = false;
+  try {
+    safeTitle = sessionStorage.getItem(SAFE_KEY) === '1';
+    sessionStorage.removeItem(SAFE_KEY);
+  } catch {
+    // Storage blocked: carry on as a normal load.
+  }
+  return safeTitle;
+}
 
 /** True once the crash screen has shown: the game must not save after that. */
 export function hasCrashed(): boolean {
@@ -79,13 +110,21 @@ export function showCrash(err: unknown): void {
   }
   const error = errorSummary(err);
   const save = storedSave();
+  let titleCrash = false;
+  try {
+    titleCrash = onTitle();
+    if (titleCrash && save) sessionStorage.setItem(SAFE_KEY, '1');
+  } catch {
+    titleCrash = false;
+  }
+  const safeNote = 'Your career is kept as it was saved. Reload opens the title screen without it, so you can start a new career or load a save code or backup file; reloading once more tries the saved career again.';
   const box = document.createElement('div');
   box.className = 'crash';
   box.setAttribute('role', 'alertdialog');
   box.setAttribute('aria-labelledby', 'crash-title');
   box.innerHTML = `<section class="card crash-card">
     <h1 id="crash-title">Something went wrong</h1>
-    <p>Sorry, the game hit a problem it could not get past. ${save ? 'Your career is safe: it is kept as it was saved just before this happened. Reload to carry on.' : 'Reload to start again.'}</p>
+    <p>Sorry, the game hit a problem it could not get past. ${save ? (titleCrash ? safeNote : 'Your career is safe: it is kept as it was saved just before this happened. Reload to carry on.') : 'Reload to start again.'}</p>
     <div class="row-actions">
       <button type="button" data-crash="reload">Reload</button>
       ${save ? '<button type="button" class="btn-secondary" data-crash="copy-save">Copy save code</button>' : ''}
