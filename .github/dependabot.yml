@@ -1,5 +1,6 @@
-# Dependabot: one grouped pull request a month for minor and patch updates.
-# Major versions and three.js are skipped: those get done by hand.
+# Dependabot: one grouped pull request a month for minor and patch npm updates,
+# and one for the GitHub Actions the workflows use.
+# npm major versions and three.js are skipped: those get done by hand.
 # Security alerts are separate and still arrive for everything.
 version: 2
 updates:
@@ -21,3 +22,19 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "three"
       - dependency-name: "@types/three"
+
+  # GitHub Actions (26 November 2026): one grouped pull request a month for the actions the
+  # workflows use, major versions included, so the pinned actions don't go stale and a fixed
+  # hole reaches us. Each action stays pinned to a full commit hash. The studio's security
+  # scan flags a new pin until it has been checked against the action's own release.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    # The same one-week wait as above.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
