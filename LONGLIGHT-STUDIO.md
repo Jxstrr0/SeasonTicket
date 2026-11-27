@@ -1,6 +1,6 @@
 # Longlight Interactive: studio catalogue
 
-> **Snapshot: 7 November 2026**, tables refreshed 16 November (Hull Down, Funded, Burn Rate and Laminar added; Escapement retired); Mainline added 25 November; The Whip retired 25 November; Bump Stop added 25 November; Crumple added 26 November (its world moved to Varenia the same day); Outwash retired 26 November; Mainline retired 27 November. One reference file for every Longlight game.
+> **Snapshot: 7 November 2026**, tables refreshed 16 November (Hull Down, Funded, Burn Rate and Laminar added; Escapement retired); Mainline added 25 November; The Whip retired 25 November; Bump Stop added 25 November; Crumple added 26 November (its world moved to Varenia the same day); Outwash retired 26 November; Mainline retired 27 November; Bump Stop listed on the site 27 November. One reference file for every Longlight game.
 > The same file is dropped into each game repo. Versions and details drift;
 > when something matters, check the live repo. A game's own `CLAUDE.md` always
 > wins over this file inside that game's repo.
@@ -9,11 +9,11 @@
 > `projects.json` and leaves out Kelbo's private and parked repos. Ask Kelbo
 > about those.
 >
-> **Six games are listed on the site** (16 November 2026): Prairie Engine
-> Works, Scrapline, Season Ticket, Funded, Lombard and Burn Rate. Five more
-> carry `"hidden": true` in `projects.json`: Frontier Lab (hidden on
+> **Seven games are listed on the site** (27 November 2026): Prairie Engine
+> Works, Scrapline, Season Ticket, Funded, Lombard, Burn Rate and Bump Stop.
+> Four more carry `"hidden": true` in `projects.json`: Frontier Lab (hidden on
 > 15 November, when Burn Rate took its place) and
-> the newest games Hull Down, Laminar, Bump Stop and Crumple, hidden until Kelbo says
+> the newest games Hull Down, Laminar and Crumple, hidden until Kelbo says
 > to show them. A hidden game has no card, no game page and no devlog or
 > release lines; its repo and live game stay up, and everything in this file
 > still applies to it.
@@ -81,10 +81,10 @@ on its own subdomain of **longlight.games** (November 2026; the old
 | Season Ticket | [Jxstrr0/SeasonTicket](https://github.com/Jxstrr0/SeasonTicket) | https://seasonticket.longlight.games/ | Listed |
 | Funded | [Jxstrr0/Funded](https://github.com/Jxstrr0/Funded) | https://funded.longlight.games/ | Listed |
 | Burn Rate | [Jxstrr0/BurnRate](https://github.com/Jxstrr0/BurnRate) | https://burnrate.longlight.games/ | Listed |
+| Bump Stop | [Jxstrr0/BumpStop](https://github.com/Jxstrr0/BumpStop) | https://bumpstop.longlight.games/ | Listed |
 | Frontier Lab | [Jxstrr0/FrontierLab](https://github.com/Jxstrr0/FrontierLab) | https://frontierlab.longlight.games/ | Hidden |
 | Hull Down | [Jxstrr0/hull-down](https://github.com/Jxstrr0/hull-down) | https://hulldown.longlight.games/ | Hidden |
 | Laminar | [Jxstrr0/Laminar](https://github.com/Jxstrr0/Laminar) | https://laminar.longlight.games/ | Hidden |
-| Bump Stop | [Jxstrr0/BumpStop](https://github.com/Jxstrr0/BumpStop) | https://bumpstop.longlight.games/ | Hidden |
 | Crumple | [Jxstrr0/Crumple](https://github.com/Jxstrr0/Crumple) | https://crumple.longlight.games/ | Hidden |
 | Studio site | [Jxstrr0/Kelbo.Website](https://github.com/Jxstrr0/Kelbo.Website) | https://longlight.games/ | — |
 
@@ -187,8 +187,8 @@ cost nothing, keep old copies apart, and let a game move again safely.
 | Hull Down | `hulldown.*` + IndexedDB `hulldown` | `hulldown-` | `HD1:` |
 | Funded | `funded.*` (`funded.run.v1`, `funded.meta.v1`, `funded.audio.v1`) | none (no service worker) | none |
 | Burn Rate | `brn-settings`, `brn-save`, `brn-slot1..3` | `brn-` | `BRN1:` |
+| Bump Stop | `bumpstop.*` + IndexedDB `bumpstop` | `bumpstop-` | `BMP1:` (truck builds `BMPT1:`; backup file `bump-stop-backup-YYYY-MM-DD.txt`; ghosts `BMPG1:`) |
 | Laminar | `laminar.*` + IndexedDB `laminar` (slots) | none yet (use `laminar-` when one is added) | `LAM1:` (designs `LAMD1:`) |
-| Bump Stop | `bumpstop.*` + IndexedDB `bumpstop` (from plan PR 8) | `bumpstop-` | `BMP1:` (truck builds `BMPT1:`; backup file `bump-stop-backup-YYYY-MM-DD.txt`) |
 | Crumple | `crumple.*` + IndexedDB `crumple` (from plan PR 10) | `crumple-` | `CRM1:` (designs `CRMD1:`; backup file `crumple-backup-YYYY-MM-DD.txt`) |
 
 > **Fixed on 7 November 2026:** the studio site's `sw.js` used to delete every
@@ -213,10 +213,10 @@ site (`"hidden": true`); they are still live at their own addresses.
 | Funded | Polishing | 0.9.0.4 | Prop-firm trading roguelike: five-day evals, three desks, edge cards | A trading firm's desk (fictional tickers) | Portrait 9:16 frame | Plain ES modules, no build; Blender-rendered backdrops |
 | Lombard | Polishing | 1.4.6.1 | First-person pawn shop sim: inspect, appraise, haggle; a crime layer | Mostograd, a 2010s Russian river city | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 | Burn Rate | Released | 1.6.1.1 | Solid rocket motor design: design, predict, static fire, incident report | Aqsor Range (Site 41), a steppe salt flat, 2030s | Portrait first | Classic JS + `build.js` (PEW stack), three vendored in `lib/` |
+| Bump Stop | Released | 1.20.0.0 | Rally-raid truck builder: build, break it on the test track, read the trace, tune, then multi-day raids with damage that carries over | Birchland, a made-up English-flavoured northern country of forest, lakes and tundra (1985–2025; money in cr.) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 | Frontier Lab | Polishing, **hidden** | 0.1.64.2 | AI-lab tycoon (fork of Vault Street) | Real cities on procedural maps | Portrait | TypeScript, Preact, 2D canvas/SVG |
 | Hull Down | Prototype, **hidden** | 1.8.5.2 | Tank design bureau: design to a weight limit, trial, after-action report | Tarnovia, 1980s to today | Portrait first | TypeScript, Vite; 2D office, three (npm) for trials |
 | Laminar | In development, **hidden** | 0.9.15.0 | Aero consultancy: shape in 3D, scale model, wind tunnel, real event | Tarnovia, Stavren (2010–2040; rubles) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
-| Bump Stop | In development, **hidden** | 0.1.0.0 | Rally-raid truck builder: build, break it on the test track, read the trace, tune, then multi-day raids with damage that carries over | A made-up English-flavoured northern country of forest, lakes and tundra (1985–2025; names proposed) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 | Crumple | In development, **hidden** | 0.1.0.0 | Crash-lab game: design the parts that fold, crash it on the sled in full 3D, read the dummy, tune, then the official test's star rating | Varenia, a made-up eastern-bloc car country (1970–2010; money as plain numbers) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 
 Studio site trading projects (not games): Pre-market brief, AI Trading Journal,
@@ -543,13 +543,13 @@ are as of this snapshot.
 
 ### Bump Stop (repo `BumpStop`)
 
-- **Status:** the site's label is "In development", hidden on the studio site (added 25 November 2026). 0.1.0.0 on 25 November (`VERSION` file): PR 0 of `docs/BUMP-STOP-PLAN.md` (repo, docs, proposed names, a look preview). The plan lists it on the studio site at PR 8, the first playable, if Kelbo wants. `docs/STATUS.md` says where it stands.
+- **Status:** "Released", listed on the studio site since 27 November 2026 (added hidden 25 November). 1.0 shipped on 26 November with the whole of `docs/BUMP-STOP-PLAN.md` built; 1.20.0.0 on 27 November (`VERSION` file). `docs/STATUS.md` says where it stands.
 - **Pitch:** a rally-raid truck builder. Build the truck from about 12 part slots under the class weight and a budget, run it on the shop's rigs (shaker rig, washboard ladder, torture loop) until something lets go, read the trace, tune it, then enter multi-day raids where you call the pace and patch the truck at the bivouac each night. Three classes from day one: light 4x4, heavy truck, side-by-side. Damper heat and fade are the signature failure, shown as a trace. Design and watch only, no steering; nobody gets hurt.
-- **Setting and tone:** a made-up northern country of boreal forest, lakes, eskers, muskeg and tundra, summer and winter raids, 1985 to 2025, with English-flavoured names (Kelbo's pick). Proposed names, waiting on Kelbo: Birchland, money in antlers, the Frostbite 300, the Esker Run, the Long Night Raid, the Muskeg 800 and the Birchland Traverse ("the Long One"). Dusty, cold, hands-on and a bit funny. Fictional teams and parts makers; real suspension terms.
+- **Setting and tone:** Birchland, a made-up northern country of boreal forest, lakes, eskers, muskeg and tundra, summer and winter raids, 1985 to 2025, with English-flavoured names (Kelbo's pick). Money is "cr." after the number. Places: Larchport (the capital), Great Larch Lake, Sawbuck (the garage's mill town), Gritstone, Ptarmigan Point. Raids (Kelbo, 26 November 2026): Cold Start 300, Frozen Knuckle, Washboard 800, Dust Supper, Polar Night Raid and the finale, the Whole Damn Country (the Blackfly Classic is free play only; the Gravel Pit Derby is out for now). Rival teams: the Ironwood Brothers, the Tundra Dogs, Goldpan Racing, Jackrabbit Sport. Sponsors: Two Pines Hardware, Loonlight Diner, Muskeg Tire Co., Hoarfrost Cola, Boreal Bolt & Nut, Ptarmigan Lard Oil. The full list is Bump Stop's `docs/NAMES.md`. Dusty, cold, hands-on and a bit funny. Fictional teams and parts makers; real suspension terms.
 - **Look:** "Roadbook": a rally roadbook's paper strips and tulip diagrams, birch-white paper, graphite ink, one fluorescent magenta highlighter (`#FF4FB2`); light first with a night-stage dark mode. Traces are cool blue, amber and red, always with a word. Big Shoulders and Overpass Mono.
 - **Stack:** TypeScript (strict), Vite, three.js 0.187 from npm, plain DOM UI, Vitest. Pages from Actions, `base: './'`. Release per `VERSION`, titled from the `PR <n>: summary — v<version>` merge. A standalone repo set up from Mainline's files (Mainline is now retired), each marked `// Adapted from Mainline <path> (<date>)`.
 - **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic (its own `det.ts` maths, named RNG streams, SI units, a 500 Hz ride model of the body and four wheels); fade comes from damper heat, never a dice roll; long stages run sample sections in full and scale heat and wear between them. Names live in `docs/NAMES.md`.
-- **Saves:** keys `bumpstop.*`, IndexedDB `bumpstop`, caches `bumpstop-`, save code `BMP1:`, truck build codes `BMPT1:`, backup file `bump-stop-backup-YYYY-MM-DD.txt` (saves arrive with plan PR 8).
+- **Saves:** keys `bumpstop.*`, IndexedDB `bumpstop`, caches `bumpstop-`, save code `BMP1:`, truck build codes `BMPT1:`, backup file `bump-stop-backup-YYYY-MM-DD.txt` (three slots, backup reminder, ghost codes `BMPG1:`).
 
 ### Crumple
 
@@ -583,7 +583,7 @@ noted, so a repeated name reads as a mistake.
 | Aqsor Range (Site 41), a decommissioned test range on a steppe salt flat, 2030s | Burn Rate |
 | A prop-trading firm's floor; fictional tickers | Funded |
 | Real world cities on procedural maps | Frontier Lab |
-| Birchland (the antler), capital Larchport; an English-flavoured northern country, 1985–2025 (proposed, waiting on Kelbo) | Bump Stop |
+| Birchland (cr.), capital Larchport; Sawbuck, Gritstone, Ptarmigan Point; an English-flavoured northern country, 1985–2025; raids Cold Start 300, Frozen Knuckle, Washboard 800, Dust Supper, Polar Night Raid, the Whole Damn Country | Bump Stop |
 | Varenia (money as plain numbers), an eastern-bloc car country, 1970–2010; carmakers Avtoprom Vostok, Motorvela, Strela Works, Kombinat Rudno and Novak Auto; the firm Zavod Skladka; the Avtonadzor test body | Crumple |
 
 **Names used in more than one game** (already clashing; avoid adding more):
