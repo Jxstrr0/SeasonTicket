@@ -1,19 +1,19 @@
 # Longlight Interactive: studio catalogue
 
-> **Snapshot: 7 November 2026**, tables refreshed 16 November (Hull Down, Funded, Burn Rate and Laminar added; Escapement retired); Mainline added 25 November; The Whip retired 25 November; Bump Stop added 25 November; Crumple added 26 November (its world moved to Varenia the same day); Outwash retired 26 November; Mainline retired 27 November; Bump Stop listed on the site 27 November. One reference file for every Longlight game.
+> **Snapshot: 7 November 2026**, tables refreshed 16 November (Hull Down, Funded, Burn Rate and Laminar added; Escapement retired); Mainline added 25 November; The Whip retired 25 November; Bump Stop added 25 November; Crumple added 26 November (its world moved to Varenia the same day); Outwash retired 26 November; Mainline retired 27 November; Bump Stop listed on the site 27 November; Crumple retired 28 November. One reference file for every Longlight game.
 > The same file is dropped into each game repo. Versions and details drift;
 > when something matters, check the live repo. A game's own `CLAUDE.md` always
 > wins over this file inside that game's repo.
 >
-> **Public edition.** It covers the eleven games in the studio site's
+> **Public edition.** It covers the ten games in the studio site's
 > `projects.json` and leaves out Kelbo's private and parked repos. Ask Kelbo
 > about those.
 >
 > **Seven games are listed on the site** (27 November 2026): Prairie Engine
 > Works, Scrapline, Season Ticket, Funded, Lombard, Burn Rate and Bump Stop.
-> Four more carry `"hidden": true` in `projects.json`: Frontier Lab (hidden on
+> Three more carry `"hidden": true` in `projects.json`: Frontier Lab (hidden on
 > 15 November, when Burn Rate took its place) and
-> the newest games Hull Down, Laminar and Crumple, hidden until Kelbo says
+> the newest games Hull Down and Laminar, hidden until Kelbo says
 > to show them. A hidden game has no card, no game page and no devlog or
 > release lines; its repo and live game stay up, and everything in this file
 > still applies to it.
@@ -29,6 +29,9 @@
 > it was taken off the site entirely. Its names and storage prefix are free.
 >
 > **Mainline is retired.** Kelbo deleted the game on 27 November 2026 and
+> it was taken off the site entirely. Its names and storage prefix are free.
+>
+> **Crumple is retired.** Kelbo deleted the game on 28 November 2026 and
 > it was taken off the site entirely. Its names and storage prefix are free.
 
 ---
@@ -85,7 +88,6 @@ on its own subdomain of **longlight.games** (November 2026; the old
 | Frontier Lab | [Jxstrr0/FrontierLab](https://github.com/Jxstrr0/FrontierLab) | https://frontierlab.longlight.games/ | Hidden |
 | Hull Down | [Jxstrr0/hull-down](https://github.com/Jxstrr0/hull-down) | https://hulldown.longlight.games/ | Hidden |
 | Laminar | [Jxstrr0/Laminar](https://github.com/Jxstrr0/Laminar) | https://laminar.longlight.games/ | Hidden |
-| Crumple | [Jxstrr0/Crumple](https://github.com/Jxstrr0/Crumple) | https://crumple.longlight.games/ | Hidden |
 | Studio site | [Jxstrr0/Kelbo.Website](https://github.com/Jxstrr0/Kelbo.Website) | https://longlight.games/ | — |
 
 Kelbo's private and parked repos are not covered here (section 11).
@@ -189,7 +191,6 @@ cost nothing, keep old copies apart, and let a game move again safely.
 | Burn Rate | `brn-settings`, `brn-save`, `brn-slot1..3` | `brn-` | `BRN1:` |
 | Bump Stop | `bumpstop.*` + IndexedDB `bumpstop` | `bumpstop-` | `BMP1:` (truck builds `BMPT1:`; backup file `bump-stop-backup-YYYY-MM-DD.txt`; ghosts `BMPG1:`) |
 | Laminar | `laminar.*` + IndexedDB `laminar` (slots) | none yet (use `laminar-` when one is added) | `LAM1:` (designs `LAMD1:`) |
-| Crumple | `crumple.*` + IndexedDB `crumple` (from plan PR 10) | `crumple-` | `CRM1:` (designs `CRMD1:`; backup file `crumple-backup-YYYY-MM-DD.txt`) |
 
 > **Fixed on 7 November 2026:** the studio site's `sw.js` used to delete every
 > cache that wasn't its own when it updated, which wiped the games' offline
@@ -217,7 +218,6 @@ site (`"hidden": true`); they are still live at their own addresses.
 | Frontier Lab | Polishing, **hidden** | 0.1.64.2 | AI-lab tycoon (fork of Vault Street) | Real cities on procedural maps | Portrait | TypeScript, Preact, 2D canvas/SVG |
 | Hull Down | Prototype, **hidden** | 1.8.5.2 | Tank design bureau: design to a weight limit, trial, after-action report | Tarnovia, 1980s to today | Portrait first | TypeScript, Vite; 2D office, three (npm) for trials |
 | Laminar | In development, **hidden** | 0.9.15.0 | Aero consultancy: shape in 3D, scale model, wind tunnel, real event | Tarnovia, Stavren (2010–2040; rubles) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
-| Crumple | In development, **hidden** | 0.1.0.0 | Crash-lab game: design the parts that fold, crash it on the sled in full 3D, read the dummy, tune, then the official test's star rating | Varenia, a made-up eastern-bloc car country (1970–2010; money as plain numbers) | Portrait first | TypeScript, Vite, three 0.187 (npm) |
 
 Studio site trading projects (not games): Pre-market brief, AI Trading Journal,
 Agent Fleet.
@@ -551,17 +551,6 @@ are as of this snapshot.
 - **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic (its own `det.ts` maths, named RNG streams, SI units, a 500 Hz ride model of the body and four wheels); fade comes from damper heat, never a dice roll; long stages run sample sections in full and scale heat and wear between them. Names live in `docs/NAMES.md`.
 - **Saves:** keys `bumpstop.*`, IndexedDB `bumpstop`, caches `bumpstop-`, save code `BMP1:`, truck build codes `BMPT1:`, backup file `bump-stop-backup-YYYY-MM-DD.txt` (three slots, backup reminder, ghost codes `BMPG1:`).
 
-### Crumple
-
-- **Status:** the site's label is "In development", hidden on the studio site (added 26 November 2026). 0.1.0.0 on 26 November (`VERSION` file): PR 0 of `docs/PLAN.md` (repo, docs, names, a look preview). The plan lists it on the studio site at the first playable if Kelbo wants. `docs/STATUS.md` says where it stands.
-- **Pitch:** a crash-lab game. Design a car's crash structure (front rails, crush cans, bumper beam, pillars, sills, door beams, restraints; about 12 parts, each with a shape, a metal and a thickness), fire it down the sled into the barrier, watch the whole car crumple in 3D slow motion, read the dummy's readings and the deceleration pulse, tune it and crash it again. Then the carmaker builds it and the national test body crashes it for a star rating. Frontal, offset and side tests from day one. A small crash-structure firm, a career by model year, 1970 to 2010.
-- **Setting and tone:** Varenia (the People's Republic of Varenia), a made-up eastern-bloc country with state car works, five-year plans and a crash lab that has to prove its worth; it opens up in the 1990s (Kelbo's pick, 26 November 2026, replacing the first Low Countries flavour of Lindevaal). The player's firm is Zavod Skladka ("fold works"; the player can rename it). The national test body, Avtonadzor (it replaced the Keurhuis), crashes each new car at launch and publishes its stars. Money is plain numbers with no currency name or symbol (Kelbo's call). A bright, busy lab with gallows humour about the sled. **Dummies only:** no people in crashes, no real accidents, no injury talk beyond readings. Fictional carmakers and parts; real crash terms.
-- **Look:** "High-speed film": a bright white test hall, grey concrete, black-and-white target stickers, replays as film frames; light first with a night-shift dark mode. One high-vis lime accent (`#C6F21E`) for the player's own marks and buttons; readings blue, amber and red, always with a word. Sora and Azeret Mono, self-hosted.
-- **Stack:** TypeScript (strict), Vite, three.js 0.187 from npm, plain DOM UI, Vitest. Pages from Actions, `base: './'`. Release per `VERSION`, titled from the `PR <n>: summary — v<version>` merge. A standalone repo set up from Mainline's files (now retired) by way of Bump Stop. The crash sim will run in a Web Worker.
-- **Rules worth knowing:** the sim (`src/sim/`, `src/data/`) is pure and deterministic (its own `det.ts` maths, named RNG streams, SI units, a fixed time step): a 3D frame of beams with plastic hinges, contact, and the body panels skinned to the frame's nodes. A crash must solve in under 3 seconds on a mid-range phone. Names live in `docs/NAMES.md`.
-- **Names:** Varenia; the test body Avtonadzor; the firm Zavod Skladka. Carmakers: Avtoprom Vostok (the big state maker), Motorvela (the people's car maker), Strela Works (sports cars), Kombinat Rudno (vans and estates), Novak Auto (a private maker from the 1990s). First models: Vostok 412 "Iskra" (compact), Motorvela 1300 "Narodna" (saloon) and 1300 Kombi (estate), Strela Sokol (sports), Rudno Tovar (estate van). All approved by Kelbo on 26 November 2026; the full list is Crumple's `docs/NAMES.md`. Still to name, later: places, rival firms and suppliers.
-- **Saves:** keys `crumple.*`, IndexedDB `crumple`, caches `crumple-`, save code `CRM1:`, design codes `CRMD1:`, backup file `crumple-backup-YYYY-MM-DD.txt` (saves arrive with plan PR 10).
-
 ---
 
 ## 8. Names already taken
@@ -584,7 +573,6 @@ noted, so a repeated name reads as a mistake.
 | A prop-trading firm's floor; fictional tickers | Funded |
 | Real world cities on procedural maps | Frontier Lab |
 | Birchland (cr.), capital Larchport; Sawbuck, Gritstone, Ptarmigan Point; an English-flavoured northern country, 1985–2025; raids Cold Start 300, Frozen Knuckle, Washboard 800, Dust Supper, Polar Night Raid, the Whole Damn Country | Bump Stop |
-| Varenia (money as plain numbers), an eastern-bloc car country, 1970–2010; carmakers Avtoprom Vostok, Motorvela, Strela Works, Kombinat Rudno and Novak Auto; the firm Zavod Skladka; the Avtonadzor test body | Crumple |
 
 **Names used in more than one game** (already clashing; avoid adding more):
 
@@ -596,7 +584,7 @@ noted, so a repeated name reads as a mistake.
 | **Corvid** | Prairie Engine Works (sponsor), Frontier Lab (Corvid 600 jet) |
 | **Tidewater** | Prairie Engine Works (Tidewater Diesel & Marine), Frontier Lab (Tidewater AI) |
 | **Northwind** | Prairie Engine Works (Northwind Tyre), Frontier Lab (Northwind & Pike) |
-| **V-countries** | Velmark, Valmere and Varenia (Crumple): three invented places that sound alike. Kelbo kept Varenia knowing the clash (26 November 2026). Pick another starting letter for any new country. |
+| **V-countries** | Velmark and Valmere: two invented places that sound alike. Pick another starting letter for any new country. |
 | **"Prairie"** | Prairie Engine Works, Prairie Open Models and Prairie State (Frontier Lab), Prairie Junction (Season Ticket) |
 | **Nimbus** | Lombard (Nimbus game consoles), Frontier Lab (Nimbus Labs, Nimbus Health) |
 
@@ -632,7 +620,7 @@ date or institution.
 | Family | Games |
 | --- | --- |
 | Craft career: build or make something part by part, test it, compete or sell, in a workshop that grows | Prairie Engine Works (engines), Scrapline (combat robots) |
-| Engineering to a brief: design against a spec, test, read the report | Burn Rate (rocket motors), Hull Down (tanks), Laminar (aerodynamics), Bump Stop (rally-raid suspension, tested to failure, then raced), Crumple (a car's crash structure, crashed on the sled, then rated) |
+| Engineering to a brief: design against a spec, test, read the report | Burn Rate (rocket motors), Hull Down (tanks), Laminar (aerodynamics), Bump Stop (rally-raid suspension, tested to failure, then raced) |
 | Roguelike runs | Funded (prop-firm trading) |
 | Tycoon and management | Season Ticket (football club), Frontier Lab (AI lab), Lombard (pawn shop) |
 
@@ -641,7 +629,7 @@ date or institution.
 - Almost every game is a **career on a weekly clock** ("act, then Close week").
 - Almost every game is **dark-themed** (slate, navy, felt, console green). Only
   the light themes of PEW and Scrapline, and the light-first Hull Down,
-  Burn Rate, Bump Stop and Crumple, break that.
+  Burn Rate and Bump Stop, break that.
 - Most are **single-player management**; only Scrapline's
   fights are real-time action.
 - Three games share a near-identical classic-JS stack (PEW, Scrapline and
@@ -663,7 +651,6 @@ date or institution.
 | "Faded state-range": concrete, state green, stencil red, Saira / Martian Mono | Burn Rate |
 | "Cobalt lab": bright wind-tunnel lab, Instrument Sans / Spline Sans Mono | Laminar |
 | "Roadbook": birch-white paper, graphite ink, a fluorescent magenta highlighter, Big Shoulders / Overpass Mono | Bump Stop |
-| "High-speed film": white test hall, target stickers, film frames, a high-vis lime accent, Sora / Azeret Mono | Crumple |
 
 **Open space** (observations, not decisions; Kelbo picks):
 
